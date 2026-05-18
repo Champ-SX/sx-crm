@@ -107,7 +107,7 @@ function CreateLeadForm({ onClose }: { onClose: () => void }) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     addLead({
-      lead_id: `lead-${Date.now()}`,
+      lead_id: crypto.randomUUID(),
       ...form,
       lead_status: 'new',
       lead_score: calcScore(),
@@ -262,12 +262,15 @@ function InlineEditField({
   )
 }
 
-function LeadDetail({ lead, onClose }: { lead: Lead; onClose: () => void }) {
-  const { convertLead, updateLead } = useCRMStore()
+function LeadDetail({ leadId, onClose }: { leadId: string; onClose: () => void }) {
+  const { leads, convertLead, updateLead } = useCRMStore()
+  const lead = leads.find((l) => l.lead_id === leadId)
   const [converting, setConverting] = useState(false)
   const [converted, setConverted] = useState(false)
+  if (!lead) return null
 
   function handleConvert() {
+    if (!lead) return
     convertLead(lead.lead_id)
     setConverted(true)
     setConverting(false)
@@ -434,7 +437,7 @@ export default function LeadsPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [serviceFilter, setServiceFilter] = useState<string>('all')
-  const [selected, setSelected] = useState<Lead | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
 
   const filtered = leads.filter((l) => {
@@ -493,7 +496,7 @@ export default function LeadsPage() {
           </thead>
           <tbody>
             {filtered.map((lead) => (
-              <LeadRow key={lead.lead_id} lead={lead} onClick={() => setSelected(lead)} />
+              <LeadRow key={lead.lead_id} lead={lead} onClick={() => setSelectedId(lead.lead_id)} />
             ))}
           </tbody>
         </table>
@@ -504,7 +507,7 @@ export default function LeadsPage() {
         )}
       </div>
 
-      {selected && <LeadDetail lead={selected} onClose={() => setSelected(null)} />}
+      {selectedId && <LeadDetail leadId={selectedId} onClose={() => setSelectedId(null)} />}
       {creating && <CreateLeadForm onClose={() => setCreating(false)} />}
     </div>
   )

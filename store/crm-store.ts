@@ -71,7 +71,7 @@ export const useCRMStore = create<CRMStore>((set, get) => ({
 
     const now = new Date().toISOString()
     const newCustomer: Customer = {
-      customer_id: `cust-${Date.now()}`,
+      customer_id: crypto.randomUUID(),
       name: lead.contact_name,
       company_name: lead.company_name,
       customer_type: lead.company_name ? 'brand' : 'individual',
@@ -88,7 +88,7 @@ export const useCRMStore = create<CRMStore>((set, get) => ({
     }
 
     const newOpportunity: Opportunity = {
-      opportunity_id: `opp-${Date.now()}`,
+      opportunity_id: crypto.randomUUID(),
       linked_customer_id: newCustomer.customer_id,
       linked_lead_id: leadId,
       deal_name: `${lead.contact_name} — ${lead.interested_service}`,
@@ -115,7 +115,7 @@ export const useCRMStore = create<CRMStore>((set, get) => ({
       activities: [
         ...state.activities,
         {
-          activity_id: `act-${Date.now()}`,
+          activity_id: crypto.randomUUID(),
           entity_type: 'lead',
           entity_id: leadId,
           activity_type: 'status_change',
@@ -141,9 +141,6 @@ export const useCRMStore = create<CRMStore>((set, get) => ({
     })),
 
   moveOpportunityStage: (id, stage) => {
-    const state = get()
-    const opp = state.opportunities.find((o) => o.opportunity_id === id)
-    if (!opp) return
     const now = new Date().toISOString()
     const stageProbability: Record<string, number> = {
       'New Opportunity': 10,
@@ -155,26 +152,30 @@ export const useCRMStore = create<CRMStore>((set, get) => ({
       Won: 100,
       Lost: 0,
     }
-    set((state) => ({
-      opportunities: state.opportunities.map((o) =>
-        o.opportunity_id === id
-          ? { ...o, stage, probability: stageProbability[stage] ?? o.probability, updated_at: now }
-          : o
-      ),
-      activities: [
-        ...state.activities,
-        {
-          activity_id: `act-${Date.now()}`,
-          entity_type: 'opportunity',
-          entity_id: id,
-          activity_type: 'status_change',
-          title: `Stage moved to "${stage}"`,
-          description: `Opportunity moved from "${opp.stage}" to "${stage}"`,
-          created_by: opp.owner,
-          created_at: now,
-        },
-      ],
-    }))
+    set((state) => {
+      const opp = state.opportunities.find((o) => o.opportunity_id === id)
+      if (!opp) return state
+      return {
+        opportunities: state.opportunities.map((o) =>
+          o.opportunity_id === id
+            ? { ...o, stage, probability: stageProbability[stage] ?? o.probability, updated_at: now }
+            : o
+        ),
+        activities: [
+          ...state.activities,
+          {
+            activity_id: crypto.randomUUID(),
+            entity_type: 'opportunity',
+            entity_id: id,
+            activity_type: 'status_change',
+            title: `Stage moved to "${stage}"`,
+            description: `Opportunity moved from "${opp.stage}" to "${stage}"`,
+            created_by: opp.owner,
+            created_at: now,
+          },
+        ],
+      }
+    })
   },
 
   markOpportunityWon: (id) => {
@@ -185,7 +186,7 @@ export const useCRMStore = create<CRMStore>((set, get) => ({
     const now = new Date().toISOString()
 
     const wonProject: WonProject = {
-      project_id: `won-${Date.now()}`,
+      project_id: crypto.randomUUID(),
       linked_opportunity_id: id,
       client_name: customer?.name || opp.deal_name,
       brand: customer?.company_name || '',
@@ -210,7 +211,7 @@ export const useCRMStore = create<CRMStore>((set, get) => ({
       activities: [
         ...state.activities,
         {
-          activity_id: `act-${Date.now()}`,
+          activity_id: crypto.randomUUID(),
           entity_type: 'opportunity',
           entity_id: id,
           activity_type: 'deal_won',

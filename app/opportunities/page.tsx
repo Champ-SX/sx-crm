@@ -178,12 +178,15 @@ function InlineEditField({
   )
 }
 
-function OppDetail({ opp, onClose }: { opp: Opportunity; onClose: () => void }) {
-  const { markOpportunityWon, updateOpportunity, customers } = useCRMStore()
+function OppDetail({ oppId, onClose }: { oppId: string; onClose: () => void }) {
+  const { opportunities, markOpportunityWon, updateOpportunity, customers } = useCRMStore()
+  const opp = opportunities.find((o) => o.opportunity_id === oppId)
   const [confirmWon, setConfirmWon] = useState(false)
+  if (!opp) return null
   const customer = customers.find((c) => c.customer_id === opp.linked_customer_id)
 
   function handleMarkWon() {
+    if (!opp) return
     markOpportunityWon(opp.opportunity_id)
     setConfirmWon(false)
     onClose()
@@ -347,7 +350,7 @@ function OppDetail({ opp, onClose }: { opp: Opportunity; onClose: () => void }) 
 
 export default function OpportunitiesPage() {
   const { opportunities, moveOpportunityStage } = useCRMStore()
-  const [selected, setSelected] = useState<Opportunity | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
 
   const sensors = useSensors(
@@ -364,9 +367,9 @@ export default function OpportunitiesPage() {
     const { active, over } = event
     setActiveId(null)
     if (!over) return
-    const stage = over.id as OpportunityStage
-    if (OPPORTUNITY_STAGES.includes(stage)) {
-      moveOpportunityStage(active.id as string, stage)
+    const overId = String(over.id)
+    if ((OPPORTUNITY_STAGES as readonly string[]).includes(overId)) {
+      moveOpportunityStage(active.id as string, overId as OpportunityStage)
     }
   }
 
@@ -395,7 +398,7 @@ export default function OpportunitiesPage() {
                   key={stage}
                   stage={stage as OpportunityStage}
                   opportunities={stageOpps}
-                  onCardClick={setSelected}
+                  onCardClick={(opp) => setSelectedId(opp.opportunity_id)}
                   activeId={activeId}
                 />
               )
@@ -413,7 +416,7 @@ export default function OpportunitiesPage() {
         </DndContext>
       </div>
 
-      {selected && <OppDetail opp={selected} onClose={() => setSelected(null)} />}
+      {selectedId && <OppDetail oppId={selectedId} onClose={() => setSelectedId(null)} />}
     </div>
   )
 }

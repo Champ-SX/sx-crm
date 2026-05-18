@@ -8,6 +8,7 @@ import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -162,8 +163,134 @@ function InlineEditText({
   )
 }
 
-function CustomerDetail({ customer, onClose }: { customer: Customer; onClose: () => void }) {
-  const { opportunities, updateCustomer } = useCRMStore()
+function CreateCustomerForm({ onClose }: { onClose: () => void }) {
+  const { addCustomer } = useCRMStore()
+  const [form, setForm] = useState({
+    name: '',
+    company_name: '',
+    customer_type: 'brand' as CustomerType,
+    email: '',
+    phone: '',
+    line_id: '',
+    instagram: '',
+    source: '',
+    tags: '',
+    notes: '',
+    owner: 'Vitta',
+  })
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const now = new Date().toISOString()
+    addCustomer({
+      customer_id: crypto.randomUUID(),
+      name: form.name,
+      company_name: form.company_name,
+      customer_type: form.customer_type,
+      email: form.email,
+      phone: form.phone,
+      line_id: form.line_id,
+      instagram: form.instagram,
+      source: form.source,
+      tags: form.tags ? form.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
+      notes: form.notes,
+      owner: form.owner,
+      created_at: now,
+      updated_at: now,
+    })
+    onClose()
+  }
+
+  return (
+    <Sheet open onOpenChange={onClose}>
+      <SheetContent className="w-[480px] sm:max-w-[480px] overflow-y-auto p-0">
+        <SheetHeader className="px-6 pt-6 pb-4 border-b">
+          <SheetTitle>New Customer</SheetTitle>
+        </SheetHeader>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Full Name *</Label>
+              <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="h-8 text-sm" placeholder="e.g. Pim Rattana" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Company / Brand</Label>
+              <Input value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} className="h-8 text-sm" placeholder="e.g. LYNK & CO" />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Customer Type</Label>
+            <Select value={form.customer_type} onValueChange={(v) => v && setForm({ ...form, customer_type: v as CustomerType })}>
+              <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {CUSTOMER_TYPES.map((t) => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Email</Label>
+              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="h-8 text-sm" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Phone</Label>
+              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="h-8 text-sm" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">LINE ID</Label>
+              <Input value={form.line_id} onChange={(e) => setForm({ ...form, line_id: e.target.value })} className="h-8 text-sm" placeholder="@handle" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Instagram</Label>
+              <Input value={form.instagram} onChange={(e) => setForm({ ...form, instagram: e.target.value })} className="h-8 text-sm" placeholder="@handle" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Source</Label>
+              <Input value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} className="h-8 text-sm" placeholder="e.g. referral, ig" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Owner</Label>
+              <Select value={form.owner} onValueChange={(v) => v && setForm({ ...form, owner: v })}>
+                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {OWNERS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Tags <span className="text-muted-foreground font-normal">(comma-separated)</span></Label>
+            <Input value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} className="h-8 text-sm" placeholder="e.g. brand, premium, repeat" />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Notes</Label>
+            <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="text-sm resize-none" rows={3} />
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <Button type="button" variant="outline" className="flex-1 h-9 text-sm" onClick={onClose}>Cancel</Button>
+            <Button type="submit" className="flex-1 h-9 text-sm">Create Customer</Button>
+          </div>
+        </form>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: () => void }) {
+  const { customers, opportunities, updateCustomer } = useCRMStore()
+  const customer = customers.find((c) => c.customer_id === customerId)
+  if (!customer) return null
   const linkedOpps = opportunities.filter((o) => o.linked_customer_id === customer.customer_id)
 
   return (
@@ -328,7 +455,8 @@ export default function CustomersPage() {
   const { customers } = useCRMStore()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
-  const [selected, setSelected] = useState<Customer | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
 
   const filtered = customers.filter((c) => {
     const matchSearch =
@@ -345,7 +473,7 @@ export default function CustomersPage() {
         title="Customers"
         description={`${customers.length} records`}
       >
-        <Button size="sm" className="gap-1.5 h-8 text-xs">
+        <Button size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setCreating(true)}>
           <Plus className="w-3.5 h-3.5" /> Add Customer
         </Button>
       </PageHeader>
@@ -394,7 +522,7 @@ export default function CustomersPage() {
               <CustomerRow
                 key={customer.customer_id}
                 customer={customer}
-                onClick={() => setSelected(customer)}
+                onClick={() => setSelectedId(customer.customer_id)}
               />
             ))}
           </tbody>
@@ -402,13 +530,14 @@ export default function CustomersPage() {
         {filtered.length === 0 && (
           search || typeFilter !== 'all'
             ? <EmptyState icon={Search} title="No customers match" description="Try adjusting your search or filter to find what you're looking for." />
-            : <EmptyState icon={User} title="No customers yet" description="Add your first customer to start building your client base." action={{ label: '+ Add Customer', onClick: () => {} }} />
+            : <EmptyState icon={User} title="No customers yet" description="Add your first customer to start building your client base." action={{ label: '+ Add Customer', onClick: () => setCreating(true) }} />
         )}
       </div>
 
-      {selected && (
-        <CustomerDetail customer={selected} onClose={() => setSelected(null)} />
+      {selectedId && (
+        <CustomerDetail customerId={selectedId} onClose={() => setSelectedId(null)} />
       )}
+      {creating && <CreateCustomerForm onClose={() => setCreating(false)} />}
     </div>
   )
 }
