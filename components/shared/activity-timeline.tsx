@@ -8,10 +8,8 @@ import {
   StickyNote,
   Bell,
   TrendingUp,
-  Send,
   Trophy,
   XCircle,
-  CheckSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
@@ -25,14 +23,12 @@ const activityConfig: Record<
   email: { icon: Mail, color: 'text-indigo-500', bg: 'bg-indigo-50' },
   follow_up: { icon: Bell, color: 'text-amber-500', bg: 'bg-amber-50' },
   status_change: { icon: TrendingUp, color: 'text-purple-500', bg: 'bg-purple-50' },
-  proposal_sent: { icon: Send, color: 'text-sky-500', bg: 'bg-sky-50' },
   deal_won: { icon: Trophy, color: 'text-emerald-500', bg: 'bg-emerald-50' },
   deal_lost: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-50' },
-  task: { icon: CheckSquare, color: 'text-teal-500', bg: 'bg-teal-50' },
 }
 
 interface ActivityTimelineProps {
-  entityType: Activity['entity_type']
+  entityType: 'customer' | 'lead_opportunity' | 'won_job'
   entityId: string
   className?: string
 }

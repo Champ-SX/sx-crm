@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "sx-crm",
+      "runtimeExecutable": "/Users/vittavinlee/.nvm/versions/node/v20.20.2/bin/node",
+      "runtimeArgs": ["node_modules/.bin/next", "dev"],
+      "port": 3000,
+      "autoPort": true
+    }
+  ]
+}

@@ -5,9 +5,8 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
   Users,
-  Inbox,
-  TrendingUp,
-  Trophy,
+  FileText,
+  Kanban,
   CheckSquare,
   Settings,
   Zap,
@@ -16,28 +15,28 @@ import { cn } from '@/lib/utils'
 import { useCRMStore } from '@/store/crm-store'
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/customers', label: 'Customers', icon: Users },
-  { href: '/leads', label: 'Leads', icon: Inbox },
-  { href: '/opportunities', label: 'Opportunities', icon: TrendingUp },
-  { href: '/won-deck', label: 'Won Deck', icon: Trophy },
+  { href: '/leads-opportunities', label: 'Leads & Opportunities', icon: FileText },
+  { href: '/won-ready-op', label: 'Won & Ready for OP', icon: Kanban },
   { href: '/tasks', label: 'Tasks', icon: CheckSquare },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { leads, tasks } = useCRMStore()
+  const { leadOpportunities, wonJobs, tasks } = useCRMStore()
 
-  const newLeadsCount = leads.filter((l) => l.lead_status === 'new').length
+  const openLeadsCount = leadOpportunities.filter((l) => l.status === 'open').length
+  const today = new Date().toISOString().split('T')[0]
   const pendingTasksToday = tasks.filter(
-    (t) =>
-      t.status !== 'done' &&
-      t.due_date <= new Date().toISOString().split('T')[0]
+    (t) => t.status !== 'done' && t.due_date <= today
   ).length
+  const activeOPJobs = wonJobs.filter((j) => j.op_stage !== 'OP_DONE_PAYMENT').length
 
   const badges: Record<string, number> = {
-    '/leads': newLeadsCount,
+    '/leads-opportunities': openLeadsCount,
+    '/won-ready-op': activeOPJobs,
     '/tasks': pendingTasksToday,
   }
 
@@ -61,7 +60,7 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
         {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href)
+          const isActive = pathname === href || pathname.startsWith(href + '/')
           const badge = badges[href]
 
           return (
@@ -82,7 +81,7 @@ export function Sidebar() {
                     isActive ? 'text-primary' : 'text-current'
                   )}
                 />
-                <span>{label}</span>
+                <span className="leading-tight">{label}</span>
               </div>
               {badge != null && badge > 0 && (
                 <span className="text-[10px] font-semibold bg-primary text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">

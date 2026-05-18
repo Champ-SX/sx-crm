@@ -1,244 +1,203 @@
 'use client'
 
 import { create } from 'zustand'
-import type { Customer, Lead, Opportunity, WonProject, Activity, Task } from '@/types'
+import type { Customer, LeadOpportunity, WonJob, Activity, Task, OPStage } from '@/types'
 import {
   mockCustomers,
-  mockLeads,
-  mockOpportunities,
-  mockWonProjects,
+  mockLeadOpportunities,
+  mockWonJobs,
   mockActivities,
   mockTasks,
 } from '@/lib/mock-data'
 
 interface CRMStore {
   customers: Customer[]
-  leads: Lead[]
-  opportunities: Opportunity[]
-  wonProjects: WonProject[]
+  leadOpportunities: LeadOpportunity[]
+  wonJobs: WonJob[]
   activities: Activity[]
   tasks: Task[]
 
-  addCustomer: (customer: Customer) => void
+  // Customers
+  addCustomer: (c: Customer) => void
   updateCustomer: (id: string, updates: Partial<Customer>) => void
 
-  addLead: (lead: Lead) => void
-  updateLead: (id: string, updates: Partial<Lead>) => void
-  convertLead: (leadId: string) => { customer: Customer; opportunity: Opportunity }
+  // Leads & Opportunities
+  addLeadOpportunity: (lop: LeadOpportunity) => void
+  updateLeadOpportunity: (id: string, updates: Partial<LeadOpportunity>) => void
+  markAsWon: (leadOpId: string) => WonJob
+  markAsLost: (leadOpId: string) => void
 
-  addOpportunity: (opp: Opportunity) => void
-  updateOpportunity: (id: string, updates: Partial<Opportunity>) => void
-  moveOpportunityStage: (id: string, stage: Opportunity['stage']) => void
-  markOpportunityWon: (id: string) => WonProject
+  // Won Jobs (OP Kanban)
+  addWonJob: (job: WonJob) => void
+  updateWonJob: (id: string, updates: Partial<WonJob>) => void
+  moveWonJobStage: (id: string, stage: OPStage) => void
 
+  // Tasks
   addTask: (task: Task) => void
   updateTask: (id: string, updates: Partial<Task>) => void
 
+  // Activities
   addActivity: (activity: Activity) => void
-  getActivitiesForEntity: (entityType: Activity['entity_type'], entityId: string) => Activity[]
 }
 
 export const useCRMStore = create<CRMStore>((set, get) => ({
   customers: mockCustomers,
-  leads: mockLeads,
-  opportunities: mockOpportunities,
-  wonProjects: mockWonProjects,
+  leadOpportunities: mockLeadOpportunities,
+  wonJobs: mockWonJobs,
   activities: mockActivities,
   tasks: mockTasks,
 
-  addCustomer: (customer) =>
-    set((state) => ({ customers: [...state.customers, customer] })),
+  // ── Customers ──────────────────────────────────────────────────────────────
+  addCustomer: (c) =>
+    set((s) => ({ customers: [...s.customers, c] })),
 
   updateCustomer: (id, updates) =>
-    set((state) => ({
-      customers: state.customers.map((c) =>
+    set((s) => ({
+      customers: s.customers.map((c) =>
         c.customer_id === id ? { ...c, ...updates, updated_at: new Date().toISOString() } : c
       ),
     })),
 
-  addLead: (lead) =>
-    set((state) => ({ leads: [...state.leads, lead] })),
+  // ── Leads & Opportunities ──────────────────────────────────────────────────
+  addLeadOpportunity: (lop) =>
+    set((s) => ({ leadOpportunities: [...s.leadOpportunities, lop] })),
 
-  updateLead: (id, updates) =>
-    set((state) => ({
-      leads: state.leads.map((l) => (l.lead_id === id ? { ...l, ...updates } : l)),
+  updateLeadOpportunity: (id, updates) =>
+    set((s) => ({
+      leadOpportunities: s.leadOpportunities.map((l) =>
+        l.lead_op_id === id ? { ...l, ...updates, updated_at: new Date().toISOString() } : l
+      ),
     })),
 
-  convertLead: (leadId) => {
+  markAsWon: (leadOpId) => {
     const state = get()
-    const lead = state.leads.find((l) => l.lead_id === leadId)
-    if (!lead) throw new Error('Lead not found')
-
+    const lop = state.leadOpportunities.find((l) => l.lead_op_id === leadOpId)
+    if (!lop) throw new Error('Lead/Opportunity not found')
     const now = new Date().toISOString()
-    const newCustomer: Customer = {
-      customer_id: crypto.randomUUID(),
-      name: lead.contact_name,
-      company_name: lead.company_name,
-      customer_type: lead.company_name ? 'brand' : 'individual',
-      email: lead.email,
-      phone: lead.phone,
-      line_id: lead.line_id,
-      instagram: '',
-      source: lead.source,
-      tags: [lead.interested_service.toLowerCase()],
-      notes: lead.notes,
-      owner: lead.owner,
+
+    // Auto-generate job number (last job_number + 1)
+    const lastJobNum = state.wonJobs
+      .map((j) => parseInt(j.job_number, 10))
+      .filter((n) => !isNaN(n))
+      .sort((a, b) => b - a)[0] ?? 0
+    const newJobNumber = String(lastJobNum + 1).padStart(3, '0')
+
+    const newJob: WonJob = {
+      job_id: `job-${Date.now()}`,
+      job_number: newJobNumber,
+      event_name: lop.name,
+      customer_name: lop.customer_name,
+      customer_id: lop.customer_id,
+      contact_person: lop.contact_person,
+      service_type: lop.service_type,
+      event_date: lop.event_date ?? '',
+      venue: lop.venue ?? '',
+      estimated_value: lop.estimated_value,
+      payment_status: 'unpaid',
+      staff_status: 'pending',
+      doc_status: 'pending',
+      op_stage: 'WON_JOB_LIST',
+      owner: lop.owner,
+      notes: lop.notes,
+      lead_op_id: leadOpId,
       created_at: now,
       updated_at: now,
     }
 
-    const newOpportunity: Opportunity = {
-      opportunity_id: crypto.randomUUID(),
-      linked_customer_id: newCustomer.customer_id,
-      linked_lead_id: leadId,
-      deal_name: `${lead.contact_name} — ${lead.interested_service}`,
-      service_type: lead.interested_service,
-      estimated_value: 0,
-      expected_close_date: '',
-      event_date: lead.event_date || '',
-      stage: 'New Opportunity',
-      probability: 10,
-      owner: lead.owner,
-      next_action: 'Qualify and set up requirements call',
-      next_follow_up_date: '',
-      notes: lead.notes,
-      created_at: now,
-      updated_at: now,
-    }
-
-    set((state) => ({
-      customers: [...state.customers, newCustomer],
-      opportunities: [...state.opportunities, newOpportunity],
-      leads: state.leads.map((l) =>
-        l.lead_id === leadId ? { ...l, lead_status: 'qualified' } : l
+    set((s) => ({
+      leadOpportunities: s.leadOpportunities.map((l) =>
+        l.lead_op_id === leadOpId
+          ? { ...l, status: 'won', updated_at: now }
+          : l
       ),
+      wonJobs: [...s.wonJobs, newJob],
       activities: [
-        ...state.activities,
+        ...s.activities,
         {
-          activity_id: crypto.randomUUID(),
-          entity_type: 'lead',
-          entity_id: leadId,
-          activity_type: 'status_change',
-          title: 'Lead converted to Customer + Opportunity',
-          description: `Created customer record and opportunity: ${newOpportunity.deal_name}`,
-          created_by: lead.owner,
+          activity_id: `act-${Date.now()}`,
+          entity_type: 'lead_opportunity' as const,
+          entity_id: leadOpId,
+          activity_type: 'deal_won' as const,
+          title: '🎉 Marked as Won',
+          description: `Job #${newJobNumber} created and added to Won Job List.`,
+          created_by: lop.owner,
           created_at: now,
         },
       ],
     }))
 
-    return { customer: newCustomer, opportunity: newOpportunity }
+    return newJob
   },
 
-  addOpportunity: (opp) =>
-    set((state) => ({ opportunities: [...state.opportunities, opp] })),
+  markAsLost: (leadOpId) => {
+    const now = new Date().toISOString()
+    const lop = get().leadOpportunities.find((l) => l.lead_op_id === leadOpId)
+    if (!lop) return
+    set((s) => ({
+      leadOpportunities: s.leadOpportunities.map((l) =>
+        l.lead_op_id === leadOpId ? { ...l, status: 'lost', updated_at: now } : l
+      ),
+      activities: [
+        ...s.activities,
+        {
+          activity_id: `act-${Date.now()}`,
+          entity_type: 'lead_opportunity' as const,
+          entity_id: leadOpId,
+          activity_type: 'deal_lost' as const,
+          title: 'Marked as Lost',
+          description: 'Opportunity closed as lost.',
+          created_by: lop.owner,
+          created_at: now,
+        },
+      ],
+    }))
+  },
 
-  updateOpportunity: (id, updates) =>
-    set((state) => ({
-      opportunities: state.opportunities.map((o) =>
-        o.opportunity_id === id ? { ...o, ...updates, updated_at: new Date().toISOString() } : o
+  // ── Won Jobs ───────────────────────────────────────────────────────────────
+  addWonJob: (job) =>
+    set((s) => ({ wonJobs: [...s.wonJobs, job] })),
+
+  updateWonJob: (id, updates) =>
+    set((s) => ({
+      wonJobs: s.wonJobs.map((j) =>
+        j.job_id === id ? { ...j, ...updates, updated_at: new Date().toISOString() } : j
       ),
     })),
 
-  moveOpportunityStage: (id, stage) => {
+  moveWonJobStage: (id, stage) => {
     const now = new Date().toISOString()
-    const stageProbability: Record<string, number> = {
-      'New Opportunity': 10,
-      Contacted: 20,
-      'Requirement Collected': 35,
-      'Proposal Sent': 50,
-      Negotiation: 70,
-      Confirmed: 90,
-      Won: 100,
-      Lost: 0,
-    }
-    set((state) => {
-      const opp = state.opportunities.find((o) => o.opportunity_id === id)
-      if (!opp) return state
-      return {
-        opportunities: state.opportunities.map((o) =>
-          o.opportunity_id === id
-            ? { ...o, stage, probability: stageProbability[stage] ?? o.probability, updated_at: now }
-            : o
-        ),
-        activities: [
-          ...state.activities,
-          {
-            activity_id: crypto.randomUUID(),
-            entity_type: 'opportunity',
-            entity_id: id,
-            activity_type: 'status_change',
-            title: `Stage moved to "${stage}"`,
-            description: `Opportunity moved from "${opp.stage}" to "${stage}"`,
-            created_by: opp.owner,
-            created_at: now,
-          },
-        ],
-      }
-    })
-  },
-
-  markOpportunityWon: (id) => {
-    const state = get()
-    const opp = state.opportunities.find((o) => o.opportunity_id === id)
-    if (!opp) throw new Error('Opportunity not found')
-    const customer = state.customers.find((c) => c.customer_id === opp.linked_customer_id)
-    const now = new Date().toISOString()
-
-    const wonProject: WonProject = {
-      project_id: crypto.randomUUID(),
-      linked_opportunity_id: id,
-      client_name: customer?.name || opp.deal_name,
-      brand: customer?.company_name || '',
-      service_used: opp.service_type,
-      project_date: opp.event_date,
-      project_value: opp.estimated_value,
-      location: '',
-      campaign_goal: opp.notes,
-      deliverables: [],
-      result_summary: '',
-      photos_links: [],
-      invoice_status: 'pending',
-      reusable_case_study: false,
-      notes: opp.notes,
-    }
-
-    set((state) => ({
-      opportunities: state.opportunities.map((o) =>
-        o.opportunity_id === id ? { ...o, stage: 'Won', probability: 100, updated_at: now } : o
+    const job = get().wonJobs.find((j) => j.job_id === id)
+    if (!job) return
+    set((s) => ({
+      wonJobs: s.wonJobs.map((j) =>
+        j.job_id === id ? { ...j, op_stage: stage, updated_at: now } : j
       ),
-      wonProjects: [...state.wonProjects, wonProject],
       activities: [
-        ...state.activities,
+        ...s.activities,
         {
-          activity_id: crypto.randomUUID(),
-          entity_type: 'opportunity',
+          activity_id: `act-${Date.now()}`,
+          entity_type: 'won_job' as const,
           entity_id: id,
-          activity_type: 'deal_won',
-          title: '🎉 Deal Won!',
-          description: `${opp.deal_name} marked as Won. Won project record created.`,
-          created_by: opp.owner,
+          activity_type: 'status_change' as const,
+          title: `Stage updated`,
+          description: `Moved from "${job.op_stage}" to "${stage}"`,
+          created_by: job.owner,
           created_at: now,
         },
       ],
     }))
-
-    return wonProject
   },
 
-  addTask: (task) => set((state) => ({ tasks: [...state.tasks, task] })),
+  // ── Tasks ──────────────────────────────────────────────────────────────────
+  addTask: (task) =>
+    set((s) => ({ tasks: [...s.tasks, task] })),
 
   updateTask: (id, updates) =>
-    set((state) => ({
-      tasks: state.tasks.map((t) => (t.task_id === id ? { ...t, ...updates } : t)),
+    set((s) => ({
+      tasks: s.tasks.map((t) => (t.task_id === id ? { ...t, ...updates } : t)),
     })),
 
+  // ── Activities ─────────────────────────────────────────────────────────────
   addActivity: (activity) =>
-    set((state) => ({ activities: [...state.activities, activity] })),
-
-  getActivitiesForEntity: (entityType, entityId) => {
-    return get().activities.filter(
-      (a) => a.entity_type === entityType && a.entity_id === entityId
-    )
-  },
+    set((s) => ({ activities: [...s.activities, activity] })),
 }))

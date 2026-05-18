@@ -22,7 +22,7 @@ const ACTIVITY_TYPES: {
 ]
 
 interface AddActivityFormProps {
-  entityType: Activity['entity_type']
+  entityType: 'customer' | 'lead_opportunity' | 'won_job'
   entityId: string
   owner: string
 }
