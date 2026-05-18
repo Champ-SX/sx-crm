@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useCRMStore } from '@/store/crm-store'
 import { PageHeader } from '@/components/shared/page-header'
 import { EmptyState } from '@/components/shared/empty-state'
+import { CreateQuotationModal } from '@/components/shared/create-quotation-modal'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
 import { Button } from '@/components/ui/button'
@@ -18,7 +19,7 @@ import type { LeadOpportunity, LeadOpStatus } from '@/types'
 import {
   Search, Plus, Mail, Phone, MessageCircle,
   ChevronRight, Trophy, XCircle, Calendar, MapPin,
-  Pencil, Check, X, FileText, User,
+  Pencil, Check, X, FileText, User, Send,
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -201,6 +202,7 @@ function LeadDetail({ item, onClose }: { item: LeadOpportunity; onClose: () => v
   const { updateLeadOpportunity, markAsWon, markAsLost } = useCRMStore()
   const [confirmWon, setConfirmWon] = useState(false)
   const [confirmLost, setConfirmLost] = useState(false)
+  const [quotationOpen, setQuotationOpen] = useState(false)
 
   function handleMarkWon() {
     markAsWon(item.lead_op_id)
@@ -230,26 +232,39 @@ function LeadDetail({ item, onClose }: { item: LeadOpportunity; onClose: () => v
           </SheetHeader>
 
           <div className="px-6 py-5 space-y-5">
-            {/* Win/Loss actions */}
-            {item.status === 'open' && (
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  className="flex-1 h-9 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
-                  onClick={() => setConfirmWon(true)}
-                >
-                  <Trophy className="w-3.5 h-3.5" /> Mark as Won
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 h-9 gap-1.5 border-red-200 text-red-500 hover:bg-red-50 text-xs"
-                  onClick={() => setConfirmLost(true)}
-                >
-                  <XCircle className="w-3.5 h-3.5" /> Mark as Lost
-                </Button>
-              </div>
-            )}
+            {/* Actions */}
+            <div className="flex flex-col gap-2">
+              {/* Create Quotation — always available */}
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full h-9 gap-1.5 border-primary/30 text-primary hover:bg-primary/5 text-xs font-medium"
+                onClick={() => setQuotationOpen(true)}
+              >
+                <Send className="w-3.5 h-3.5" /> Create Quotation → FlowAccount
+              </Button>
+
+              {/* Win/Loss — only when open */}
+              {item.status === 'open' && (
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    className="flex-1 h-9 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                    onClick={() => setConfirmWon(true)}
+                  >
+                    <Trophy className="w-3.5 h-3.5" /> Mark as Won
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 h-9 gap-1.5 border-red-200 text-red-500 hover:bg-red-50 text-xs"
+                    onClick={() => setConfirmLost(true)}
+                  >
+                    <XCircle className="w-3.5 h-3.5" /> Mark as Lost
+                  </Button>
+                </div>
+              )}
+            </div>
 
             {/* Key info */}
             <div className="grid grid-cols-2 gap-4">
@@ -370,6 +385,13 @@ function LeadDetail({ item, onClose }: { item: LeadOpportunity; onClose: () => v
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Create Quotation Modal */}
+      <CreateQuotationModal
+        lead={item}
+        open={quotationOpen}
+        onClose={() => setQuotationOpen(false)}
+      />
     </>
   )
 }
