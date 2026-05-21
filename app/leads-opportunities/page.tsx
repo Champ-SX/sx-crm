@@ -7,9 +7,9 @@ import { EmptyState } from '@/components/shared/empty-state'
 import { CreateQuotationModal } from '@/components/shared/create-quotation-modal'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
+import { AddLeadOpForm } from '@/components/shared/add-lead-op-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -17,9 +17,10 @@ import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import type { LeadOpportunity, LeadOpStatus } from '@/types'
 import {
-  Search, Plus, Mail, Phone, MessageCircle,
+  Search, Plus,
   ChevronRight, Trophy, XCircle, Calendar, MapPin,
-  Pencil, Check, X, FileText, User, Send,
+  Pencil, Check, X, FileText, Send,
+  CreditCard, ChevronDown, Banknote,
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -69,147 +70,76 @@ function InlineEdit({
 function LeadRow({ item, onClick }: { item: LeadOpportunity; onClick: () => void }) {
   const cfg = statusConfig[item.status]
   return (
-    <tr className="border-b border-border/60 hover:bg-muted/30 cursor-pointer transition-colors group" onClick={onClick}>
+    <tr className="border-b border-border/50 hover:bg-slate-50/70 cursor-pointer transition-colors group" onClick={onClick}>
+      {/* Name + contact */}
       <td className="px-5 py-3.5">
-        <p className="text-sm font-medium text-foreground">{item.name}</p>
+        <p className="text-[13px] font-semibold text-slate-800 leading-tight">{item.name}</p>
+        {item.contact_person && (
+          <p className="text-[11px] text-slate-400 mt-0.5">{item.contact_person}</p>
+        )}
       </td>
+      {/* Company */}
       <td className="px-4 py-3.5">
-        <p className="text-sm text-muted-foreground">{item.customer_name}</p>
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 text-[10px] font-bold shrink-0">
+            {(item.customer_name || '?').charAt(0).toUpperCase()}
+          </div>
+          <p className="text-[12px] text-slate-600">{item.customer_name || '—'}</p>
+        </div>
       </td>
+      {/* Service */}
       <td className="px-4 py-3.5">
-        <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded font-medium">{item.service_type}</span>
+        <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">{item.service_type}</span>
       </td>
+      {/* Event date */}
       <td className="px-4 py-3.5">
-        <p className="text-sm text-muted-foreground">
-          {item.event_date ? format(new Date(item.event_date + 'T00:00:00'), 'dd MMM yyyy') : '—'}
+        <p className="text-[12px] text-slate-500">
+          {item.event_date ? format(new Date(item.event_date + 'T00:00:00'), 'dd MMM yyyy') : <span className="text-slate-300">—</span>}
         </p>
       </td>
+      {/* Value */}
       <td className="px-4 py-3.5">
-        <p className="text-sm font-semibold text-foreground">
-          {item.estimated_value > 0 ? `฿${item.estimated_value.toLocaleString()}` : '—'}
+        <p className="text-[13px] font-bold text-slate-800">
+          {item.estimated_value > 0 ? `฿${item.estimated_value.toLocaleString()}` : <span className="text-slate-300 font-normal">—</span>}
         </p>
       </td>
+      {/* Owner */}
       <td className="px-4 py-3.5">
-        <p className="text-xs text-muted-foreground">{item.owner}</p>
+        <span className="text-[11px] text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full">{item.owner}</span>
       </td>
+      {/* Status */}
       <td className="px-4 py-3.5">
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${cfg.class}`}>{cfg.label}</span>
+        <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${cfg.class}`}>{cfg.label}</span>
       </td>
+      {/* Arrow */}
       <td className="px-4 py-3.5">
-        <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+        <ChevronRight className="w-3.5 h-3.5 text-slate-300 opacity-0 group-hover:opacity-100 group-hover:text-slate-500 transition-all" />
       </td>
     </tr>
   )
 }
 
-// ── Add form ──────────────────────────────────────────────────────────────────
-function AddLeadOpForm({ onClose }: { onClose: () => void }) {
-  const { addLeadOpportunity } = useCRMStore()
-  const [form, setForm] = useState({
-    name: '', customer_name: '', contact_person: '', service_type: 'CAP*TURES',
-    event_date: '', venue: '', estimated_value: '', owner: 'Vitta', notes: '',
-  })
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.name.trim()) return
-    const now = new Date().toISOString()
-    addLeadOpportunity({
-      lead_op_id: `lop-${Date.now()}`,
-      name: form.name,
-      customer_name: form.customer_name,
-      contact_person: form.contact_person,
-      service_type: form.service_type,
-      event_date: form.event_date || undefined,
-      venue: form.venue || undefined,
-      estimated_value: parseFloat(form.estimated_value) || 0,
-      owner: form.owner,
-      notes: form.notes,
-      status: 'open',
-      created_at: now,
-      updated_at: now,
-    })
-    onClose()
-  }
-
-  return (
-    <Sheet open onOpenChange={onClose}>
-      <SheetContent className="w-[460px] sm:max-w-[460px] p-0 overflow-y-auto">
-        <SheetHeader className="px-6 pt-6 pb-4 border-b">
-          <SheetTitle>New Lead / Opportunity</SheetTitle>
-        </SheetHeader>
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          <div className="space-y-1">
-            <Label className="text-xs">Lead / Opportunity Name *</Label>
-            <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="h-8 text-sm" placeholder="e.g. Sephora Annual Campaign 2026" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Customer / Company</Label>
-              <Input value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} className="h-8 text-sm" placeholder="e.g. Sephora Thailand" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Contact Person</Label>
-              <Input value={form.contact_person} onChange={(e) => setForm({ ...form, contact_person: e.target.value })} className="h-8 text-sm" placeholder="e.g. Khun Pim" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Service / Product</Label>
-              <Select value={form.service_type} onValueChange={(v) => v && setForm({ ...form, service_type: v })}>
-                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>{SERVICES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Owner</Label>
-              <Select value={form.owner} onValueChange={(v) => v && setForm({ ...form, owner: v })}>
-                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>{OWNERS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Event Date</Label>
-              <Input type="date" value={form.event_date} onChange={(e) => setForm({ ...form, event_date: e.target.value })} className="h-8 text-sm" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Estimated Value (฿)</Label>
-              <Input type="number" value={form.estimated_value} onChange={(e) => setForm({ ...form, estimated_value: e.target.value })} className="h-8 text-sm" placeholder="0" />
-            </div>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Venue</Label>
-            <Input value={form.venue} onChange={(e) => setForm({ ...form, venue: e.target.value })} className="h-8 text-sm" placeholder="e.g. EastinGrand Sathorn" />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Notes</Label>
-            <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="text-sm resize-none" rows={3} />
-          </div>
-          <div className="flex gap-2 pt-2">
-            <Button type="button" variant="outline" className="flex-1 h-9 text-sm" onClick={onClose}>Cancel</Button>
-            <Button type="submit" className="flex-1 h-9 text-sm">Add</Button>
-          </div>
-        </form>
-      </SheetContent>
-    </Sheet>
-  )
-}
-
 // ── Detail drawer ─────────────────────────────────────────────────────────────
-function LeadDetail({ item, onClose }: { item: LeadOpportunity; onClose: () => void }) {
-  const { updateLeadOpportunity, markAsWon, markAsLost } = useCRMStore()
+function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }) {
+  const { updateLeadOpportunity, markAsWon, markAsLost, leadOpportunities, customers, updateCustomer } = useCRMStore()
   const [confirmWon, setConfirmWon] = useState(false)
   const [confirmLost, setConfirmLost] = useState(false)
   const [quotationOpen, setQuotationOpen] = useState(false)
+  const [openAccount, setOpenAccount] = useState(false)
+
+  const item = leadOpportunities.find((l) => l.lead_op_id === itemId)
+  if (!item) return null
+
+  const linkedCustomer = item.customer_id ? customers.find((c) => c.customer_id === item.customer_id) : null
 
   function handleMarkWon() {
+    if (!item) return
     markAsWon(item.lead_op_id)
     setConfirmWon(false)
     onClose()
   }
   function handleMarkLost() {
+    if (!item) return
     markAsLost(item.lead_op_id)
     setConfirmLost(false)
     onClose()
@@ -219,138 +149,209 @@ function LeadDetail({ item, onClose }: { item: LeadOpportunity; onClose: () => v
 
   return (
     <>
-      <Sheet open onOpenChange={onClose}>
-        <SheetContent className="w-[500px] sm:max-w-[500px] overflow-y-auto p-0">
-          <SheetHeader className="px-6 pt-6 pb-4 border-b">
-            <div className="flex-1 min-w-0">
-              <SheetTitle className="text-base leading-snug">{item.name}</SheetTitle>
-              <div className="flex items-center gap-2 mt-1.5">
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${cfg.class}`}>{cfg.label}</span>
-                <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">{item.service_type}</span>
+      <Dialog open onOpenChange={onClose}>
+        <DialogContent className="w-[82vw] max-w-[82vw] sm:max-w-[82vw] top-[4vh] translate-y-0 p-0 gap-0 overflow-hidden max-h-[88vh] flex flex-col">
+
+          {/* ── Header ── */}
+          <div className="px-7 pt-6 pb-4 border-b shrink-0">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-lg font-semibold leading-snug">{item.name}</DialogTitle>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${cfg.class}`}>{cfg.label}</span>
+                  <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">{item.service_type}</span>
+                </div>
+              </div>
+              {/* Action buttons in header */}
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1.5 border-primary/30 text-primary hover:bg-primary/5 text-xs font-medium"
+                  onClick={() => setQuotationOpen(true)}
+                >
+                  <Send className="w-3.5 h-3.5" /> Create Quotation → FlowAccount
+                </Button>
+                {item.status === 'open' && (
+                  <>
+                    <Button
+                      size="sm"
+                      className="h-8 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                      onClick={() => setConfirmWon(true)}
+                    >
+                      <Trophy className="w-3.5 h-3.5" /> Mark as Won
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 gap-1.5 border-red-200 text-red-500 hover:bg-red-50 text-xs"
+                      onClick={() => setConfirmLost(true)}
+                    >
+                      <XCircle className="w-3.5 h-3.5" /> Mark as Lost
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
-          </SheetHeader>
+          </div>
 
-          <div className="px-6 py-5 space-y-5">
-            {/* Actions */}
-            <div className="flex flex-col gap-2">
-              {/* Create Quotation — always available */}
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full h-9 gap-1.5 border-primary/30 text-primary hover:bg-primary/5 text-xs font-medium"
-                onClick={() => setQuotationOpen(true)}
-              >
-                <Send className="w-3.5 h-3.5" /> Create Quotation → FlowAccount
-              </Button>
+          {/* ── Body: two columns ── */}
+          <div className="flex flex-1 overflow-hidden">
 
-              {/* Win/Loss — only when open */}
-              {item.status === 'open' && (
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    className="flex-1 h-9 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
-                    onClick={() => setConfirmWon(true)}
-                  >
-                    <Trophy className="w-3.5 h-3.5" /> Mark as Won
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 h-9 gap-1.5 border-red-200 text-red-500 hover:bg-red-50 text-xs"
-                    onClick={() => setConfirmLost(true)}
-                  >
-                    <XCircle className="w-3.5 h-3.5" /> Mark as Lost
-                  </Button>
+            {/* Left: Details */}
+            <div className="flex-1 overflow-y-auto px-7 py-5 space-y-5 border-r">
+
+              {/* Key info */}
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Customer</p>
+                  <p className="text-sm font-medium">{item.customer_name || '—'}</p>
                 </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Contact</p>
+                  <p className="text-sm font-medium">{item.contact_person || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Estimated Value</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {item.estimated_value > 0 ? `฿${item.estimated_value.toLocaleString()}` : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Owner</p>
+                  <Select value={item.owner} onValueChange={(v) => v && updateLeadOpportunity(item.lead_op_id, { owner: v })}>
+                    <SelectTrigger className="h-7 text-sm border-0 px-0 focus:ring-0 w-auto gap-1 font-medium">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {OWNERS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Event details */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Event Details</p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <span>{item.event_date ? format(new Date(item.event_date + 'T00:00:00'), 'EEEE, MMMM d, yyyy') : '—'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <InlineEdit
+                      value={item.venue ?? ''}
+                      placeholder="Add venue…"
+                      onSave={(v) => updateLeadOpportunity(item.lead_op_id, { venue: v })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Notes */}
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">Notes</p>
+                <InlineEdit
+                  value={item.notes}
+                  placeholder="Click to add notes…"
+                  multiline
+                  onSave={(v) => updateLeadOpportunity(item.lead_op_id, { notes: v })}
+                />
+              </div>
+
+              {/* Meta */}
+              <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">
+                <span>Created {new Date(item.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                <span>Updated {new Date(item.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+              </div>
+
+              {/* Company Account (from customer record) */}
+              {linkedCustomer && (
+                <>
+                  <Separator />
+                  <div className="rounded-xl border border-amber-200 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setOpenAccount((o) => !o)}
+                      className="w-full bg-amber-50 px-4 py-2.5 flex items-center gap-2 hover:bg-amber-100/60 transition-colors text-left"
+                    >
+                      <div className="w-5 h-5 rounded-md bg-amber-100 flex items-center justify-center shrink-0">
+                        <CreditCard className="w-3 h-3 text-amber-600" />
+                      </div>
+                      <span className="text-[12px] font-bold text-amber-800 tracking-wide flex-1">Company Account</span>
+                      <span className="text-[10px] text-amber-500/70 mr-1">{linkedCustomer.company_name}</span>
+                      <ChevronDown className={`w-3.5 h-3.5 text-amber-400 transition-transform duration-200 ${openAccount ? 'rotate-0' : '-rotate-90'}`} />
+                    </button>
+                    {openAccount && (
+                      <div className="bg-white px-4 py-4 space-y-4">
+                        <p className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded-md">Changes here are saved to the Customer record and shared across all jobs.</p>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Tax ID</p>
+                            <InlineEdit value={linkedCustomer.tax_id ?? ''} placeholder="0105xxx" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { tax_id: v })} />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Branch</p>
+                            <InlineEdit value={linkedCustomer.branch ?? ''} placeholder="สาขา / สำนักงานใหญ่" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { branch: v })} />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Company Address</p>
+                          <InlineEdit value={linkedCustomer.company_address ?? ''} placeholder="ที่อยู่บริษัท" multiline onSave={(v) => updateCustomer(linkedCustomer.customer_id, { company_address: v })} />
+                        </div>
+                        <div className="flex items-center gap-3 pt-1">
+                          <div className="flex-1 border-t border-border/60" />
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium shrink-0">
+                            <Banknote className="w-3.5 h-3.5" /> Bank Transfer
+                          </div>
+                          <div className="flex-1 border-t border-border/60" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Bank Name</p>
+                            <InlineEdit value={linkedCustomer.bank_name ?? ''} placeholder="SCB / KBANK / BBL" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { bank_name: v })} />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Bank Branch</p>
+                            <InlineEdit value={linkedCustomer.bank_branch ?? ''} placeholder="สาขา" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { bank_branch: v })} />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Account Number</p>
+                          <InlineEdit value={linkedCustomer.bank_account_number ?? ''} placeholder="เลขบัญชี" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { bank_account_number: v })} />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Account Name</p>
+                          <InlineEdit value={linkedCustomer.bank_account_name ?? ''} placeholder="ชื่อบัญชี" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { bank_account_name: v })} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </div>
 
-            {/* Key info */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Right: Activity */}
+            <div className="w-[340px] shrink-0 overflow-y-auto px-6 py-5 space-y-5 bg-muted/20">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Customer</p>
-                <p className="text-sm font-medium">{item.customer_name || '—'}</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Log Activity</p>
+                <AddActivityForm entityType="lead_opportunity" entityId={item.lead_op_id} owner={item.owner} />
               </div>
+              <Separator />
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Contact</p>
-                <p className="text-sm font-medium">{item.contact_person || '—'}</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">History</p>
+                <ActivityTimeline entityType="lead_opportunity" entityId={item.lead_op_id} />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Estimated Value</p>
-                <p className="text-lg font-bold text-foreground">
-                  {item.estimated_value > 0 ? `฿${item.estimated_value.toLocaleString()}` : '—'}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Owner</p>
-                <Select value={item.owner} onValueChange={(v) => v && updateLeadOpportunity(item.lead_op_id, { owner: v })}>
-                  <SelectTrigger className="h-7 text-sm border-0 px-0 focus:ring-0 w-auto gap-1 font-medium">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {OWNERS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Event details */}
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Event Details</p>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  <span>{item.event_date ? format(new Date(item.event_date + 'T00:00:00'), 'EEEE, MMMM d, yyyy') : '—'}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  <InlineEdit
-                    value={item.venue ?? ''}
-                    placeholder="Add venue…"
-                    onSave={(v) => updateLeadOpportunity(item.lead_op_id, { venue: v })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Notes */}
-            <div>
-              <p className="text-xs text-muted-foreground mb-1.5">Notes</p>
-              <InlineEdit
-                value={item.notes}
-                placeholder="Click to add notes…"
-                multiline
-                onSave={(v) => updateLeadOpportunity(item.lead_op_id, { notes: v })}
-              />
-            </div>
-
-            {/* Meta */}
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <span>Created {new Date(item.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-              <span>Updated {new Date(item.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-            </div>
-
-            {/* Activity logger */}
-            <Separator />
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Log Activity</p>
-              <AddActivityForm entityType="lead_opportunity" entityId={item.lead_op_id} owner={item.owner} />
-            </div>
-
-            {/* Activity timeline */}
-            <Separator />
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">History</p>
-              <ActivityTimeline entityType="lead_opportunity" entityId={item.lead_op_id} />
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
+
+        </DialogContent>
+      </Dialog>
 
       {/* Confirm Won */}
       <Dialog open={confirmWon} onOpenChange={setConfirmWon}>
@@ -403,7 +404,7 @@ export default function LeadsOpportunitiesPage() {
   const [statusFilter, setStatusFilter] = useState<string>('open')
   const [serviceFilter, setServiceFilter] = useState<string>('all')
   const [ownerFilter, setOwnerFilter] = useState<string>('all')
-  const [selected, setSelected] = useState<LeadOpportunity | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
 
   const filtered = leadOpportunities.filter((l) => {
@@ -420,81 +421,89 @@ export default function LeadsOpportunitiesPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader
-        title="Leads & Opportunities"
-        description={`${openCount} open · ฿${(pipelineValue / 1000).toFixed(0)}K pipeline`}
-      >
-        <Button size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setCreating(true)}>
+      {/* Top bar */}
+      <div className="bg-white border-b border-border px-8 py-4 shrink-0 flex items-center justify-between">
+        <div>
+          <h1 className="text-[17px] font-semibold text-slate-800 tracking-tight">Leads &amp; Opportunities</h1>
+          <p className="text-[12px] text-slate-400 mt-0.5">{openCount} open · ฿{(pipelineValue / 1000).toFixed(0)}K pipeline</p>
+        </div>
+        <Button size="sm" className="gap-1.5 h-8 text-[12px] font-semibold" onClick={() => setCreating(true)}>
           <Plus className="w-3.5 h-3.5" /> Add Lead / Opp
         </Button>
-      </PageHeader>
+      </div>
 
-      {/* Filters */}
-      <div className="px-8 py-4 border-b bg-white flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-          <Input placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 text-sm" />
+      {/* Filter bar */}
+      <div className="px-8 py-3 border-b bg-white flex items-center gap-3 flex-wrap">
+        <div className="relative min-w-[200px] max-w-xs flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+          <Input placeholder="Search leads…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 text-[12px] bg-slate-50 border-slate-200" />
         </div>
-        {/* Status tabs */}
-        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-          {(['all', 'open', 'won', 'lost'] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all capitalize ${statusFilter === s ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              {s} {s !== 'all' && <span className="ml-1 opacity-60">{leadOpportunities.filter((l) => l.status === s).length}</span>}
-            </button>
-          ))}
+        {/* Status pills */}
+        <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
+          {(['all', 'open', 'won', 'lost'] as const).map((s) => {
+            const count = s === 'all' ? leadOpportunities.length : leadOpportunities.filter((l) => l.status === s).length
+            return (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all capitalize ${
+                  statusFilter === s ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {s} <span className="ml-0.5 opacity-60">{count}</span>
+              </button>
+            )
+          })}
         </div>
         <Select value={serviceFilter} onValueChange={(v) => setServiceFilter(v ?? 'all')}>
-          <SelectTrigger className="w-[140px] h-8 text-sm"><SelectValue placeholder="All services" /></SelectTrigger>
+          <SelectTrigger className="w-[140px] h-8 text-[12px] bg-slate-50 border-slate-200"><SelectValue placeholder="All services" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All services</SelectItem>
-            {SERVICES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            {SERVICES.map((s) => <SelectItem key={s} value={s} className="text-[12px]">{s}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={ownerFilter} onValueChange={(v) => setOwnerFilter(v ?? 'all')}>
-          <SelectTrigger className="w-[120px] h-8 text-sm"><SelectValue placeholder="All owners" /></SelectTrigger>
+          <SelectTrigger className="w-[120px] h-8 text-[12px] bg-slate-50 border-slate-200"><SelectValue placeholder="All owners" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All owners</SelectItem>
-            {OWNERS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+            {OWNERS.map((o) => <SelectItem key={o} value={o} className="text-[12px]">{o}</SelectItem>)}
           </SelectContent>
         </Select>
-        <p className="text-xs text-muted-foreground ml-auto">{filtered.length} items</p>
+        <p className="text-[11px] text-slate-400 ml-auto">{filtered.length} items</p>
       </div>
 
       {/* Table */}
       <div className="flex-1 overflow-y-auto bg-white">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-border/60">
-              <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Name</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Customer</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Service</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Event Date</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Value</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Owner</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((item) => (
-              <LeadRow key={item.lead_op_id} item={item} onClick={() => setSelected(item)} />
-            ))}
-          </tbody>
-        </table>
-        {filtered.length === 0 && (
+        {filtered.length === 0 ? (
           search || serviceFilter !== 'all' || ownerFilter !== 'all'
             ? <EmptyState icon={Search} title="No results match" description="Try adjusting your filters." />
             : statusFilter === 'open'
               ? <EmptyState icon={FileText} title="No open leads yet" description="Add your first lead or opportunity to start tracking." action={{ label: '+ Add Lead / Opp', onClick: () => setCreating(true) }} />
               : <EmptyState icon={FileText} title={`No ${statusFilter} items`} description="Nothing here yet." />
+        ) : (
+          <table className="w-full">
+            <thead className="sticky top-0 z-10">
+              <tr className="border-b border-border/60 bg-slate-50/80 backdrop-blur-sm">
+                <th className="px-5 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Lead / Opportunity</th>
+                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Company</th>
+                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Service</th>
+                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Event Date</th>
+                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Value</th>
+                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Owner</th>
+                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-2.5" />
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((item) => (
+                <LeadRow key={item.lead_op_id} item={item} onClick={() => setSelectedId(item.lead_op_id)} />
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
 
-      {selected && <LeadDetail item={selected} onClose={() => setSelected(null)} />}
+      {selectedId && <LeadDetail itemId={selectedId} onClose={() => setSelectedId(null)} />}
       {creating && <AddLeadOpForm onClose={() => setCreating(false)} />}
     </div>
   )

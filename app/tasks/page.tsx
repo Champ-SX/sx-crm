@@ -8,26 +8,23 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { Task, TaskPriority, TaskStatus } from '@/types'
 import { EmptyState } from '@/components/shared/empty-state'
 import {
   Plus,
   CheckSquare,
-  Square,
   Calendar,
   Link2,
   User,
-  Clock,
   CheckCircle2,
   Circle,
-  ArrowRight,
   Search,
 } from 'lucide-react'
 import { format } from 'date-fns'
 
-const TODAY = '2026-05-15'
+const TODAY = new Date().toISOString().split('T')[0]
 const OWNERS = ['Vitta', 'Andy', 'Fern', 'Nong']
 
 const priorityConfig = {
@@ -42,12 +39,12 @@ function TaskCard({ task, onToggle }: { task: Task; onToggle: () => void }) {
   const isDueToday = !isDone && task.due_date === TODAY
 
   return (
-    <div className={`flex items-start gap-3 p-4 rounded-xl border bg-white transition-all hover:shadow-sm ${isDone ? 'opacity-50' : ''} ${isOverdue ? 'border-red-200' : 'border-border/70'}`}>
+    <div className={`flex items-start gap-3 p-4 rounded-xl border bg-white transition-all hover:shadow-sm ${isDone ? 'opacity-40' : ''} ${isOverdue ? 'border-red-200 bg-red-50/20' : 'border-slate-200/80'}`}>
       <button onClick={onToggle} className="mt-0.5 shrink-0">
         {isDone ? (
-          <CheckCircle2 className="w-4.5 h-4.5 text-emerald-500" />
+          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
         ) : (
-          <Circle className="w-4.5 h-4.5 text-muted-foreground hover:text-primary transition-colors" />
+          <Circle className="w-4 h-4 text-muted-foreground hover:text-primary transition-colors" />
         )}
       </button>
 
@@ -105,29 +102,29 @@ function CreateTaskForm({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Sheet open onOpenChange={onClose}>
-      <SheetContent className="w-[400px] sm:max-w-[400px] p-0">
-        <SheetHeader className="px-6 pt-6 pb-4 border-b">
-          <SheetTitle>New Task</SheetTitle>
-        </SheetHeader>
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="w-[480px] max-w-[90vw] sm:max-w-[480px] top-[8vh] translate-y-0 p-0 gap-0">
+        <div className="px-6 pt-6 pb-4 border-b">
+          <DialogTitle className="text-[15px] font-semibold text-slate-800">New Task</DialogTitle>
+        </div>
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          <div className="space-y-1">
-            <Label className="text-xs">Task *</Label>
-            <Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="h-8 text-sm" placeholder="What needs to be done?" />
+          <div className="space-y-1.5">
+            <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Task *</Label>
+            <Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="h-9 text-sm" placeholder="What needs to be done?" />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Notes</Label>
+          <div className="space-y-1.5">
+            <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Notes</Label>
             <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="text-sm resize-none" rows={3} />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Due Date</Label>
-              <Input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} className="h-8 text-sm" />
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Due Date</Label>
+              <Input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} className="h-9 text-sm" />
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Priority</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Priority</Label>
               <Select value={form.priority} onValueChange={(v) => v && setForm({ ...form, priority: v as TaskPriority })}>
-                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="high">High</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
@@ -136,10 +133,10 @@ function CreateTaskForm({ onClose }: { onClose: () => void }) {
               </Select>
             </div>
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Assign to</Label>
+          <div className="space-y-1.5">
+            <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Assign to</Label>
             <Select value={form.owner} onValueChange={(v) => v && setForm({ ...form, owner: v })}>
-              <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {OWNERS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
               </SelectContent>
@@ -147,11 +144,11 @@ function CreateTaskForm({ onClose }: { onClose: () => void }) {
           </div>
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" className="flex-1 h-9 text-sm" onClick={onClose}>Cancel</Button>
-            <Button type="submit" className="flex-1 h-9 text-sm">Add Task</Button>
+            <Button type="submit" className="flex-1 h-9 text-sm font-semibold">Add Task</Button>
           </div>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -203,32 +200,38 @@ export default function TasksPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Tasks" description={`${pendingCount} pending · ${done.length} done`}>
-        <Button size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setCreating(true)}>
+      {/* Top bar */}
+      <div className="bg-white border-b border-border px-8 py-4 shrink-0 flex items-center justify-between">
+        <div>
+          <h1 className="text-[17px] font-semibold text-slate-800 tracking-tight">Tasks</h1>
+          <p className="text-[12px] text-slate-400 mt-0.5">{pendingCount} pending · {done.length} done</p>
+        </div>
+        <Button size="sm" className="gap-1.5 h-8 text-[12px] font-semibold" onClick={() => setCreating(true)}>
           <Plus className="w-3.5 h-3.5" /> Add Task
         </Button>
-      </PageHeader>
+      </div>
 
-      <div className="px-8 py-4 border-b bg-white flex items-center gap-3">
+      {/* Filters */}
+      <div className="px-8 py-3 border-b bg-white flex items-center gap-3">
         <Select value={ownerFilter} onValueChange={(v) => setOwnerFilter(v ?? 'all')}>
-          <SelectTrigger className="w-[130px] h-8 text-sm"><SelectValue placeholder="All owners" /></SelectTrigger>
+          <SelectTrigger className="w-[130px] h-8 text-[12px] bg-slate-50 border-slate-200"><SelectValue placeholder="All owners" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All owners</SelectItem>
-            {OWNERS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+            {OWNERS.map((o) => <SelectItem key={o} value={o} className="text-[12px]">{o}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={priorityFilter} onValueChange={(v) => setPriorityFilter(v ?? 'all')}>
-          <SelectTrigger className="w-[130px] h-8 text-sm"><SelectValue placeholder="All priorities" /></SelectTrigger>
+          <SelectTrigger className="w-[130px] h-8 text-[12px] bg-slate-50 border-slate-200"><SelectValue placeholder="All priorities" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All priorities</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
+            <SelectItem value="all" className="text-[12px]">All priorities</SelectItem>
+            <SelectItem value="high" className="text-[12px]">High</SelectItem>
+            <SelectItem value="medium" className="text-[12px]">Medium</SelectItem>
+            <SelectItem value="low" className="text-[12px]">Low</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-8 space-y-8">
+      <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-background">
         {overdue.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-3">

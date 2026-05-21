@@ -1,23 +1,45 @@
 'use client'
 
 import { create } from 'zustand'
-import type { Customer, LeadOpportunity, WonJob, Activity, Task, OPStage } from '@/types'
+import type {
+  Customer, Company, ContactPerson,
+  LeadOpportunity, WonJob, Activity, Task, OPStage, StaffMember,
+} from '@/types'
 import {
   mockCustomers,
+  mockCompanies,
+  mockContactPersons,
   mockLeadOpportunities,
   mockWonJobs,
   mockActivities,
   mockTasks,
+  mockStaff,
 } from '@/lib/mock-data'
+import { blankWonJobFields, companyToAccount, customerToAccount } from '@/lib/jobs'
 
 interface CRMStore {
+  // ── New relational entities (Phase 1+) ──────────────────────────────────────
+  companies: Company[]
+  contactPersons: ContactPerson[]
+
+  // ── Legacy (Phase 1 compat — kept until Phase 5) ────────────────────────────
   customers: Customer[]
+
   leadOpportunities: LeadOpportunity[]
   wonJobs: WonJob[]
   activities: Activity[]
   tasks: Task[]
+  staff: StaffMember[]
 
-  // Customers
+  // Companies
+  addCompany: (c: Company) => void
+  updateCompany: (id: string, updates: Partial<Company>) => void
+
+  // ContactPersons
+  addContactPerson: (cp: ContactPerson) => void
+  updateContactPerson: (id: string, updates: Partial<ContactPerson>) => void
+
+  // Customers (legacy)
   addCustomer: (c: Customer) => void
   updateCustomer: (id: string, updates: Partial<Customer>) => void
 
@@ -32,6 +54,9 @@ interface CRMStore {
   updateWonJob: (id: string, updates: Partial<WonJob>) => void
   moveWonJobStage: (id: string, stage: OPStage) => void
 
+  // Staff
+  addStaff: (s: StaffMember) => void
+
   // Tasks
   addTask: (task: Task) => void
   updateTask: (id: string, updates: Partial<Task>) => void
@@ -41,13 +66,42 @@ interface CRMStore {
 }
 
 export const useCRMStore = create<CRMStore>((set, get) => ({
+  // ── New relational state ────────────────────────────────────────────────────
+  companies: mockCompanies,
+  contactPersons: mockContactPersons,
+
+  // ── Legacy state ────────────────────────────────────────────────────────────
   customers: mockCustomers,
+
   leadOpportunities: mockLeadOpportunities,
   wonJobs: mockWonJobs,
   activities: mockActivities,
   tasks: mockTasks,
+  staff: mockStaff,
 
-  // ── Customers ──────────────────────────────────────────────────────────────
+  // ── Companies ───────────────────────────────────────────────────────────────
+  addCompany: (c) =>
+    set((s) => ({ companies: [...s.companies, c] })),
+
+  updateCompany: (id, updates) =>
+    set((s) => ({
+      companies: s.companies.map((c) =>
+        c.company_id === id ? { ...c, ...updates, updated_at: new Date().toISOString() } : c
+      ),
+    })),
+
+  // ── ContactPersons ──────────────────────────────────────────────────────────
+  addContactPerson: (cp) =>
+    set((s) => ({ contactPersons: [...s.contactPersons, cp] })),
+
+  updateContactPerson: (id, updates) =>
+    set((s) => ({
+      contactPersons: s.contactPersons.map((cp) =>
+        cp.contact_id === id ? { ...cp, ...updates, updated_at: new Date().toISOString() } : cp
+      ),
+    })),
+
+  // ── Customers (legacy) ──────────────────────────────────────────────────────
   addCustomer: (c) =>
     set((s) => ({ customers: [...s.customers, c] })),
 
@@ -83,25 +137,61 @@ export const useCRMStore = create<CRMStore>((set, get) => ({
     const newJobNumber = String(lastJobNum + 1).padStart(3, '0')
 
     const newJob: WonJob = {
+      ...blankWonJobFields(),
       job_id: `job-${Date.now()}`,
       job_number: newJobNumber,
-      event_name: lop.name,
+      // Map lead fields → WonJob title components
+      event_date: lop.event_date ?? '',
+      product_type: lop.service_type,            // e.g. "CAP*TURES"
+      product_name: lop.name,                    // lead name as working title
+      place: lop.venue ?? '',                    // lead venue → place
+      // Pre-fill detail section A
+      event_display_name: lop.name,
+      venue: lop.venue ?? '',
+      // Relations — new FKs (Phase 1+)
+      company_id: lop.company_id,
+      contact_person_id: lop.contact_person_id,
+      // Relations — legacy (Phase 1 compat)
       customer_name: lop.customer_name,
       customer_id: lop.customer_id,
-      contact_person: lop.contact_person,
-      service_type: lop.service_type,
-      event_date: lop.event_date ?? '',
-      venue: lop.venue ?? '',
+      lead_op_id: leadOpId,
+      // Operations
       estimated_value: lop.estimated_value,
-      payment_status: 'unpaid',
-      staff_status: 'pending',
-      doc_status: 'pending',
       op_stage: 'WON_JOB_LIST',
       owner: lop.owner,
-      notes: lop.notes,
-      lead_op_id: leadOpId,
       created_at: now,
       updated_at: now,
+    }
+
+    // Pre-populate Section C (company_account) from Company record if linked,
+    // otherwise fall back to copying from the most recent job for the same company.
+    const linkedCompany = lop.company_id
+      ? state.companies.find((c) => c.company_id === lop.company_id)
+      : undefined
+    const linkedContact = lop.contact_person_id
+      ? state.contactPersons.find((cp) => cp.contact_id === lop.contact_person_id)
+      : undefined
+
+    if (linkedCompany) {
+      newJob.company_account = companyToAccount(linkedCompany, linkedContact)
+    } else {
+      // Fallback: reuse billing info from previous job for the same company
+      const prevJob = state.wonJobs.find(
+        (j) =>
+          (j.company_id && j.company_id === lop.company_id) ||
+          (j.customer_id && j.customer_id === lop.customer_id && j.company_account.company_name)
+      )
+      if (prevJob) {
+        newJob.company_account = { ...prevJob.company_account }
+      }
+    }
+
+    // Last-resort fallback: pull from Customer billing fields directly
+    if (!newJob.company_account.company_name && lop.customer_id) {
+      const linkedCustomer = state.customers.find((c) => c.customer_id === lop.customer_id)
+      if (linkedCustomer && (linkedCustomer.bank_name || linkedCustomer.tax_id)) {
+        newJob.company_account = customerToAccount(linkedCustomer)
+      }
     }
 
     set((s) => ({
@@ -187,6 +277,10 @@ export const useCRMStore = create<CRMStore>((set, get) => ({
       ],
     }))
   },
+
+  // ── Staff ──────────────────────────────────────────────────────────────────
+  addStaff: (s_member) =>
+    set((s) => ({ staff: [...s.staff, s_member] })),
 
   // ── Tasks ──────────────────────────────────────────────────────────────────
   addTask: (task) =>

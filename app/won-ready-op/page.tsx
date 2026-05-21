@@ -15,7 +15,8 @@ import { useDroppable, useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { useCRMStore } from '@/store/crm-store'
 import { OP_STAGES, OP_STAGE_LABELS } from '@/types'
-import type { WonJob, OPStage, PaymentStatus, StaffStatus, DocStatus } from '@/types'
+import type { WonJob, OPStage, StaffMember } from '@/types'
+import { formatJobTitle, formatJobTitleShort } from '@/lib/jobs'
 import { PageHeader } from '@/components/shared/page-header'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
@@ -23,42 +24,26 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import {
-  Calendar, MapPin, User, DollarSign, FileText,
-  Users, CheckCircle2, AlertCircle, Clock, Pencil, Check, X,
+  Calendar, User,
+  Pencil, Check, X, ChevronDown, ChevronUp,
+  ClipboardList, Truck, CreditCard,
+  Users, Banknote,
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 
 const OWNERS = ['Vitta', 'Andy', 'Fern', 'Nong']
 
 // ── Stage visual config ───────────────────────────────────────────────────────
-const stageConfig: Record<OPStage, { accent: string; dot: string; headerBg: string }> = {
-  WON_JOB_LIST:                   { accent: 'border-t-zinc-400',    dot: 'bg-zinc-400',    headerBg: 'bg-zinc-50' },
-  OP_PREPARING_AW_DONE:            { accent: 'border-t-blue-400',    dot: 'bg-blue-400',    headerBg: 'bg-blue-50/40' },
-  OP_READY_FOR_EVENT:              { accent: 'border-t-emerald-500', dot: 'bg-emerald-500', headerBg: 'bg-emerald-50/40' },
-  OP_WAIT_STAFF_PAYMENT_DOC_TERR:  { accent: 'border-t-amber-500',  dot: 'bg-amber-500',   headerBg: 'bg-amber-50/30' },
-  OP_DONE_PAYMENT:                 { accent: 'border-t-purple-400',  dot: 'bg-purple-400',  headerBg: 'bg-purple-50/40' },
-}
-
-// ── Status chips ──────────────────────────────────────────────────────────────
-const paymentColors: Record<PaymentStatus, string> = {
-  unpaid: 'bg-red-50 text-red-500',
-  partial: 'bg-amber-50 text-amber-600',
-  paid: 'bg-emerald-50 text-emerald-600',
-  overdue: 'bg-red-100 text-red-600',
-}
-const staffColors: Record<StaffStatus, string> = {
-  pending: 'bg-amber-50 text-amber-600',
-  confirmed: 'bg-emerald-50 text-emerald-600',
-  na: 'bg-zinc-100 text-zinc-400',
-}
-const docColors: Record<DocStatus, string> = {
-  pending: 'bg-amber-50 text-amber-600',
-  ready: 'bg-emerald-50 text-emerald-600',
-  na: 'bg-zinc-100 text-zinc-400',
+const stageConfig: Record<OPStage, { accent: string; dot: string; headerBg: string; colBg: string }> = {
+  WON_JOB_LIST:                   { accent: 'border-t-slate-400',   dot: 'bg-slate-400',   headerBg: 'bg-slate-50',      colBg: 'bg-slate-50/60' },
+  OP_PREPARING_AW_DONE:            { accent: 'border-t-blue-400',    dot: 'bg-blue-400',    headerBg: 'bg-blue-50/60',    colBg: 'bg-blue-50/30' },
+  OP_READY_FOR_EVENT:              { accent: 'border-t-teal-500',    dot: 'bg-teal-500',    headerBg: 'bg-teal-50/60',    colBg: 'bg-teal-50/20' },
+  OP_WAIT_STAFF_PAYMENT_DOC_TERR:  { accent: 'border-t-amber-400',   dot: 'bg-amber-400',   headerBg: 'bg-amber-50/60',   colBg: 'bg-amber-50/20' },
+  OP_DONE_PAYMENT:                 { accent: 'border-t-purple-400',  dot: 'bg-purple-400',  headerBg: 'bg-purple-50/60',  colBg: 'bg-purple-50/20' },
 }
 
 function formatCurrency(v: number) {
@@ -67,17 +52,11 @@ function formatCurrency(v: number) {
   return `฿${v.toLocaleString()}`
 }
 
-/** Card title format: 2026.05.21 - 041 - LCA + Film - EventName@Venue */
-function jobCardTitle(job: WonJob) {
-  const dateStr = job.event_date
-    ? format(parseISO(job.event_date + 'T00:00:00'), 'yyyy.MM.dd')
-    : '—'
-  return `${dateStr} - ${job.job_number} - ${job.service_type} - ${job.event_name}@${job.venue}`
-}
-
 // ── Inline edit ───────────────────────────────────────────────────────────────
-function InlineEdit({ value, onSave, multiline = false, placeholder = 'Click to edit…' }: {
-  value: string; onSave: (v: string) => void; multiline?: boolean; placeholder?: string
+function InlineEdit({
+  value, onSave, multiline = false, placeholder = 'Click to edit…', rows = 3,
+}: {
+  value: string; onSave: (v: string) => void; multiline?: boolean; placeholder?: string; rows?: number
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(value)
@@ -86,22 +65,77 @@ function InlineEdit({ value, onSave, multiline = false, placeholder = 'Click to 
 
   if (!editing) {
     return (
-      <div className="group flex items-start gap-2 cursor-pointer rounded px-2 py-1.5 -mx-2 hover:bg-muted/50" onClick={() => { setDraft(value); setEditing(true) }}>
-        <p className={`text-sm flex-1 leading-relaxed ${value ? 'text-foreground/80' : 'text-muted-foreground italic'}`}>{value || placeholder}</p>
-        <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0 mt-0.5" />
+      <div
+        className="group flex items-start gap-2 cursor-pointer rounded px-2 py-1.5 -mx-2 hover:bg-muted/50"
+        onClick={() => { setDraft(value); setEditing(true) }}
+      >
+        <p className={`text-base flex-1 leading-relaxed whitespace-pre-wrap ${value ? 'text-foreground' : 'text-muted-foreground italic'}`}>
+          {value || placeholder}
+        </p>
+        <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0 mt-1" />
       </div>
     )
   }
   return (
     <div className="space-y-1.5">
       {multiline
-        ? <Textarea autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} className="text-sm resize-none" rows={3} onKeyDown={(e) => { if (e.key === 'Escape') cancel() }} />
-        : <Input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} className="h-8 text-sm" onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') cancel() }} />
+        ? <Textarea autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} className="text-base resize-none" rows={rows} onKeyDown={(e) => { if (e.key === 'Escape') cancel() }} />
+        : <Input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} className="h-9 text-base" onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') cancel() }} />
       }
       <div className="flex gap-1.5">
         <Button size="sm" className="h-7 px-2.5 text-xs gap-1" onClick={commit}><Check className="w-3 h-3" /> Save</Button>
         <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={cancel}><X className="w-3 h-3" /></Button>
       </div>
+    </div>
+  )
+}
+
+// ── InlineEditDate ────────────────────────────────────────────────────────────
+function InlineEditDate({
+  value, onSave, placeholder = 'YYYY-MM-DD',
+}: {
+  value: string; onSave: (v: string) => void; placeholder?: string
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(value)
+  function commit() { onSave(draft); setEditing(false) }
+  function cancel() { setDraft(value); setEditing(false) }
+
+  if (!editing) {
+    return (
+      <div
+        className="group flex items-start gap-2 cursor-pointer rounded px-2 py-1.5 -mx-2 hover:bg-muted/50"
+        onClick={() => { setDraft(value); setEditing(true) }}
+      >
+        <p className={`text-base flex-1 leading-relaxed ${value ? 'text-foreground' : 'text-muted-foreground italic'}`}>
+          {value || placeholder}
+        </p>
+        <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0 mt-1" />
+      </div>
+    )
+  }
+  return (
+    <div className="space-y-1.5">
+      <Input type="date" autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} className="h-9 text-base" onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') cancel() }} />
+      <div className="flex gap-1.5">
+        <Button size="sm" className="h-7 px-2.5 text-xs gap-1" onClick={commit}><Check className="w-3 h-3" /> Save</Button>
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={cancel}><X className="w-3 h-3" /></Button>
+      </div>
+    </div>
+  )
+}
+
+// ── Field row ─────────────────────────────────────────────────────────────────
+function FieldRow({ label, value, onSave, multiline, placeholder, rows, dateInput }: {
+  label: string; value: string; onSave: (v: string) => void; multiline?: boolean; placeholder?: string; rows?: number; dateInput?: boolean
+}) {
+  return (
+    <div>
+      <Label className="text-sm font-medium text-muted-foreground mb-0.5 block">{label}</Label>
+      {dateInput
+        ? <InlineEditDate value={value} onSave={onSave} placeholder={placeholder} />
+        : <InlineEdit value={value} onSave={onSave} multiline={multiline} placeholder={placeholder} rows={rows} />
+      }
     </div>
   )
 }
@@ -118,41 +152,37 @@ function JobCard({ job, onClick, isDragging }: { job: WonJob; onClick: () => voi
       {...attributes}
       {...listeners}
       onClick={(e) => { e.stopPropagation(); onClick() }}
-      className={`bg-white rounded-lg border border-border/70 p-3 cursor-pointer hover:shadow-md transition-all select-none ${isDragging ? 'opacity-30' : ''}`}
+      className={`bg-white rounded-xl border border-border/60 p-3 cursor-pointer hover:shadow-md hover:border-border transition-all select-none ${isDragging ? 'opacity-30' : ''}`}
     >
-      {/* Title */}
-      <p className="text-[11px] font-mono text-muted-foreground/60 mb-1">#{job.job_number}</p>
-      <p className="text-[12px] font-medium text-foreground leading-snug mb-2 line-clamp-2">{job.event_name}</p>
-
-      {/* Customer + date */}
-      <div className="flex items-center gap-1 text-[11px] text-muted-foreground mb-1">
-        <User className="w-3 h-3 shrink-0" />
-        <span className="truncate">{job.customer_name}</span>
+      {/* Job number + product type */}
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[9px] font-mono font-semibold text-slate-400 tracking-wider">#{job.job_number}</span>
+        <span className="text-[9px] font-semibold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md">{job.product_type || '—'}</span>
       </div>
+
+      {/* Title */}
+      <p className="text-[12px] font-semibold text-slate-800 leading-snug mb-2 line-clamp-2">
+        {formatJobTitleShort(job)}
+      </p>
+
+      {/* Customer */}
+      <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mb-1.5">
+        <User className="w-3 h-3 shrink-0 text-slate-400" />
+        <span className="truncate">{job.customer_name || '—'}</span>
+      </div>
+
+      {/* Date */}
       {job.event_date && (
-        <div className="flex items-center gap-1 text-[11px] text-muted-foreground mb-2">
-          <Calendar className="w-3 h-3 shrink-0" />
+        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mb-2">
+          <Calendar className="w-3 h-3 shrink-0 text-slate-400" />
           <span>{format(parseISO(job.event_date + 'T00:00:00'), 'dd MMM yyyy')}</span>
         </div>
       )}
 
-      {/* Service tag + value */}
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">{job.service_type}</span>
-        <span className="text-xs font-bold text-foreground">{formatCurrency(job.estimated_value)}</span>
-      </div>
-
-      {/* Status chips */}
-      <div className="flex gap-1 flex-wrap">
-        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${paymentColors[job.payment_status]}`}>
-          💰 {job.payment_status}
-        </span>
-        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${staffColors[job.staff_status]}`}>
-          👥 {job.staff_status}
-        </span>
-        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${docColors[job.doc_status]}`}>
-          📄 {job.doc_status}
-        </span>
+      {/* Value + owner */}
+      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+        <span className="text-[12px] font-bold text-slate-800">{formatCurrency(job.estimated_value)}</span>
+        <span className="text-[10px] font-medium text-slate-400 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded-full">{job.owner}</span>
       </div>
     </div>
   )
@@ -169,26 +199,26 @@ function KanbanColumn({ stage, jobs, onCardClick, activeId }: {
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col min-w-[230px] max-w-[230px] rounded-xl border border-border/60 border-t-2 ${cfg.accent} ${isOver ? 'bg-muted/50' : 'bg-muted/20'} transition-colors`}
+      className={`flex flex-col min-w-[240px] max-w-[240px] rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/20' : ''} ${cfg.colBg} transition-all shadow-sm`}
     >
-      {/* Header */}
-      <div className={`px-3 pt-3 pb-2 rounded-t-xl ${cfg.headerBg}`}>
-        <div className="flex items-center justify-between mb-0.5">
-          <div className="flex items-center gap-1.5">
+      {/* Column header */}
+      <div className={`px-3.5 pt-3.5 pb-2.5 rounded-t-xl ${cfg.headerBg}`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
-            <p className="text-[11px] font-semibold text-foreground leading-tight">{OP_STAGE_LABELS[stage]}</p>
+            <p className="text-[11px] font-semibold text-slate-700 leading-tight">{OP_STAGE_LABELS[stage]}</p>
           </div>
-          <span className="text-[11px] font-semibold bg-white/70 text-muted-foreground w-5 h-5 rounded-full flex items-center justify-center shrink-0">
+          <span className="text-[10px] font-bold bg-white shadow-sm text-slate-500 w-5 h-5 rounded-full flex items-center justify-center shrink-0 border border-slate-100">
             {jobs.length}
           </span>
         </div>
         {jobs.length > 0 && (
-          <p className="text-[10px] text-muted-foreground pl-3.5">{formatCurrency(totalValue)}</p>
+          <p className="text-[10px] font-medium text-slate-400 pl-4 mt-0.5">{formatCurrency(totalValue)}</p>
         )}
       </div>
 
       {/* Cards */}
-      <div className="flex-1 px-2 pb-3 pt-2 space-y-2 min-h-[80px]">
+      <div className="flex-1 px-2.5 pb-3 pt-2 space-y-2 min-h-[80px]">
         {jobs.map((job) => (
           <JobCard
             key={job.job_id}
@@ -198,8 +228,8 @@ function KanbanColumn({ stage, jobs, onCardClick, activeId }: {
           />
         ))}
         {jobs.length === 0 && (
-          <div className={`flex items-center justify-center rounded-lg border-2 border-dashed h-16 transition-colors ${isOver ? 'border-primary/40 bg-primary/5' : 'border-border/40'}`}>
-            <p className="text-[11px] text-muted-foreground/40">Drop here</p>
+          <div className={`flex items-center justify-center rounded-xl border-2 border-dashed h-20 transition-colors ${isOver ? 'border-primary/40 bg-primary/5' : 'border-slate-200/60'}`}>
+            <p className="text-[10px] text-slate-400/60">Drop here</p>
           </div>
         )}
       </div>
@@ -207,175 +237,464 @@ function KanbanColumn({ stage, jobs, onCardClick, activeId }: {
   )
 }
 
-// ── Job detail drawer ─────────────────────────────────────────────────────────
-function JobDetail({ job, onClose }: { job: WonJob; onClose: () => void }) {
-  const { updateWonJob, moveWonJobStage } = useCRMStore()
+// ── Staff Sheet ───────────────────────────────────────────────────────────────
+function StaffSheet({ jobId, onClose }: { jobId: string; onClose: () => void }) {
+  const { staff: allStaff, addStaff, updateWonJob, wonJobs } = useCRMStore()
+  const jobMaybe = wonJobs.find((j) => j.job_id === jobId)
+  const [search, setSearch] = useState('')
+  const [newForm, setNewForm] = useState({
+    name: '', nickname: '', phone: '',
+    bank_name: '', bank_account_number: '', bank_account_name: '', bank_branch: '',
+  })
+
+  if (!jobMaybe) return null
+  const job = jobMaybe  // const — TS carries WonJob type into closures
+
+  const assignedIds = new Set(job.staff_list.map((s) => s.staff_id))
+  const available = allStaff.filter(
+    (s) => !assignedIds.has(s.staff_id) &&
+      (s.name.toLowerCase().includes(search.toLowerCase()) || s.nickname.toLowerCase().includes(search.toLowerCase()))
+  )
+
+  function handleAddFromRegistry(member: StaffMember) {
+    updateWonJob(job.job_id, { staff_list: [...job.staff_list, member] })
+  }
+
+  function handleCreateNew(e: React.FormEvent) {
+    e.preventDefault()
+    if (!newForm.name.trim()) return
+    const newMember: StaffMember = {
+      staff_id: `staff-${Date.now()}`,
+      ...newForm,
+    }
+    addStaff(newMember)
+    updateWonJob(job.job_id, { staff_list: [...job.staff_list, newMember] })
+    setNewForm({ name: '', nickname: '', phone: '', bank_name: '', bank_account_number: '', bank_account_name: '', bank_branch: '' })
+  }
 
   return (
-    <Sheet open onOpenChange={onClose}>
-      <SheetContent className="w-[520px] sm:max-w-[520px] overflow-y-auto p-0">
-        <SheetHeader className="px-6 pt-6 pb-4 border-b">
-          <div className="flex-1 min-w-0 space-y-1">
-            <p className="text-xs font-mono text-muted-foreground">Job #{job.job_number}</p>
-            <SheetTitle className="text-base leading-snug">{job.event_name}</SheetTitle>
-            <p className="text-[11px] font-mono text-muted-foreground/60 break-all">{jobCardTitle(job)}</p>
-          </div>
-        </SheetHeader>
-
-        <div className="px-6 py-5 space-y-5">
-          {/* Stage selector */}
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="w-[480px] max-w-[90vw] sm:max-w-[480px] top-[6vh] translate-y-0 p-0 gap-0 max-h-[88vh] flex flex-col">
+        <div className="px-6 pt-6 pb-4 border-b shrink-0">
+          <DialogTitle className="text-[15px] font-semibold text-slate-800">Add Staff</DialogTitle>
+        </div>
+        <div className="px-6 py-5 space-y-6 overflow-y-auto flex-1">
+          {/* Add from registry */}
           <div>
-            <p className="text-xs text-muted-foreground mb-2">OP Stage</p>
-            <div className="flex flex-wrap gap-1.5">
-              {OP_STAGES.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => moveWonJobStage(job.job_id, s)}
-                  className={`text-[11px] font-medium px-2.5 py-1.5 rounded-lg border transition-all ${
-                    job.op_stage === s
-                      ? 'bg-primary text-white border-primary'
-                      : 'border-border text-muted-foreground hover:bg-muted/60'
-                  }`}
-                >
-                  {OP_STAGE_LABELS[s]}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Key details */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Customer</p>
-              <p className="text-sm font-medium">{job.customer_name}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Contact</p>
-              <p className="text-sm font-medium">{job.contact_person || '—'}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Service</p>
-              <p className="text-sm font-medium">{job.service_type}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Value</p>
-              <p className="text-lg font-bold">{formatCurrency(job.estimated_value)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Event Date</p>
-              <p className="text-sm">
-                {job.event_date ? format(parseISO(job.event_date + 'T00:00:00'), 'EEEE, dd MMMM yyyy') : '—'}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Venue</p>
-              <InlineEdit
-                value={job.venue}
-                placeholder="Add venue…"
-                onSave={(v) => updateWonJob(job.job_id, { venue: v })}
-              />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Owner</p>
-              <Select value={job.owner} onValueChange={(v) => v && updateWonJob(job.job_id, { owner: v })}>
-                <SelectTrigger className="h-7 text-sm border-0 px-0 focus:ring-0 w-auto gap-1 font-medium">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {OWNERS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Status fields */}
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Status</p>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
-                  <DollarSign className="w-3 h-3" /> Payment
-                </p>
-                <Select value={job.payment_status} onValueChange={(v) => v && updateWonJob(job.job_id, { payment_status: v as PaymentStatus })}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unpaid">Unpaid</SelectItem>
-                    <SelectItem value="partial">Partial</SelectItem>
-                    <SelectItem value="paid">Paid</SelectItem>
-                    <SelectItem value="overdue">Overdue</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
-                  <Users className="w-3 h-3" /> Staff
-                </p>
-                <Select value={job.staff_status} onValueChange={(v) => v && updateWonJob(job.job_id, { staff_status: v as StaffStatus })}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="na">N/A</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
-                  <FileText className="w-3 h-3" /> Docs
-                </p>
-                <Select value={job.doc_status} onValueChange={(v) => v && updateWonJob(job.job_id, { doc_status: v as DocStatus })}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="ready">Ready</SelectItem>
-                    <SelectItem value="na">N/A</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Notes */}
-          <div>
-            <p className="text-xs text-muted-foreground mb-1.5">Notes</p>
-            <InlineEdit
-              value={job.notes}
-              placeholder="Click to add notes…"
-              multiline
-              onSave={(v) => updateWonJob(job.job_id, { notes: v })}
+            <p className="text-sm font-semibold mb-2">Add from registry</p>
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-8 text-sm mb-2"
+              placeholder="Search staff…"
             />
+            {available.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No available staff found.</p>
+            ) : (
+              <ul className="space-y-1 max-h-48 overflow-y-auto">
+                {available.map((s) => (
+                  <li key={s.staff_id} className="flex items-center justify-between p-2 rounded-lg border border-border/60 hover:bg-muted/30">
+                    <div>
+                      <p className="text-sm font-medium">{s.name} <span className="text-muted-foreground">({s.nickname})</span></p>
+                      <p className="text-xs text-muted-foreground">{s.phone} · {s.bank_name}</p>
+                    </div>
+                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleAddFromRegistry(s)}>
+                      Add
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
-          {/* Activity logger */}
           <Separator />
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Log Activity</p>
-            <AddActivityForm entityType="won_job" entityId={job.job_id} owner={job.owner} />
-          </div>
 
-          {/* Activity timeline */}
-          <Separator />
+          {/* Create new */}
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">History</p>
-            <ActivityTimeline entityType="won_job" entityId={job.job_id} />
+            <p className="text-sm font-semibold mb-3">Create new staff</p>
+            <form onSubmit={handleCreateNew} className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Name *</Label>
+                  <Input value={newForm.name} onChange={(e) => setNewForm({ ...newForm, name: e.target.value })} className="h-8 text-sm" required />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Nickname</Label>
+                  <Input value={newForm.nickname} onChange={(e) => setNewForm({ ...newForm, nickname: e.target.value })} className="h-8 text-sm" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Phone</Label>
+                <Input value={newForm.phone} onChange={(e) => setNewForm({ ...newForm, phone: e.target.value })} className="h-8 text-sm" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Bank Name</Label>
+                  <Input value={newForm.bank_name} onChange={(e) => setNewForm({ ...newForm, bank_name: e.target.value })} className="h-8 text-sm" placeholder="SCB / KBANK" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Bank Branch</Label>
+                  <Input value={newForm.bank_branch} onChange={(e) => setNewForm({ ...newForm, bank_branch: e.target.value })} className="h-8 text-sm" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Account Number</Label>
+                <Input value={newForm.bank_account_number} onChange={(e) => setNewForm({ ...newForm, bank_account_number: e.target.value })} className="h-8 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Account Name</Label>
+                <Input value={newForm.bank_account_name} onChange={(e) => setNewForm({ ...newForm, bank_account_name: e.target.value })} className="h-8 text-sm" />
+              </div>
+              <Button type="submit" className="w-full h-8 text-sm">Create & Add to Job</Button>
+            </form>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Job detail drawer ─────────────────────────────────────────────────────────
+function JobDetail({ jobId, onClose }: { jobId: string; onClose: () => void }) {
+  const { wonJobs, updateWonJob, moveWonJobStage, customers, updateCustomer } = useCRMStore()
+  const jobMaybe = wonJobs.find((j) => j.job_id === jobId)
+  const [stageOpen, setStageOpen] = useState(false)
+  const [staffSheetOpen, setStaffSheetOpen] = useState(false)
+  const [openSections, setOpenSections] = useState({ A: true, B: true, Staff: false, C: false })
+  function toggleSection(key: keyof typeof openSections) {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  if (!jobMaybe) return null
+
+  const job = jobMaybe
+  const u = (updates: Partial<WonJob>) => updateWonJob(job.job_id, updates)
+  const linkedCustomer = job.customer_id
+    ? customers.find((c) => c.customer_id === job.customer_id) ?? null
+    : null
+  const uc = linkedCustomer
+    ? (updates: Parameters<typeof updateCustomer>[1]) => updateCustomer(linkedCustomer.customer_id, updates)
+    : null
+
+  function removeStaff(staffId: string) {
+    u({ staff_list: job.staff_list.filter((s) => s.staff_id !== staffId) })
+  }
+
+  return (
+    <>
+      <Dialog open onOpenChange={onClose}>
+        <DialogContent className="w-[88vw] max-w-[88vw] sm:max-w-[88vw] top-[4vh] translate-y-0 p-0 gap-0 overflow-hidden max-h-[88vh] flex flex-col">
+
+          {/* ── Header ── */}
+          <div className="px-7 pt-5 pb-4 border-b shrink-0 bg-white">
+            <div className="flex items-start gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] font-mono font-semibold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md">#{job.job_number}</span>
+                  {job.event_date && <span className="text-[11px] text-slate-400">{job.event_date.replace(/-/g, '.')}</span>}
+                </div>
+                <DialogTitle className="text-[15px] font-semibold text-slate-800 leading-snug">
+                  {formatJobTitleShort(job)}
+                </DialogTitle>
+                <p className="text-[10px] font-mono text-slate-400 mt-0.5 break-all leading-relaxed">
+                  {formatJobTitle(job)}
+                </p>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="text-right">
+                  <p className="text-xl font-bold text-slate-800">{formatCurrency(job.estimated_value)}</p>
+                  <Select value={job.owner} onValueChange={(v) => v && u({ owner: v })}>
+                    <SelectTrigger className="h-6 text-xs border-0 px-0 focus:ring-0 w-auto gap-1 text-slate-400 justify-end">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {OWNERS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Two-column body ── */}
+          <div className="flex flex-1 overflow-hidden">
+
+            {/* ── LEFT: Sections A + B + C (scrollable) ── */}
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5 border-r border-border/60">
+
+              {/* Section A: รายละเอียดงาน */}
+              <div className="rounded-xl border border-blue-200 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('A')}
+                  className="w-full bg-blue-50 px-4 py-2.5 flex items-center gap-2 hover:bg-blue-100/60 transition-colors text-left"
+                >
+                  <div className="w-5 h-5 rounded-md bg-blue-100 flex items-center justify-center shrink-0">
+                    <ClipboardList className="w-3 h-3 text-blue-600" />
+                  </div>
+                  <span className="text-[12px] font-bold text-blue-800 tracking-wide flex-1">A  รายละเอียดงาน</span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-blue-400 transition-transform duration-200 ${openSections.A ? 'rotate-0' : '-rotate-90'}`} />
+                </button>
+                {openSections.A && <div className="bg-white px-4 py-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FieldRow label="Event Date" value={job.event_date} placeholder="YYYY-MM-DD" dateInput onSave={(v) => u({ event_date: v })} />
+                    <FieldRow label="Event Time" value={job.event_time} placeholder="e.g. 17.00-23.00" onSave={(v) => u({ event_time: v })} />
+                  </div>
+                  <FieldRow label="Event Display Name" value={job.event_display_name} placeholder="e.g. Sephora Staff Party 2026" onSave={(v) => u({ event_display_name: v })} />
+                  <FieldRow label="Venue" value={job.venue} placeholder="e.g. Eastin Grand Hotel Phayathai" onSave={(v) => u({ venue: v })} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FieldRow label="Product Type" value={job.product_type} placeholder="e.g. LCA + Film" onSave={(v) => u({ product_type: v })} />
+                    <FieldRow label="Product Cat" value={job.product_cat} placeholder="Event / Roadshow / Rental / Campaign" onSave={(v) => u({ product_cat: v })} />
+                  </div>
+                  <FieldRow label="รายละเอียดงาน / Notes" value={job.job_detail_notes} placeholder="รายละเอียดบริการ, backdrop, หมายเหตุ…" multiline rows={5} onSave={(v) => u({ job_detail_notes: v })} />
+                </div>}
+              </div>
+
+              {/* Section B: ข้อมูลหน้างาน */}
+              <div className="rounded-xl border border-emerald-200 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('B')}
+                  className="w-full bg-emerald-50 px-4 py-2.5 flex items-center gap-2 hover:bg-emerald-100/60 transition-colors text-left"
+                >
+                  <div className="w-5 h-5 rounded-md bg-emerald-100 flex items-center justify-center shrink-0">
+                    <Truck className="w-3 h-3 text-emerald-600" />
+                  </div>
+                  <span className="text-[12px] font-bold text-emerald-800 tracking-wide flex-1">B  ข้อมูลหน้างาน</span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-emerald-400 transition-transform duration-200 ${openSections.B ? 'rotate-0' : '-rotate-90'}`} />
+                </button>
+                {openSections.B && <div className="bg-white px-4 py-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FieldRow label="Onsite Contact" value={job.onsite_contact_name} placeholder="ชื่อผู้ติดต่อหน้างาน" onSave={(v) => u({ onsite_contact_name: v })} />
+                    <FieldRow label="Phone" value={job.onsite_contact_phone} placeholder="08x-xxx-xxxx" onSave={(v) => u({ onsite_contact_phone: v })} />
+                  </div>
+                  <FieldRow label="Line ID" value={job.onsite_line_id} placeholder="Line ID ผู้ติดต่อหน้างาน" onSave={(v) => u({ onsite_line_id: v })} />
+                  <FieldRow label="Install Point" value={job.install_point} placeholder="จุดติดตั้ง / Backdrop location" multiline onSave={(v) => u({ install_point: v })} />
+                  <FieldRow label="Team Meeting Time" value={job.team_meeting_time} placeholder="e.g. 15.00" onSave={(v) => u({ team_meeting_time: v })} />
+                  <FieldRow label="Onsite Notes" value={job.onsite_notes} placeholder="หมายเหตุหน้างาน (parking, loading, etc.)" multiline onSave={(v) => u({ onsite_notes: v })} />
+
+                  {/* Staff sub-section */}
+                  <div className="rounded-xl border border-rose-200 overflow-hidden mt-1">
+                    <button
+                      type="button"
+                      onClick={() => toggleSection('Staff')}
+                      className="w-full bg-rose-50 px-4 py-2.5 flex items-center gap-2 hover:bg-rose-100/60 transition-colors text-left"
+                    >
+                      <div className="w-5 h-5 rounded-md bg-rose-100 flex items-center justify-center shrink-0">
+                        <Users className="w-3 h-3 text-rose-600" />
+                      </div>
+                      <span className="text-[12px] font-bold text-rose-800 tracking-wide flex-1">จ่ายเงินน้องออกงาน</span>
+                      <ChevronDown className={`w-3.5 h-3.5 text-rose-400 transition-transform duration-200 ${openSections.Staff ? 'rotate-0' : '-rotate-90'}`} />
+                    </button>
+                    {openSections.Staff && <div className="bg-white px-4 py-3 space-y-2">
+                      {job.staff_list.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic">No staff assigned yet.</p>
+                      ) : (
+                        <ul className="space-y-2">
+                          {job.staff_list.map((s) => (
+                            <li key={s.staff_id} className="flex items-start justify-between p-3 rounded-lg border border-border/60 bg-muted/20">
+                              <div>
+                                <p className="text-sm font-medium">{s.name} <span className="text-muted-foreground">({s.nickname})</span></p>
+                                <p className="text-xs text-muted-foreground">{s.phone}</p>
+                                <p className="text-xs text-muted-foreground">{s.bank_name} · {s.bank_account_number} · {s.bank_account_name}</p>
+                                {s.bank_branch && <p className="text-xs text-muted-foreground">สาขา: {s.bank_branch}</p>}
+                              </div>
+                              <button onClick={() => removeStaff(s.staff_id)} className="text-muted-foreground hover:text-red-500 transition-colors ml-2 shrink-0">
+                                <X className="w-4 h-4" />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      <Button size="sm" variant="outline" className="w-full h-8 text-xs mt-1 border-rose-200 text-rose-700 hover:bg-rose-50" onClick={() => setStaffSheetOpen(true)}>
+                        + Add Staff
+                      </Button>
+                    </div>}
+                  </div>
+                </div>}
+              </div>
+
+              {/* Section C: Company Account */}
+              <div className="rounded-xl border border-amber-200 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('C')}
+                  className="w-full bg-amber-50 px-4 py-2.5 flex items-center gap-2 hover:bg-amber-100/60 transition-colors text-left"
+                >
+                  <div className="w-5 h-5 rounded-md bg-amber-100 flex items-center justify-center shrink-0">
+                    <CreditCard className="w-3 h-3 text-amber-600" />
+                  </div>
+                  <span className="text-[12px] font-bold text-amber-800 tracking-wide flex-1">C  Company Account</span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-amber-400 transition-transform duration-200 ${openSections.C ? 'rotate-0' : '-rotate-90'}`} />
+                </button>
+                {openSections.C && <div className="bg-white px-4 py-4 space-y-4">
+                  {/* Source badge */}
+                  {linkedCustomer ? (
+                    <p className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-md leading-snug">
+                      🔗 Linked to <strong>{linkedCustomer.company_name}</strong> — edits update the shared Customer record
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-slate-400 bg-slate-50 px-2.5 py-1.5 rounded-md">
+                      No linked customer — data stored on this job only
+                    </p>
+                  )}
+                  <FieldRow
+                    label="Company Name / Account"
+                    value={linkedCustomer ? linkedCustomer.company_name : job.company_account.company_name}
+                    placeholder="ชื่อบริษัท"
+                    onSave={(v) => uc ? uc({ company_name: v }) : u({ company_account: { ...job.company_account, company_name: v } })}
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FieldRow
+                      label="Billing Contact"
+                      value={linkedCustomer ? (linkedCustomer.billing_contact ?? '') : job.company_account.contact_point}
+                      placeholder="ผู้ติดต่อด้านบัญชี"
+                      onSave={(v) => uc ? uc({ billing_contact: v }) : u({ company_account: { ...job.company_account, contact_point: v } })}
+                    />
+                    <FieldRow
+                      label="Phone"
+                      value={linkedCustomer ? linkedCustomer.phone : job.company_account.phone_number}
+                      placeholder="เบอร์โทร"
+                      onSave={(v) => uc ? uc({ phone: v }) : u({ company_account: { ...job.company_account, phone_number: v } })}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FieldRow
+                      label="Line ID"
+                      value={linkedCustomer ? (linkedCustomer.line_id ?? '') : job.company_account.line_id}
+                      placeholder="Line ID"
+                      onSave={(v) => uc ? uc({ line_id: v }) : u({ company_account: { ...job.company_account, line_id: v } })}
+                    />
+                    <FieldRow
+                      label="Email"
+                      value={linkedCustomer ? linkedCustomer.email : job.company_account.email}
+                      placeholder="อีเมล"
+                      onSave={(v) => uc ? uc({ email: v }) : u({ company_account: { ...job.company_account, email: v } })}
+                    />
+                  </div>
+                  <FieldRow
+                    label="Tax ID (เลขประจำตัวผู้เสียภาษี)"
+                    value={linkedCustomer ? (linkedCustomer.tax_id ?? '') : job.company_account.tax_id}
+                    placeholder="0105xxx"
+                    onSave={(v) => uc ? uc({ tax_id: v }) : u({ company_account: { ...job.company_account, tax_id: v } })}
+                  />
+                  <FieldRow
+                    label="Company Address"
+                    value={linkedCustomer ? (linkedCustomer.company_address ?? '') : job.company_account.company_address}
+                    placeholder="ที่อยู่บริษัท"
+                    multiline
+                    onSave={(v) => uc ? uc({ company_address: v }) : u({ company_account: { ...job.company_account, company_address: v } })}
+                  />
+                  <FieldRow
+                    label="Branch"
+                    value={linkedCustomer ? (linkedCustomer.branch ?? '') : job.company_account.branch}
+                    placeholder="สาขา / สำนักงานใหญ่"
+                    onSave={(v) => uc ? uc({ branch: v }) : u({ company_account: { ...job.company_account, branch: v } })}
+                  />
+                  <FieldRow
+                    label="Billing Notes"
+                    value={linkedCustomer ? (linkedCustomer.billing_notes ?? '') : job.company_account.billing_notes}
+                    placeholder="หมายเหตุการวางบิล"
+                    multiline
+                    onSave={(v) => uc ? uc({ billing_notes: v }) : u({ company_account: { ...job.company_account, billing_notes: v } })}
+                  />
+
+                  <div className="flex items-center gap-3 pt-1">
+                    <div className="flex-1 border-t border-border/60" />
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium shrink-0">
+                      <Banknote className="w-3.5 h-3.5" /> Bank Transfer
+                    </div>
+                    <div className="flex-1 border-t border-border/60" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FieldRow
+                      label="Bank Name"
+                      value={linkedCustomer ? (linkedCustomer.bank_name ?? '') : job.company_account.bank_name}
+                      placeholder="SCB / KBANK / BBL"
+                      onSave={(v) => uc ? uc({ bank_name: v }) : u({ company_account: { ...job.company_account, bank_name: v } })}
+                    />
+                    <FieldRow
+                      label="Bank Branch"
+                      value={linkedCustomer ? (linkedCustomer.bank_branch ?? '') : job.company_account.bank_branch}
+                      placeholder="สาขา"
+                      onSave={(v) => uc ? uc({ bank_branch: v }) : u({ company_account: { ...job.company_account, bank_branch: v } })}
+                    />
+                  </div>
+                  <FieldRow
+                    label="Account Number"
+                    value={linkedCustomer ? (linkedCustomer.bank_account_number ?? '') : job.company_account.bank_account_number}
+                    placeholder="เลขบัญชี"
+                    onSave={(v) => uc ? uc({ bank_account_number: v }) : u({ company_account: { ...job.company_account, bank_account_number: v } })}
+                  />
+                  <FieldRow
+                    label="Account Name"
+                    value={linkedCustomer ? (linkedCustomer.bank_account_name ?? '') : job.company_account.bank_account_name}
+                    placeholder="ชื่อบัญชี"
+                    onSave={(v) => uc ? uc({ bank_account_name: v }) : u({ company_account: { ...job.company_account, bank_account_name: v } })}
+                  />
+                </div>}
+              </div>
+
+            </div>
+
+            {/* ── RIGHT: Stage + Activity (fixed width, scrollable) ── */}
+            <div className="w-[320px] shrink-0 overflow-y-auto px-5 py-5 space-y-5 bg-slate-50/60">
+
+              {/* OP Stage */}
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">OP Stage</p>
+                <div className="flex flex-col gap-1.5">
+                  {OP_STAGES.map((s) => {
+                    const isActive = job.op_stage === s
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => moveWonJobStage(job.job_id, s)}
+                        className={`w-full text-left text-[11px] font-semibold px-3 py-2 rounded-lg border transition-all ${
+                          isActive
+                            ? 'bg-primary text-white border-primary shadow-sm'
+                            : 'border-slate-200 text-slate-500 bg-white hover:bg-slate-50 hover:border-slate-300'
+                        }`}
+                      >
+                        {OP_STAGE_LABELS[s]}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Log Activity */}
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">Log Activity</p>
+                <AddActivityForm entityType="won_job" entityId={job.job_id} owner={job.owner} />
+              </div>
+
+              <Separator />
+
+              {/* History */}
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">History</p>
+                <ActivityTimeline entityType="won_job" entityId={job.job_id} />
+              </div>
+            </div>
+          </div>
+
+        </DialogContent>
+      </Dialog>
+
+      {staffSheetOpen && <StaffSheet jobId={job.job_id} onClose={() => setStaffSheetOpen(false)} />}
+    </>
   )
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function WonReadyOpPage() {
-  const { wonJobs, moveWonJobStage } = useCRMStore()
+  const wonJobs = useCRMStore((s) => s.wonJobs)
+  const moveWonJobStage = useCRMStore((s) => s.moveWonJobStage)
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [selected, setSelected] = useState<WonJob | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -383,28 +702,28 @@ export default function WonReadyOpPage() {
 
   const activeJob = activeId ? wonJobs.find((j) => j.job_id === activeId) : null
 
-  function onDragStart({ active }: DragStartEvent) {
-    setActiveId(active.id as string)
-  }
-
+  function onDragStart({ active }: DragStartEvent) { setActiveId(active.id as string) }
   function onDragEnd({ active, over }: DragEndEvent) {
     setActiveId(null)
     if (!over) return
     const stage = over.id as OPStage
-    if (OP_STAGES.includes(stage)) {
-      moveWonJobStage(active.id as string, stage)
-    }
+    if (OP_STAGES.includes(stage)) moveWonJobStage(active.id as string, stage)
   }
 
   const activeCount = wonJobs.filter((j) => j.op_stage !== 'OP_DONE_PAYMENT').length
-  const totalValue = wonJobs.filter((j) => j.op_stage !== 'OP_DONE_PAYMENT').reduce((s, j) => s + j.estimated_value, 0)
+  const totalValue = wonJobs
+    .filter((j) => j.op_stage !== 'OP_DONE_PAYMENT')
+    .reduce((s, j) => s + j.estimated_value, 0)
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader
-        title="Won & Ready for OP"
-        description={`${activeCount} active jobs · ${formatCurrency(totalValue)} in pipeline`}
-      />
+      {/* Top bar */}
+      <div className="bg-white border-b border-border px-8 py-4 shrink-0 flex items-center justify-between">
+        <div>
+          <h1 className="text-[17px] font-semibold text-slate-800 tracking-tight">Won &amp; Ready for OP</h1>
+          <p className="text-[12px] text-slate-400 mt-0.5">{activeCount} active jobs · {formatCurrency(totalValue)} in pipeline</p>
+        </div>
+      </div>
 
       <DndContext
         sensors={sensors}
@@ -412,14 +731,14 @@ export default function WonReadyOpPage() {
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
       >
-        <div className="flex-1 overflow-x-auto overflow-y-hidden">
-          <div className="flex gap-4 p-6 h-full min-w-max">
+        <div className="flex-1 overflow-x-auto overflow-y-hidden bg-background">
+          <div className="flex gap-4 p-6 h-full min-w-max items-start">
             {OP_STAGES.map((stage) => (
               <KanbanColumn
                 key={stage}
                 stage={stage}
                 jobs={wonJobs.filter((j) => j.op_stage === stage)}
-                onCardClick={setSelected}
+                onCardClick={(job) => setSelectedId(job.job_id)}
                 activeId={activeId}
               />
             ))}
@@ -429,15 +748,15 @@ export default function WonReadyOpPage() {
         <DragOverlay>
           {activeJob && (
             <div className="bg-white rounded-lg border border-primary/30 shadow-xl p-3 w-[230px] opacity-95">
-              <p className="text-[11px] font-mono text-muted-foreground/60 mb-1">#{activeJob.job_number}</p>
-              <p className="text-[12px] font-medium text-foreground leading-snug">{activeJob.event_name}</p>
-              <p className="text-[11px] text-muted-foreground mt-1">{activeJob.customer_name}</p>
+              <p className="text-[10px] font-mono text-muted-foreground/60 mb-1">#{activeJob.job_number}</p>
+              <p className="text-sm font-semibold text-foreground leading-snug">{formatJobTitleShort(activeJob)}</p>
+              <p className="text-xs text-muted-foreground mt-1">{activeJob.customer_name}</p>
             </div>
           )}
         </DragOverlay>
       </DndContext>
 
-      {selected && <JobDetail job={selected} onClose={() => setSelected(null)} />}
+      {selectedId && <JobDetail jobId={selectedId} onClose={() => setSelectedId(null)} />}
     </div>
   )
 }

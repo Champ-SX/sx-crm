@@ -17,9 +17,12 @@ import { useCRMStore } from '@/store/crm-store'
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/customers', label: 'Customers', icon: Users },
-  { href: '/leads-opportunities', label: 'Leads & Opportunities', icon: FileText },
+  { href: '/leads-opportunities', label: 'Leads & Opps', icon: FileText },
   { href: '/won-ready-op', label: 'Won & Ready for OP', icon: Kanban },
   { href: '/tasks', label: 'Tasks', icon: CheckSquare },
+]
+
+const bottomItems = [
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
@@ -40,68 +43,81 @@ export function Sidebar() {
     '/tasks': pendingTasksToday,
   }
 
-  return (
-    <aside className="flex flex-col w-[220px] min-h-screen bg-[var(--sidebar)] border-r border-[var(--sidebar-border)] shrink-0">
-      {/* Logo */}
-      <div className="px-5 py-5 border-b border-[var(--sidebar-border)]">
+  function NavLink({ href, label, icon: Icon }: { href: string; label: string; icon: React.ElementType }) {
+    const isActive = pathname === href || pathname.startsWith(href + '/')
+    const badge = badges[href]
+
+    return (
+      <Link
+        href={href}
+        className={cn(
+          'flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all group',
+          isActive
+            ? 'bg-[var(--sidebar-accent)] text-[var(--sidebar-accent-foreground)]'
+            : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+        )}
+      >
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
+          <Icon
+            className={cn(
+              'w-[15px] h-[15px] shrink-0 transition-colors',
+              isActive ? 'text-[var(--sidebar-primary)]' : 'text-slate-400 group-hover:text-slate-600'
+            )}
+          />
+          <span className="leading-none">{label}</span>
+        </div>
+        {badge != null && badge > 0 && (
+          <span className={cn(
+            'text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1.5 leading-none',
+            isActive
+              ? 'bg-[var(--sidebar-primary)] text-white'
+              : 'bg-slate-100 text-slate-500'
+          )}>
+            {badge}
+          </span>
+        )}
+      </Link>
+    )
+  }
+
+  return (
+    <aside className="flex flex-col w-[228px] min-h-screen bg-white border-r border-[var(--sidebar-border)] shrink-0">
+
+      {/* Logo */}
+      <div className="px-5 pt-6 pb-5 border-b border-[var(--sidebar-border)]">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-[var(--sidebar-primary)] flex items-center justify-center shrink-0 shadow-sm">
             <Zap className="w-4 h-4 text-white" />
           </div>
           <div>
-            <p className="text-[var(--sidebar-foreground)] font-semibold text-sm leading-tight">SX CRM</p>
-            <p className="text-[var(--sidebar-accent-foreground)] text-[10px] opacity-50 leading-tight">
-              by SIXSHEET
-            </p>
+            <p className="text-slate-800 font-bold text-[14px] leading-tight tracking-tight">SX CRM</p>
+            <p className="text-slate-400 text-[10px] leading-tight">by SIXSHEET</p>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname === href || pathname.startsWith(href + '/')
-          const badge = badges[href]
-
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                'flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-md text-sm transition-colors group',
-                isActive
-                  ? 'bg-[var(--sidebar-accent)] text-[var(--sidebar-foreground)] font-medium'
-                  : 'text-[var(--sidebar-foreground)] opacity-60 hover:opacity-100 hover:bg-[var(--sidebar-accent)]'
-              )}
-            >
-              <div className="flex items-center gap-2.5">
-                <Icon
-                  className={cn(
-                    'w-4 h-4 shrink-0',
-                    isActive ? 'text-primary' : 'text-current'
-                  )}
-                />
-                <span className="leading-tight">{label}</span>
-              </div>
-              {badge != null && badge > 0 && (
-                <span className="text-[10px] font-semibold bg-primary text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                  {badge}
-                </span>
-              )}
-            </Link>
-          )
-        })}
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2">Menu</p>
+        {navItems.map((item) => (
+          <NavLink key={item.href} {...item} />
+        ))}
       </nav>
 
-      {/* User */}
-      <div className="px-4 py-4 border-t border-[var(--sidebar-border)]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold shrink-0">
+      {/* Bottom */}
+      <div className="px-3 py-3 border-t border-[var(--sidebar-border)]">
+        {bottomItems.map((item) => (
+          <NavLink key={item.href} {...item} />
+        ))}
+
+        {/* User */}
+        <div className="flex items-center gap-2.5 px-3 py-2.5 mt-1 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+          <div className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center text-[var(--sidebar-primary)] text-xs font-bold shrink-0">
             V
           </div>
-          <div>
-            <p className="text-[var(--sidebar-foreground)] text-xs font-medium leading-tight">Vitta</p>
-            <p className="text-[10px] opacity-40 text-[var(--sidebar-foreground)] leading-tight">Admin</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-slate-700 text-[13px] font-medium leading-tight">Vitta</p>
+            <p className="text-slate-400 text-[10px] leading-tight">Admin</p>
           </div>
         </div>
       </div>
