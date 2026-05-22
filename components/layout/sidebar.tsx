@@ -10,6 +10,7 @@ import {
   CheckSquare,
   Settings,
   Zap,
+  Upload,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCRMStore } from '@/store/crm-store'
@@ -23,6 +24,7 @@ const navItems = [
 ]
 
 const bottomItems = [
+  { href: '/import',   label: 'Import',   icon: Upload },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
