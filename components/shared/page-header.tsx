@@ -1,4 +1,8 @@
+'use client'
+
+import { Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useMobileNav } from '@/components/layout/mobile-nav-context'
 
 interface PageHeaderProps {
   title: string
@@ -8,16 +12,28 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({ title, description, children, className }: PageHeaderProps) {
+  const { setOpen } = useMobileNav()
+
   return (
     <div className={cn(
-      'flex items-center justify-between px-8 py-4 bg-white border-b border-border shrink-0',
+      'flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 lg:py-4 bg-white border-b border-border shrink-0',
       className
     )}>
-      <div>
-        <h1 className="text-[17px] font-semibold text-slate-800 tracking-tight leading-tight">{title}</h1>
-        {description && (
-          <p className="text-[12px] text-slate-400 mt-0.5 leading-tight">{description}</p>
-        )}
+      <div className="flex items-center gap-3">
+        {/* Hamburger — mobile only */}
+        <button
+          onClick={() => setOpen(true)}
+          className="lg:hidden p-1.5 -ml-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+          aria-label="Open menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <div>
+          <h1 className="text-[15px] sm:text-[17px] font-semibold text-slate-800 tracking-tight leading-tight">{title}</h1>
+          {description && (
+            <p className="text-[11px] sm:text-[12px] text-slate-400 mt-0.5 leading-tight hidden sm:block">{description}</p>
+          )}
+        </div>
       </div>
       {children && (
         <div className="flex items-center gap-2">{children}</div>

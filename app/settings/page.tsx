@@ -11,7 +11,7 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Settings" description="Workspace configuration" />
-      <div className="flex-1 p-8 space-y-6 overflow-y-auto max-w-2xl">
+      <div className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 overflow-y-auto max-w-2xl">
 
         <Card className="border-border/60">
           <CardHeader className="pb-3">

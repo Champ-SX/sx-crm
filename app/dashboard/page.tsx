@@ -16,8 +16,23 @@ import {
   ArrowRight,
   Clock,
   Building2,
+  Menu,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useMobileNav } from '@/components/layout/mobile-nav-context'
+
+function MobileMenuButton() {
+  const { setOpen } = useMobileNav()
+  return (
+    <button
+      onClick={() => setOpen(true)}
+      className="lg:hidden p-1.5 -ml-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+      aria-label="Open menu"
+    >
+      <Menu className="w-5 h-5" />
+    </button>
+  )
+}
 
 // ── Stage styling ──────────────────────────────────────────────────────────────
 const stageConfig: Record<string, { label: string; dot: string; badge: string }> = {
@@ -141,22 +156,28 @@ export default function DashboardPage() {
     <div className="flex flex-col h-full overflow-y-auto bg-background">
 
       {/* Top bar */}
-      <div className="bg-white border-b border-border px-8 py-4 shrink-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[17px] font-semibold text-slate-800 tracking-tight">Dashboard</h1>
-            <p className="text-[12px] text-slate-400 mt-0.5">{format(today, "EEEE, MMMM d, yyyy")}</p>
+      <div className="bg-white border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            {/* Hamburger — mobile only */}
+            <MobileMenuButton />
+            <div>
+              <h1 className="text-[15px] sm:text-[17px] font-semibold text-slate-800 tracking-tight">Dashboard</h1>
+              <p className="text-[11px] sm:text-[12px] text-slate-400 mt-0.5 hidden sm:block">{format(today, "EEEE, MMMM d, yyyy")}</p>
+            </div>
           </div>
           <Link
             href="/leads-opportunities"
-            className="inline-flex items-center gap-1.5 bg-primary text-white text-[12px] font-semibold px-3.5 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] sm:text-[12px] font-semibold px-2.5 sm:px-3.5 py-2 rounded-lg hover:bg-primary/90 transition-colors shrink-0"
           >
-            <FileText className="w-3.5 h-3.5" /> New Lead / Opp
+            <FileText className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">New Lead / Opp</span>
+            <span className="sm:hidden">New</span>
           </Link>
         </div>
       </div>
 
-      <div className="p-8 space-y-8 max-w-[1400px] w-full">
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8 max-w-[1400px] w-full">
 
         {/* ── 5 stat cards ── */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -211,10 +232,10 @@ export default function DashboardPage() {
         </div>
 
         {/* ── Middle row: Pipeline + Tasks ── */}
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
 
           {/* OP Pipeline breakdown (2/3 width) */}
-          <div className="col-span-2">
+          <div className="lg:col-span-2">
             <SectionHeader icon={Kanban} title="OP Pipeline" href="/won-ready-op" linkLabel="View board" />
             <div className="bg-white border border-border rounded-xl p-5">
               <div className="space-y-3">
@@ -305,10 +326,10 @@ export default function DashboardPage() {
         </div>
 
         {/* ── Bottom row: Upcoming events + Recent activity ── */}
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
 
           {/* Upcoming Events (2/3) */}
-          <div className="col-span-2">
+          <div className="lg:col-span-2">
             <SectionHeader icon={CalendarDays} title="Upcoming Events" sub="next 30 days" href="/won-ready-op" />
             <div className="bg-white border border-border rounded-xl overflow-hidden">
               {upcomingJobs.length === 0 ? (
@@ -317,7 +338,8 @@ export default function DashboardPage() {
                   <p className="text-[12px] text-slate-400">No upcoming events in the next 30 days.</p>
                 </div>
               ) : (
-                <table className="w-full">
+                <div className="overflow-x-auto">
+                <table className="w-full min-w-[500px]">
                   <thead>
                     <tr className="border-b border-border/60 bg-slate-50/60">
                       <th className="px-5 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Date</th>
@@ -370,6 +392,7 @@ export default function DashboardPage() {
                     })}
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
           </div>

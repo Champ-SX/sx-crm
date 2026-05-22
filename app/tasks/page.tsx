@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useCRMStore } from '@/store/crm-store'
+import { useMobileNav } from '@/components/layout/mobile-nav-context'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,6 +22,7 @@ import {
   CheckCircle2,
   Circle,
   Search,
+  Menu,
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -152,6 +154,15 @@ function CreateTaskForm({ onClose }: { onClose: () => void }) {
   )
 }
 
+function MobileMenuButton() {
+  const { setOpen } = useMobileNav()
+  return (
+    <button onClick={() => setOpen(true)} className="lg:hidden p-1.5 -ml-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" aria-label="Open menu">
+      <Menu className="w-5 h-5" />
+    </button>
+  )
+}
+
 export default function TasksPage() {
   const { tasks, updateTask } = useCRMStore()
   const [ownerFilter, setOwnerFilter] = useState<string>('all')
@@ -201,10 +212,13 @@ export default function TasksPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="bg-white border-b border-border px-8 py-4 shrink-0 flex items-center justify-between">
-        <div>
-          <h1 className="text-[17px] font-semibold text-slate-800 tracking-tight">Tasks</h1>
-          <p className="text-[12px] text-slate-400 mt-0.5">{pendingCount} pending · {done.length} done</p>
+      <div className="bg-white border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <MobileMenuButton />
+          <div>
+            <h1 className="text-[15px] sm:text-[17px] font-semibold text-slate-800 tracking-tight">Tasks</h1>
+            <p className="text-[11px] sm:text-[12px] text-slate-400 mt-0.5 hidden sm:block">{pendingCount} pending · {done.length} done</p>
+          </div>
         </div>
         <Button size="sm" className="gap-1.5 h-8 text-[12px] font-semibold" onClick={() => setCreating(true)}>
           <Plus className="w-3.5 h-3.5" /> Add Task
@@ -212,7 +226,7 @@ export default function TasksPage() {
       </div>
 
       {/* Filters */}
-      <div className="px-8 py-3 border-b bg-white flex items-center gap-3">
+      <div className="px-4 sm:px-6 lg:px-8 py-3 border-b bg-white flex items-center gap-3">
         <Select value={ownerFilter} onValueChange={(v) => setOwnerFilter(v ?? 'all')}>
           <SelectTrigger className="w-[130px] h-8 text-[12px] bg-slate-50 border-slate-200"><SelectValue placeholder="All owners" /></SelectTrigger>
           <SelectContent>
@@ -231,7 +245,7 @@ export default function TasksPage() {
         </Select>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-background">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8 bg-background">
         {overdue.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-3">

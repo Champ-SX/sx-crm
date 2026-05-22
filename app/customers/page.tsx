@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useCRMStore } from '@/store/crm-store'
+import { useMobileNav } from '@/components/layout/mobile-nav-context'
 import { PageHeader } from '@/components/shared/page-header'
 import { EmptyState } from '@/components/shared/empty-state'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
@@ -34,6 +35,7 @@ import {
   CreditCard,
   ChevronDown,
   Banknote,
+  Menu,
 } from 'lucide-react'
 
 const CUSTOMER_TYPES: CustomerType[] = ['brand', 'agency', 'venue', 'organizer', 'individual', 'partner']
@@ -618,6 +620,15 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
+function MobileMenuButton() {
+  const { setOpen } = useMobileNav()
+  return (
+    <button onClick={() => setOpen(true)} className="lg:hidden p-1.5 -ml-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" aria-label="Open menu">
+      <Menu className="w-5 h-5" />
+    </button>
+  )
+}
+
 export default function CustomersPage() {
   const { customers } = useCRMStore()
   const [search, setSearch] = useState('')
@@ -639,10 +650,13 @@ export default function CustomersPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="bg-white border-b border-border px-8 py-4 shrink-0 flex items-center justify-between">
-        <div>
-          <h1 className="text-[17px] font-semibold text-slate-800 tracking-tight">Customers</h1>
-          <p className="text-[12px] text-slate-400 mt-0.5">{customers.length} records in your database</p>
+      <div className="bg-white border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <MobileMenuButton />
+          <div>
+            <h1 className="text-[15px] sm:text-[17px] font-semibold text-slate-800 tracking-tight">Customers</h1>
+            <p className="text-[11px] sm:text-[12px] text-slate-400 mt-0.5 hidden sm:block">{customers.length} records in your database</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" className="gap-1.5 h-8 text-[12px] text-slate-500" disabled>
@@ -656,7 +670,7 @@ export default function CustomersPage() {
       </div>
 
       {/* Filter bar */}
-      <div className="px-8 py-3 border-b bg-white flex items-center gap-3">
+      <div className="px-4 sm:px-6 lg:px-8 py-3 border-b bg-white flex items-center gap-3">
         <div className="relative max-w-xs flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
           <Input

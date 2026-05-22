@@ -123,7 +123,7 @@ export function CreateQuotationModal({ lead, open, onClose }: CreateQuotationMod
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[min(680px,calc(100vw-32px))] sm:max-w-[680px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Send className="w-4 h-4 text-primary" />

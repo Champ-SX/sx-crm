@@ -14,6 +14,7 @@ import {
 import { useDroppable, useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { useCRMStore } from '@/store/crm-store'
+import { useMobileNav } from '@/components/layout/mobile-nav-context'
 import { OP_STAGES, OP_STAGE_LABELS } from '@/types'
 import type { WonJob, OPStage, StaffMember } from '@/types'
 import { formatJobTitle, formatJobTitleShort } from '@/lib/jobs'
@@ -32,6 +33,7 @@ import {
   Pencil, Check, X, ChevronDown, ChevronUp,
   ClipboardList, Truck, CreditCard,
   Users, Banknote,
+  Menu,
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 
@@ -690,6 +692,15 @@ function JobDetail({ jobId, onClose }: { jobId: string; onClose: () => void }) {
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
+function MobileMenuButton() {
+  const { setOpen } = useMobileNav()
+  return (
+    <button onClick={() => setOpen(true)} className="lg:hidden p-1.5 -ml-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" aria-label="Open menu">
+      <Menu className="w-5 h-5" />
+    </button>
+  )
+}
+
 export default function WonReadyOpPage() {
   const wonJobs = useCRMStore((s) => s.wonJobs)
   const moveWonJobStage = useCRMStore((s) => s.moveWonJobStage)
@@ -718,10 +729,13 @@ export default function WonReadyOpPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="bg-white border-b border-border px-8 py-4 shrink-0 flex items-center justify-between">
-        <div>
-          <h1 className="text-[17px] font-semibold text-slate-800 tracking-tight">Won &amp; Ready for OP</h1>
-          <p className="text-[12px] text-slate-400 mt-0.5">{activeCount} active jobs · {formatCurrency(totalValue)} in pipeline</p>
+      <div className="bg-white border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <MobileMenuButton />
+          <div>
+            <h1 className="text-[15px] sm:text-[17px] font-semibold text-slate-800 tracking-tight">Won &amp; Ready for OP</h1>
+            <p className="text-[11px] sm:text-[12px] text-slate-400 mt-0.5 hidden sm:block">{activeCount} active jobs · {formatCurrency(totalValue)} in pipeline</p>
+          </div>
         </div>
       </div>
 

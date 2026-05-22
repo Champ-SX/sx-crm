@@ -11,16 +11,18 @@ import {
   Settings,
   Zap,
   Upload,
+  X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCRMStore } from '@/store/crm-store'
+import { useMobileNav } from '@/components/layout/mobile-nav-context'
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/customers', label: 'Customers', icon: Users },
-  { href: '/leads-opportunities', label: 'Leads & Opps', icon: FileText },
-  { href: '/won-ready-op', label: 'Won & Ready for OP', icon: Kanban },
-  { href: '/tasks', label: 'Tasks', icon: CheckSquare },
+  { href: '/dashboard',            label: 'Dashboard',        icon: LayoutDashboard },
+  { href: '/customers',            label: 'Customers',        icon: Users },
+  { href: '/leads-opportunities',  label: 'Leads & Opps',     icon: FileText },
+  { href: '/won-ready-op',         label: 'Won & Ready for OP', icon: Kanban },
+  { href: '/tasks',                label: 'Tasks',            icon: CheckSquare },
 ]
 
 const bottomItems = [
@@ -28,7 +30,9 @@ const bottomItems = [
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
-export function Sidebar() {
+// ── Shared nav content ────────────────────────────────────────────────────────
+
+function NavContent({ onNavClick }: { onNavClick?: () => void }) {
   const pathname = usePathname()
   const { leadOpportunities, wonJobs, tasks } = useCRMStore()
 
@@ -41,8 +45,8 @@ export function Sidebar() {
 
   const badges: Record<string, number> = {
     '/leads-opportunities': openLeadsCount,
-    '/won-ready-op': activeOPJobs,
-    '/tasks': pendingTasksToday,
+    '/won-ready-op':        activeOPJobs,
+    '/tasks':               pendingTasksToday,
   }
 
   function NavLink({ href, label, icon: Icon }: { href: string; label: string; icon: React.ElementType }) {
@@ -52,6 +56,7 @@ export function Sidebar() {
     return (
       <Link
         href={href}
+        onClick={onNavClick}
         className={cn(
           'flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all group',
           isActive
@@ -60,20 +65,16 @@ export function Sidebar() {
         )}
       >
         <div className="flex items-center gap-2.5">
-          <Icon
-            className={cn(
-              'w-[15px] h-[15px] shrink-0 transition-colors',
-              isActive ? 'text-[var(--sidebar-primary)]' : 'text-slate-400 group-hover:text-slate-600'
-            )}
-          />
+          <Icon className={cn(
+            'w-[15px] h-[15px] shrink-0 transition-colors',
+            isActive ? 'text-[var(--sidebar-primary)]' : 'text-slate-400 group-hover:text-slate-600'
+          )} />
           <span className="leading-none">{label}</span>
         </div>
         {badge != null && badge > 0 && (
           <span className={cn(
             'text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1.5 leading-none',
-            isActive
-              ? 'bg-[var(--sidebar-primary)] text-white'
-              : 'bg-slate-100 text-slate-500'
+            isActive ? 'bg-[var(--sidebar-primary)] text-white' : 'bg-slate-100 text-slate-500'
           )}>
             {badge}
           </span>
@@ -83,10 +84,9 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex flex-col w-[228px] min-h-screen bg-white border-r border-[var(--sidebar-border)] shrink-0">
-
+    <>
       {/* Logo */}
-      <div className="px-5 pt-6 pb-5 border-b border-[var(--sidebar-border)]">
+      <div className="px-5 pt-6 pb-5 border-b border-[var(--sidebar-border)] shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-[var(--sidebar-primary)] flex items-center justify-center shrink-0 shadow-sm">
             <Zap className="w-4 h-4 text-white" />
@@ -107,7 +107,7 @@ export function Sidebar() {
       </nav>
 
       {/* Bottom */}
-      <div className="px-3 py-3 border-t border-[var(--sidebar-border)]">
+      <div className="px-3 py-3 border-t border-[var(--sidebar-border)] shrink-0">
         {bottomItems.map((item) => (
           <NavLink key={item.href} {...item} />
         ))}
@@ -123,6 +123,44 @@ export function Sidebar() {
           </div>
         </div>
       </div>
-    </aside>
+    </>
+  )
+}
+
+// ── Sidebar (desktop + mobile) ─────────────────────────────────────────────────
+
+export function Sidebar() {
+  const { open, setOpen } = useMobileNav()
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex flex-col w-[228px] min-h-screen bg-white border-r border-[var(--sidebar-border)] shrink-0">
+        <NavContent />
+      </aside>
+
+      {/* Mobile overlay */}
+      {open && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      {/* Mobile drawer */}
+      <aside className={cn(
+        'fixed top-0 left-0 z-50 h-full w-[228px] bg-white border-r border-[var(--sidebar-border)] flex flex-col transition-transform duration-200 lg:hidden',
+        open ? 'translate-x-0' : '-translate-x-full'
+      )}>
+        {/* Close button */}
+        <button
+          onClick={() => setOpen(false)}
+          className="absolute top-3 right-3 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+        <NavContent onNavClick={() => setOpen(false)} />
+      </aside>
+    </>
   )
 }
