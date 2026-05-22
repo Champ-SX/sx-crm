@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { useCRMStore } from '@/store/crm-store'
-import { useMobileNav } from '@/components/layout/mobile-nav-context'
-import { PageHeader } from '@/components/shared/page-header'
+import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { EmptyState } from '@/components/shared/empty-state'
 import { CreateQuotationModal } from '@/components/shared/create-quotation-modal'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
@@ -12,7 +11,6 @@ import { AddLeadOpForm } from '@/components/shared/add-lead-op-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
@@ -22,7 +20,6 @@ import {
   ChevronRight, Trophy, XCircle, Calendar, MapPin,
   Pencil, Check, X, FileText, Send,
   CreditCard, ChevronDown, Banknote,
-  Menu,
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -400,15 +397,6 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
-function MobileMenuButton() {
-  const { setOpen } = useMobileNav()
-  return (
-    <button onClick={() => setOpen(true)} className="lg:hidden p-1.5 -ml-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" aria-label="Open menu">
-      <Menu className="w-5 h-5" />
-    </button>
-  )
-}
-
 export default function LeadsOpportunitiesPage() {
   const { leadOpportunities } = useCRMStore()
   const [search, setSearch] = useState('')
@@ -489,7 +477,7 @@ export default function LeadsOpportunitiesPage() {
       {/* Table */}
       <div className="flex-1 overflow-y-auto bg-white">
         {filtered.length === 0 ? (
-          search || serviceFilter !== 'all' || ownerFilter !== 'all'
+          search || serviceFilter !== 'all' || ownerFilter !== 'all' || statusFilter !== 'open'
             ? <EmptyState icon={Search} title="No results match" description="Try adjusting your filters." />
             : statusFilter === 'open'
               ? <EmptyState icon={FileText} title="No open leads yet" description="Add your first lead or opportunity to start tracking." action={{ label: '+ Add Lead / Opp', onClick: () => setCreating(true) }} />

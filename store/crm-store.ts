@@ -138,7 +138,7 @@ export const useCRMStore = create<CRMStore>((set, get) => ({
 
     const newJob: WonJob = {
       ...blankWonJobFields(),
-      job_id: `job-${Date.now()}`,
+      job_id: crypto.randomUUID(),
       job_number: newJobNumber,
       // Map lead fields → WonJob title components
       event_date: lop.event_date ?? '',
@@ -204,7 +204,7 @@ export const useCRMStore = create<CRMStore>((set, get) => ({
       activities: [
         ...s.activities,
         {
-          activity_id: `act-${Date.now()}`,
+          activity_id: crypto.randomUUID(),
           entity_type: 'lead_opportunity' as const,
           entity_id: leadOpId,
           activity_type: 'deal_won' as const,
@@ -230,7 +230,7 @@ export const useCRMStore = create<CRMStore>((set, get) => ({
       activities: [
         ...s.activities,
         {
-          activity_id: `act-${Date.now()}`,
+          activity_id: crypto.randomUUID(),
           entity_type: 'lead_opportunity' as const,
           entity_id: leadOpId,
           activity_type: 'deal_lost' as const,
@@ -265,7 +265,7 @@ export const useCRMStore = create<CRMStore>((set, get) => ({
       activities: [
         ...s.activities,
         {
-          activity_id: `act-${Date.now()}`,
+          activity_id: crypto.randomUUID(),
           entity_type: 'won_job' as const,
           entity_id: id,
           activity_type: 'status_change' as const,

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useCRMStore } from '@/store/crm-store'
-import { useMobileNav } from '@/components/layout/mobile-nav-context'
+import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,11 +22,9 @@ import {
   CheckCircle2,
   Circle,
   Search,
-  Menu,
 } from 'lucide-react'
 import { format } from 'date-fns'
 
-const TODAY = new Date().toISOString().split('T')[0]
 const OWNERS = ['Vitta', 'Andy', 'Fern', 'Nong']
 
 const priorityConfig = {
@@ -35,10 +33,10 @@ const priorityConfig = {
   low: { label: 'Low', class: 'border-zinc-200 text-zinc-500 bg-zinc-50' },
 }
 
-function TaskCard({ task, onToggle }: { task: Task; onToggle: () => void }) {
+function TaskCard({ task, today, onToggle }: { task: Task; today: string; onToggle: () => void }) {
   const isDone = task.status === 'done'
-  const isOverdue = !isDone && task.due_date < TODAY
-  const isDueToday = !isDone && task.due_date === TODAY
+  const isOverdue = !isDone && task.due_date < today
+  const isDueToday = !isDone && task.due_date === today
 
   return (
     <div className={`flex items-start gap-3 p-4 rounded-xl border bg-white transition-all hover:shadow-sm ${isDone ? 'opacity-40' : ''} ${isOverdue ? 'border-red-200 bg-red-50/20' : 'border-slate-200/80'}`}>
@@ -87,7 +85,7 @@ function CreateTaskForm({ onClose }: { onClose: () => void }) {
   const [form, setForm] = useState({
     title: '',
     description: '',
-    due_date: TODAY,
+    due_date: new Date().toISOString().split('T')[0],
     priority: 'medium' as TaskPriority,
     owner: 'Vitta',
   })
@@ -95,7 +93,7 @@ function CreateTaskForm({ onClose }: { onClose: () => void }) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     addTask({
-      task_id: `task-${Date.now()}`,
+      task_id: crypto.randomUUID(),
       ...form,
       status: 'pending',
       created_at: new Date().toISOString(),
@@ -154,20 +152,14 @@ function CreateTaskForm({ onClose }: { onClose: () => void }) {
   )
 }
 
-function MobileMenuButton() {
-  const { setOpen } = useMobileNav()
-  return (
-    <button onClick={() => setOpen(true)} className="lg:hidden p-1.5 -ml-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" aria-label="Open menu">
-      <Menu className="w-5 h-5" />
-    </button>
-  )
-}
 
 export default function TasksPage() {
   const { tasks, updateTask } = useCRMStore()
   const [ownerFilter, setOwnerFilter] = useState<string>('all')
   const [priorityFilter, setPriorityFilter] = useState<string>('all')
   const [creating, setCreating] = useState(false)
+
+  const today = new Date().toISOString().split('T')[0]
 
   function toggleTask(task: Task) {
     updateTask(task.task_id, {
@@ -181,9 +173,9 @@ export default function TasksPage() {
     return matchOwner && matchPriority
   })
 
-  const overdue = filtered.filter((t) => t.status !== 'done' && t.due_date < TODAY)
-  const dueToday = filtered.filter((t) => t.status !== 'done' && t.due_date === TODAY)
-  const upcoming = filtered.filter((t) => t.status !== 'done' && t.due_date > TODAY)
+  const overdue = filtered.filter((t) => t.status !== 'done' && t.due_date < today)
+  const dueToday = filtered.filter((t) => t.status !== 'done' && t.due_date === today)
+  const upcoming = filtered.filter((t) => t.status !== 'done' && t.due_date > today)
   const done = filtered.filter((t) => t.status === 'done')
 
   function TaskSection({ title, items, emptyMsg, accent }: { title: string; items: Task[]; emptyMsg: string; accent?: string }) {
@@ -199,7 +191,7 @@ export default function TasksPage() {
         ) : (
           <div className="space-y-2">
             {items.map((task) => (
-              <TaskCard key={task.task_id} task={task} onToggle={() => toggleTask(task)} />
+              <TaskCard key={task.task_id} task={task} today={today} onToggle={() => toggleTask(task)} />
             ))}
           </div>
         )}
@@ -254,7 +246,7 @@ export default function TasksPage() {
             </div>
             <div className="space-y-2">
               {overdue.map((task) => (
-                <TaskCard key={task.task_id} task={task} onToggle={() => toggleTask(task)} />
+                <TaskCard key={task.task_id} task={task} today={today} onToggle={() => toggleTask(task)} />
               ))}
             </div>
           </div>
@@ -267,7 +259,7 @@ export default function TasksPage() {
             </div>
             <div className="space-y-2">
               {dueToday.map((task) => (
-                <TaskCard key={task.task_id} task={task} onToggle={() => toggleTask(task)} />
+                <TaskCard key={task.task_id} task={task} today={today} onToggle={() => toggleTask(task)} />
               ))}
             </div>
           </div>
@@ -280,7 +272,7 @@ export default function TasksPage() {
             </div>
             <div className="space-y-2">
               {upcoming.map((task) => (
-                <TaskCard key={task.task_id} task={task} onToggle={() => toggleTask(task)} />
+                <TaskCard key={task.task_id} task={task} today={today} onToggle={() => toggleTask(task)} />
               ))}
             </div>
           </div>
@@ -293,7 +285,7 @@ export default function TasksPage() {
             </div>
             <div className="space-y-2">
               {done.map((task) => (
-                <TaskCard key={task.task_id} task={task} onToggle={() => toggleTask(task)} />
+                <TaskCard key={task.task_id} task={task} today={today} onToggle={() => toggleTask(task)} />
               ))}
             </div>
           </div>

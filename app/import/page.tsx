@@ -181,7 +181,7 @@ function buildPreview(contacts: ParsedContact[]): ImportPreview {
 function inferCompanyType(category: string): Company['company_type'] {
   const c = category.toLowerCase()
   if (c.includes('wedding')) return 'organizer'
-  if (c.includes('event org') || c.includes('agency') || c.includes('agency')) return 'agency'
+  if (c.includes('event org') || c.includes('agency')) return 'agency'
   if (c.includes('hotel')) return 'venue'
   if (c.includes('brand') || c.includes('end user') || c.includes('end-customer')) return 'brand'
   if (c.includes('organizer') || c.includes('org')) return 'organizer'
@@ -304,7 +304,7 @@ export default function ImportPage() {
 
     for (const co of preview.companies) {
       if (existingCompanyNames.has(co.company_name.toLowerCase())) continue
-      const id = `comp-imp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+      const id = `comp-imp-${crypto.randomUUID()}`
       const newCompany: Company = { ...co, company_id: id, created_at: now, updated_at: now }
       addCompany(newCompany)
       batchCompanyIds.set(co.company_name.toLowerCase(), id)
@@ -322,7 +322,7 @@ export default function ImportPage() {
         existingCompanies.find((c) => c.company_name.toLowerCase() === key)?.company_id ??
         ''
 
-      const id = `ctct-imp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+      const id = `ctct-imp-${crypto.randomUUID()}`
       const newContact: ContactPerson = {
         contact_id:  id,
         company_id:  companyId,

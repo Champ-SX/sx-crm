@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useCRMStore } from '@/store/crm-store'
-import { useMobileNav } from '@/components/layout/mobile-nav-context'
+import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { PageHeader } from '@/components/shared/page-header'
 import { EmptyState } from '@/components/shared/empty-state'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
@@ -35,7 +35,6 @@ import {
   CreditCard,
   ChevronDown,
   Banknote,
-  Menu,
 } from 'lucide-react'
 
 const CUSTOMER_TYPES: CustomerType[] = ['brand', 'agency', 'venue', 'organizer', 'individual', 'partner']
@@ -620,15 +619,6 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
-function MobileMenuButton() {
-  const { setOpen } = useMobileNav()
-  return (
-    <button onClick={() => setOpen(true)} className="lg:hidden p-1.5 -ml-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" aria-label="Open menu">
-      <Menu className="w-5 h-5" />
-    </button>
-  )
-}
-
 export default function CustomersPage() {
   const { customers } = useCRMStore()
   const [search, setSearch] = useState('')

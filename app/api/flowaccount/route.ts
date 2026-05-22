@@ -24,6 +24,15 @@ const VALID_ACTIONS = new Set([
 
 export async function POST(req: NextRequest) {
   try {
+    // Internal secret guard — prevents third parties from proxying FlowAccount via our server
+    const internalSecret = process.env.FLOWACCOUNT_INTERNAL_SECRET
+    if (internalSecret) {
+      const authHeader = req.headers.get('x-internal-secret')
+      if (authHeader !== internalSecret) {
+        return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+      }
+    }
+
     const body = await req.json()
 
     if (!VALID_ACTIONS.has(body.action)) {

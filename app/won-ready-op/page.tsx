@@ -14,11 +14,10 @@ import {
 import { useDroppable, useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { useCRMStore } from '@/store/crm-store'
-import { useMobileNav } from '@/components/layout/mobile-nav-context'
+import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { OP_STAGES, OP_STAGE_LABELS } from '@/types'
 import type { WonJob, OPStage, StaffMember } from '@/types'
 import { formatJobTitle, formatJobTitleShort } from '@/lib/jobs'
-import { PageHeader } from '@/components/shared/page-header'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
 import { Button } from '@/components/ui/button'
@@ -33,7 +32,6 @@ import {
   Pencil, Check, X, ChevronDown, ChevronUp,
   ClipboardList, Truck, CreditCard,
   Users, Banknote,
-  Menu,
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 
@@ -549,13 +547,13 @@ function JobDetail({ jobId, onClose }: { jobId: string; onClose: () => void }) {
                   <div className="grid grid-cols-2 gap-4">
                     <FieldRow
                       label="Billing Contact"
-                      value={linkedCustomer ? (linkedCustomer.billing_contact ?? '') : job.company_account.contact_point}
+                      value={linkedCustomer ? (linkedCustomer.billing_contact ?? '') : (job.company_account.contact_point ?? '')}
                       placeholder="ผู้ติดต่อด้านบัญชี"
                       onSave={(v) => uc ? uc({ billing_contact: v }) : u({ company_account: { ...job.company_account, contact_point: v } })}
                     />
                     <FieldRow
                       label="Phone"
-                      value={linkedCustomer ? linkedCustomer.phone : job.company_account.phone_number}
+                      value={linkedCustomer ? linkedCustomer.phone : (job.company_account.phone_number ?? '')}
                       placeholder="เบอร์โทร"
                       onSave={(v) => uc ? uc({ phone: v }) : u({ company_account: { ...job.company_account, phone_number: v } })}
                     />
@@ -563,39 +561,39 @@ function JobDetail({ jobId, onClose }: { jobId: string; onClose: () => void }) {
                   <div className="grid grid-cols-2 gap-4">
                     <FieldRow
                       label="Line ID"
-                      value={linkedCustomer ? (linkedCustomer.line_id ?? '') : job.company_account.line_id}
+                      value={linkedCustomer ? (linkedCustomer.line_id ?? '') : (job.company_account.line_id ?? '')}
                       placeholder="Line ID"
                       onSave={(v) => uc ? uc({ line_id: v }) : u({ company_account: { ...job.company_account, line_id: v } })}
                     />
                     <FieldRow
                       label="Email"
-                      value={linkedCustomer ? linkedCustomer.email : job.company_account.email}
+                      value={linkedCustomer ? linkedCustomer.email : (job.company_account.email ?? '')}
                       placeholder="อีเมล"
                       onSave={(v) => uc ? uc({ email: v }) : u({ company_account: { ...job.company_account, email: v } })}
                     />
                   </div>
                   <FieldRow
                     label="Tax ID (เลขประจำตัวผู้เสียภาษี)"
-                    value={linkedCustomer ? (linkedCustomer.tax_id ?? '') : job.company_account.tax_id}
+                    value={linkedCustomer ? (linkedCustomer.tax_id ?? '') : (job.company_account.tax_id ?? '')}
                     placeholder="0105xxx"
                     onSave={(v) => uc ? uc({ tax_id: v }) : u({ company_account: { ...job.company_account, tax_id: v } })}
                   />
                   <FieldRow
                     label="Company Address"
-                    value={linkedCustomer ? (linkedCustomer.company_address ?? '') : job.company_account.company_address}
+                    value={linkedCustomer ? (linkedCustomer.company_address ?? '') : (job.company_account.company_address ?? '')}
                     placeholder="ที่อยู่บริษัท"
                     multiline
                     onSave={(v) => uc ? uc({ company_address: v }) : u({ company_account: { ...job.company_account, company_address: v } })}
                   />
                   <FieldRow
                     label="Branch"
-                    value={linkedCustomer ? (linkedCustomer.branch ?? '') : job.company_account.branch}
+                    value={linkedCustomer ? (linkedCustomer.branch ?? '') : (job.company_account.branch ?? '')}
                     placeholder="สาขา / สำนักงานใหญ่"
                     onSave={(v) => uc ? uc({ branch: v }) : u({ company_account: { ...job.company_account, branch: v } })}
                   />
                   <FieldRow
                     label="Billing Notes"
-                    value={linkedCustomer ? (linkedCustomer.billing_notes ?? '') : job.company_account.billing_notes}
+                    value={linkedCustomer ? (linkedCustomer.billing_notes ?? '') : (job.company_account.billing_notes ?? '')}
                     placeholder="หมายเหตุการวางบิล"
                     multiline
                     onSave={(v) => uc ? uc({ billing_notes: v }) : u({ company_account: { ...job.company_account, billing_notes: v } })}
@@ -611,26 +609,26 @@ function JobDetail({ jobId, onClose }: { jobId: string; onClose: () => void }) {
                   <div className="grid grid-cols-2 gap-4">
                     <FieldRow
                       label="Bank Name"
-                      value={linkedCustomer ? (linkedCustomer.bank_name ?? '') : job.company_account.bank_name}
+                      value={linkedCustomer ? (linkedCustomer.bank_name ?? '') : (job.company_account.bank_name ?? '')}
                       placeholder="SCB / KBANK / BBL"
                       onSave={(v) => uc ? uc({ bank_name: v }) : u({ company_account: { ...job.company_account, bank_name: v } })}
                     />
                     <FieldRow
                       label="Bank Branch"
-                      value={linkedCustomer ? (linkedCustomer.bank_branch ?? '') : job.company_account.bank_branch}
+                      value={linkedCustomer ? (linkedCustomer.bank_branch ?? '') : (job.company_account.bank_branch ?? '')}
                       placeholder="สาขา"
                       onSave={(v) => uc ? uc({ bank_branch: v }) : u({ company_account: { ...job.company_account, bank_branch: v } })}
                     />
                   </div>
                   <FieldRow
                     label="Account Number"
-                    value={linkedCustomer ? (linkedCustomer.bank_account_number ?? '') : job.company_account.bank_account_number}
+                    value={linkedCustomer ? (linkedCustomer.bank_account_number ?? '') : (job.company_account.bank_account_number ?? '')}
                     placeholder="เลขบัญชี"
                     onSave={(v) => uc ? uc({ bank_account_number: v }) : u({ company_account: { ...job.company_account, bank_account_number: v } })}
                   />
                   <FieldRow
                     label="Account Name"
-                    value={linkedCustomer ? (linkedCustomer.bank_account_name ?? '') : job.company_account.bank_account_name}
+                    value={linkedCustomer ? (linkedCustomer.bank_account_name ?? '') : (job.company_account.bank_account_name ?? '')}
                     placeholder="ชื่อบัญชี"
                     onSave={(v) => uc ? uc({ bank_account_name: v }) : u({ company_account: { ...job.company_account, bank_account_name: v } })}
                   />
@@ -692,15 +690,6 @@ function JobDetail({ jobId, onClose }: { jobId: string; onClose: () => void }) {
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
-function MobileMenuButton() {
-  const { setOpen } = useMobileNav()
-  return (
-    <button onClick={() => setOpen(true)} className="lg:hidden p-1.5 -ml-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" aria-label="Open menu">
-      <Menu className="w-5 h-5" />
-    </button>
-  )
-}
-
 export default function WonReadyOpPage() {
   const wonJobs = useCRMStore((s) => s.wonJobs)
   const moveWonJobStage = useCRMStore((s) => s.moveWonJobStage)
@@ -718,7 +707,10 @@ export default function WonReadyOpPage() {
     setActiveId(null)
     if (!over) return
     const stage = over.id as OPStage
-    if (OP_STAGES.includes(stage)) moveWonJobStage(active.id as string, stage)
+    if (!OP_STAGES.includes(stage)) return
+    const job = wonJobs.find((j) => j.job_id === active.id)
+    if (job?.op_stage === stage) return
+    moveWonJobStage(active.id as string, stage)
   }
 
   const activeCount = wonJobs.filter((j) => j.op_stage !== 'OP_DONE_PAYMENT').length

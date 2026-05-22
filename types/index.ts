@@ -151,19 +151,19 @@ export interface StaffMember {
 
 // ── Company Account (for billing/invoicing) ───────────────────────────────────
 export interface CompanyAccount {
-  company_name: string       // ชื่อบริษัท / Account
-  contact_point: string      // ผู้ติดต่อ
-  phone_number: string       // เบอร์โทร
-  line_id: string            // Line ID
-  email: string              // อีเมล
-  tax_id: string             // เลขประจำตัวผู้เสียภาษี
-  company_address: string    // ที่อยู่บริษัท
-  branch: string             // สาขา / สำนักงานใหญ่
-  billing_notes: string      // หมายเหตุการวางบิล
-  bank_name: string
-  bank_account_number: string
-  bank_account_name: string
-  bank_branch: string
+  company_name: string        // ชื่อบริษัท / Account
+  contact_point?: string      // ผู้ติดต่อ
+  phone_number?: string       // เบอร์โทร
+  line_id?: string            // Line ID
+  email?: string              // อีเมล
+  tax_id?: string             // เลขประจำตัวผู้เสียภาษี
+  company_address?: string    // ที่อยู่บริษัท
+  branch?: string             // สาขา / สำนักงานใหญ่
+  billing_notes?: string      // หมายเหตุการวางบิล
+  bank_name?: string
+  bank_account_number?: string
+  bank_account_name?: string
+  bank_branch?: string
 }
 
 // ── WonJob — full structured job card ────────────────────────────────────────

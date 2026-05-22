@@ -16,23 +16,9 @@ import {
   ArrowRight,
   Clock,
   Building2,
-  Menu,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useMobileNav } from '@/components/layout/mobile-nav-context'
-
-function MobileMenuButton() {
-  const { setOpen } = useMobileNav()
-  return (
-    <button
-      onClick={() => setOpen(true)}
-      className="lg:hidden p-1.5 -ml-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-      aria-label="Open menu"
-    >
-      <Menu className="w-5 h-5" />
-    </button>
-  )
-}
+import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 
 // ── Stage styling ──────────────────────────────────────────────────────────────
 const stageConfig: Record<string, { label: string; dot: string; badge: string }> = {
@@ -119,7 +105,6 @@ export default function DashboardPage() {
   // Stats
   const openLeads = leadOpportunities.filter((l) => l.status === 'open')
   const totalPipelineValue = openLeads.reduce((s, l) => s + l.estimated_value, 0)
-  const pendingTasks = tasks.filter((t) => t.status !== 'done' && t.due_date <= todayStr)
   const activeOPJobs = wonJobs.filter((j) => j.op_stage !== 'OP_DONE_PAYMENT')
   const wonThisMonth = wonJobs.filter((j) => {
     const m = new Date(j.created_at).getMonth()

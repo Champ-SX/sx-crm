@@ -65,7 +65,9 @@ export function CreateQuotationModal({ lead, open, onClose }: CreateQuotationMod
   }
 
   const subtotal = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0)
-  const vat = taxType === 'none' ? 0 : subtotal * 0.07
+  // 'included': VAT is already baked into the price → VAT = subtotal × 7/107
+  // 'excluded': VAT is added on top → VAT = subtotal × 7%
+  const vat = taxType === 'none' ? 0 : taxType === 'included' ? subtotal * 7 / 107 : subtotal * 0.07
   const total = taxType === 'excluded' ? subtotal + vat : subtotal
 
   async function handleSubmit(e: React.FormEvent) {
@@ -90,7 +92,8 @@ export function CreateQuotationModal({ lead, open, onClose }: CreateQuotationMod
             note,
             includeVat: taxType !== 'none',
             referenceNumber: lead.lead_op_id,
-            productItems: items.map((i) => ({
+            lineItems: items.map((i) => ({
+              name: i.description,
               description: i.description,
               quantity: i.quantity,
               unitPrice: i.unitPrice,
