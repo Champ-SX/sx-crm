@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import * as XLSX from 'xlsx'
 import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, ChevronRight, X, Building2, User, ArrowLeft } from 'lucide-react'
 import { useCRMStore } from '@/store/crm-store'
-import type { Company, ContactPerson } from '@/types'
+import type { Company, ContactPerson, Customer } from '@/types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,11 +20,12 @@ interface ParsedContact {
   phone: string
   notes: string
   category: string   // Wedding / Event / Event Org / Hotel / etc.
+  lineId?: string    // For LINE friends import
 }
 
 interface ImportPreview {
   companies: Omit<Company, 'company_id' | 'created_at' | 'updated_at'>[]
-  contacts: (Omit<ContactPerson, 'contact_id' | 'company_id' | 'created_at' | 'updated_at'> & { companyName: string })[]
+  contacts: (Omit<ContactPerson, 'contact_id' | 'company_id' | 'created_at' | 'updated_at'> & { companyName: string; lineId?: string })[]
   skipped: number
 }
 
@@ -33,6 +34,21 @@ interface ImportPreview {
 function clean(v: unknown): string {
   if (v == null) return ''
   return String(v).trim()
+}
+
+/** Detect and parse the "customer database" format (Email, First Name, Organization, Phone Number) */
+function parseCustomerDatabaseFormat(rows: RawRow[]): ParsedContact[] {
+  // Expected cols: Email, First Name, Organization, Phone Number
+  return rows
+    .filter((r) => clean(r['Email']) || clean(r['First Name']))
+    .map((r) => ({
+      contactName: clean(r['First Name']),
+      companyName: clean(r['Organization']) || clean(r['Account (previously Organization)']),
+      email:       clean(r['Email']),
+      phone:       clean(r['Phone Number']) || '',
+      notes:       '',
+      category:    'brand', // default
+    }))
 }
 
 /** Detect and parse the "flat contact list" format (File 1) */
@@ -47,6 +63,21 @@ function parseFlatFormat(rows: RawRow[]): ParsedContact[] {
       phone:       clean(r['Telphone']) || clean(r['Tel']) || clean(r['Phone']) || '',
       notes:       '',
       category:    clean(r['Remark']),
+    }))
+}
+
+/** Detect and parse the "LINE friends" format (Name, Line ID, Tags) */
+function parseLineFriendsFormat(rows: RawRow[]): ParsedContact[] {
+  return rows
+    .filter((r) => clean(r['Name']) || clean(r['Line ID']))
+    .map((r) => ({
+      contactName: clean(r['Name']),
+      companyName: clean(r['Name']),  // Use name as company for LINE friends
+      email:       '',  // LINE friends don't have emails
+      phone:       '',  // LINE friends don't have phone numbers
+      notes:       '',
+      category:    clean(r['Tags']) || 'brand',  // Use tags as category
+      lineId:      clean(r['Line ID']),  // Store the LINE ID
     }))
 }
 
@@ -162,14 +193,22 @@ function buildPreview(contacts: ParsedContact[]): ImportPreview {
 
   const contactsList = contacts
     .filter((c) => c.contactName || c.email)
-    .map((c) => ({
-      name:        c.contactName || c.email,
-      email:       c.email || undefined,
-      phone:       c.phone || undefined,
-      role:        c.category || undefined,
-      notes:       c.notes || undefined,
-      companyName: c.companyName,
-    }))
+    .map((c) => {
+      // Combine lineId with notes if present
+      const combinedNotes = c.lineId
+        ? (c.notes ? `${c.notes}\nLine ID: ${c.lineId}` : `Line ID: ${c.lineId}`)
+        : c.notes
+
+      return {
+        name:        c.contactName || c.email,
+        email:       c.email || undefined,
+        phone:       c.phone || undefined,
+        role:        c.category || undefined,
+        notes:       combinedNotes || undefined,
+        companyName: c.companyName,
+        lineId:      c.lineId,
+      }
+    })
 
   return {
     companies: Array.from(companyMap.values()),
@@ -203,12 +242,12 @@ function StepIndicator({ step }: { step: number }) {
             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
               done   ? 'bg-green-500 text-white' :
               active ? 'bg-orange-500 text-white' :
-                       'bg-slate-100 text-slate-400'
+                       'bg-secondary text-muted-foreground'
             }`}>
               {done ? <CheckCircle className="w-4 h-4" /> : num}
             </div>
-            <span className={`text-sm font-medium ${active ? 'text-slate-800' : 'text-slate-400'}`}>{label}</span>
-            {i < steps.length - 1 && <ChevronRight className="w-4 h-4 text-slate-300 mx-1" />}
+            <span className={`text-sm font-medium ${active ? 'text-foreground' : 'text-muted-foreground'}`}>{label}</span>
+            {i < steps.length - 1 && <ChevronRight className="w-4 h-4 text-border mx-1" />}
           </div>
         )
       })}
@@ -219,9 +258,13 @@ function StepIndicator({ step }: { step: number }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function ImportPage() {
-  const { companies: existingCompanies, contactPersons: existingContacts, addCompany, addContactPerson } = useCRMStore()
+  const { companies: existingCompanies, contactPersons: existingContacts, customers: existingCustomers, addCompany, addContactPerson, addCustomer, initializeData } = useCRMStore()
 
   const [step, setStep]         = useState<1 | 2 | 3>(1)
+
+  useEffect(() => {
+    void initializeData()
+  }, [initializeData])
   const [fileName, setFileName] = useState('')
   const [preview, setPreview]   = useState<ImportPreview | null>(null)
   const [error, setError]       = useState('')
@@ -247,7 +290,15 @@ export default function ImportPage() {
           const jsonRows = XLSX.utils.sheet_to_json<RawRow>(ws, { defval: '' })
           const firstRow = jsonRows[0] ? Object.keys(jsonRows[0]) : []
 
-          if (firstRow.includes('Email') || firstRow.includes('EMAIL')) {
+          // Detect format by checking for specific headers
+          if (firstRow.includes('Line ID') || firstRow.includes('Line ID')) {
+            // LINE friends format
+            allContacts = [...allContacts, ...parseLineFriendsFormat(jsonRows)]
+          } else if (firstRow.includes('Organization') || firstRow.includes('Account (previously Organization)')) {
+            // Customer database format
+            allContacts = [...allContacts, ...parseCustomerDatabaseFormat(jsonRows)]
+          } else if (firstRow.includes('Email') || firstRow.includes('EMAIL')) {
+            // Flat format
             allContacts = [...allContacts, ...parseFlatFormat(jsonRows)]
           } else {
             // Try two-column format
@@ -258,7 +309,7 @@ export default function ImportPage() {
         }
 
         if (allContacts.length === 0) {
-          setError('No contacts found. Make sure the file has Email/Name columns or a Wedding/Event layout.')
+          setError('No contacts found. Make sure the file has Name/Email columns, Line ID columns, or a Wedding/Event layout.')
           return
         }
 
@@ -339,6 +390,28 @@ export default function ImportPage() {
       contactsAdded++
     }
 
+    // Create legacy Customer objects for backward compatibility and UI visibility
+    // (Phase 1 compat — will be removed in Phase 5)
+    const existingCustomerEmails = new Set(existingCustomers.map((c) => c.email?.toLowerCase()).filter(Boolean))
+    for (const ct of preview.contacts) {
+      if (ct.email && existingCustomerEmails.has(ct.email.toLowerCase())) continue
+
+      const custId = `cust-imp-${crypto.randomUUID()}`
+      const newCustomer: Customer = {
+        customer_id:    custId,
+        company_name:   ct.companyName,
+        contact_person: ct.name,
+        phone:          ct.phone || '',
+        email:          ct.email || '',
+        customer_type:  inferCompanyType(ct.phone || '') as any, // Using phone field as placeholder for category
+        notes:          ct.notes || '',
+        created_at:     now,
+        updated_at:     now,
+      }
+      addCustomer(newCustomer)
+      if (ct.email) existingCustomerEmails.add(ct.email.toLowerCase())
+    }
+
     setImportResult({ companies: companiesAdded, contacts: contactsAdded, skipped: preview.skipped })
     setImporting(false)
     setStep(3)
@@ -347,10 +420,10 @@ export default function ImportPage() {
   // ─── Render ──────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex-1 p-8 max-w-3xl mx-auto">
+    <div className="flex-1 p-8 max-w-3xl mx-auto bg-background">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">Import Contacts</h1>
-        <p className="text-slate-500 text-sm mt-1">Upload an Excel or CSV file to import Companies &amp; Contact Persons</p>
+        <h1 className="text-2xl font-bold text-foreground">Import Contacts</h1>
+        <p className="text-muted-foreground text-sm mt-1">Upload an Excel or CSV file to import Companies &amp; Contact Persons</p>
       </div>
 
       <StepIndicator step={step} />
@@ -363,27 +436,28 @@ export default function ImportPage() {
             className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all ${
               isDragActive
                 ? 'border-orange-400 bg-orange-50'
-                : 'border-slate-200 hover:border-orange-300 hover:bg-slate-50'
+                : 'border-border hover:border-orange-300 hover:bg-secondary'
             }`}
           >
             <input {...getInputProps()} />
-            <Upload className="w-10 h-10 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-600 font-medium">Drop your file here, or <span className="text-orange-500">browse</span></p>
-            <p className="text-slate-400 text-sm mt-1">Supports .xlsx, .xls, .csv</p>
+            <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
+            <p className="text-foreground font-medium">Drop your file here, or <span className="text-orange-500">browse</span></p>
+            <p className="text-muted-foreground text-sm mt-1">Supports .xlsx, .xls, .csv</p>
           </div>
 
           {error && (
-            <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-100 rounded-xl p-3 text-sm">
+            <div className="flex items-start gap-2 text-red-600 bg-red-50/50 border border-red-200 rounded-xl p-3 text-sm">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               {error}
             </div>
           )}
 
           {/* Supported formats hint */}
-          <div className="bg-slate-50 rounded-xl p-4 text-sm text-slate-500 space-y-1">
-            <p className="font-semibold text-slate-600 mb-2">Supported formats</p>
-            <p>• <span className="font-medium">Contact list</span>: columns <code className="bg-white px-1 rounded">Email, Name, Telphone, Remark</code></p>
-            <p>• <span className="font-medium">Mail list</span>: two-section layout with <code className="bg-white px-1 rounded">Wedding / Event</code> headers</p>
+          <div className="bg-secondary rounded-xl p-4 text-sm text-muted-foreground space-y-1">
+            <p className="font-semibold text-foreground mb-2">Supported formats</p>
+            <p>• <span className="font-medium">Contact list</span>: columns <code className="bg-card px-1 rounded">Email, Name, Telphone, Remark</code></p>
+            <p>• <span className="font-medium">LINE friends</span>: columns <code className="bg-card px-1 rounded">Name, Line ID, Tags</code> <a href="/LINE-Friends-Import-Template.xlsx" className="text-orange-500 hover:underline">(download template)</a></p>
+            <p>• <span className="font-medium">Mail list</span>: two-section layout with <code className="bg-card px-1 rounded">Wedding / Event</code> headers</p>
             <p>• Multiple sheets in the same file are all imported</p>
           </div>
         </div>
@@ -393,11 +467,11 @@ export default function ImportPage() {
       {step === 2 && preview && (
         <div className="space-y-5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-slate-600 text-sm">
+            <div className="flex items-center gap-2 text-foreground text-sm">
               <FileSpreadsheet className="w-4 h-4 text-orange-500" />
               <span className="font-medium">{fileName}</span>
             </div>
-            <button onClick={() => { setStep(1); setPreview(null) }} className="text-slate-400 hover:text-slate-600">
+            <button onClick={() => { setStep(1); setPreview(null) }} className="text-muted-foreground hover:text-foreground">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -423,22 +497,22 @@ export default function ImportPage() {
 
           {/* Company preview list */}
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Companies to import</p>
-            <div className="border border-slate-100 rounded-xl overflow-hidden max-h-52 overflow-y-auto">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Companies to import</p>
+            <div className="border border-border rounded-xl overflow-hidden max-h-52 overflow-y-auto">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-slate-500 text-xs sticky top-0">
+                <thead className="bg-secondary text-muted-foreground text-xs sticky top-0">
                   <tr>
                     <th className="text-left px-3 py-2 font-medium">Company Name</th>
                     <th className="text-left px-3 py-2 font-medium">Type</th>
                     <th className="text-left px-3 py-2 font-medium">Email</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-border/30">
                   {preview.companies.map((co, i) => (
-                    <tr key={i} className="hover:bg-slate-50">
-                      <td className="px-3 py-2 font-medium text-slate-700">{co.company_name}</td>
-                      <td className="px-3 py-2 text-slate-400 capitalize">{co.company_type ?? '—'}</td>
-                      <td className="px-3 py-2 text-slate-400">{co.email ?? '—'}</td>
+                    <tr key={i} className="hover:bg-secondary/50">
+                      <td className="px-3 py-2 font-medium text-foreground">{co.company_name}</td>
+                      <td className="px-3 py-2 text-muted-foreground capitalize">{co.company_type ?? '—'}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{co.email ?? '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -448,10 +522,10 @@ export default function ImportPage() {
 
           {/* Contact preview list */}
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Contact Persons to import</p>
-            <div className="border border-slate-100 rounded-xl overflow-hidden max-h-52 overflow-y-auto">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2">Contact Persons to import</p>
+            <div className="border border-border rounded-xl overflow-hidden max-h-52 overflow-y-auto">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-slate-500 text-xs sticky top-0">
+                <thead className="bg-secondary text-muted-foreground text-xs sticky top-0">
                   <tr>
                     <th className="text-left px-3 py-2 font-medium">Name</th>
                     <th className="text-left px-3 py-2 font-medium">Company</th>
@@ -459,13 +533,13 @@ export default function ImportPage() {
                     <th className="text-left px-3 py-2 font-medium">Role</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-border/30">
                   {preview.contacts.map((ct, i) => (
-                    <tr key={i} className="hover:bg-slate-50">
-                      <td className="px-3 py-2 font-medium text-slate-700">{ct.name}</td>
-                      <td className="px-3 py-2 text-slate-400">{ct.companyName || '—'}</td>
-                      <td className="px-3 py-2 text-slate-400">{ct.email ?? '—'}</td>
-                      <td className="px-3 py-2 text-slate-400">{ct.role ?? '—'}</td>
+                    <tr key={i} className="hover:bg-secondary/50">
+                      <td className="px-3 py-2 font-medium text-foreground">{ct.name}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{ct.companyName || '—'}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{ct.email ?? '—'}</td>
+                      <td className="px-3 py-2 text-muted-foreground">{ct.role ?? '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -476,7 +550,7 @@ export default function ImportPage() {
           <div className="flex items-center gap-3 pt-2">
             <button
               onClick={() => { setStep(1); setPreview(null) }}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors"
             >
               <ArrowLeft className="w-4 h-4" /> Back
             </button>
@@ -497,28 +571,28 @@ export default function ImportPage() {
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
             <CheckCircle className="w-8 h-8 text-green-500" />
           </div>
-          <h2 className="text-xl font-bold text-slate-800">Import Complete</h2>
+          <h2 className="text-xl font-bold text-foreground">Import Complete</h2>
           <div className="flex items-center justify-center gap-6 text-sm">
             <div className="text-center">
               <p className="text-2xl font-bold text-blue-600">{importResult.companies}</p>
-              <p className="text-slate-400">Companies added</p>
+              <p className="text-muted-foreground">Companies added</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-green-600">{importResult.contacts}</p>
-              <p className="text-slate-400">Contacts added</p>
+              <p className="text-muted-foreground">Contacts added</p>
             </div>
             {importResult.skipped > 0 && (
               <div className="text-center">
-                <p className="text-2xl font-bold text-slate-400">{importResult.skipped}</p>
-                <p className="text-slate-400">Skipped</p>
+                <p className="text-2xl font-bold text-muted-foreground">{importResult.skipped}</p>
+                <p className="text-muted-foreground">Skipped</p>
               </div>
             )}
           </div>
-          <p className="text-slate-400 text-sm">Duplicates (by email or company name) were automatically skipped.</p>
+          <p className="text-muted-foreground text-sm">Duplicates (by email or company name) were automatically skipped.</p>
           <div className="flex items-center justify-center gap-3 pt-4">
             <button
               onClick={() => { setStep(1); setPreview(null); setFileName('') }}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+              className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors"
             >
               Import another file
             </button>
