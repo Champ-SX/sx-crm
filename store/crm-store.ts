@@ -297,8 +297,11 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
     if (USE_SUPABASE) {
       try {
         await db.customerQueries.create(c)
+        console.log('[CRM Store] Customer created successfully:', c.customer_id)
       } catch (error) {
-        set({ error: error instanceof Error ? error.message : 'Failed to create customer' })
+        const errorMsg = error instanceof Error ? error.message : String(error)
+        console.error('[CRM Store] Failed to create customer:', c.customer_id, errorMsg, error)
+        set({ error: `Failed to create customer: ${errorMsg}` })
       }
     }
   },
