@@ -361,7 +361,7 @@ function JobDetail({ jobId, onClose }: { jobId: string; onClose: () => void }) {
   const jobMaybe = wonJobs.find((j) => j.job_id === jobId)
   const [stageOpen, setStageOpen] = useState(false)
   const [staffSheetOpen, setStaffSheetOpen] = useState(false)
-  const [openSections, setOpenSections] = useState({ A: true, B: true, Staff: false, C: false, OpStage: false })
+  const [openSections, setOpenSections] = useState({ A: true, B: true, Staff: false, C: false, OpStage: false, Activity: false, History: false })
   function toggleSection(key: keyof typeof openSections) {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }))
   }
@@ -691,20 +691,38 @@ function JobDetail({ jobId, onClose }: { jobId: string; onClose: () => void }) {
               </div>
             </div>
 
-            {/* ── Activity + History on mobile (below main content) ── */}
-            <div className="sm:hidden border-t border-border/60 px-6 py-5 space-y-5 overflow-y-auto">
-              {/* Log Activity */}
-              <div>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">Log Activity</p>
-                <AddActivityForm entityType="won_job" entityId={job.job_id} owner={job.owner} />
+            {/* ── Activity + History on mobile (collapsible) ── */}
+            <div className="sm:hidden w-full bg-muted/20 overflow-y-auto">
+              {/* Log Activity - Collapsible on mobile */}
+              <div className="border-t border-border/60">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('Activity')}
+                  className="w-full px-4 py-3 flex items-center gap-2 hover:bg-muted/50 transition-colors text-left"
+                >
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-1">Log Activity</span>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${openSections.Activity ? 'rotate-0' : '-rotate-90'}`} />
+                </button>
+                <div className={`px-4 pb-3 ${openSections.Activity ? 'block' : 'hidden'}`}>
+                  <AddActivityForm entityType="won_job" entityId={job.job_id} owner={job.owner} />
+                </div>
               </div>
 
               <Separator />
 
-              {/* History */}
+              {/* History - Collapsible on mobile */}
               <div>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">History</p>
-                <ActivityTimeline entityType="won_job" entityId={job.job_id} />
+                <button
+                  type="button"
+                  onClick={() => toggleSection('History')}
+                  className="w-full px-4 py-3 flex items-center gap-2 hover:bg-muted/50 transition-colors text-left"
+                >
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-1">History</span>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${openSections.History ? 'rotate-0' : '-rotate-90'}`} />
+                </button>
+                <div className={`px-4 py-3 ${openSections.History ? 'block' : 'hidden'}`}>
+                  <ActivityTimeline entityType="won_job" entityId={job.job_id} />
+                </div>
               </div>
             </div>
           </div>
