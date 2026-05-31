@@ -188,6 +188,8 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
   const [confirmLost, setConfirmLost] = useState(false)
   const [quotationOpen, setQuotationOpen] = useState(false)
   const [openAccount, setOpenAccount] = useState(false)
+  const [openActivity, setOpenActivity] = useState(false)
+  const [openHistory, setOpenHistory] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editData, setEditData] = useState<LeadOpportunity | null>(null)
 
@@ -602,16 +604,42 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
               )}
             </div>
 
-            {/* Right: Activity */}
-            <div className="w-full sm:w-[340px] shrink-0 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 space-y-5 bg-muted/20">
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Log Activity</p>
-                <AddActivityForm entityType="lead_opportunity" entityId={item.lead_op_id} owner={item.owner} />
+            {/* Right: Activity - Collapsible on mobile */}
+            <div className="w-full sm:w-[340px] shrink-0 overflow-y-auto bg-muted/20">
+              {/* Log Activity - Collapsible on mobile */}
+              <div className="border-t sm:border-t-0">
+                <button
+                  type="button"
+                  onClick={() => setOpenActivity((o) => !o)}
+                  className="w-full sm:pointer-events-none px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-2 hover:bg-muted/50 sm:hover:bg-transparent transition-colors text-left"
+                >
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-1">Log Activity</span>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground sm:hidden transition-transform duration-200 ${openActivity ? 'rotate-0' : '-rotate-90'}`} />
+                </button>
+                {(openActivity || window.innerWidth >= 640) && (
+                  <div className="px-4 sm:px-6 pb-3 sm:pb-4">
+                    <AddActivityForm entityType="lead_opportunity" entityId={item.lead_op_id} owner={item.owner} />
+                  </div>
+                )}
               </div>
+
               <Separator />
+
+              {/* History - Collapsible on mobile */}
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">History</p>
-                <ActivityTimeline entityType="lead_opportunity" entityId={item.lead_op_id} />
+                <button
+                  type="button"
+                  onClick={() => setOpenHistory((o) => !o)}
+                  className="w-full sm:pointer-events-none px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-2 hover:bg-muted/50 sm:hover:bg-transparent transition-colors text-left"
+                >
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-1">History</span>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground sm:hidden transition-transform duration-200 ${openHistory ? 'rotate-0' : '-rotate-90'}`} />
+                </button>
+                {(openHistory || window.innerWidth >= 640) && (
+                  <div className="px-4 sm:px-6 py-3 sm:py-4">
+                    <ActivityTimeline entityType="lead_opportunity" entityId={item.lead_op_id} />
+                  </div>
+                )}
               </div>
             </div>
           </div>
