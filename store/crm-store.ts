@@ -182,28 +182,43 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
           return
         }
 
-        // Get current state to check if we have persisted data
         const currentState = get()
 
-        // Skip database sync if we have any persisted data (companies or leads indicate app was used before)
-        // This prevents overwriting locally-created/modified data with stale database data
-        if (currentState.companies.length > 0 || currentState.leadOpportunities.length > 0) {
-          return
+        // Determine if this is first load or subsequent load
+        const isFirstLoad = currentState.companies.length === 0 && currentState.leadOpportunities.length === 0
+
+        // Always load wonJobs, but skip full load if we already have data
+        if (!isFirstLoad && currentState.wonJobs.length > 0) {
+          return // Already loaded, skip
         }
 
         set({ isLoading: true, error: null })
         try {
-          const [companies, contactPersons, leadOpportunities, wonJobs, activities, tasks, staff, opStages] =
-            await Promise.all([
-              db.companyQueries.getAll(),
-              db.contactPersonQueries.getAll(),
-              db.leadOpportunityQueries.getAll(),
-              db.wonJobQueries.getAll(),
-              db.activityQueries.getAll(),
-              db.taskQueries.getAll(),
-              db.staffQueries.getAll(),
-              db.opStageQueries.getAll(),
-            ])
+          // On first load, get everything. On subsequent loads, only get wonJobs.
+          let companies = currentState.companies
+          let contactPersons = currentState.contactPersons
+          let leadOpportunities = currentState.leadOpportunities
+          let activities = currentState.activities
+          let tasks = currentState.tasks
+          let staff = currentState.staff
+          let opStages = currentState.opStages
+
+          if (isFirstLoad) {
+            // Full load on first initialization
+            [companies, contactPersons, leadOpportunities, activities, tasks, staff, opStages] =
+              await Promise.all([
+                db.companyQueries.getAll(),
+                db.contactPersonQueries.getAll(),
+                db.leadOpportunityQueries.getAll(),
+                db.activityQueries.getAll(),
+                db.taskQueries.getAll(),
+                db.staffQueries.getAll(),
+                db.opStageQueries.getAll(),
+              ])
+          }
+
+          // Always load wonJobs
+          const wonJobs = await db.wonJobQueries.getAll()
 
           // Load customers separately with fallback to empty array if table doesn't exist
           let customers: Customer[] = []
