@@ -744,10 +744,12 @@ export default function WonReadyOpPage() {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  // Load data from Supabase on mount
+  // Load data from Supabase after hydration completes
   useEffect(() => {
-    void initializeData()
-  }, [])
+    if (isHydrated) {
+      void initializeData()
+    }
+  }, [isHydrated])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8, delay: 100, tolerance: 5 } })

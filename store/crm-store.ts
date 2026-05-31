@@ -178,19 +178,29 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
 
       // ── Data initialization ────────────────────────────────────────────────────
       initializeData: async () => {
+        console.log('[CRM Store] initializeData called')
         if (!USE_SUPABASE) {
+          console.log('[CRM Store] USE_SUPABASE is false, skipping')
           return
         }
 
         const currentState = get()
+        console.log('[CRM Store] Current state:', {
+          companiesCount: currentState.companies.length,
+          leadsCount: currentState.leadOpportunities.length,
+          wonJobsCount: currentState.wonJobs.length,
+        })
 
         // Determine if this is first load or subsequent load
         const isFirstLoad = currentState.companies.length === 0 && currentState.leadOpportunities.length === 0
 
         // Always load wonJobs, but skip full load if we already have data
         if (!isFirstLoad && currentState.wonJobs.length > 0) {
+          console.log('[CRM Store] Already loaded, skipping')
           return // Already loaded, skip
         }
+
+        console.log('[CRM Store] Starting data initialization...')
 
         set({ isLoading: true, error: null })
         try {
@@ -219,6 +229,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
 
           // Always load wonJobs
           const wonJobs = await db.wonJobQueries.getAll()
+          console.log('[CRM Store] Loaded wonJobs:', wonJobs.length, 'records', wonJobs.slice(0, 2))
 
           // Load customers separately with fallback to empty array if table doesn't exist
           let customers: Customer[] = []
@@ -245,6 +256,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error)
           console.error('[CRM Store] Database initialization error:', errorMsg, error)
+          console.log('[CRM Store] Full error:', error)
           set({
             error: errorMsg,
             isLoading: false,
