@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -738,13 +738,18 @@ function JobDetail({ jobId, onClose }: { jobId: string; onClose: () => void }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function WonReadyOpPage() {
   const isHydrated = useHydrated()
-  const wonJobs = useCRMStore((s) => s.wonJobs)
+  const { wonJobs, initializeData } = useCRMStore((s) => ({ wonJobs: s.wonJobs, initializeData: s.initializeData }))
   const moveWonJobStage = useCRMStore((s) => s.moveWonJobStage)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
+  // Load data from Supabase on mount
+  useEffect(() => {
+    void initializeData()
+  }, [initializeData])
+
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8, delay: 100, tolerance: 5 } })
   )
 
   const activeJob = activeId ? wonJobs.find((j) => j.job_id === activeId) : null
