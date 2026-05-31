@@ -47,7 +47,8 @@ const stageConfig: Record<OPStage, { accent: string; dot: string; headerBg: stri
   OP_DONE_PAYMENT:                 { accent: 'border-t-purple-400',  dot: 'bg-purple-400',  headerBg: 'bg-purple-50/60',  colBg: 'bg-purple-50/20' },
 }
 
-function formatCurrency(v: number) {
+function formatCurrency(v: number | null | undefined) {
+  if (!v) return '฿0'
   if (v >= 1_000_000) return `฿${(v / 1_000_000).toFixed(1)}M`
   if (v >= 1_000) return `฿${(v / 1_000).toFixed(0)}K`
   return `฿${v.toLocaleString()}`
