@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useCRMStore } from '@/store/crm-store'
+import { useHydrated } from '@/hooks/use-hydrated'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
@@ -154,10 +155,14 @@ function CreateTaskForm({ onClose }: { onClose: () => void }) {
 
 
 export default function TasksPage() {
+  const isHydrated = useHydrated()
   const { tasks, updateTask } = useCRMStore()
   const [ownerFilter, setOwnerFilter] = useState<string>('all')
   const [priorityFilter, setPriorityFilter] = useState<string>('all')
   const [creating, setCreating] = useState(false)
+
+  // Don't render until hydration completes to prevent SSR/client mismatch
+  if (!isHydrated) return null
 
   const today = new Date().toISOString().split('T')[0]
 

@@ -339,7 +339,7 @@ export default function ImportPage() {
 
   // ── Import ────────────────────────────────────────────────────────────────
 
-  const handleImport = () => {
+  const handleImport = async () => {
     if (!preview) return
     setImporting(true)
 
@@ -357,7 +357,7 @@ export default function ImportPage() {
       if (existingCompanyNames.has(co.company_name.toLowerCase())) continue
       const id = `comp-imp-${crypto.randomUUID()}`
       const newCompany: Company = { ...co, company_id: id, created_at: now, updated_at: now }
-      addCompany(newCompany)
+      await addCompany(newCompany)
       batchCompanyIds.set(co.company_name.toLowerCase(), id)
       existingCompanyNames.add(co.company_name.toLowerCase())
       companiesAdded++
@@ -385,7 +385,7 @@ export default function ImportPage() {
         created_at:  now,
         updated_at:  now,
       }
-      addContactPerson(newContact)
+      await addContactPerson(newContact)
       if (ct.email) existingEmails.add(ct.email.toLowerCase())
       contactsAdded++
     }
@@ -408,7 +408,7 @@ export default function ImportPage() {
         created_at:     now,
         updated_at:     now,
       }
-      addCustomer(newCustomer)
+      await addCustomer(newCustomer)
       if (ct.email) existingCustomerEmails.add(ct.email.toLowerCase())
     }
 

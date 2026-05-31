@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCRMStore } from '@/store/crm-store'
+import { useHydrated } from '@/hooks/use-hydrated'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { ThemeToggle } from '@/components/layout/theme-toggle'
 import { EmptyState } from '@/components/shared/empty-state'
@@ -691,6 +692,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function LeadsOpportunitiesPage() {
+  const isHydrated = useHydrated()
   const { leadOpportunities, addLeadOpportunity, deleteLeadOpportunity, initializeData } = useCRMStore()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('open')
@@ -701,8 +703,15 @@ export default function LeadsOpportunitiesPage() {
   const [creating, setCreating] = useState(false)
 
   useEffect(() => {
-    void initializeData()
-  }, [initializeData])
+    console.log('[Leads Page] useEffect called, isHydrated =', isHydrated)
+    if (isHydrated) {
+      console.log('[Leads Page] Calling initializeData()')
+      void initializeData()
+    }
+  }, [isHydrated, initializeData])
+
+  // Don't render until hydration completes to prevent SSR/client mismatch
+  if (!isHydrated) return null
 
   // Debug: Log selectedId changes
   console.log('[Leads Page] selectedId changed:', selectedId)

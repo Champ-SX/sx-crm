@@ -1,6 +1,8 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useCRMStore } from '@/store/crm-store'
+import { useHydrated } from '@/hooks/use-hydrated'
 import { OP_STAGE_LABELS, OP_STAGES } from '@/types'
 import { format, parseISO, addDays } from 'date-fns'
 import {
@@ -95,7 +97,11 @@ function StatusDot({ color }: { color: string }) {
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
+  const isHydrated = useHydrated()
   const { customers, leadOpportunities, wonJobs, tasks, activities } = useCRMStore()
+
+  // Don't render until hydration completes to prevent SSR/client mismatch
+  if (!isHydrated) return null
 
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]

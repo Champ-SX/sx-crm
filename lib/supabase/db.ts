@@ -2,6 +2,7 @@ import { supabase } from './client'
 import type {
   Company,
   ContactPerson,
+  Customer,
   LeadOpportunity,
   WonJob,
   Activity,
@@ -54,13 +55,64 @@ export const companyQueries = {
   },
 }
 
+// ===== CUSTOMERS (legacy) =====
+export const customerQueries = {
+  async getAll() {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .order('company_name')
+    if (error) throw error
+    return (data || []) as Customer[]
+  },
+
+  async getById(id: string) {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('customer_id', id)
+      .single()
+    if (error) throw error
+    return data as Customer
+  },
+
+  async create(customer: Customer) {
+    const { data, error } = await supabase
+      .from('customers')
+      .insert([customer])
+      .select()
+      .single()
+    if (error) throw error
+    return data as Customer
+  },
+
+  async update(id: string, updates: Partial<Customer>) {
+    const { data, error } = await supabase
+      .from('customers')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('customer_id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data as Customer
+  },
+
+  async delete(id: string) {
+    const { error } = await supabase
+      .from('customers')
+      .delete()
+      .eq('customer_id', id)
+    if (error) throw error
+  },
+}
+
 // ===== CONTACT PERSONS =====
 export const contactPersonQueries = {
   async getAll() {
     const { data, error } = await supabase
       .from('contact_persons')
       .select('*')
-      .order('contact_name')
+      .order('name')
     if (error) throw error
     return (data || []) as ContactPerson[]
   },
@@ -182,7 +234,7 @@ export const wonJobQueries = {
       .from('won_jobs')
       .select('*')
       .order('op_stage', { ascending: true })
-      .order('position', { ascending: true })
+      .order('created_at', { ascending: true })
     if (error) throw error
     return (data || []) as WonJob[]
   },
@@ -202,7 +254,7 @@ export const wonJobQueries = {
       .from('won_jobs')
       .select('*')
       .eq('op_stage', stage)
-      .order('position', { ascending: true })
+      .order('created_at', { ascending: true })
     if (error) throw error
     return (data || []) as WonJob[]
   },

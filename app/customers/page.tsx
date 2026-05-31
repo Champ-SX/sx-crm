@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCRMStore } from '@/store/crm-store'
+import { useHydrated } from '@/hooks/use-hydrated'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { ThemeToggle } from '@/components/layout/theme-toggle'
 import { PageHeader } from '@/components/shared/page-header'
@@ -272,11 +273,11 @@ function AddCustomerForm({ onClose }: { onClose: () => void }) {
     line_id: '', social: '', customer_type: 'brand' as CustomerType, notes: '',
   })
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.company_name.trim()) return
     const now = new Date().toISOString()
-    addCustomer({
+    await addCustomer({
       customer_id: `cust-${Date.now()}`,
       ...form,
       created_at: now,
@@ -380,13 +381,13 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
     )
   }
 
-  function handleDeleteCustomer() {
+  async function handleDeleteCustomer() {
     if (
       window.confirm(
         `Are you sure you want to delete "${customer.company_name}"? This action cannot be undone. Associated leads and won jobs will remain but the customer reference will be cleared.`
       )
     ) {
-      deleteCustomer(customer.customer_id)
+      await deleteCustomer(customer.customer_id)
       onClose()
     }
   }
@@ -725,6 +726,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function CustomersPage() {
+  const isHydrated = useHydrated()
   const router = useRouter()
   const { customers, initializeData } = useCRMStore()
   const [search, setSearch] = useState('')
@@ -736,13 +738,18 @@ export default function CustomersPage() {
   const itemsPerPage = 25
 
   useEffect(() => {
-    void initializeData()
-  }, [initializeData])
+    if (isHydrated) {
+      void initializeData()
+    }
+  }, [isHydrated, initializeData])
 
   // Reset to page 1 when search/filter changes
   useEffect(() => {
     setCurrentPage(1)
   }, [search, typeFilter])
+
+  // Don't render until hydration completes to prevent SSR/client mismatch
+  if (!isHydrated) return null
 
   const filtered = customers.filter((c) => {
     const q = search.toLowerCase()

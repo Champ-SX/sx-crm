@@ -1,7 +1,6 @@
 'use client'
 
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 import type {
   Customer, Company, ContactPerson,
   LeadOpportunity, WonJob, Activity, Task, OPStage, StaffMember,
@@ -26,6 +25,18 @@ const USE_SUPABASE = !!(
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
+
+console.log('[CRM Store] USE_SUPABASE =', USE_SUPABASE, {
+  url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'set' : 'not set',
+})
+
+// ── REMOVED: localStorage persist middleware ──────────────────────────────────
+// The persist middleware was broken (merge function always received undefined).
+// Instead, we rely on:
+// 1. Database sync in all action functions (addLeadOpportunity, updateLeadOpportunity, etc.)
+// 2. initializeData() to load from database on app startup
+// This makes the database the source of truth, which is more reliable.
 
 const DEFAULT_OP_STAGES: DynamicOPStage[] = [
   {
@@ -141,20 +152,21 @@ interface CRMStore {
   addActivity: (activity: Activity) => Promise<void>
 }
 
-export const useCRMStore = create<CRMStore>()(persist(
-    (set, get) => ({
+export const useCRMStore = create<CRMStore>()((set, get) => ({
       // ── New relational state ────────────────────────────────────────────────────
-      companies: mockCompanies,
-      contactPersons: mockContactPersons,
+      // When using Supabase, start with empty arrays so initializeData() will load from DB
+      // When using mock data, start with mock data
+      companies: USE_SUPABASE ? [] : mockCompanies,
+      contactPersons: USE_SUPABASE ? [] : mockContactPersons,
 
       // ── Legacy state ────────────────────────────────────────────────────────────
-      customers: mockCustomers,
+      customers: USE_SUPABASE ? [] : mockCustomers,
 
-      leadOpportunities: mockLeadOpportunities,
-      wonJobs: mockWonJobs,
-      activities: mockActivities,
-      tasks: mockTasks,
-      staff: mockStaff,
+      leadOpportunities: USE_SUPABASE ? [] : mockLeadOpportunities,
+      wonJobs: USE_SUPABASE ? [] : mockWonJobs,
+      activities: USE_SUPABASE ? [] : mockActivities,
+      tasks: USE_SUPABASE ? [] : mockTasks,
+      staff: USE_SUPABASE ? [] : mockStaff,
 
       // ── OP Kanban Stages ────────────────────────────────────────────────────────
       opStages: DEFAULT_OP_STAGES,
@@ -166,24 +178,47 @@ export const useCRMStore = create<CRMStore>()(persist(
 
       // ── Data initialization ────────────────────────────────────────────────────
       initializeData: async () => {
-        if (!USE_SUPABASE) return
+        if (!USE_SUPABASE) {
+          return
+        }
+
+        // Get current state to check if we have persisted data
+        const currentState = get()
+
+        // Skip database sync if we have any persisted data (companies or leads indicate app was used before)
+        // This prevents overwriting locally-created/modified data with stale database data
+        if (currentState.companies.length > 0 || currentState.leadOpportunities.length > 0) {
+          return
+        }
 
         set({ isLoading: true, error: null })
         try {
-          const [companies, contactPersons, leadOpportunities, wonJobs, activities, tasks, staff, opStages] = await Promise.all([
-            db.companyQueries.getAll(),
-            db.contactPersonQueries.getAll(),
-            db.leadOpportunityQueries.getAll(),
-            db.wonJobQueries.getAll(),
-            db.activityQueries.getAll(),
-            db.taskQueries.getAll(),
-            db.staffQueries.getAll(),
-            db.opStageQueries.getAll(),
-          ])
+          const [companies, contactPersons, leadOpportunities, wonJobs, activities, tasks, staff, opStages] =
+            await Promise.all([
+              db.companyQueries.getAll(),
+              db.contactPersonQueries.getAll(),
+              db.leadOpportunityQueries.getAll(),
+              db.wonJobQueries.getAll(),
+              db.activityQueries.getAll(),
+              db.taskQueries.getAll(),
+              db.staffQueries.getAll(),
+              db.opStageQueries.getAll(),
+            ])
+
+          // Load customers separately with fallback to empty array if table doesn't exist
+          let customers: Customer[] = []
+          try {
+            customers = await db.customerQueries.getAll()
+          } catch (err) {
+            console.warn('[CRM Store] Could not load customers (table may not exist yet):',
+              err instanceof Error ? err.message : String(err))
+            // Continue with empty customers array
+          }
 
           set({
             companies,
             contactPersons,
+            customers,
             leadOpportunities,
             wonJobs,
             activities,
@@ -193,15 +228,17 @@ export const useCRMStore = create<CRMStore>()(persist(
             isLoading: false,
           })
         } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error)
+          console.error('[CRM Store] Database initialization error:', errorMsg, error)
           set({
-            error: error instanceof Error ? error.message : 'Failed to initialize data',
+            error: errorMsg,
             isLoading: false,
           })
         }
       },
 
   // ── Companies ───────────────────────────────────────────────────────────────
-  addCompany: async (c) => {
+  addCompany: async (c: Company) => {
     set((s) => ({ companies: [...s.companies, c] }))
     if (USE_SUPABASE) {
       try {
@@ -255,17 +292,33 @@ export const useCRMStore = create<CRMStore>()(persist(
   },
 
   // ── Customers (legacy) ──────────────────────────────────────────────────────
-  addCustomer: (c) =>
-    set((s) => ({ customers: [...s.customers, c] })),
+  addCustomer: async (c) => {
+    set((s) => ({ customers: [...s.customers, c] }))
+    if (USE_SUPABASE) {
+      try {
+        await db.customerQueries.create(c)
+      } catch (error) {
+        set({ error: error instanceof Error ? error.message : 'Failed to create customer' })
+      }
+    }
+  },
 
-  updateCustomer: (id, updates) =>
+  updateCustomer: async (id, updates) => {
     set((s) => ({
       customers: s.customers.map((c) =>
         c.customer_id === id ? { ...c, ...updates, updated_at: new Date().toISOString() } : c
       ),
-    })),
+    }))
+    if (USE_SUPABASE) {
+      try {
+        await db.customerQueries.update(id, updates)
+      } catch (error) {
+        set({ error: error instanceof Error ? error.message : 'Failed to update customer' })
+      }
+    }
+  },
 
-  deleteCustomer: (id) =>
+  deleteCustomer: async (id) => {
     set((s) => ({
       customers: s.customers.filter((c) => c.customer_id !== id),
       // Clear customer references in leads and won jobs
@@ -275,16 +328,28 @@ export const useCRMStore = create<CRMStore>()(persist(
       wonJobs: s.wonJobs.map((j) =>
         j.customer_id === id ? { ...j, customer_id: undefined, customer_name: '' } : j
       ),
-    })),
+    }))
+    if (USE_SUPABASE) {
+      try {
+        await db.customerQueries.delete(id)
+      } catch (error) {
+        set({ error: error instanceof Error ? error.message : 'Failed to delete customer' })
+      }
+    }
+  },
 
   // ── Leads & Opportunities ──────────────────────────────────────────────────
   addLeadOpportunity: async (lop) => {
-    set((s) => ({ leadOpportunities: [...s.leadOpportunities, lop] }))
+    set((s) => ({
+      leadOpportunities: [...s.leadOpportunities, lop],
+    }))
     if (USE_SUPABASE) {
       try {
         await db.leadOpportunityQueries.create(lop)
       } catch (error) {
-        set({ error: error instanceof Error ? error.message : 'Failed to create lead opportunity' })
+        const msg = error instanceof Error ? error.message : String(error)
+        console.error('[CRM Store] Failed to create lead opportunity:', msg)
+        set({ error: msg })
       }
     }
   },
@@ -761,10 +826,5 @@ export const useCRMStore = create<CRMStore>()(persist(
       }
     }
   },
-    }),
-    {
-      name: 'crm-store',
-      version: 1,
-    }
-  )
-);
+}));
+

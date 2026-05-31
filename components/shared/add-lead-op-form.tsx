@@ -198,7 +198,7 @@ export function AddLeadOpForm({
     setContactDropdownOpen(false)
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.name.trim()) return
     // If new contact panel is open but name is blank, block submit
@@ -243,7 +243,8 @@ export function AddLeadOpForm({
       created_at: now,
       updated_at: now,
     }
-    addLeadOpportunity(lop)
+    // Wait for the lead to be added to the store before closing the form
+    await addLeadOpportunity(lop)
     onCreated?.(lop)
     onClose()
   }

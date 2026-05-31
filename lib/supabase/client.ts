@@ -1,15 +1,10 @@
-// Mock Supabase client for development/client-side use
-// Actual Supabase integration only works on server-side
-const mockChain = {
-  select: () => mockChain,
-  order: () => mockChain,
-  eq: () => mockChain,
-  single: () => Promise.resolve({ data: null, error: null }),
-  insert: () => mockChain,
-  update: () => mockChain,
-  delete: () => mockChain,
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables')
 }
 
-export const supabase = {
-  from: (table: string) => mockChain,
-} as any
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)

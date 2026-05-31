@@ -14,6 +14,7 @@ import {
 import { useDroppable, useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { useCRMStore } from '@/store/crm-store'
+import { useHydrated } from '@/hooks/use-hydrated'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { OP_STAGES, OP_STAGE_LABELS } from '@/types'
 import type { WonJob, OPStage, StaffMember } from '@/types'
@@ -199,7 +200,7 @@ function KanbanColumn({ stage, jobs, onCardClick, activeId }: {
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col min-w-[240px] max-w-[240px] rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/20' : ''} ${cfg.colBg} transition-all shadow-sm`}
+      className={`flex flex-col w-full sm:min-w-[240px] sm:max-w-[240px] rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/20' : ''} ${cfg.colBg} transition-all shadow-sm`}
     >
       {/* Column header */}
       <div className={`px-3.5 pt-3.5 pb-2.5 rounded-t-xl ${cfg.headerBg}`}>
@@ -360,7 +361,7 @@ function JobDetail({ jobId, onClose }: { jobId: string; onClose: () => void }) {
   const jobMaybe = wonJobs.find((j) => j.job_id === jobId)
   const [stageOpen, setStageOpen] = useState(false)
   const [staffSheetOpen, setStaffSheetOpen] = useState(false)
-  const [openSections, setOpenSections] = useState({ A: true, B: true, Staff: false, C: false })
+  const [openSections, setOpenSections] = useState({ A: true, B: true, Staff: false, C: false, OpStage: false })
   function toggleSection(key: keyof typeof openSections) {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }))
   }
@@ -416,11 +417,11 @@ function JobDetail({ jobId, onClose }: { jobId: string; onClose: () => void }) {
             </div>
           </div>
 
-          {/* ── Two-column body ── */}
-          <div className="flex flex-1 overflow-hidden">
+          {/* ── Body: Responsive layout ── */}
+          <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
 
-            {/* ── LEFT: Sections A + B + C (scrollable) ── */}
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5 border-r border-border/60">
+            {/* ── LEFT: Sections A + B + C + OP Stage (on mobile) (scrollable) ── */}
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5 sm:border-r border-border/60">
 
               {/* Section A: รายละเอียดงาน */}
               <div className="rounded-xl border border-blue-200 overflow-hidden">
@@ -635,36 +636,63 @@ function JobDetail({ jobId, onClose }: { jobId: string; onClose: () => void }) {
                 </div>}
               </div>
 
+              {/* OP Stage - Collapsible section (moved to left panel for mobile) */}
+              <div className="rounded-xl border border-red-200 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('OpStage')}
+                  className="w-full bg-red-50 px-4 py-2.5 flex items-center gap-2 hover:bg-red-100/60 transition-colors text-left"
+                >
+                  <div className="w-5 h-5 rounded-md bg-red-100 flex items-center justify-center shrink-0">
+                    <div className={`w-2 h-2 rounded-full bg-red-600`} />
+                  </div>
+                  <span className="text-[12px] font-bold text-red-800 tracking-wide flex-1">OP Stage</span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-red-400 transition-transform duration-200 ${openSections.OpStage ? 'rotate-0' : '-rotate-90'}`} />
+                </button>
+                {openSections.OpStage && <div className="bg-white px-4 py-3 space-y-2">
+                  <div className="flex flex-col gap-1.5">
+                    {OP_STAGES.map((s) => {
+                      const isActive = job.op_stage === s
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => moveWonJobStage(job.job_id, s)}
+                          className={`w-full text-left text-[11px] font-semibold px-3 py-2 rounded-lg border transition-all ${
+                            isActive
+                              ? 'bg-primary text-white border-primary shadow-sm'
+                              : 'border-slate-200 text-slate-500 bg-white hover:bg-slate-50 hover:border-slate-300'
+                          }`}
+                        >
+                          {OP_STAGE_LABELS[s]}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>}
+              </div>
+
             </div>
 
-            {/* ── RIGHT: Stage + Activity (fixed width, scrollable) ── */}
-            <div className="w-[320px] shrink-0 overflow-y-auto px-5 py-5 space-y-5 bg-slate-50/60">
+            {/* ── RIGHT: Activity + History (desktop only, fixed width, scrollable) ── */}
+            <div className="hidden sm:flex flex-col w-[320px] shrink-0 overflow-y-auto px-5 py-5 space-y-5 bg-slate-50/60">
 
-              {/* OP Stage */}
+              {/* Log Activity */}
               <div>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">OP Stage</p>
-                <div className="flex flex-col gap-1.5">
-                  {OP_STAGES.map((s) => {
-                    const isActive = job.op_stage === s
-                    return (
-                      <button
-                        key={s}
-                        onClick={() => moveWonJobStage(job.job_id, s)}
-                        className={`w-full text-left text-[11px] font-semibold px-3 py-2 rounded-lg border transition-all ${
-                          isActive
-                            ? 'bg-primary text-white border-primary shadow-sm'
-                            : 'border-slate-200 text-slate-500 bg-white hover:bg-slate-50 hover:border-slate-300'
-                        }`}
-                      >
-                        {OP_STAGE_LABELS[s]}
-                      </button>
-                    )
-                  })}
-                </div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">Log Activity</p>
+                <AddActivityForm entityType="won_job" entityId={job.job_id} owner={job.owner} />
               </div>
 
               <Separator />
 
+              {/* History */}
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">History</p>
+                <ActivityTimeline entityType="won_job" entityId={job.job_id} />
+              </div>
+            </div>
+
+            {/* ── Activity + History on mobile (below main content) ── */}
+            <div className="sm:hidden border-t border-border/60 px-6 py-5 space-y-5 overflow-y-auto">
               {/* Log Activity */}
               <div>
                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">Log Activity</p>
@@ -691,6 +719,7 @@ function JobDetail({ jobId, onClose }: { jobId: string; onClose: () => void }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function WonReadyOpPage() {
+  const isHydrated = useHydrated()
   const wonJobs = useCRMStore((s) => s.wonJobs)
   const moveWonJobStage = useCRMStore((s) => s.moveWonJobStage)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -718,6 +747,9 @@ export default function WonReadyOpPage() {
     .filter((j) => j.op_stage !== 'OP_DONE_PAYMENT')
     .reduce((s, j) => s + j.estimated_value, 0)
 
+  // Don't render until hydration completes to prevent SSR/client mismatch
+  if (!isHydrated) return null
+
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}
@@ -737,8 +769,9 @@ export default function WonReadyOpPage() {
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
       >
-        <div className="flex-1 overflow-x-auto overflow-y-hidden bg-background">
-          <div className="flex gap-4 p-6 h-full min-w-max items-start">
+        {/* Mobile: Vertical stack, Desktop: Horizontal scroll */}
+        <div className="flex-1 overflow-x-auto overflow-y-auto sm:overflow-y-hidden bg-background">
+          <div className="flex flex-col sm:flex-row gap-4 p-4 sm:p-6 h-full min-w-max sm:items-start sm:min-h-max">
             {OP_STAGES.map((stage) => (
               <KanbanColumn
                 key={stage}
