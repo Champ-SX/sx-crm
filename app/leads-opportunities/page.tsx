@@ -331,8 +331,6 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                         </Button>
                       </>
                     )}
-                  </>
-                )}
               </div>
             </div>
           </div>
