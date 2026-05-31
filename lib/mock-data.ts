@@ -727,6 +727,7 @@ export const mockWonJobs: WonJob[] = [
     owner: 'Vitta',
     created_at: '2026-05-10T10:00:00Z',
     updated_at: '2026-05-10T10:00:00Z',
+  position: 0,
   },
   {
     job_id: 'job-002',
@@ -779,6 +780,7 @@ export const mockWonJobs: WonJob[] = [
     owner: 'Andy',
     created_at: '2026-05-12T11:00:00Z',
     updated_at: '2026-05-12T11:00:00Z',
+  position: 0,
   },
   {
     job_id: 'job-003',
@@ -831,6 +833,7 @@ export const mockWonJobs: WonJob[] = [
     owner: 'Fern',
     created_at: '2026-05-01T09:00:00Z',
     updated_at: '2026-05-15T14:00:00Z',
+  position: 0,
   },
   {
     job_id: 'job-004',
@@ -883,6 +886,7 @@ export const mockWonJobs: WonJob[] = [
     owner: 'Vitta',
     created_at: '2026-05-05T10:00:00Z',
     updated_at: '2026-05-17T09:00:00Z',
+  position: 0,
   },
   {
     job_id: 'job-005',
@@ -935,6 +939,7 @@ export const mockWonJobs: WonJob[] = [
     owner: 'Nong',
     created_at: '2026-05-08T09:00:00Z',
     updated_at: '2026-05-18T10:00:00Z',
+  position: 0,
   },
   {
     job_id: 'job-006',
@@ -983,6 +988,7 @@ export const mockWonJobs: WonJob[] = [
     owner: 'Vitta',
     created_at: '2026-05-10T14:00:00Z',
     updated_at: '2026-05-16T11:00:00Z',
+  position: 0,
   },
   {
     job_id: 'job-007',
@@ -1031,6 +1037,7 @@ export const mockWonJobs: WonJob[] = [
     owner: 'Vitta',
     created_at: '2025-10-01T09:00:00Z',
     updated_at: '2025-11-15T12:00:00Z',
+  position: 0,
   },
   {
     job_id: 'job-008',
@@ -1079,6 +1086,7 @@ export const mockWonJobs: WonJob[] = [
     owner: 'Andy',
     created_at: '2025-11-01T10:00:00Z',
     updated_at: '2025-12-22T09:00:00Z',
+  position: 0,
   },
 ]
 

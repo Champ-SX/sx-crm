@@ -132,6 +132,7 @@ export function blankWonJobFields(): Omit<WonJob, 'job_id' | 'job_number' | 'eve
     payment_status: 'unpaid',
     staff_status: 'pending',
     doc_status: 'pending',
+    position: 0,
   }
 }
 
