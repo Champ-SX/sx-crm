@@ -267,15 +267,16 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
         <DialogContent className="!fixed !top-0 !left-0 !-translate-x-0 !-translate-y-0 !w-screen !h-screen !max-w-none !grid-cols-1 !p-0 !gap-0 sm:!w-[85vw] sm:!h-auto sm:!top-1/2 sm:!left-1/2 sm:!-translate-x-1/2 sm:!-translate-y-1/2 md:!w-[82vw] !overflow-hidden !max-h-screen sm:!max-h-[88vh] !flex !flex-col !rounded-none sm:!rounded-lg">
 
           {/* ── Header ── */}
-          <div className="px-7 pt-6 pb-4 border-b shrink-0">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
+          <div className="px-4 sm:px-7 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b shrink-0">
+            <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4">
+              {/* Lead name and metadata */}
+              <div className="flex-1 min-w-0 w-full sm:w-auto">
                 <InlineEdit
                   value={item.name}
                   placeholder="Lead title"
                   onSave={(v) => updateLeadOpportunity(item.lead_op_id, { name: v })}
                 />
-                <div className="flex items-center gap-2 mt-1.5">
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
                   {isEditing ? (
                     <Select value={editData?.status || 'open'} onValueChange={(v) => handleFieldChange('status', v as 'open' | 'won' | 'lost')}>
                       <SelectTrigger className="h-6 text-xs border-0 px-0 focus:ring-0 w-auto font-medium gap-1">
@@ -301,9 +302,41 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                     <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">{item.service_type}</span>
                   )}
                 </div>
+
+                {/* Action buttons on mobile - below name and status */}
+                <div className="flex items-center gap-3 mt-3 sm:hidden flex-wrap">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 px-3 gap-2 border-primary/30 text-primary hover:bg-primary/5 text-xs font-medium"
+                    onClick={() => setQuotationOpen(true)}
+                  >
+                    <Send className="w-4 h-4" /> Create Quotation
+                  </Button>
+                  {item.status === 'open' && (
+                    <>
+                      <Button
+                        size="sm"
+                        className="h-8 px-3 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                        onClick={() => setConfirmWon(true)}
+                      >
+                        <Trophy className="w-4 h-4" /> Won
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-3 gap-2 border-red-200 text-red-500 hover:bg-red-50 text-xs"
+                        onClick={() => setConfirmLost(true)}
+                      >
+                        <XCircle className="w-4 h-4" /> Lost
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
-              {/* Action buttons in header */}
-              <div className="flex items-center gap-3 shrink-0 flex-wrap justify-end">
+
+              {/* Action buttons on desktop - inline */}
+              <div className="hidden sm:flex items-center gap-3 shrink-0 flex-wrap justify-end">
                 <Button
                   size="sm"
                   variant="outline"
@@ -319,18 +352,18 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                       className="h-10 px-4 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm min-w-[44px]"
                       onClick={() => setConfirmWon(true)}
                     >
-                          <Trophy className="w-4 h-4" /> <span className="hidden sm:inline">Won</span>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-10 px-4 gap-2 border-red-200 text-red-500 hover:bg-red-50 text-xs sm:text-sm min-w-[44px]"
-                          onClick={() => setConfirmLost(true)}
-                        >
-                          <XCircle className="w-4 h-4" /> <span className="hidden sm:inline">Lost</span>
-                        </Button>
-                      </>
-                    )}
+                      <Trophy className="w-4 h-4" /> <span className="hidden sm:inline">Won</span>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-10 px-4 gap-2 border-red-200 text-red-500 hover:bg-red-50 text-xs sm:text-sm min-w-[44px]"
+                      onClick={() => setConfirmLost(true)}
+                    >
+                      <XCircle className="w-4 h-4" /> <span className="hidden sm:inline">Lost</span>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>

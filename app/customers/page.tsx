@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useCRMStore } from '@/store/crm-store'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
+import { ThemeToggle } from '@/components/layout/theme-toggle'
 import { PageHeader } from '@/components/shared/page-header'
 import { EmptyState } from '@/components/shared/empty-state'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
@@ -35,6 +37,7 @@ import {
   CreditCard,
   ChevronDown,
   Banknote,
+  Trash2,
 } from 'lucide-react'
 
 const CUSTOMER_TYPES: CustomerType[] = ['brand', 'agency', 'venue', 'organizer', 'individual', 'partner']
@@ -101,7 +104,7 @@ function CompanyCombobox({
       </div>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-border rounded-lg shadow-lg overflow-hidden">
+        <div className="absolute z-50 mt-1 w-full bg-background border border-border rounded-lg shadow-lg overflow-hidden">
           {suggestions.length > 0 ? (
             <>
               <p className="px-3 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider border-b bg-muted/30">
@@ -205,9 +208,9 @@ function CustomerRow({
       onClick={onClick}
     >
       {/* Company */}
-      <td className="px-5 py-3.5">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary text-[12px] font-bold shrink-0">
+      <td className="px-6 py-3.5">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 text-[10px] font-bold shrink-0">
             {customer.company_name.charAt(0).toUpperCase()}
           </div>
           <div>
@@ -226,22 +229,22 @@ function CustomerRow({
       </td>
       {/* Phone */}
       <td className="px-4 py-3.5">
-        <div className="flex items-center gap-1.5 text-[12px] text-slate-500">
+        <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
           {customer.phone ? (
-            <><Phone className="w-3 h-3 text-slate-400 shrink-0" />{customer.phone}</>
-          ) : <span className="text-slate-300">—</span>}
+            <><Phone className="w-3 h-3 text-muted-foreground/60 shrink-0" />{customer.phone}</>
+          ) : <span className="text-muted-foreground/40">—</span>}
         </div>
       </td>
       {/* Email */}
       <td className="px-4 py-3.5 max-w-[180px]">
-        <p className="text-[12px] text-slate-500 truncate">{customer.email || <span className="text-slate-300">—</span>}</p>
+        <p className="text-[12px] text-muted-foreground truncate">{customer.email || <span className="text-muted-foreground/40">—</span>}</p>
       </td>
       {/* LINE */}
       <td className="px-4 py-3.5">
-        <div className="flex items-center gap-1.5 text-[12px] text-slate-500">
+        <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
           {customer.line_id ? (
             <><MessageCircle className="w-3 h-3 text-green-400 shrink-0" />{customer.line_id}</>
-          ) : <span className="text-slate-300">—</span>}
+          ) : <span className="text-muted-foreground/40">—</span>}
         </div>
       </td>
       {/* Actions */}
@@ -253,7 +256,7 @@ function CustomerRow({
           >
             <Plus className="w-3 h-3" /> New Lead
           </button>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
         </div>
       </td>
     </tr>
@@ -286,12 +289,12 @@ function AddCustomerForm({ onClose }: { onClose: () => void }) {
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="w-[500px] max-w-[90vw] sm:max-w-[500px] top-[6vh] translate-y-0 p-0 gap-0 max-h-[88vh] flex flex-col">
         <div className="px-6 pt-6 pb-4 border-b shrink-0">
-          <DialogTitle className="text-[15px] font-semibold text-slate-800">New Customer</DialogTitle>
-          <p className="text-[12px] text-slate-400 mt-0.5">Add a company or individual to your database</p>
+          <DialogTitle className="text-[15px] font-semibold text-foreground">New Customer</DialogTitle>
+          <p className="text-[12px] text-muted-foreground mt-0.5">Add a company or individual to your database</p>
         </div>
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Company / Customer Name *</Label>
+            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Company / Customer Name *</Label>
             <CompanyCombobox
               value={form.company_name}
               onChange={(v) => setForm({ ...form, company_name: v })}
@@ -299,7 +302,7 @@ function AddCustomerForm({ onClose }: { onClose: () => void }) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Contact Person</Label>
+            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Contact Person</Label>
             <Input value={form.contact_person} onChange={(e) => setForm({ ...form, contact_person: e.target.value })} className="h-9 text-sm" placeholder="e.g. Khun Pim" />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -347,7 +350,7 @@ function AddCustomerForm({ onClose }: { onClose: () => void }) {
 
 // ── Customer detail drawer ────────────────────────────────────────────────────
 function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: () => void }) {
-  const { updateCustomer, leadOpportunities, wonJobs, customers } = useCRMStore()
+  const { updateCustomer, deleteCustomer, leadOpportunities, wonJobs, customers } = useCRMStore()
   const [creatingLead, setCreatingLead] = useState(false)
   const [openAccount, setOpenAccount] = useState(false)
 
@@ -366,39 +369,78 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
     return `฿${v.toLocaleString()}`
   }
 
+  function isEmailUnique(email: string, excludeCustomerId?: string): boolean {
+    if (!email.trim()) return true // Empty email is always valid
+    return !customers.some(
+      (c) =>
+        c.email.toLowerCase() === email.toLowerCase() &&
+        c.customer_id !== excludeCustomerId
+    )
+  }
+
+  function handleDeleteCustomer() {
+    if (
+      window.confirm(
+        `Are you sure you want to delete "${customer.company_name}"? This action cannot be undone. Associated leads and won jobs will remain but the customer reference will be cleared.`
+      )
+    ) {
+      deleteCustomer(customer.customer_id)
+      onClose()
+    }
+  }
+
   return (
     <>
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="w-[82vw] max-w-[82vw] sm:max-w-[82vw] top-[4vh] translate-y-0 p-0 gap-0 overflow-hidden max-h-[88vh] flex flex-col">
+      <DialogContent className="!w-[95vw] sm:!w-[95vw] md:!w-[900px] lg:!w-[1000px] !max-w-none sm:!max-w-none !max-h-[96vh] sm:!max-h-[88vh] !top-[2vh] sm:!top-[4vh] !translate-y-0 !p-0 !gap-0 !overflow-hidden !flex !flex-col">
 
         {/* Header */}
-        <div className="px-7 pt-5 pb-4 border-b shrink-0">
-          <div className="flex items-center gap-3">
+        <div className="px-4 sm:px-7 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b shrink-0">
+          <div className="flex flex-col sm:flex-row items-start gap-3">
+            {/* Avatar */}
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-base shrink-0">
               {customer.company_name.charAt(0).toUpperCase()}
             </div>
+
+            {/* Names section */}
             <div className="flex-1 min-w-0">
-              <DialogTitle className="text-[15px] font-semibold text-slate-800 leading-tight">{customer.company_name}</DialogTitle>
-              {customer.contact_person && <p className="text-[12px] text-slate-400 mt-0.5">{customer.contact_person}</p>}
+              <DialogTitle className="text-[15px] font-semibold text-foreground leading-tight break-words">{customer.company_name}</DialogTitle>
+              {customer.contact_person && <p className="text-[12px] text-muted-foreground mt-1 break-words">{customer.contact_person}</p>}
+
+              {/* Buttons on mobile - below names */}
+              <div className="flex items-center gap-2 mt-3 sm:hidden flex-wrap">
+                <StatusBadge status={customer.customer_type} />
+                <Button size="sm" variant="outline" className="gap-1 h-8 text-xs border-primary/30 text-primary hover:bg-primary/5" onClick={() => setCreatingLead(true)}>
+                  <Plus className="w-3 h-3" /> New Lead
+                </Button>
+                <Button size="sm" variant="outline" className="gap-1 h-8 text-xs border-red-200/60 text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-950/20" onClick={handleDeleteCustomer}>
+                  <Trash2 className="w-3 h-3" /> Delete
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+
+            {/* Buttons on desktop - inline */}
+            <div className="hidden sm:flex items-center gap-2 shrink-0">
               <StatusBadge status={customer.customer_type} />
               <Button size="sm" variant="outline" className="gap-1 h-8 text-xs border-primary/30 text-primary hover:bg-primary/5" onClick={() => setCreatingLead(true)}>
                 <Plus className="w-3 h-3" /> New Lead
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1 h-8 text-xs border-red-200/60 text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-950/20" onClick={handleDeleteCustomer}>
+                <Trash2 className="w-3 h-3" /> Delete
               </Button>
             </div>
           </div>
         </div>
 
         {/* Two-column body */}
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
 
           {/* Left: Customer details */}
-          <div className="flex-1 overflow-y-auto px-7 py-5 space-y-5 border-r border-border/60">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-7 py-4 sm:py-5 space-y-4 sm:space-y-5 border-b sm:border-b-0 sm:border-r border-border/60">
 
             {/* Company name edit */}
             <div>
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Company Name</p>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Company Name</p>
               <CompanyCombobox
                 value={customer.company_name}
                 onChange={(v) => updateCustomer(customer.customer_id, { company_name: v })}
@@ -409,49 +451,88 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 
             <Separator />
 
+            {/* Contact person edit */}
+            <div>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Contact Person</p>
+              <InlineEdit value={customer.contact_person} placeholder="Name of contact" onSave={(v) => updateCustomer(customer.customer_id, { contact_person: v })} />
+            </div>
+
+            <Separator />
+
             {/* Contact info */}
             <div className="space-y-3">
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Contact Info</p>
-              <div className="grid grid-cols-2 gap-3">
-                {customer.email && (
-                  <div className="flex items-center gap-2 text-[13px]">
-                    <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <a href={`mailto:${customer.email}`} className="text-primary hover:underline truncate">{customer.email}</a>
-                  </div>
-                )}
-                {customer.phone && (
-                  <div className="flex items-center gap-2 text-[13px]">
-                    <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="text-slate-700">{customer.phone}</span>
-                  </div>
-                )}
-                {customer.line_id && (
-                  <div className="flex items-center gap-2 text-[13px]">
-                    <MessageCircle className="w-3.5 h-3.5 text-green-400 shrink-0" />
-                    <span className="text-slate-700">LINE: {customer.line_id}</span>
-                  </div>
-                )}
-                {customer.social && (
-                  <div className="flex items-center gap-2 text-[13px]">
-                    <AtSign className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="text-slate-700">{customer.social}</span>
-                  </div>
-                )}
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Contact Details</p>
+              <div className="space-y-2.5">
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-muted-foreground/60" /> Email
+                  </label>
+                  <InlineEdit
+                    value={customer.email}
+                    placeholder="email@example.com"
+                    onSave={(v) => {
+                      if (v && !isEmailUnique(v, customer.customer_id)) {
+                        alert('This email is already in use by another customer.')
+                        return
+                      }
+                      updateCustomer(customer.customer_id, { email: v })
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-muted-foreground/60" /> Phone
+                  </label>
+                  <InlineEdit
+                    value={customer.phone}
+                    placeholder="08x-xxx-xxxx"
+                    onSave={(v) => updateCustomer(customer.customer_id, { phone: v })}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                    <MessageCircle className="w-3.5 h-3.5 text-green-400" /> LINE ID
+                  </label>
+                  <InlineEdit
+                    value={customer.line_id ?? ''}
+                    placeholder="LINE ID"
+                    onSave={(v) => updateCustomer(customer.customer_id, { line_id: v })}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                    <AtSign className="w-3.5 h-3.5 text-muted-foreground/60" /> Social (IG/FB)
+                  </label>
+                  <InlineEdit
+                    value={customer.social ?? ''}
+                    placeholder="@handle"
+                    onSave={(v) => updateCustomer(customer.customer_id, { social: v })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Customer type edit */}
+            <div>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Customer Type</p>
+              <div className="space-y-1.5">
+                <Select value={customer.customer_type} onValueChange={(v) => updateCustomer(customer.customer_id, { customer_type: v as CustomerType })}>
+                  <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CUSTOMER_TYPES.map((t) => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <Separator />
 
             {/* Meta */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Type</p>
-                <p className="text-[13px] font-medium text-slate-700 capitalize">{customer.customer_type}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Created</p>
-                <p className="text-[13px] text-slate-700">{new Date(customer.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-              </div>
+            <div>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Created</p>
+              <p className="text-[13px] text-foreground">{new Date(customer.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
             </div>
 
             <Separator />
@@ -465,23 +546,23 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
             <Separator />
 
             {/* Company Account */}
-            <div className="rounded-xl border border-amber-200 overflow-hidden">
+            <div className="rounded-xl border border-amber-200/60 overflow-hidden">
               <button
                 type="button"
                 onClick={() => setOpenAccount((o) => !o)}
-                className="w-full bg-amber-50 px-4 py-2.5 flex items-center gap-2 hover:bg-amber-100/60 transition-colors text-left"
+                className="w-full bg-amber-50/50 dark:bg-amber-950/20 px-4 py-2.5 flex items-center gap-2 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors text-left"
               >
-                <div className="w-5 h-5 rounded-md bg-amber-100 flex items-center justify-center shrink-0">
-                  <CreditCard className="w-3 h-3 text-amber-600" />
+                <div className="w-5 h-5 rounded-md bg-amber-100/60 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
+                  <CreditCard className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                 </div>
-                <span className="text-[12px] font-bold text-amber-800 tracking-wide flex-1">Company Account</span>
-                <ChevronDown className={`w-3.5 h-3.5 text-amber-400 transition-transform duration-200 ${openAccount ? 'rotate-0' : '-rotate-90'}`} />
+                <span className="text-[12px] font-bold text-amber-700 dark:text-amber-300 tracking-wide flex-1">Company Account</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-amber-600 dark:text-amber-400 transition-transform duration-200 ${openAccount ? 'rotate-0' : '-rotate-90'}`} />
               </button>
               {openAccount && (
-                <div className="bg-white px-4 py-4 space-y-4">
+                <div className="bg-background px-4 py-4 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Tax ID (เลขประจำตัวผู้เสียภาษี)</p>
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Tax ID (เลขประจำตัวผู้เสียภาษี)</p>
                       <InlineEdit value={customer.tax_id ?? ''} placeholder="0105xxx" onSave={(v) => updateCustomer(customer.customer_id, { tax_id: v })} />
                     </div>
                     <div>
@@ -539,16 +620,16 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
               <>
                 <Separator />
                 <div>
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">Leads &amp; Opportunities ({linkedLeads.length})</p>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Leads &amp; Opportunities ({linkedLeads.length})</p>
                   <div className="space-y-2">
                     {linkedLeads.map((l) => (
-                      <div key={l.lead_op_id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-border/60">
+                      <div key={l.lead_op_id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/60">
                         <div>
-                          <p className="text-[13px] font-semibold text-slate-700">{l.name}</p>
-                          <p className="text-[11px] text-slate-400">{l.service_type}</p>
+                          <p className="text-[13px] font-semibold text-foreground">{l.name}</p>
+                          <p className="text-[11px] text-muted-foreground">{l.service_type}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-[13px] font-bold text-slate-800">฿{l.estimated_value.toLocaleString()}</p>
+                          <p className="text-[13px] font-bold text-foreground">฿{l.estimated_value.toLocaleString()}</p>
                           <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${l.status === 'won' ? 'bg-emerald-50 text-emerald-600' : l.status === 'lost' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-600'}`}>
                             {l.status}
                           </span>
@@ -565,19 +646,19 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
               <>
                 <Separator />
                 <div>
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">Won Jobs ({linkedWonJobs.length})</p>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Won Jobs ({linkedWonJobs.length})</p>
                   <div className="space-y-2">
                     {linkedWonJobs.map((j) => (
-                      <div key={j.job_id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-border/60">
+                      <div key={j.job_id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/60">
                         <div className="flex items-center gap-2">
-                          <Briefcase className="w-4 h-4 text-slate-400 shrink-0" />
+                          <Briefcase className="w-4 h-4 text-muted-foreground/60 shrink-0" />
                           <div>
-                            <p className="text-[13px] font-semibold text-slate-700">{j.event_display_name || `Job #${j.job_number}`}</p>
-                            <p className="text-[11px] text-slate-400">{j.event_date?.replace(/-/g, '.') || '—'}</p>
+                            <p className="text-[13px] font-semibold text-foreground">{j.event_display_name || `Job #${j.job_number}`}</p>
+                            <p className="text-[11px] text-muted-foreground">{j.event_date?.replace(/-/g, '.') || '—'}</p>
                           </div>
                         </div>
                         <div className="text-right shrink-0 ml-2">
-                          <p className="text-[13px] font-bold text-slate-800">{formatCurrency(j.estimated_value)}</p>
+                          <p className="text-[13px] font-bold text-foreground">{formatCurrency(j.estimated_value)}</p>
                           <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
                             {j.op_stage.replace(/_/g, ' ').toLowerCase()}
                           </span>
@@ -591,7 +672,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
           </div>
 
           {/* Right: Activity */}
-          <div className="w-[320px] shrink-0 overflow-y-auto px-5 py-5 space-y-5 bg-slate-50/60">
+          <div className="w-full sm:w-[320px] shrink-0 overflow-y-auto px-4 sm:px-5 py-4 sm:py-5 space-y-4 sm:space-y-5 bg-muted/30">
             <div>
               <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">Log Activity</p>
               <AddActivityForm entityType="customer" entityId={customer.customer_id} owner="Vitta" />
@@ -620,12 +701,24 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function CustomersPage() {
-  const { customers } = useCRMStore()
+  const router = useRouter()
+  const { customers, initializeData } = useCRMStore()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [newLeadCustomer, setNewLeadCustomer] = useState<Customer | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 25
+
+  useEffect(() => {
+    void initializeData()
+  }, [initializeData])
+
+  // Reset to page 1 when search/filter changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, typeFilter])
 
   const filtered = customers.filter((c) => {
     const q = search.toLowerCase()
@@ -637,41 +730,46 @@ export default function CustomersPage() {
     return matchSearch && matchType
   })
 
+  // Pagination
+  const totalPages = Math.ceil(filtered.length / itemsPerPage)
+  const startIdx = (currentPage - 1) * itemsPerPage
+  const paginatedItems = filtered.slice(startIdx, startIdx + itemsPerPage)
+
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="bg-white border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex items-center justify-between">
+        <div className="flex items-center gap-3 min-w-0">
           <MobileMenuButton />
-          <div>
-            <h1 className="text-[15px] sm:text-[17px] font-semibold text-slate-800 tracking-tight">Customers</h1>
-            <p className="text-[11px] sm:text-[12px] text-slate-400 mt-0.5 hidden sm:block">{customers.length} records in your database</p>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-semibold text-foreground tracking-tight truncate">Customers</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 hidden sm:block truncate">{customers.length} records in your database</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" className="gap-1.5 h-8 text-[12px] text-slate-500" disabled>
-            <FileSpreadsheet className="w-3.5 h-3.5" /> Import
-            <span className="ml-0.5 text-[9px] bg-slate-100 text-slate-400 px-1 py-0.5 rounded">soon</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <ThemeToggle />
+          <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs sm:text-sm" onClick={() => router.push('/import')}>
+            <FileSpreadsheet className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Import</span>
           </Button>
-          <Button size="sm" className="gap-1.5 h-8 text-[12px] font-semibold" onClick={() => setCreating(true)}>
-            <Plus className="w-3.5 h-3.5" /> Add Customer
+          <Button size="sm" className="gap-1.5 h-8 text-xs sm:text-sm font-semibold" onClick={() => setCreating(true)}>
+            <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Add Customer</span><span className="sm:hidden">Add</span>
           </Button>
         </div>
       </div>
 
       {/* Filter bar */}
-      <div className="px-4 sm:px-6 lg:px-8 py-3 border-b bg-white flex items-center gap-3">
+      <div className="px-4 sm:px-6 lg:px-8 py-3 border-b bg-background flex items-center gap-3">
         <div className="relative max-w-xs flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60" />
           <Input
             placeholder="Search company, contact, email…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-8 text-[12px] bg-slate-50 border-slate-200"
+            className="pl-9 h-8 text-[12px] bg-muted border-border"
           />
         </div>
         <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v ?? 'all')}>
-          <SelectTrigger className="w-[140px] h-8 text-[12px] bg-slate-50 border-slate-200">
+          <SelectTrigger className="w-[140px] h-8 text-[12px] bg-muted border-border">
             <SelectValue placeholder="All types" />
           </SelectTrigger>
           <SelectContent>
@@ -681,38 +779,89 @@ export default function CustomersPage() {
             ))}
           </SelectContent>
         </Select>
-        <p className="text-[11px] text-slate-400 ml-auto">{filtered.length} of {customers.length}</p>
+        <p className="text-[11px] text-muted-foreground ml-auto">{filtered.length} of {customers.length}</p>
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-y-auto bg-white">
-        {filtered.length === 0 ? (
-          search || typeFilter !== 'all'
-            ? <EmptyState icon={Search} title="No customers match" description="Try adjusting your search or filter." />
-            : <EmptyState icon={Users} title="No customers yet" description="Add your first customer to start building your database." action={{ label: '+ Add Customer', onClick: () => setCreating(true) }} />
-        ) : (
-          <table className="w-full">
-            <thead className="sticky top-0 z-10">
-              <tr className="border-b border-border/60 bg-slate-50/80 backdrop-blur-sm">
-                <th className="px-5 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Company</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Type</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Phone</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Email</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">LINE ID</th>
-                <th className="px-4 py-2.5" />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((c) => (
-                <CustomerRow
-                  key={c.customer_id}
-                  customer={c}
-                  onClick={() => setSelectedId(c.customer_id)}
-                  onNewLead={() => setNewLeadCustomer(c)}
-                />
-              ))}
-            </tbody>
-          </table>
+      <div className="flex-1 flex flex-col overflow-hidden bg-background">
+        <div className="flex-1 overflow-y-auto">
+          {filtered.length === 0 ? (
+            search || typeFilter !== 'all'
+              ? <EmptyState icon={Search} title="No customers match" description="Try adjusting your search or filter." />
+              : <EmptyState icon={Users} title="No customers yet" description="Add your first customer to start building your database." action={{ label: '+ Add Customer', onClick: () => setCreating(true) }} />
+          ) : (
+            <table className="w-full">
+              <thead className="sticky top-0 z-10">
+                <tr className="border-b border-border/60 bg-muted/50 backdrop-blur-sm">
+                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Company</th>
+                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Type</th>
+                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Phone</th>
+                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Email</th>
+                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">LINE ID</th>
+                  <th className="px-4 py-2.5" />
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedItems.map((c) => (
+                  <CustomerRow
+                    key={c.customer_id}
+                    customer={c}
+                    onClick={() => setSelectedId(c.customer_id)}
+                    onNewLead={() => setNewLeadCustomer(c)}
+                  />
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Pagination controls */}
+        {filtered.length > 0 && (
+          <div className="border-t border-border bg-muted/30 px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between text-xs shrink-0">
+            <p className="text-muted-foreground">
+              Showing {startIdx + 1}–{Math.min(startIdx + itemsPerPage, filtered.length)} of {filtered.length}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="h-7 px-2.5 text-xs"
+              >
+                ← Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const pageNum = currentPage <= 3
+                    ? i + 1
+                    : currentPage >= totalPages - 2
+                    ? totalPages - 4 + i
+                    : currentPage - 2 + i
+                  return (
+                    <Button
+                      key={pageNum}
+                      size="sm"
+                      variant={currentPage === pageNum ? 'default' : 'outline'}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className="h-7 w-7 p-0 text-xs"
+                    >
+                      {pageNum}
+                    </Button>
+                  )
+                })}
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="h-7 px-2.5 text-xs"
+              >
+                Next →
+              </Button>
+            </div>
+          </div>
         )}
       </div>
 
