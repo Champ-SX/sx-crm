@@ -23,18 +23,22 @@ interface CreateQuotationModalProps {
   lead: LeadOpportunity
   open: boolean
   onClose: () => void
+  // Customer contact information
+  customerPhone?: string
+  customerLineId?: string
 }
 
 function formatCurrency(v: number) {
   return v.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-export function CreateQuotationModal({ lead, open, onClose }: CreateQuotationModalProps) {
+export function CreateQuotationModal({ lead, open, onClose, customerPhone = '', customerLineId = '' }: CreateQuotationModalProps) {
   const today = new Date().toISOString().split('T')[0]
 
   const [contactName, setContactName] = useState(lead.customer_name)
   const [contactEmail, setContactEmail] = useState('')
-  const [contactPhone, setContactPhone] = useState('')
+  const [contactPhone, setContactPhone] = useState(customerPhone)
+  const [contactLineId, setContactLineId] = useState(customerLineId)
   const [documentDate, setDocumentDate] = useState(today)
   const [dueDate, setDueDate] = useState('')
   const [note, setNote] = useState(lead.notes || '')
@@ -87,6 +91,7 @@ export function CreateQuotationModal({ lead, open, onClose }: CreateQuotationMod
             contactName,
             contactEmail: contactEmail || undefined,
             contactPhone: contactPhone || undefined,
+            contactLineId: contactLineId || undefined,
             documentDate,
             dueDate: dueDate || documentDate,
             note,
@@ -202,6 +207,10 @@ export function CreateQuotationModal({ lead, open, onClose }: CreateQuotationMod
                 <div className="space-y-1">
                   <Label className="text-xs">Phone</Label>
                   <Input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} className="h-8 text-sm" placeholder="08x-xxx-xxxx" />
+                </div>
+                <div className="col-span-2 space-y-1">
+                  <Label className="text-xs">Line ID</Label>
+                  <Input value={contactLineId} onChange={(e) => setContactLineId(e.target.value)} className="h-8 text-sm" placeholder="@linenamehere" />
                 </div>
               </div>
             </div>
