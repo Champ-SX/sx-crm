@@ -133,6 +133,21 @@ export const OP_STAGES: OPStage[] = [
   'OP_DONE_PAYMENT',
 ]
 
+// ─── Dynamic OP Stage (supports both legacy fixed and custom user-created stages) ──
+// Represents stages in the Kanban board for Won Jobs
+export interface DynamicOPStage {
+  id: string                    // unique identifier (e.g. "WON_JOB_LIST" or "custom_123")
+  label: string                 // display name (e.g. "Won Job List")
+  order: number                 // visual order in the kanban
+  accentColor: string          // tailwind color for accent (e.g. "blue")
+  dotColor: string             // tailwind color for dot indicator
+  headerBg: string             // tailwind background for header
+  columnBg: string             // tailwind background for column
+  isCustom: boolean            // true if user-created, false if built-in
+}
+
+export type JobSortOption = 'created' | 'name' | 'value' | 'owner' | 'date' | 'freestyle'
+
 export type PaymentStatus = 'unpaid' | 'partial' | 'paid' | 'overdue'
 export type StaffStatus = 'pending' | 'confirmed' | 'na'
 export type DocStatus = 'pending' | 'ready' | 'na'
@@ -203,6 +218,7 @@ export interface WonJob {
   staff_status: StaffStatus
   doc_status: DocStatus
   op_stage: OPStage
+  position: number // Position within stage for vertical ordering (0 = first)
   owner: string
 
   // ── Relations ──
@@ -215,6 +231,14 @@ export interface WonJob {
   lead_op_id?: string
   created_at: string
   updated_at: string
+}
+
+// ─── Activity Attachment ───────────────────────────────────────────────────
+export interface ActivityAttachment {
+  filename: string
+  size: number              // bytes
+  type: string              // MIME type (e.g. "image/png")
+  data: string              // base64 encoded file content
 }
 
 // ─── Activity ────────────────────────────────────────────────────────────────
@@ -236,6 +260,7 @@ export interface Activity {
   description: string
   created_by: string
   created_at: string
+  attachments?: ActivityAttachment[]
 }
 
 // ─── Task ────────────────────────────────────────────────────────────────────
