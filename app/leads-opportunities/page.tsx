@@ -304,49 +304,21 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
               </div>
               {/* Action buttons in header */}
               <div className="flex items-center gap-3 shrink-0 flex-wrap justify-end">
-                {isEditing ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-10 px-4 gap-2 border-primary/30 text-primary hover:bg-primary/5 text-xs sm:text-sm min-w-[44px] font-medium"
+                  onClick={() => setQuotationOpen(true)}
+                >
+                  <Send className="w-4 h-4" /> <span className="hidden md:inline">Create Quotation</span>
+                </Button>
+                {item.status === 'open' && (
                   <>
                     <Button
                       size="sm"
-                      variant="outline"
-                      className="h-10 px-4 text-xs sm:text-sm min-w-[44px]"
-                      onClick={handleCancelEdit}
+                      className="h-10 px-4 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm min-w-[44px]"
+                      onClick={() => setConfirmWon(true)}
                     >
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="h-10 px-4 text-xs sm:text-sm min-w-[44px]"
-                      onClick={handleSaveEdit}
-                    >
-                      <Check className="w-4 h-4 mr-2" /> Save
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-10 px-4 gap-2 text-xs sm:text-sm min-w-[44px]"
-                      onClick={() => setIsEditing(true)}
-                    >
-                      <Pencil className="w-4 h-4" /> <span className="hidden sm:inline">Edit</span>
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-10 px-4 gap-2 border-primary/30 text-primary hover:bg-primary/5 text-xs sm:text-sm min-w-[44px] font-medium"
-                      onClick={() => setQuotationOpen(true)}
-                    >
-                      <Send className="w-4 h-4" /> <span className="hidden md:inline">Create Quotation</span>
-                    </Button>
-                    {item.status === 'open' && (
-                      <>
-                        <Button
-                          size="sm"
-                          className="h-10 px-4 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm min-w-[44px]"
-                          onClick={() => setConfirmWon(true)}
-                        >
                           <Trophy className="w-4 h-4" /> <span className="hidden sm:inline">Won</span>
                         </Button>
                         <Button
