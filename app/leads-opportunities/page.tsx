@@ -616,11 +616,9 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                   <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-1">Log Activity</span>
                   <ChevronDown className={`w-4 h-4 text-muted-foreground sm:hidden transition-transform duration-200 ${openActivity ? 'rotate-0' : '-rotate-90'}`} />
                 </button>
-                {(openActivity || window.innerWidth >= 640) && (
-                  <div className="px-4 sm:px-6 pb-3 sm:pb-4">
-                    <AddActivityForm entityType="lead_opportunity" entityId={item.lead_op_id} owner={item.owner} />
-                  </div>
-                )}
+                <div className={`px-4 sm:px-6 pb-3 sm:pb-4 sm:block ${openActivity ? 'block' : 'hidden'}`}>
+                  <AddActivityForm entityType="lead_opportunity" entityId={item.lead_op_id} owner={item.owner} />
+                </div>
               </div>
 
               <Separator />
@@ -635,11 +633,9 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                   <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-1">History</span>
                   <ChevronDown className={`w-4 h-4 text-muted-foreground sm:hidden transition-transform duration-200 ${openHistory ? 'rotate-0' : '-rotate-90'}`} />
                 </button>
-                {(openHistory || window.innerWidth >= 640) && (
-                  <div className="px-4 sm:px-6 py-3 sm:py-4">
-                    <ActivityTimeline entityType="lead_opportunity" entityId={item.lead_op_id} />
-                  </div>
-                )}
+                <div className={`px-4 sm:px-6 py-3 sm:py-4 sm:block ${openHistory ? 'block' : 'hidden'}`}>
+                  <ActivityTimeline entityType="lead_opportunity" entityId={item.lead_op_id} />
+                </div>
               </div>
             </div>
           </div>
