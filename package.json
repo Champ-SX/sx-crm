@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "verify-position": "ts-node scripts/verify-position.ts",
+    "verify-position:fix": "ts-node scripts/verify-position.ts --fix"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
