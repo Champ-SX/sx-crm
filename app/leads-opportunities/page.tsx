@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCRMStore } from '@/store/crm-store'
 import { useHydrated } from '@/hooks/use-hydrated'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { ThemeToggle } from '@/components/layout/theme-toggle'
 import { EmptyState } from '@/components/shared/empty-state'
@@ -185,12 +186,14 @@ function LeadRow({
 function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }) {
   const router = useRouter()
   const { updateLeadOpportunity, deleteLeadOpportunity, markAsWon, markAsLost, leadOpportunities, customers, updateCustomer, addLeadOpportunity } = useCRMStore()
+  const isMobile = useIsMobile()
   const [confirmWon, setConfirmWon] = useState(false)
   const [confirmLost, setConfirmLost] = useState(false)
   const [quotationOpen, setQuotationOpen] = useState(false)
   const [openAccount, setOpenAccount] = useState(false)
-  const [openActivity, setOpenActivity] = useState(false)
-  const [openHistory, setOpenHistory] = useState(false)
+  // Expand Activity & History by default on mobile for better discoverability
+  const [openActivity, setOpenActivity] = useState(isMobile)
+  const [openHistory, setOpenHistory] = useState(isMobile)
   const [isEditing, setIsEditing] = useState(false)
   const [editData, setEditData] = useState<LeadOpportunity | null>(null)
 

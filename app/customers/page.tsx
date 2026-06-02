@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCRMStore } from '@/store/crm-store'
 import { useHydrated } from '@/hooks/use-hydrated'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { ThemeToggle } from '@/components/layout/theme-toggle'
 import { PageHeader } from '@/components/shared/page-header'
@@ -352,10 +353,12 @@ function AddCustomerForm({ onClose }: { onClose: () => void }) {
 // ── Customer detail drawer ────────────────────────────────────────────────────
 function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: () => void }) {
   const { updateCustomer, deleteCustomer, leadOpportunities, wonJobs, customers } = useCRMStore()
+  const isMobile = useIsMobile()
   const [creatingLead, setCreatingLead] = useState(false)
   const [openAccount, setOpenAccount] = useState(false)
-  const [openActivity, setOpenActivity] = useState(false)
-  const [openHistory, setOpenHistory] = useState(false)
+  // Expand Activity & History by default on mobile for better discoverability
+  const [openActivity, setOpenActivity] = useState(isMobile)
+  const [openHistory, setOpenHistory] = useState(isMobile)
 
   const customerMaybe = customers.find((c) => c.customer_id === customerId)
   if (!customerMaybe) return null
