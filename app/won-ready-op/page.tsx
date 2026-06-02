@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   closestCenter,
@@ -204,20 +205,23 @@ function KanbanColumn({ stage, jobs, onCardClick, activeId }: {
   const cfg = stageConfig[stage]
   const totalValue = jobs.reduce((s, j) => s + j.estimated_value, 0)
   const [sortBy, setSortBy] = useState<'position' | 'date' | 'value' | 'name'>('position')
+  const [sortMenuOpen, setSortMenuOpen] = useState(false)
 
-  const sortedJobs = [...jobs].sort((a, b) => {
-    switch (sortBy) {
-      case 'date':
-        return (a.event_date || '').localeCompare(b.event_date || '')
-      case 'value':
-        return (b.estimated_value || 0) - (a.estimated_value || 0)
-      case 'name':
-        return (a.customer_name || '').localeCompare(b.customer_name || '')
-      case 'position':
-      default:
-        return (a.position ?? 0) - (b.position ?? 0)
-    }
-  })
+  const sortedJobs = useMemo(() => {
+    return [...jobs].sort((a, b) => {
+      switch (sortBy) {
+        case 'date':
+          return (a.event_date || '').localeCompare(b.event_date || '')
+        case 'value':
+          return (b.estimated_value || 0) - (a.estimated_value || 0)
+        case 'name':
+          return (a.customer_name || '').localeCompare(b.customer_name || '')
+        case 'position':
+        default:
+          return (a.position ?? 0) - (b.position ?? 0)
+      }
+    })
+  }, [jobs, sortBy])
 
   return (
     <div
@@ -231,22 +235,44 @@ function KanbanColumn({ stage, jobs, onCardClick, activeId }: {
             <div className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
             <p className="text-[11px] font-semibold text-slate-700 leading-tight">{OP_STAGE_LABELS[stage]}</p>
           </div>
-          <div className="flex items-center gap-1.5">
-            {/* Sort dropdown */}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="text-[9px] font-medium text-slate-600 bg-white border border-slate-200 rounded px-1.5 py-1 cursor-pointer hover:border-slate-300 transition-colors"
-              title="Sort by"
+          {/* Card count with sort dropdown button */}
+          <div className="relative">
+            <button
+              onClick={() => setSortMenuOpen(!sortMenuOpen)}
+              className="text-[10px] font-bold bg-white shadow-sm text-slate-500 w-6 h-6 rounded-full flex items-center justify-center shrink-0 border border-slate-100 hover:border-slate-300 hover:shadow-md transition-all cursor-pointer"
+              title="Click to sort"
             >
-              <option value="position">Order</option>
-              <option value="date">Date</option>
-              <option value="value">Value</option>
-              <option value="name">Name</option>
-            </select>
-            <span className="text-[10px] font-bold bg-white shadow-sm text-slate-500 w-5 h-5 rounded-full flex items-center justify-center shrink-0 border border-slate-100">
               {jobs.length}
-            </span>
+            </button>
+            {/* Dropdown menu */}
+            {sortMenuOpen && (
+              <div className="absolute right-0 top-7 bg-white border border-slate-200 rounded-md shadow-lg z-10 min-w-[120px]">
+                <button
+                  onClick={() => { setSortBy('position'); setSortMenuOpen(false) }}
+                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-slate-100 ${sortBy === 'position' ? 'bg-slate-50 text-slate-700' : 'text-slate-600'} first:rounded-t-md`}
+                >
+                  Order
+                </button>
+                <button
+                  onClick={() => { setSortBy('date'); setSortMenuOpen(false) }}
+                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-slate-100 ${sortBy === 'date' ? 'bg-slate-50 text-slate-700' : 'text-slate-600'}`}
+                >
+                  Event Date
+                </button>
+                <button
+                  onClick={() => { setSortBy('value'); setSortMenuOpen(false) }}
+                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-slate-100 ${sortBy === 'value' ? 'bg-slate-50 text-slate-700' : 'text-slate-600'}`}
+                >
+                  Value
+                </button>
+                <button
+                  onClick={() => { setSortBy('name'); setSortMenuOpen(false) }}
+                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-slate-100 ${sortBy === 'name' ? 'bg-slate-50 text-slate-700' : 'text-slate-600'} last:rounded-b-md`}
+                >
+                  Alphabetically
+                </button>
+              </div>
+            )}
           </div>
         </div>
         {jobs.length > 0 && (
@@ -790,11 +816,15 @@ export default function WonReadyOpPage() {
   }, [isHydrated])
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 5, // Lower threshold for touch devices
-        delay: 150, // Longer delay feels like "pick up" on mobile
-        tolerance: 8 // More tolerance for touch jitter
+        distance: 8,
+      }
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200,
+        tolerance: 8,
       }
     })
   )
@@ -853,6 +883,10 @@ export default function WonReadyOpPage() {
             <p className="text-[11px] sm:text-[12px] text-slate-400 mt-0.5 hidden sm:block">{activeCount} active jobs · {formatCurrency(totalValue)} in pipeline</p>
           </div>
         </div>
+        {/* Add Stage button (placeholder for future) */}
+        <button className="px-3 py-1.5 bg-white border-2 border-dashed border-slate-300 text-slate-600 rounded-lg text-[12px] font-medium hover:border-slate-400 hover:bg-slate-50 transition-colors cursor-not-allowed opacity-50" disabled title="Add Stage feature coming soon">
+          + Add Stage
+        </button>
       </div>
 
       <DndContext
