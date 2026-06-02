@@ -873,6 +873,18 @@ export default function WonReadyOpPage() {
                 activeId={activeId}
               />
             ))}
+
+            {/* Add stage button - placeholder for future dynamic stages */}
+            <div className="flex-shrink-0 w-full sm:w-[240px] flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-4 h-auto sm:min-h-[100px] cursor-pointer hover:border-slate-300 hover:bg-slate-100 transition-colors group">
+              <button
+                onClick={() => console.log('Add stage feature coming soon')}
+                className="flex flex-col items-center gap-2 text-slate-400 group-hover:text-slate-600 transition-colors"
+                title="Dynamic stage creation coming soon"
+              >
+                <Plus className="w-5 h-5" />
+                <span className="text-[11px] font-medium whitespace-nowrap">Add Stage</span>
+              </button>
+            </div>
           </div>
         </div>
 
