@@ -12,6 +12,8 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core'
 import { useDroppable, useDraggable } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useCRMStore } from '@/store/crm-store'
 import { useHydrated } from '@/hooks/use-hydrated'
@@ -32,7 +34,7 @@ import {
   Calendar, User,
   Pencil, Check, X, ChevronDown, ChevronUp,
   ClipboardList, Truck, CreditCard,
-  Users, Banknote,
+  Users, Banknote, GripVertical,
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 
@@ -144,47 +146,59 @@ function FieldRow({ label, value, onSave, multiline, placeholder, rows, dateInpu
 
 // ── Job Card ──────────────────────────────────────────────────────────────────
 function JobCard({ job, onClick, isDragging }: { job: WonJob; onClick: () => void; isDragging?: boolean }) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: job.job_id })
+  const { attributes, listeners, setNodeRef, transform, isDragging: isSortableDragging } = useSortable({ id: job.job_id })
   const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined
+  const isBeingDragged = isDragging || isSortableDragging
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
       onClick={(e) => { e.stopPropagation(); onClick() }}
-      className={`bg-white rounded-xl border border-border/60 p-3 cursor-pointer hover:shadow-md hover:border-border transition-all select-none ${isDragging ? 'opacity-30' : ''}`}
+      className={`bg-white rounded-xl border border-border/60 p-3 cursor-pointer hover:shadow-md hover:border-border transition-all select-none flex items-start gap-2 group ${isBeingDragged ? 'opacity-50 shadow-lg' : ''}`}
     >
-      {/* Job number + product type */}
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[9px] font-mono font-semibold text-slate-400 tracking-wider">#{job.job_number}</span>
-        <span className="text-[9px] font-semibold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md">{job.product_type || '—'}</span>
+      {/* Drag handle - visible on hover/focus */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex-shrink-0 mt-0.5 text-slate-300 group-hover:text-slate-400 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity"
+        title="Drag to reorder"
+      >
+        <GripVertical className="w-4 h-4" />
       </div>
 
-      {/* Title */}
-      <p className="text-[12px] font-semibold text-slate-800 leading-snug mb-2 line-clamp-2">
-        {formatJobTitleShort(job)}
-      </p>
-
-      {/* Customer */}
-      <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mb-1.5">
-        <User className="w-3 h-3 shrink-0 text-slate-400" />
-        <span className="truncate">{job.customer_name || '—'}</span>
-      </div>
-
-      {/* Date */}
-      {job.event_date && (
-        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mb-2">
-          <Calendar className="w-3 h-3 shrink-0 text-slate-400" />
-          <span>{format(parseISO(job.event_date + 'T00:00:00'), 'dd MMM yyyy')}</span>
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        {/* Job number + product type */}
+        <div className="flex items-center justify-between mb-2 gap-1">
+          <span className="text-[9px] font-mono font-semibold text-slate-400 tracking-wider">#{job.job_number}</span>
+          <span className="text-[9px] font-semibold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md shrink-0">{job.product_type || '—'}</span>
         </div>
-      )}
 
-      {/* Value + owner */}
-      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-        <span className="text-[12px] font-bold text-slate-800">{formatCurrency(job.estimated_value)}</span>
-        <span className="text-[10px] font-medium text-slate-400 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded-full">{job.owner}</span>
+        {/* Title */}
+        <p className="text-[12px] font-semibold text-slate-800 leading-snug mb-2 line-clamp-2">
+          {formatJobTitleShort(job)}
+        </p>
+
+        {/* Customer */}
+        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mb-1.5">
+          <User className="w-3 h-3 shrink-0 text-slate-400" />
+          <span className="truncate">{job.customer_name || '—'}</span>
+        </div>
+
+        {/* Date */}
+        {job.event_date && (
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mb-2">
+            <Calendar className="w-3 h-3 shrink-0 text-slate-400" />
+            <span>{format(parseISO(job.event_date + 'T00:00:00'), 'dd MMM yyyy')}</span>
+          </div>
+        )}
+
+        {/* Value + owner */}
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-1">
+          <span className="text-[12px] font-bold text-slate-800">{formatCurrency(job.estimated_value)}</span>
+          <span className="text-[10px] font-medium text-slate-400 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded-full shrink-0">{job.owner}</span>
+        </div>
       </div>
     </div>
   )
@@ -220,21 +234,23 @@ function KanbanColumn({ stage, jobs, onCardClick, activeId }: {
       </div>
 
       {/* Cards */}
-      <div className="flex-1 px-2.5 pb-3 pt-2 space-y-2 min-h-[80px]">
-        {jobs.map((job) => (
-          <JobCard
-            key={job.job_id}
-            job={job}
-            onClick={() => onCardClick(job)}
-            isDragging={activeId === job.job_id}
-          />
-        ))}
-        {jobs.length === 0 && (
-          <div className={`flex items-center justify-center rounded-xl border-2 border-dashed h-20 transition-colors ${isOver ? 'border-primary/40 bg-primary/5' : 'border-slate-200/60'}`}>
-            <p className="text-[10px] text-slate-400/60">Drop here</p>
-          </div>
-        )}
-      </div>
+      <SortableContext items={jobs.map(j => j.job_id)} strategy={verticalListSortingStrategy}>
+        <div className="flex-1 px-2.5 pb-3 pt-2 space-y-2 min-h-[80px]">
+          {jobs.map((job) => (
+            <JobCard
+              key={job.job_id}
+              job={job}
+              onClick={() => onCardClick(job)}
+              isDragging={activeId === job.job_id}
+            />
+          ))}
+          {jobs.length === 0 && (
+            <div className={`flex items-center justify-center rounded-xl border-2 border-dashed h-20 transition-colors ${isOver ? 'border-primary/40 bg-primary/5' : 'border-slate-200/60'}`}>
+              <p className="text-[10px] text-slate-400/60">Drop here</p>
+            </div>
+          )}
+        </div>
+      </SortableContext>
     </div>
   )
 }
@@ -753,20 +769,48 @@ export default function WonReadyOpPage() {
   }, [isHydrated])
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8, delay: 100, tolerance: 5 } })
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // Lower threshold for touch devices
+        delay: 150, // Longer delay feels like "pick up" on mobile
+        tolerance: 8 // More tolerance for touch jitter
+      }
+    })
   )
 
   const activeJob = activeId ? wonJobs.find((j) => j.job_id === activeId) : null
+  const reorderWonJobWithinStage = useCRMStore((s) => s.reorderWonJobWithinStage)
 
   function onDragStart({ active }: DragStartEvent) { setActiveId(active.id as string) }
   function onDragEnd({ active, over }: DragEndEvent) {
     setActiveId(null)
     if (!over) return
-    const stage = over.id as OPStage
-    if (!OP_STAGES.includes(stage)) return
-    const job = wonJobs.find((j) => j.job_id === active.id)
-    if (job?.op_stage === stage) return
-    moveWonJobStage(active.id as string, stage)
+
+    const activeJob = wonJobs.find((j) => j.job_id === active.id)
+    if (!activeJob) return
+
+    const overId = over.id as string
+    const isDroppedOnStage = OP_STAGES.includes(overId as OPStage)
+
+    if (isDroppedOnStage) {
+      // Dropped on a stage header - move between columns
+      const targetStage = overId as OPStage
+      if (activeJob.op_stage !== targetStage) {
+        void moveWonJobStage(active.id as string, targetStage)
+      }
+    } else {
+      // Dropped on another job - reorder within column
+      const targetJob = wonJobs.find((j) => j.job_id === overId)
+      if (targetJob && targetJob.op_stage === activeJob.op_stage) {
+        const stageJobs = wonJobs
+          .filter((j) => j.op_stage === activeJob.op_stage)
+          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+        const newPosition = stageJobs.findIndex((j) => j.job_id === overId)
+        if (newPosition >= 0) {
+          void reorderWonJobWithinStage(active.id as string, newPosition, activeJob.op_stage)
+        }
+      }
+    }
   }
 
   const activeCount = wonJobs.filter((j) => j.op_stage !== 'OP_DONE_PAYMENT').length
