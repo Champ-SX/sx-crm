@@ -140,6 +140,8 @@ interface CRMStore {
   updateOpStageLabel: (id: string, label: string) => Promise<void>
   deleteOpStage: (id: string) => Promise<void>
   setStageSortOption: (stageId: string, sortOption: JobSortOption) => void
+  reorderStages: (stageIds: string[]) => Promise<void>
+  updateStageColor: (stageId: string, colorName: string) => Promise<void>
 
   // Staff
   addStaff: (s: StaffMember) => Promise<void>
@@ -753,9 +755,13 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
     set((s) => ({ opStages: [...s.opStages, stage] }))
     if (USE_SUPABASE) {
       try {
-        await db.opStageQueries.create(stage)
+        console.log('[addOpStage] Creating stage:', stage)
+        const result = await db.opStageQueries.create(stage)
+        console.log('[addOpStage] Stage created successfully:', result)
       } catch (error) {
-        set({ error: error instanceof Error ? error.message : 'Failed to create stage' })
+        const errorMsg = error instanceof Error ? error.message : 'Failed to create stage'
+        console.error('[addOpStage] Error creating stage:', errorMsg, error)
+        set({ error: errorMsg })
       }
     }
   },
@@ -807,6 +813,66 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
     set((s) => ({
       stageSortOptions: { ...s.stageSortOptions, [stageId]: sortOption },
     })),
+
+  reorderStages: async (stageIds: string[]) => {
+    set((s) => ({
+      opStages: stageIds
+        .map((id) => s.opStages.find((stage) => stage.id === id))
+        .filter((stage): stage is DynamicOPStage => stage !== undefined)
+        .map((stage, index) => ({ ...stage, order: index })),
+    }))
+    if (USE_SUPABASE) {
+      try {
+        const updates = stageIds.map((id, index) => ({ id, order: index }))
+        await Promise.all(updates.map(({ id, order }) => db.opStageQueries.update(id, { order })))
+      } catch (error) {
+        set({ error: error instanceof Error ? error.message : 'Failed to reorder stages' })
+      }
+    }
+  },
+
+  updateStageColor: async (stageId: string, colorName: string) => {
+    // Map color name to full Tailwind classes
+    const colorMappings: Record<string, { accentColor: string; dotColor: string; headerBg: string; columnBg: string }> = {
+      slate: { accentColor: 'border-t-slate-400', dotColor: 'bg-slate-400', headerBg: 'bg-slate-50', columnBg: 'bg-slate-50/60' },
+      blue: { accentColor: 'border-t-blue-400', dotColor: 'bg-blue-400', headerBg: 'bg-blue-50/60', columnBg: 'bg-blue-50/30' },
+      teal: { accentColor: 'border-t-teal-500', dotColor: 'bg-teal-500', headerBg: 'bg-teal-50/60', columnBg: 'bg-teal-50/20' },
+      green: { accentColor: 'border-t-green-500', dotColor: 'bg-green-500', headerBg: 'bg-green-50/60', columnBg: 'bg-green-50/20' },
+      amber: { accentColor: 'border-t-amber-400', dotColor: 'bg-amber-400', headerBg: 'bg-amber-50/60', columnBg: 'bg-amber-50/20' },
+      orange: { accentColor: 'border-t-orange-400', dotColor: 'bg-orange-400', headerBg: 'bg-orange-50/60', columnBg: 'bg-orange-50/20' },
+      red: { accentColor: 'border-t-red-500', dotColor: 'bg-red-500', headerBg: 'bg-red-50/60', columnBg: 'bg-red-50/20' },
+      purple: { accentColor: 'border-t-purple-500', dotColor: 'bg-purple-500', headerBg: 'bg-purple-50/60', columnBg: 'bg-purple-50/20' },
+    }
+
+    const mapping = colorMappings[colorName]
+    if (!mapping) return
+
+    set((s) => ({
+      opStages: s.opStages.map((stage) =>
+        stage.id === stageId
+          ? {
+              ...stage,
+              accentColor: mapping.accentColor,
+              dotColor: mapping.dotColor,
+              headerBg: mapping.headerBg,
+              columnBg: mapping.columnBg
+            }
+          : stage
+      ),
+    }))
+    if (USE_SUPABASE) {
+      try {
+        await db.opStageQueries.update(stageId, {
+          accentColor: mapping.accentColor,
+          dotColor: mapping.dotColor,
+          headerBg: mapping.headerBg,
+          columnBg: mapping.columnBg
+        })
+      } catch (error) {
+        set({ error: error instanceof Error ? error.message : 'Failed to update stage color' })
+      }
+    }
+  },
 
   // ── Staff ──────────────────────────────────────────────────────────────────
   addStaff: async (s_member) => {

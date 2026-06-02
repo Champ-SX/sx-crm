@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -8,12 +8,12 @@ import {
   TouchSensor,
   useSensor,
   useSensors,
-  closestCenter,
+  closestCorners,
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core'
 import { useDroppable, useDraggable } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { SortableContext, verticalListSortingStrategy, horizontalListSortingStrategy } from '@dnd-kit/sortable'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useCRMStore } from '@/store/crm-store'
@@ -28,14 +28,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import {
   Calendar, User,
   Pencil, Check, X, ChevronDown, ChevronUp,
   ClipboardList, Truck, CreditCard,
-  Users, Banknote, ArrowUpDown,
+  Users, Banknote, ArrowUpDown, GripVertical,
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 
@@ -198,14 +198,58 @@ function JobCard({ job, onClick, isDragging }: { job: WonJob; onClick: () => voi
 }
 
 // ── Kanban Column ─────────────────────────────────────────────────────────────
-function KanbanColumn({ stage, jobs, onCardClick, activeId }: {
-  stage: OPStage; jobs: WonJob[]; onCardClick: (job: WonJob) => void; activeId: string | null
+function KanbanColumn({
+  stage,
+  jobs,
+  onCardClick,
+  activeId,
+  onDeleteStage,
+  onChangeColor,
+  onAddStage,
+  opStages,
+}: {
+  stage: string
+  jobs: WonJob[]
+  onCardClick: (job: WonJob) => void
+  activeId: string | null
+  onDeleteStage?: (stage: string) => void
+  onChangeColor?: (stage: string) => void
+  onAddStage?: () => void
+  opStages: any[]
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: stage })
-  const cfg = stageConfig[stage]
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({ id: stage })
+  const { setNodeRef: setSortableRef, isDragging, attributes, listeners, transform } = useSortable({ id: stage })
+
+  // Get colors from opStages or fall back to stageConfig
+  const opStage = opStages.find((s) => s.id === stage)
+  const cfg = opStage
+    ? {
+        accent: opStage.accentColor || 'border-t-slate-400',
+        dot: opStage.dotColor || 'bg-slate-400',
+        headerBg: opStage.headerBg || 'bg-slate-50',
+        colBg: opStage.columnBg || 'bg-slate-50/60',
+      }
+    : stageConfig[stage as OPStage] || {
+        accent: `border-t-purple-500`,
+        dot: `bg-purple-500`,
+        headerBg: `bg-purple-50/60`,
+        colBg: `bg-purple-50/20`,
+      }
   const totalValue = jobs.reduce((s, j) => s + j.estimated_value, 0)
   const [sortBy, setSortBy] = useState<'position' | 'date' | 'value' | 'name'>('position')
   const [sortMenuOpen, setSortMenuOpen] = useState(false)
+
+  // Combine both refs - sortable for stage reordering, droppable for card drops
+  const setNodeRef = (node: HTMLDivElement | null) => {
+    setSortableRef(node)
+    setDroppableRef(node)
+  }
+
+  // Apply transform for drag animation
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition: isDragging ? 'none' : 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+  } as React.CSSProperties
 
   const sortedJobs = useMemo(() => {
     return [...jobs].sort((a, b) => {
@@ -226,14 +270,28 @@ function KanbanColumn({ stage, jobs, onCardClick, activeId }: {
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col w-full sm:min-w-[240px] sm:max-w-[240px] rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/20' : ''} ${cfg.colBg} transition-all shadow-sm`}
+      style={style}
+      className={`flex flex-col w-full sm:min-w-[240px] sm:max-w-[240px] rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/20' : ''} ${isDragging ? 'opacity-50' : ''} ${cfg.colBg} shadow-sm cursor-grab active:cursor-grabbing`}
+      {...attributes}
+      {...listeners}
     >
       {/* Column header */}
-      <div className={`px-3.5 pt-3.5 pb-2.5 rounded-t-xl ${cfg.headerBg}`}>
+      <div
+        className={`px-3.5 pt-3.5 pb-2.5 rounded-t-xl ${cfg.headerBg} select-none`}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
+            {/* Drag handle icon - visual indicator */}
+            <div
+              className="flex-shrink-0 opacity-40 hover:opacity-100 transition-opacity p-1 -m-1 rounded hover:bg-slate-200/30 pointer-events-none"
+              title="Drag to reorder stages"
+            >
+              <GripVertical className="w-4 h-4 text-slate-500" />
+            </div>
             <div className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
-            <p className="text-[11px] font-semibold text-slate-700 leading-tight">{OP_STAGE_LABELS[stage]}</p>
+            <p className="text-[11px] font-semibold text-slate-700 leading-tight">
+              {opStages.find((s) => s.id === stage)?.label || OP_STAGE_LABELS[stage as OPStage] || stage}
+            </p>
           </div>
           {/* Card count with sort dropdown button */}
           <div className="relative">
@@ -246,10 +304,12 @@ function KanbanColumn({ stage, jobs, onCardClick, activeId }: {
             </button>
             {/* Dropdown menu */}
             {sortMenuOpen && (
-              <div className="absolute right-0 top-7 bg-white border border-slate-200 rounded-md shadow-lg z-10 min-w-[120px]">
+              <div className="absolute right-0 top-7 bg-white border border-slate-200 rounded-md shadow-lg z-10 min-w-[140px]">
+                {/* Sort section */}
+                <div className="text-[9px] font-bold text-slate-500 px-3 py-1.5 uppercase tracking-wider">Sort</div>
                 <button
                   onClick={() => { setSortBy('position'); setSortMenuOpen(false) }}
-                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-slate-100 ${sortBy === 'position' ? 'bg-slate-50 text-slate-700' : 'text-slate-600'} first:rounded-t-md`}
+                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-slate-100 ${sortBy === 'position' ? 'bg-slate-50 text-slate-700' : 'text-slate-600'}`}
                 >
                   Order
                 </button>
@@ -267,9 +327,33 @@ function KanbanColumn({ stage, jobs, onCardClick, activeId }: {
                 </button>
                 <button
                   onClick={() => { setSortBy('name'); setSortMenuOpen(false) }}
-                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-slate-100 ${sortBy === 'name' ? 'bg-slate-50 text-slate-700' : 'text-slate-600'} last:rounded-b-md`}
+                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-slate-100 ${sortBy === 'name' ? 'bg-slate-50 text-slate-700' : 'text-slate-600'}`}
                 >
                   Alphabetically
+                </button>
+
+                {/* Separator */}
+                <div className="h-px bg-slate-200 my-1" />
+
+                {/* Manage section */}
+                <div className="text-[9px] font-bold text-slate-500 px-3 py-1.5 uppercase tracking-wider">Manage</div>
+                <button
+                  onClick={() => { setSortMenuOpen(false); onChangeColor?.(stage) }}
+                  className="block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-slate-100 text-slate-600"
+                >
+                  Change Color
+                </button>
+                <button
+                  onClick={() => { setSortMenuOpen(false); onAddStage?.() }}
+                  className="block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-slate-100 text-slate-600"
+                >
+                  Add Stage
+                </button>
+                <button
+                  onClick={() => { setSortMenuOpen(false); onDeleteStage?.(stage) }}
+                  className="block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-red-50 text-red-600 last:rounded-b-md"
+                >
+                  Delete Stage
                 </button>
               </div>
             )}
@@ -803,10 +887,21 @@ function JobDetail({ jobId, onClose }: { jobId: string; onClose: () => void }) {
 export default function WonReadyOpPage() {
   const isHydrated = useHydrated()
   const wonJobs = useCRMStore((s) => s.wonJobs)
+  const opStages = useCRMStore((s) => s.opStages)
   const moveWonJobStage = useCRMStore((s) => s.moveWonJobStage)
+  const deleteOpStage = useCRMStore((s) => s.deleteOpStage)
+  const updateStageColor = useCRMStore((s) => s.updateStageColor)
+  const addOpStage = useCRMStore((s) => s.addOpStage)
+  const reorderStages = useCRMStore((s) => s.reorderStages)
+  const reorderWonJobWithinStage = useCRMStore((s) => s.reorderWonJobWithinStage)
   const initializeData = useCRMStore((s) => s.initializeData)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [stageToDelete, setStageToDelete] = useState<string | null>(null)
+  const [stageToColorize, setStageToColorize] = useState<string | null>(null)
+  const [showAddStageDialog, setShowAddStageDialog] = useState(false)
+  const [newStageName, setNewStageName] = useState('')
+  const [newStageColor, setNewStageColor] = useState('blue')
 
   // Load data from Supabase after hydration completes
   useEffect(() => {
@@ -818,56 +913,129 @@ export default function WonReadyOpPage() {
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 5, // Reduced for easier dragging
       }
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 200,
+        delay: 150, // Reduced delay for quicker response
         tolerance: 8,
       }
     })
   )
 
   const activeJob = activeId ? wonJobs.find((j) => j.job_id === activeId) : null
-  const reorderWonJobWithinStage = useCRMStore((s) => s.reorderWonJobWithinStage)
 
-  function onDragStart({ active }: DragStartEvent) { setActiveId(active.id as string) }
+  function onDragStart({ active }: DragStartEvent) {
+    console.log('[onDragStart] Drag started:', { activeId: active.id, activeData: active.data, sortedStages: JSON.stringify(sortedStages) })
+    setActiveId(active.id as string)
+  }
   function onDragEnd({ active, over }: DragEndEvent) {
+    console.log('[onDragEnd] Drag ended:', {
+      activeId: active.id,
+      activeData: active.data,
+      overId: over?.id,
+      overData: over?.data,
+      sortedStages: JSON.stringify(sortedStages)
+    })
     setActiveId(null)
-    if (!over) return
+    if (!over) {
+      console.log('[onDragEnd] No over element, returning')
+      return
+    }
 
-    const activeJob = wonJobs.find((j) => j.job_id === active.id)
+    const activeId = active.id as string
+    const overId = over.id as string
+
+    // Check if dragging a stage (stage reordering) - check against sortedStages instead of just OP_STAGES
+    const isActiveStage = sortedStages.includes(activeId as OPStage)
+    const isOverStage = sortedStages.includes(overId as OPStage)
+
+    console.log('[onDragEnd] Stage check:', { activeId, overId, isActiveStage, isOverStage, sortedStagesArray: JSON.stringify(sortedStages) })
+
+    if (isActiveStage && isOverStage) {
+      // Reorder stages - use sortedStages to get current order, then reorder and save
+      const fromIndex = sortedStages.indexOf(activeId as OPStage)
+      const toIndex = sortedStages.indexOf(overId as OPStage)
+      console.log('[onDragEnd] Stage reordering detected:', { fromIndex, toIndex })
+      if (fromIndex !== toIndex) {
+        const newOrder = [...sortedStages]
+        newOrder.splice(fromIndex, 1)
+        newOrder.splice(toIndex, 0, activeId as OPStage)
+        console.log('[onDragEnd] Reordering stages:', { fromIndex, toIndex, newOrder })
+        void reorderStages(newOrder)
+      }
+      return
+    }
+
+    // Otherwise, handle job card dragging
+    const activeJob = wonJobs.find((j) => j.job_id === activeId)
     if (!activeJob) return
 
-    const overId = over.id as string
-    const isDroppedOnStage = OP_STAGES.includes(overId as OPStage)
+    // Determine target stage - could be direct drop on stage or parent of job card
+    let targetStage: OPStage | null = null
+    let targetJob = null
 
-    if (isDroppedOnStage) {
-      // Dropped on a stage header - move between columns
-      const targetStage = overId as OPStage
-      if (activeJob.op_stage !== targetStage) {
-        void moveWonJobStage(active.id as string, targetStage)
-      }
+    if (OP_STAGES.includes(overId as OPStage)) {
+      // Direct drop on stage header
+      targetStage = overId as OPStage
     } else {
-      // Dropped on another job - reorder within column
-      const targetJob = wonJobs.find((j) => j.job_id === overId)
-      if (targetJob && targetJob.op_stage === activeJob.op_stage) {
-        const stageJobs = wonJobs
-          .filter((j) => j.op_stage === activeJob.op_stage)
-          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-        const newPosition = stageJobs.findIndex((j) => j.job_id === overId)
-        if (newPosition >= 0) {
-          void reorderWonJobWithinStage(active.id as string, newPosition, activeJob.op_stage)
-        }
+      // Check if dropped on a job card - if so, map to parent stage
+      targetJob = wonJobs.find((j) => j.job_id === overId)
+      if (targetJob) {
+        targetStage = targetJob.op_stage
       }
     }
+
+    if (!targetStage) return
+
+    // If dropping on different stage, move the card
+    if (activeJob.op_stage !== targetStage) {
+      void moveWonJobStage(activeId, targetStage)
+    }
+    // If dropping within same stage on a job card, reorder
+    else if (targetJob && targetJob.op_stage === activeJob.op_stage) {
+      const stageJobs = wonJobs
+        .filter((j) => j.op_stage === activeJob.op_stage)
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+      const newPosition = stageJobs.findIndex((j) => j.job_id === overId)
+      if (newPosition >= 0) {
+        void reorderWonJobWithinStage(activeId, newPosition, activeJob.op_stage)
+      }
+    }
+  }
+
+  const handleDeleteStage = (stage: string) => {
+    setStageToDelete(stage)
+  }
+
+  const handleChangeColor = (stage: string) => {
+    setStageToColorize(stage)
   }
 
   const activeCount = wonJobs.filter((j) => j.op_stage !== 'OP_DONE_PAYMENT').length
   const totalValue = wonJobs
     .filter((j) => j.op_stage !== 'OP_DONE_PAYMENT')
     .reduce((s, j) => s + j.estimated_value, 0)
+
+  // Sort stages based on their order property in the store, including custom stages
+  const sortedStages = useMemo(() => {
+    // Get all stage IDs: built-in stages + custom stages
+    const builtInStageIds = OP_STAGES as string[]
+    const customStageIds = opStages
+      .filter((s) => s.isCustom)
+      .map((s) => s.id)
+    const allStageIds = [...builtInStageIds, ...customStageIds] as OPStage[]
+
+    const result = allStageIds.sort((a, b) => {
+      const stageA = opStages.find((s) => s.id === a)
+      const stageB = opStages.find((s) => s.id === b)
+      return (stageA?.order ?? 0) - (stageB?.order ?? 0)
+    })
+
+    console.log('[sortedStages]', { builtInStageIds, customStageIds, result, opStages })
+    return result
+  }, [opStages])
 
   // Don't render until hydration completes to prevent SSR/client mismatch
   if (!isHydrated) return null
@@ -883,31 +1051,33 @@ export default function WonReadyOpPage() {
             <p className="text-[11px] sm:text-[12px] text-slate-400 mt-0.5 hidden sm:block">{activeCount} active jobs · {formatCurrency(totalValue)} in pipeline</p>
           </div>
         </div>
-        {/* Add Stage button (placeholder for future) */}
-        <button className="px-3 py-1.5 bg-white border-2 border-dashed border-slate-300 text-slate-600 rounded-lg text-[12px] font-medium hover:border-slate-400 hover:bg-slate-50 transition-colors cursor-not-allowed opacity-50" disabled title="Add Stage feature coming soon">
-          + Add Stage
-        </button>
       </div>
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={closestCorners}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
       >
         {/* Mobile: Vertical stack, Desktop: Horizontal scroll */}
         <div className="flex-1 overflow-x-auto overflow-y-auto sm:overflow-y-hidden bg-background">
-          <div className="flex flex-col sm:flex-row gap-4 p-4 sm:p-6 h-full min-w-max sm:items-start sm:min-h-max">
-            {OP_STAGES.map((stage) => (
-              <KanbanColumn
-                key={stage}
-                stage={stage}
-                jobs={wonJobs.filter((j) => j.op_stage === stage)}
-                onCardClick={(job) => setSelectedId(job.job_id)}
-                activeId={activeId}
-              />
-            ))}
-          </div>
+          <SortableContext items={sortedStages} strategy={horizontalListSortingStrategy}>
+            <div className="flex flex-col sm:flex-row gap-4 p-4 sm:p-6 h-full sm:min-w-max sm:items-start sm:min-h-max">
+              {sortedStages.map((stage) => (
+                <KanbanColumn
+                  key={stage}
+                  stage={stage}
+                  jobs={wonJobs.filter((j) => j.op_stage === stage || j.op_stage === stage)}
+                  onCardClick={(job) => setSelectedId(job.job_id)}
+                  activeId={activeId}
+                  onDeleteStage={handleDeleteStage}
+                  onChangeColor={handleChangeColor}
+                  onAddStage={() => setShowAddStageDialog(true)}
+                  opStages={opStages}
+                />
+              ))}
+            </div>
+          </SortableContext>
         </div>
 
         <DragOverlay>
@@ -922,6 +1092,182 @@ export default function WonReadyOpPage() {
       </DndContext>
 
       {selectedId && <JobDetail jobId={selectedId} onClose={() => setSelectedId(null)} />}
+
+      {/* Delete Stage Confirmation Dialog */}
+      <Dialog open={!!stageToDelete} onOpenChange={(open) => !open && setStageToDelete(null)}>
+        <DialogContent>
+          <DialogTitle>Delete Stage</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete {stageToDelete && (opStages.find((s) => s.id === stageToDelete)?.label || OP_STAGE_LABELS[stageToDelete as OPStage] || stageToDelete)}?
+            {stageToDelete && wonJobs.filter((j) => j.op_stage === stageToDelete).length > 0 && (
+              <> {wonJobs.filter((j) => j.op_stage === stageToDelete).length} job(s) will be moved to the default stage.</>
+            )}
+          </DialogDescription>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setStageToDelete(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={async () => {
+                if (stageToDelete) {
+                  await deleteOpStage(stageToDelete)
+                  setStageToDelete(null)
+                }
+              }}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Stage Color Dialog */}
+      <Dialog open={!!stageToColorize} onOpenChange={(open) => !open && setStageToColorize(null)}>
+        <DialogContent>
+          <DialogTitle>Change Stage Color</DialogTitle>
+          <DialogDescription>
+            Select a new color for {stageToColorize && (opStages.find((s) => s.id === stageToColorize)?.label || OP_STAGE_LABELS[stageToColorize as OPStage] || stageToColorize)}
+          </DialogDescription>
+
+          <div className="grid grid-cols-4 gap-3 py-4">
+            {[
+              { name: 'slate', bg: 'bg-slate-400', label: 'Slate' },
+              { name: 'blue', bg: 'bg-blue-400', label: 'Blue' },
+              { name: 'teal', bg: 'bg-teal-500', label: 'Teal' },
+              { name: 'green', bg: 'bg-green-500', label: 'Green' },
+              { name: 'amber', bg: 'bg-amber-400', label: 'Amber' },
+              { name: 'orange', bg: 'bg-orange-400', label: 'Orange' },
+              { name: 'red', bg: 'bg-red-500', label: 'Red' },
+              { name: 'purple', bg: 'bg-purple-500', label: 'Purple' },
+            ].map((color) => (
+              <Button
+                key={color.name}
+                onClick={async () => {
+                  if (stageToColorize) {
+                    await updateStageColor(stageToColorize, color.name)
+                    setStageToColorize(null)
+                  }
+                }}
+                className={`h-12 rounded-lg ${color.bg} hover:opacity-80 transition-opacity flex flex-col items-center justify-center`}
+                title={color.label}
+              >
+                <span className="text-xs text-white font-medium">{color.label}</span>
+              </Button>
+            ))}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setStageToColorize(null)}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Stage Dialog */}
+      <Dialog open={showAddStageDialog} onOpenChange={setShowAddStageDialog}>
+        <DialogContent>
+          <DialogTitle>Create New Stage</DialogTitle>
+          <DialogDescription>
+            Add a new stage to your kanban board
+          </DialogDescription>
+
+          <div className="space-y-4 py-4">
+            {/* Stage Name Input */}
+            <div>
+              <Label className="text-xs font-semibold text-slate-700">Stage Name</Label>
+              <Input
+                placeholder="e.g. Custom Stage"
+                value={newStageName}
+                onChange={(e) => setNewStageName(e.target.value)}
+                className="mt-2"
+              />
+            </div>
+
+            {/* Color Picker */}
+            <div>
+              <Label className="text-xs font-semibold text-slate-700">Color</Label>
+              <div className="grid grid-cols-4 gap-3 mt-3">
+                {[
+                  { name: 'slate', bg: 'bg-slate-400', label: 'Slate' },
+                  { name: 'blue', bg: 'bg-blue-400', label: 'Blue' },
+                  { name: 'teal', bg: 'bg-teal-500', label: 'Teal' },
+                  { name: 'green', bg: 'bg-green-500', label: 'Green' },
+                  { name: 'amber', bg: 'bg-amber-400', label: 'Amber' },
+                  { name: 'orange', bg: 'bg-orange-400', label: 'Orange' },
+                  { name: 'red', bg: 'bg-red-500', label: 'Red' },
+                  { name: 'purple', bg: 'bg-purple-500', label: 'Purple' },
+                ].map((color) => (
+                  <button
+                    key={color.name}
+                    onClick={() => setNewStageColor(color.name)}
+                    className={`h-10 rounded-lg ${color.bg} transition-all ${newStageColor === color.name ? 'ring-2 ring-offset-2 ring-slate-400' : 'hover:opacity-80'}`}
+                    title={color.label}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAddStageDialog(false)
+                setNewStageName('')
+                setNewStageColor('blue')
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                if (newStageName.trim()) {
+                  const stageId = `custom_${Date.now()}`
+                  const colorMappings: Record<string, { accent: string; dot: string; headerBg: string; colBg: string }> = {
+                    slate: { accent: 'border-t-slate-400', dot: 'bg-slate-400', headerBg: 'bg-slate-50', colBg: 'bg-slate-50/60' },
+                    blue: { accent: 'border-t-blue-400', dot: 'bg-blue-400', headerBg: 'bg-blue-50/60', colBg: 'bg-blue-50/30' },
+                    teal: { accent: 'border-t-teal-500', dot: 'bg-teal-500', headerBg: 'bg-teal-50/60', colBg: 'bg-teal-50/20' },
+                    green: { accent: 'border-t-green-500', dot: 'bg-green-500', headerBg: 'bg-green-50/60', colBg: 'bg-green-50/20' },
+                    amber: { accent: 'border-t-amber-400', dot: 'bg-amber-400', headerBg: 'bg-amber-50/60', colBg: 'bg-amber-50/20' },
+                    orange: { accent: 'border-t-orange-400', dot: 'bg-orange-400', headerBg: 'bg-orange-50/60', colBg: 'bg-orange-50/20' },
+                    red: { accent: 'border-t-red-500', dot: 'bg-red-500', headerBg: 'bg-red-50/60', colBg: 'bg-red-50/20' },
+                    purple: { accent: 'border-t-purple-500', dot: 'bg-purple-500', headerBg: 'bg-purple-50/60', colBg: 'bg-purple-50/20' },
+                  }
+
+                  const mapping = colorMappings[newStageColor]
+                  const maxOrder = Math.max(...opStages.map(s => s.order), 0)
+
+                  await addOpStage({
+                    id: stageId,
+                    label: newStageName,
+                    order: maxOrder + 1,
+                    accentColor: mapping.accent,
+                    dotColor: mapping.dot,
+                    headerBg: mapping.headerBg,
+                    columnBg: mapping.colBg,
+                    isCustom: true,
+                  })
+
+                  setShowAddStageDialog(false)
+                  setNewStageName('')
+                  setNewStageColor('blue')
+                }
+              }}
+              disabled={!newStageName.trim()}
+            >
+              Create Stage
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
