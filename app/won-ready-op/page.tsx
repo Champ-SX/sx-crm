@@ -34,7 +34,7 @@ import {
   Calendar, User,
   Pencil, Check, X, ChevronDown, ChevronUp,
   ClipboardList, Truck, CreditCard,
-  Users, Banknote, GripVertical,
+  Users, Banknote, Plus, ArrowUpDown,
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 
@@ -155,18 +155,10 @@ function JobCard({ job, onClick, isDragging }: { job: WonJob; onClick: () => voi
       ref={setNodeRef}
       style={style}
       onClick={(e) => { e.stopPropagation(); onClick() }}
-      className={`bg-white rounded-xl border border-border/60 p-3 cursor-pointer hover:shadow-md hover:border-border transition-all select-none flex items-start gap-2 group ${isBeingDragged ? 'opacity-50 shadow-lg' : ''}`}
+      {...attributes}
+      {...listeners}
+      className={`bg-white rounded-xl border border-border/60 p-3 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-border transition-all select-none flex items-start gap-2 group ${isBeingDragged ? 'opacity-50 shadow-lg' : ''}`}
     >
-      {/* Drag handle - visible on hover/focus */}
-      <div
-        {...attributes}
-        {...listeners}
-        className="flex-shrink-0 mt-0.5 text-slate-300 group-hover:text-slate-400 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity"
-        title="Drag to reorder"
-      >
-        <GripVertical className="w-4 h-4" />
-      </div>
-
       {/* Content */}
       <div className="flex-1 min-w-0">
         {/* Job number + product type */}
@@ -211,6 +203,21 @@ function KanbanColumn({ stage, jobs, onCardClick, activeId }: {
   const { setNodeRef, isOver } = useDroppable({ id: stage })
   const cfg = stageConfig[stage]
   const totalValue = jobs.reduce((s, j) => s + j.estimated_value, 0)
+  const [sortBy, setSortBy] = useState<'position' | 'date' | 'value' | 'name'>('position')
+
+  const sortedJobs = [...jobs].sort((a, b) => {
+    switch (sortBy) {
+      case 'date':
+        return (a.event_date || '').localeCompare(b.event_date || '')
+      case 'value':
+        return (b.estimated_value || 0) - (a.estimated_value || 0)
+      case 'name':
+        return (a.customer_name || '').localeCompare(b.customer_name || '')
+      case 'position':
+      default:
+        return (a.position ?? 0) - (b.position ?? 0)
+    }
+  })
 
   return (
     <div
@@ -224,9 +231,23 @@ function KanbanColumn({ stage, jobs, onCardClick, activeId }: {
             <div className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
             <p className="text-[11px] font-semibold text-slate-700 leading-tight">{OP_STAGE_LABELS[stage]}</p>
           </div>
-          <span className="text-[10px] font-bold bg-white shadow-sm text-slate-500 w-5 h-5 rounded-full flex items-center justify-center shrink-0 border border-slate-100">
-            {jobs.length}
-          </span>
+          <div className="flex items-center gap-1.5">
+            {/* Sort dropdown */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="text-[9px] font-medium text-slate-600 bg-white border border-slate-200 rounded px-1.5 py-1 cursor-pointer hover:border-slate-300 transition-colors"
+              title="Sort by"
+            >
+              <option value="position">Order</option>
+              <option value="date">Date</option>
+              <option value="value">Value</option>
+              <option value="name">Name</option>
+            </select>
+            <span className="text-[10px] font-bold bg-white shadow-sm text-slate-500 w-5 h-5 rounded-full flex items-center justify-center shrink-0 border border-slate-100">
+              {jobs.length}
+            </span>
+          </div>
         </div>
         {jobs.length > 0 && (
           <p className="text-[10px] font-medium text-slate-400 pl-4 mt-0.5">{formatCurrency(totalValue)}</p>
@@ -234,9 +255,9 @@ function KanbanColumn({ stage, jobs, onCardClick, activeId }: {
       </div>
 
       {/* Cards */}
-      <SortableContext items={jobs.map(j => j.job_id)} strategy={verticalListSortingStrategy}>
+      <SortableContext items={sortedJobs.map(j => j.job_id)} strategy={verticalListSortingStrategy}>
         <div className="flex-1 px-2.5 pb-3 pt-2 space-y-2 min-h-[80px]">
-          {jobs.map((job) => (
+          {sortedJobs.map((job) => (
             <JobCard
               key={job.job_id}
               job={job}

@@ -22,7 +22,6 @@ const navItems = [
   { href: '/customers',            label: 'Customers',        icon: Users },
   { href: '/leads-opportunities',  label: 'Leads & Opps',     icon: FileText },
   { href: '/won-ready-op',         label: 'Won & Ready for OP', icon: Kanban },
-  { href: '/tasks',                label: 'Tasks',            icon: CheckSquare },
 ]
 
 const bottomItems = [
@@ -46,7 +45,6 @@ function NavContent({ onNavClick }: { onNavClick?: () => void }) {
   const badges: Record<string, number> = {
     '/leads-opportunities': openLeadsCount,
     '/won-ready-op':        activeOPJobs,
-    '/tasks':               pendingTasksToday,
   }
 
   function NavLink({ href, label, icon: Icon }: { href: string; label: string; icon: React.ElementType }) {

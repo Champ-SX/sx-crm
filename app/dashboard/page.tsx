@@ -99,6 +99,7 @@ function StatusDot({ color }: { color: string }) {
 export default function DashboardPage() {
   const isHydrated = useHydrated()
   const { customers, leadOpportunities, wonJobs, tasks, activities } = useCRMStore()
+  const [userView, setUserView] = useState<'Sales' | 'Operation' | 'Admin'>('Admin')
 
   // Don't render until hydration completes to prevent SSR/client mismatch
   if (!isHydrated) return null
@@ -157,14 +158,26 @@ export default function DashboardPage() {
               <p className="text-[11px] sm:text-[12px] text-slate-400 mt-0.5 hidden sm:block">{format(today, "EEEE, MMMM d, yyyy")}</p>
             </div>
           </div>
-          <Link
-            href="/leads-opportunities"
-            className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] sm:text-[12px] font-semibold px-2.5 sm:px-3.5 py-2 rounded-lg hover:bg-primary/90 transition-colors shrink-0"
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">New Lead / Opp</span>
-            <span className="sm:hidden">New</span>
-          </Link>
+          <div className="flex items-center gap-2.5">
+            {/* User view selector */}
+            <select
+              value={userView}
+              onChange={(e) => setUserView(e.target.value as any)}
+              className="text-[11px] font-medium text-slate-600 bg-white border border-border rounded-lg px-3 py-2 cursor-pointer hover:border-border/80 transition-colors"
+            >
+              <option value="Sales">Sales View</option>
+              <option value="Operation">Operation View</option>
+              <option value="Admin">Admin View</option>
+            </select>
+            <Link
+              href="/leads-opportunities"
+              className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] sm:text-[12px] font-semibold px-2.5 sm:px-3.5 py-2 rounded-lg hover:bg-primary/90 transition-colors shrink-0"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">New Lead / Opp</span>
+              <span className="sm:hidden">New</span>
+            </Link>
+          </div>
         </div>
       </div>
 
