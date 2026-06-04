@@ -7,6 +7,20 @@
 
 ---
 
+## 📋 **PRE-IMPLEMENTATION: Setup (June 3-7)**
+
+Before Phase 2.0 kicks off, complete these one-time setup tasks:
+
+- [ ] **Archive Won's cards** - Archive all completed Won board cards to clean up the Kanban
+- [ ] **Email service decision** - Choose between SendGrid, Mailgun, or Resend for @mentions feature
+- [ ] **Environment variables setup** - Configure email service credentials in `.env.local`
+- [ ] **Database migrations review** - Ensure all migration files are prepared and reviewed
+
+**Target:** Complete by Friday, June 7 EOD  
+**Estimated Time:** 2-3 hours
+
+---
+
 ## 📅 **WEEKLY BREAKDOWN**
 
 ### **WEEK 1 (June 8-14): Authentication & Authorization** 
@@ -86,6 +100,14 @@ TOTAL DURATION: 4 weeks (June 8 - July 5, 2026)
 ---
 
 ## 📋 **DAILY TASK SCHEDULE**
+
+### **Pre-Week: June 3-7 (Setup)**
+```
+Mon 6/3   │ Email service decision  │ 0.5h │ ⏳
+Tue 6/4   │ Archive Won's cards     │ 1h   │ ⏳
+Wed 6/5   │ Env setup & migrations  │ 1h   │ ⏳
+Thu-Fri   │ Buffer for review       │ 0.5h │ ⏳
+```
 
 ### **Week 1: June 8-14 (Authentication)**
 ```
@@ -317,13 +339,15 @@ MODIFY:
 ## ⏱️ **TIME ALLOCATION**
 
 ```
-Week 1: 11 hours  │ ████████████░░░░░░░
-Week 2: 11 hours  │ ████████████░░░░░░░
-Week 3: 9 hours   │ ██████████░░░░░░░░░
-Week 4: 8.5 hours │ █████████░░░░░░░░░░
-                  │
-TOTAL: 39.5 hours │ ~40 hours sustained work
-DAILY: 6-8 hours  │ Sustainable pace
+Pre-Week: 3 hours    │ ███░░░░░░░░░░░░░░░░░ (setup only)
+Week 1:   11 hours   │ ████████████░░░░░░░
+Week 2:   11 hours   │ ████████████░░░░░░░
+Week 3:   9 hours    │ ██████████░░░░░░░░░
+Week 4:   8.5 hours  │ █████████░░░░░░░░░░
+                     │
+TOTAL:    42.5 hours │ ~43 hours total
+SPRINT:   39.5 hours │ 4 weeks of development
+DAILY:    6-8 hours  │ Sustainable pace (dev weeks)
 ```
 
 ---
@@ -376,9 +400,14 @@ DAILY: 6-8 hours  │ Sustainable pace
 
 ## 🚀 **READY TO BEGIN?**
 
-**Start:** Monday, June 8 at 9:00 AM  
+**Pre-Implementation Week:** Monday, June 3 - Friday, June 7
+- [ ] Archive Won's cards (clean up the board)
+- [ ] Choose email service (SendGrid/Mailgun/Resend)
+- [ ] Configure environment variables
+
+**Phase 2 Kicks Off:** Monday, June 8 at 9:00 AM  
 **First Task:** Phase 2.0 - Google OAuth Setup (2 hours)  
-**Deployment:** Friday, June 14  
+**First Deployment:** Friday, June 14  
 
 **You're all set! Everything is documented and committed to git.** ✅
 
