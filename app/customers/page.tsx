@@ -11,6 +11,7 @@ import { PageHeader } from '@/components/shared/page-header'
 import { EmptyState } from '@/components/shared/empty-state'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
+import { JobDetailTabs } from '@/components/shared/job-detail-tabs'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { AddLeadOpForm } from '@/components/shared/add-lead-op-form'
 import { Button } from '@/components/ui/button'
@@ -438,8 +439,8 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
           </div>
         </div>
 
-        {/* Two-column body */}
-        <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
+        {/* Two-column body (desktop only) */}
+        <div className="hidden sm:flex flex-col sm:flex-row flex-1 overflow-hidden">
 
           {/* Left: Customer details */}
           <div className="flex-1 overflow-y-auto px-4 sm:px-7 py-4 sm:py-5 space-y-4 sm:space-y-5 border-b sm:border-b-0 sm:border-r border-border/60">
@@ -677,40 +678,282 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
             )}
           </div>
 
-          {/* Right: Activity - Collapsible on mobile */}
-          <div className="w-full sm:w-[320px] shrink-0 overflow-y-auto bg-muted/30">
-            {/* Log Activity - Collapsible on mobile */}
-            <div className="border-t sm:border-t-0">
-              <button
-                type="button"
-                onClick={() => setOpenActivity((o) => !o)}
-                className="w-full sm:pointer-events-none px-4 sm:px-5 py-3 sm:py-4 flex items-center gap-2 hover:bg-muted/50 sm:hover:bg-transparent transition-colors text-left"
-              >
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest flex-1">Log Activity</span>
-                <ChevronDown className={`w-4 h-4 text-muted-foreground sm:hidden transition-transform duration-200 ${openActivity ? 'rotate-0' : '-rotate-90'}`} />
-              </button>
-              <div className={`px-4 sm:px-5 pb-3 sm:pb-4 space-y-3 sm:block ${openActivity ? 'block' : 'hidden'}`}>
-                <AddActivityForm entityType="customer" entityId={customer.customer_id} owner="Vitta" />
-              </div>
+          {/* Right: Activity + History (desktop only) */}
+          <div className="hidden sm:flex flex-col w-[320px] shrink-0 overflow-y-auto px-5 py-5 space-y-5 bg-muted/30">
+            {/* Log Activity */}
+            <div>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">Log Activity</p>
+              <AddActivityForm entityType="customer" entityId={customer.customer_id} owner="Vitta" />
             </div>
 
             <Separator />
 
-            {/* History - Collapsible on mobile */}
+            {/* History */}
             <div>
-              <button
-                type="button"
-                onClick={() => setOpenHistory((o) => !o)}
-                className="w-full sm:pointer-events-none px-4 sm:px-5 py-3 sm:py-4 flex items-center gap-2 hover:bg-muted/50 sm:hover:bg-transparent transition-colors text-left"
-              >
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest flex-1">History</span>
-                <ChevronDown className={`w-4 h-4 text-muted-foreground sm:hidden transition-transform duration-200 ${openHistory ? 'rotate-0' : '-rotate-90'}`} />
-              </button>
-              <div className={`px-4 sm:px-5 pb-4 sm:pb-5 sm:block ${openHistory ? 'block' : 'hidden'}`}>
-                <ActivityTimeline entityType="customer" entityId={customer.customer_id} />
-              </div>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">History</p>
+              <ActivityTimeline entityType="customer" entityId={customer.customer_id} />
             </div>
           </div>
+        </div>
+
+        {/* Mobile: Tab interface */}
+        <div className="sm:hidden flex flex-col flex-1 overflow-hidden">
+          <JobDetailTabs>
+            {{
+              details: (
+                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+                  {/* Company name edit */}
+                  <div>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Company Name</p>
+                    <CompanyCombobox
+                      value={customer.company_name}
+                      onChange={(v) => updateCustomer(customer.customer_id, { company_name: v })}
+                      existingNames={existingCompanyNames}
+                      placeholder="Company name…"
+                    />
+                  </div>
+
+                  <Separator />
+
+                  {/* Contact person edit */}
+                  <div>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Contact Person</p>
+                    <InlineEdit value={customer.contact_person} placeholder="Name of contact" onSave={(v) => updateCustomer(customer.customer_id, { contact_person: v })} />
+                  </div>
+
+                  <Separator />
+
+                  {/* Contact info */}
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Contact Details</p>
+                    <div className="space-y-2.5">
+                      <div>
+                        <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                          <Mail className="w-3.5 h-3.5 text-muted-foreground/60" /> Email
+                        </label>
+                        <InlineEdit
+                          value={customer.email}
+                          placeholder="email@example.com"
+                          onSave={(v) => {
+                            if (v && !isEmailUnique(v, customer.customer_id)) {
+                              alert('This email is already in use by another customer.')
+                              return
+                            }
+                            updateCustomer(customer.customer_id, { email: v })
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                          <Phone className="w-3.5 h-3.5 text-muted-foreground/60" /> Phone
+                        </label>
+                        <InlineEdit
+                          value={customer.phone}
+                          placeholder="08x-xxx-xxxx"
+                          onSave={(v) => updateCustomer(customer.customer_id, { phone: v })}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                          <MessageCircle className="w-3.5 h-3.5 text-green-400" /> LINE ID
+                        </label>
+                        <InlineEdit
+                          value={customer.line_id ?? ''}
+                          placeholder="LINE ID"
+                          onSave={(v) => updateCustomer(customer.customer_id, { line_id: v })}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                          <AtSign className="w-3.5 h-3.5 text-muted-foreground/60" /> Social (IG/FB)
+                        </label>
+                        <InlineEdit
+                          value={customer.social ?? ''}
+                          placeholder="@handle"
+                          onSave={(v) => updateCustomer(customer.customer_id, { social: v })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Customer type edit */}
+                  <div>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Customer Type</p>
+                    <div className="space-y-1.5">
+                      <Select value={customer.customer_type} onValueChange={(v) => updateCustomer(customer.customer_id, { customer_type: v as CustomerType })}>
+                        <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {CUSTOMER_TYPES.map((t) => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Meta */}
+                  <div>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Created</p>
+                    <p className="text-[13px] text-foreground">{new Date(customer.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                  </div>
+
+                  <Separator />
+
+                  {/* Notes */}
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Notes</p>
+                    <InlineEdit value={customer.notes} placeholder="Click to add notes…" multiline onSave={(v) => updateCustomer(customer.customer_id, { notes: v })} />
+                  </div>
+
+                  <Separator />
+
+                  {/* Company Account */}
+                  <div className="rounded-xl border border-amber-200/60 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setOpenAccount((o) => !o)}
+                      className="w-full bg-amber-50/50 dark:bg-amber-950/20 px-4 py-2.5 flex items-center gap-2 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors text-left"
+                    >
+                      <div className="w-5 h-5 rounded-md bg-amber-100/60 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
+                        <CreditCard className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <span className="text-[12px] font-bold text-amber-700 dark:text-amber-300 tracking-wide flex-1">Company Account</span>
+                      <ChevronDown className={`w-3.5 h-3.5 text-amber-600 dark:text-amber-400 transition-transform duration-200 ${openAccount ? 'rotate-0' : '-rotate-90'}`} />
+                    </button>
+                    {openAccount && (
+                      <div className="bg-background px-4 py-4 space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Tax ID (เลขประจำตัวผู้เสียภาษี)</p>
+                            <InlineEdit value={customer.tax_id ?? ''} placeholder="0105xxx" onSave={(v) => updateCustomer(customer.customer_id, { tax_id: v })} />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Branch</p>
+                            <InlineEdit value={customer.branch ?? ''} placeholder="สาขา / สำนักงานใหญ่" onSave={(v) => updateCustomer(customer.customer_id, { branch: v })} />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Company Address</p>
+                          <InlineEdit value={customer.company_address ?? ''} placeholder="ที่อยู่บริษัท" multiline onSave={(v) => updateCustomer(customer.customer_id, { company_address: v })} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Billing Contact</p>
+                            <InlineEdit value={customer.billing_contact ?? ''} placeholder="ผู้ติดต่อด้านบัญชี" onSave={(v) => updateCustomer(customer.customer_id, { billing_contact: v })} />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Billing Notes</p>
+                            <InlineEdit value={customer.billing_notes ?? ''} placeholder="หมายเหตุการวางบิล" onSave={(v) => updateCustomer(customer.customer_id, { billing_notes: v })} />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 pt-1">
+                          <div className="flex-1 border-t border-border/60" />
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium shrink-0">
+                            <Banknote className="w-3.5 h-3.5" /> Bank Transfer
+                          </div>
+                          <div className="flex-1 border-t border-border/60" />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Bank Name</p>
+                            <InlineEdit value={customer.bank_name ?? ''} placeholder="SCB / KBANK / BBL" onSave={(v) => updateCustomer(customer.customer_id, { bank_name: v })} />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Bank Branch</p>
+                            <InlineEdit value={customer.bank_branch ?? ''} placeholder="สาขา" onSave={(v) => updateCustomer(customer.customer_id, { bank_branch: v })} />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Account Number</p>
+                          <InlineEdit value={customer.bank_account_number ?? ''} placeholder="เลขบัญชี" onSave={(v) => updateCustomer(customer.customer_id, { bank_account_number: v })} />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Account Name</p>
+                          <InlineEdit value={customer.bank_account_name ?? ''} placeholder="ชื่อบัญชี" onSave={(v) => updateCustomer(customer.customer_id, { bank_account_name: v })} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Linked leads */}
+                  {linkedLeads.length > 0 && (
+                    <>
+                      <Separator />
+                      <div>
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Leads &amp; Opportunities ({linkedLeads.length})</p>
+                        <div className="space-y-2">
+                          {linkedLeads.map((l) => (
+                            <div key={l.lead_op_id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/60">
+                              <div>
+                                <p className="text-[13px] font-semibold text-foreground">{l.name}</p>
+                                <p className="text-[11px] text-muted-foreground">{l.service_type}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-[13px] font-bold text-foreground">฿{(l.estimated_value || 0).toLocaleString()}</p>
+                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${l.status === 'won' ? 'bg-emerald-50 text-emerald-600' : l.status === 'lost' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-600'}`}>
+                                  {l.status}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Linked Won Jobs */}
+                  {linkedWonJobs.length > 0 && (
+                    <>
+                      <Separator />
+                      <div>
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Won Jobs ({linkedWonJobs.length})</p>
+                        <div className="space-y-2">
+                          {linkedWonJobs.map((j) => (
+                            <div key={j.job_id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/60">
+                              <div className="flex items-center gap-2">
+                                <Briefcase className="w-4 h-4 text-muted-foreground/60 shrink-0" />
+                                <div>
+                                  <p className="text-[13px] font-semibold text-foreground">{j.event_display_name || `Job #${j.job_number}`}</p>
+                                  <p className="text-[11px] text-muted-foreground">{j.event_date?.replace(/-/g, '.') || '—'}</p>
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0 ml-2">
+                                <p className="text-[13px] font-bold text-foreground">{formatCurrency(j.estimated_value || 0)}</p>
+                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
+                                  {j.op_stage.replace(/_/g, ' ').toLowerCase()}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ),
+              activity: (
+                <div className="px-4 py-4 overflow-y-auto space-y-5">
+                  {/* Log Activity Form */}
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">Log Activity</p>
+                    <AddActivityForm entityType="customer" entityId={customer.customer_id} owner="Vitta" />
+                  </div>
+
+                  <Separator />
+
+                  {/* Activity Timeline */}
+                  <div>
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">History</p>
+                    <ActivityTimeline entityType="customer" entityId={customer.customer_id} />
+                  </div>
+                </div>
+              ),
+            }}
+          </JobDetailTabs>
         </div>
       </DialogContent>
     </Dialog>

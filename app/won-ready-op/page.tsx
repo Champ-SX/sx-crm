@@ -24,6 +24,7 @@ import type { WonJob, OPStage, StaffMember } from '@/types'
 import { formatJobTitle, formatJobTitleShort } from '@/lib/jobs'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
+import { JobDetailTabs } from '@/components/shared/job-detail-tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -594,9 +595,10 @@ function JobDetail({
           </div>
 
           {/* ── Body: Responsive layout ── */}
-          <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
+          {/* Desktop only: Two-panel layout */}
+          <div className="hidden sm:flex flex-col sm:flex-row flex-1 overflow-hidden">
 
-            {/* ── LEFT: Sections A + B + C + OP Stage (on mobile) (scrollable) ── */}
+            {/* ── LEFT: Sections A + B + C + OP Stage (scrollable) ── */}
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5 sm:border-r border-border/60">
 
               {/* Section A: รายละเอียดงาน */}
@@ -867,40 +869,281 @@ function JobDetail({
               </div>
             </div>
 
-            {/* ── Activity + History on mobile (collapsible) ── */}
-            <div className="sm:hidden w-full bg-muted/20 overflow-y-auto">
-              {/* Log Activity - Collapsible on mobile */}
-              <div className="border-t border-border/60">
-                <button
-                  type="button"
-                  onClick={() => toggleSection('Activity')}
-                  className="w-full px-4 py-3 flex items-center gap-2 hover:bg-muted/50 transition-colors text-left"
-                >
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-1">Log Activity</span>
-                  <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${openSections.Activity ? 'rotate-0' : '-rotate-90'}`} />
-                </button>
-                <div className={`px-4 pb-3 ${openSections.Activity ? 'block' : 'hidden'}`}>
-                  <AddActivityForm entityType="won_job" entityId={job.job_id} owner={job.owner || ''} />
-                </div>
-              </div>
+          </div>
 
-              <Separator />
+          {/* ── Mobile: Tab interface ── */}
+          <div className="sm:hidden flex flex-col flex-1 overflow-hidden">
+            <JobDetailTabs>
+              {{
+                details: (
+                  <div className="px-6 py-5 space-y-5 overflow-y-auto">
+                    {/* Section A: รายละเอียดงาน */}
+                    <div className="rounded-xl border border-blue-200 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => toggleSection('A')}
+                        className="w-full bg-blue-50 px-4 py-2.5 flex items-center gap-2 hover:bg-blue-100/60 transition-colors text-left"
+                      >
+                        <div className="w-5 h-5 rounded-md bg-blue-100 flex items-center justify-center shrink-0">
+                          <ClipboardList className="w-3 h-3 text-blue-600" />
+                        </div>
+                        <span className="text-[12px] font-bold text-blue-800 tracking-wide flex-1">A  รายละเอียดงาน</span>
+                        <ChevronDown className={`w-3.5 h-3.5 text-blue-400 transition-transform duration-200 ${openSections.A ? 'rotate-0' : '-rotate-90'}`} />
+                      </button>
+                      {openSections.A && <div className="bg-white px-4 py-4 space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <FieldRow label="Event Date" value={job.event_date || ''} placeholder="YYYY-MM-DD" dateInput onSave={(v) => u({ event_date: v })} />
+                          <FieldRow label="Event Time" value={job.event_time || ''} placeholder="e.g. 17.00-23.00" onSave={(v) => u({ event_time: v })} />
+                        </div>
+                        <FieldRow label="Event Display Name" value={job.event_display_name || ''} placeholder="e.g. Sephora Staff Party 2026" onSave={(v) => u({ event_display_name: v })} />
+                        <FieldRow label="Venue" value={job.venue || ''} placeholder="e.g. Eastin Grand Hotel Phayathai" onSave={(v) => u({ venue: v })} />
+                        <div className="grid grid-cols-2 gap-4">
+                          <FieldRow label="Product Type" value={job.product_type || ''} placeholder="e.g. LCA + Film" onSave={(v) => u({ product_type: v })} />
+                          <FieldRow label="Product Cat" value={job.product_cat || ''} placeholder="Event / Roadshow / Rental / Campaign" onSave={(v) => u({ product_cat: v })} />
+                        </div>
+                        <FieldRow label="รายละเอียดงาน / Notes" value={job.job_detail_notes || ''} placeholder="รายละเอียดบริการ, backdrop, หมายเหตุ…" multiline rows={5} onSave={(v) => u({ job_detail_notes: v })} />
+                      </div>}
+                    </div>
 
-              {/* History - Collapsible on mobile */}
-              <div>
-                <button
-                  type="button"
-                  onClick={() => toggleSection('History')}
-                  className="w-full px-4 py-3 flex items-center gap-2 hover:bg-muted/50 transition-colors text-left"
-                >
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex-1">History</span>
-                  <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${openSections.History ? 'rotate-0' : '-rotate-90'}`} />
-                </button>
-                <div className={`px-4 py-3 ${openSections.History ? 'block' : 'hidden'}`}>
-                  <ActivityTimeline entityType="won_job" entityId={job.job_id} />
-                </div>
-              </div>
-            </div>
+                    {/* Section B: ข้อมูลหน้างาน */}
+                    <div className="rounded-xl border border-emerald-200 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => toggleSection('B')}
+                        className="w-full bg-emerald-50 px-4 py-2.5 flex items-center gap-2 hover:bg-emerald-100/60 transition-colors text-left"
+                      >
+                        <div className="w-5 h-5 rounded-md bg-emerald-100 flex items-center justify-center shrink-0">
+                          <Truck className="w-3 h-3 text-emerald-600" />
+                        </div>
+                        <span className="text-[12px] font-bold text-emerald-800 tracking-wide flex-1">B  ข้อมูลหน้างาน</span>
+                        <ChevronDown className={`w-3.5 h-3.5 text-emerald-400 transition-transform duration-200 ${openSections.B ? 'rotate-0' : '-rotate-90'}`} />
+                      </button>
+                      {openSections.B && <div className="bg-white px-4 py-4 space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <FieldRow label="Onsite Contact" value={job.onsite_contact_name || ''} placeholder="ชื่อผู้ติดต่อหน้างาน" onSave={(v) => u({ onsite_contact_name: v })} />
+                          <FieldRow label="Phone" value={job.onsite_contact_phone || ''} placeholder="08x-xxx-xxxx" onSave={(v) => u({ onsite_contact_phone: v })} />
+                        </div>
+                        <FieldRow label="Line ID" value={job.onsite_line_id || ''} placeholder="Line ID ผู้ติดต่อหน้างาน" onSave={(v) => u({ onsite_line_id: v })} />
+                        <FieldRow label="Install Point" value={job.install_point || ''} placeholder="จุดติดตั้ง / Backdrop location" multiline onSave={(v) => u({ install_point: v })} />
+                        <FieldRow label="Team Meeting Time" value={job.team_meeting_time || ''} placeholder="e.g. 15.00" onSave={(v) => u({ team_meeting_time: v })} />
+                        <FieldRow label="Onsite Notes" value={job.onsite_notes || ''} placeholder="หมายเหตุหน้างาน (parking, loading, etc.)" multiline onSave={(v) => u({ onsite_notes: v })} />
+
+                        {/* Staff sub-section */}
+                        <div className="rounded-xl border border-rose-200 overflow-hidden mt-1">
+                          <button
+                            type="button"
+                            onClick={() => toggleSection('Staff')}
+                            className="w-full bg-rose-50 px-4 py-2.5 flex items-center gap-2 hover:bg-rose-100/60 transition-colors text-left"
+                          >
+                            <div className="w-5 h-5 rounded-md bg-rose-100 flex items-center justify-center shrink-0">
+                              <Users className="w-3 h-3 text-rose-600" />
+                            </div>
+                            <span className="text-[12px] font-bold text-rose-800 tracking-wide flex-1">จ่ายเงินน้องออกงาน</span>
+                            <ChevronDown className={`w-3.5 h-3.5 text-rose-400 transition-transform duration-200 ${openSections.Staff ? 'rotate-0' : '-rotate-90'}`} />
+                          </button>
+                          {openSections.Staff && <div className="bg-white px-4 py-3 space-y-2">
+                            {(job.staff_list || []).length === 0 ? (
+                              <p className="text-xs text-muted-foreground italic">No staff assigned yet.</p>
+                            ) : (
+                              <ul className="space-y-2">
+                                {(job.staff_list || []).map((s) => (
+                                  <li key={s.staff_id} className="flex items-start justify-between p-3 rounded-lg border border-border/60 bg-muted/20">
+                                    <div>
+                                      <p className="text-sm font-medium">{s.name} <span className="text-muted-foreground">({s.nickname})</span></p>
+                                      <p className="text-xs text-muted-foreground">{s.phone}</p>
+                                      <p className="text-xs text-muted-foreground">{s.bank_name} · {s.bank_account_number} · {s.bank_account_name}</p>
+                                      {s.bank_branch && <p className="text-xs text-muted-foreground">สาขา: {s.bank_branch}</p>}
+                                    </div>
+                                    <button onClick={() => removeStaff(s.staff_id)} className="text-muted-foreground hover:text-red-500 transition-colors ml-2 shrink-0">
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                            <Button size="sm" variant="outline" className="w-full h-8 text-xs mt-1 border-rose-200 text-rose-700 hover:bg-rose-50" onClick={() => setStaffSheetOpen(true)}>
+                              + Add Staff
+                            </Button>
+                          </div>}
+                        </div>
+                      </div>}
+                    </div>
+
+                    {/* Section C: Company Account & OP Stage */}
+                    <div className="rounded-xl border border-amber-200 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => toggleSection('C')}
+                        className="w-full bg-amber-50 px-4 py-2.5 flex items-center gap-2 hover:bg-amber-100/60 transition-colors text-left"
+                      >
+                        <div className="w-5 h-5 rounded-md bg-amber-100 flex items-center justify-center shrink-0">
+                          <CreditCard className="w-3 h-3 text-amber-600" />
+                        </div>
+                        <span className="text-[12px] font-bold text-amber-800 tracking-wide flex-1">C  Company Account</span>
+                        <ChevronDown className={`w-3.5 h-3.5 text-amber-400 transition-transform duration-200 ${openSections.C ? 'rotate-0' : '-rotate-90'}`} />
+                      </button>
+                      {openSections.C && <div className="bg-white px-4 py-4 space-y-4">
+                        {linkedCustomer ? (
+                          <p className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-md leading-snug">
+                            🔗 Linked to <strong>{linkedCustomer.company_name}</strong> — edits update the shared Customer record
+                          </p>
+                        ) : (
+                          <p className="text-[10px] text-slate-400 bg-slate-50 px-2.5 py-1.5 rounded-md">
+                            No linked customer — data stored on this job only
+                          </p>
+                        )}
+                        <FieldRow
+                          label="Company Name / Account"
+                          value={linkedCustomer ? (linkedCustomer.company_name ?? '') : (job.company_account.company_name ?? '')}
+                          placeholder="ชื่อบริษัท"
+                          onSave={(v) => uc ? uc({ company_name: v }) : u({ company_account: { ...job.company_account, company_name: v } })}
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                          <FieldRow
+                            label="Billing Contact"
+                            value={linkedCustomer ? (linkedCustomer.billing_contact ?? '') : (job.company_account.contact_point ?? '')}
+                            placeholder="ผู้ติดต่อด้านบัญชี"
+                            onSave={(v) => uc ? uc({ billing_contact: v }) : u({ company_account: { ...job.company_account, contact_point: v } })}
+                          />
+                          <FieldRow
+                            label="Phone"
+                            value={linkedCustomer ? (linkedCustomer.phone ?? '') : (job.company_account.phone_number ?? '')}
+                            placeholder="เบอร์โทร"
+                            onSave={(v) => uc ? uc({ phone: v }) : u({ company_account: { ...job.company_account, phone_number: v } })}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <FieldRow
+                            label="Line ID"
+                            value={linkedCustomer ? (linkedCustomer.line_id ?? '') : (job.company_account.line_id ?? '')}
+                            placeholder="Line ID"
+                            onSave={(v) => uc ? uc({ line_id: v }) : u({ company_account: { ...job.company_account, line_id: v } })}
+                          />
+                          <FieldRow
+                            label="Email"
+                            value={linkedCustomer ? (linkedCustomer.email ?? '') : (job.company_account.email ?? '')}
+                            placeholder="อีเมล"
+                            onSave={(v) => uc ? uc({ email: v }) : u({ company_account: { ...job.company_account, email: v } })}
+                          />
+                        </div>
+                        <FieldRow
+                          label="Tax ID (เลขประจำตัวผู้เสียภาษี)"
+                          value={linkedCustomer ? (linkedCustomer.tax_id ?? '') : (job.company_account.tax_id ?? '')}
+                          placeholder="0105xxx"
+                          onSave={(v) => uc ? uc({ tax_id: v }) : u({ company_account: { ...job.company_account, tax_id: v } })}
+                        />
+                        <FieldRow
+                          label="Company Address"
+                          value={linkedCustomer ? (linkedCustomer.company_address ?? '') : (job.company_account.company_address ?? '')}
+                          placeholder="ที่อยู่บริษัท"
+                          multiline
+                          onSave={(v) => uc ? uc({ company_address: v }) : u({ company_account: { ...job.company_account, company_address: v } })}
+                        />
+                        <FieldRow
+                          label="Branch"
+                          value={linkedCustomer ? (linkedCustomer.branch ?? '') : (job.company_account.branch ?? '')}
+                          placeholder="สาขา / สำนักงานใหญ่"
+                          onSave={(v) => uc ? uc({ branch: v }) : u({ company_account: { ...job.company_account, branch: v } })}
+                        />
+                        <FieldRow
+                          label="Billing Notes"
+                          value={linkedCustomer ? (linkedCustomer.billing_notes ?? '') : (job.company_account.billing_notes ?? '')}
+                          placeholder="หมายเหตุการวางบิล"
+                          multiline
+                          onSave={(v) => uc ? uc({ billing_notes: v }) : u({ company_account: { ...job.company_account, billing_notes: v } })}
+                        />
+
+                        <div className="flex items-center gap-3 pt-1">
+                          <div className="flex-1 border-t border-border/60" />
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium shrink-0">
+                            <Banknote className="w-3.5 h-3.5" /> Bank Transfer
+                          </div>
+                          <div className="flex-1 border-t border-border/60" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <FieldRow
+                            label="Bank Name"
+                            value={linkedCustomer ? (linkedCustomer.bank_name ?? '') : (job.company_account.bank_name ?? '')}
+                            placeholder="SCB / KBANK / BBL"
+                            onSave={(v) => uc ? uc({ bank_name: v }) : u({ company_account: { ...job.company_account, bank_name: v } })}
+                          />
+                          <FieldRow
+                            label="Bank Branch"
+                            value={linkedCustomer ? (linkedCustomer.bank_branch ?? '') : (job.company_account.bank_branch ?? '')}
+                            placeholder="สาขา"
+                            onSave={(v) => uc ? uc({ bank_branch: v }) : u({ company_account: { ...job.company_account, bank_branch: v } })}
+                          />
+                        </div>
+                        <FieldRow
+                          label="Account Number"
+                          value={linkedCustomer ? (linkedCustomer.bank_account_number ?? '') : (job.company_account.bank_account_number ?? '')}
+                          placeholder="เลขบัญชี"
+                          onSave={(v) => uc ? uc({ bank_account_number: v }) : u({ company_account: { ...job.company_account, bank_account_number: v } })}
+                        />
+                        <FieldRow
+                          label="Account Name"
+                          value={linkedCustomer ? (linkedCustomer.bank_account_name ?? '') : (job.company_account.bank_account_name ?? '')}
+                          placeholder="ชื่อบัญชี"
+                          onSave={(v) => uc ? uc({ bank_account_name: v }) : u({ company_account: { ...job.company_account, bank_account_name: v } })}
+                        />
+                      </div>}
+                    </div>
+
+                    {/* OP Stage */}
+                    <div className="rounded-xl border border-red-200 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => toggleSection('OpStage')}
+                        className="w-full bg-red-50 px-4 py-2.5 flex items-center gap-2 hover:bg-red-100/60 transition-colors text-left"
+                      >
+                        <div className="w-5 h-5 rounded-md bg-red-100 flex items-center justify-center shrink-0">
+                          <div className={`w-2 h-2 rounded-full bg-red-600`} />
+                        </div>
+                        <span className="text-[12px] font-bold text-red-800 tracking-wide flex-1">OP Stage</span>
+                        <ChevronDown className={`w-3.5 h-3.5 text-red-400 transition-transform duration-200 ${openSections.OpStage ? 'rotate-0' : '-rotate-90'}`} />
+                      </button>
+                      {openSections.OpStage && <div className="bg-white px-4 py-3 space-y-2">
+                        <div className="flex flex-col gap-1.5">
+                          {OP_STAGES.map((s) => {
+                            const isActive = job.op_stage === s
+                            return (
+                              <button
+                                key={s}
+                                onClick={() => moveWonJobStage(job.job_id, s)}
+                                className={`w-full text-left text-[11px] font-semibold px-3 py-2 rounded-lg border transition-all ${
+                                  isActive
+                                    ? 'bg-primary text-white border-primary shadow-sm'
+                                    : 'border-slate-200 text-slate-500 bg-white hover:bg-slate-50 hover:border-slate-300'
+                                }`}
+                              >
+                                {OP_STAGE_LABELS[s]}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>}
+                    </div>
+                  </div>
+                ),
+                activity: (
+                  <div className="px-6 py-5 overflow-y-auto space-y-6">
+                    {/* Log Activity Form */}
+                    <div>
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">Log Activity</p>
+                      <AddActivityForm entityType="won_job" entityId={job.job_id} owner={job.owner || ''} />
+                    </div>
+
+                    <Separator />
+
+                    {/* Activity Timeline */}
+                    <div>
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">History</p>
+                      <ActivityTimeline entityType="won_job" entityId={job.job_id} />
+                    </div>
+                  </div>
+                ),
+              }}
+            </JobDetailTabs>
           </div>
 
         </DialogContent>
