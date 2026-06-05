@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useCRMStore } from '@/store/crm-store'
 import type { Activity } from '@/types'
 import {
@@ -13,10 +14,20 @@ import {
   Download,
   Image as ImageIcon,
   File as FileIcon,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  X as XIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
-import { useState } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 
 const activityConfig: Record<
   Activity['activity_type'],
@@ -56,9 +67,17 @@ function downloadFile(base64: string, filename: string) {
   document.body.removeChild(link)
 }
 
+interface Lightbox {
+  activityId: string
+  imageIndex: number
+  images: Array<{ data: string; type: string; filename: string }>
+}
+
 export function ActivityTimeline({ entityType, entityId, className }: ActivityTimelineProps) {
   const allActivities = useCRMStore((s) => s.activities)
+  const { removeActivityAttachment } = useCRMStore()
   const [expandedAttachments, setExpandedAttachments] = useState<Set<string>>(new Set())
+  const [lightbox, setLightbox] = useState<Lightbox | null>(null)
 
   const activities = allActivities
     .filter((a) => a.entity_type === entityType && a.entity_id === entityId)
@@ -125,23 +144,57 @@ export function ActivityTimeline({ entityType, entityId, className }: ActivityTi
                               {images.map((img, imgIdx) => (
                                 <div
                                   key={imgIdx}
-                                  className="relative group rounded-lg overflow-hidden bg-slate-100 border border-slate-200 hover:border-blue-400 transition-colors"
+                                  className="relative group rounded-lg overflow-hidden bg-slate-100 border border-slate-200 hover:border-blue-400 transition-colors cursor-pointer"
                                 >
-                                  {/* Image preview */}
+                                  {/* Image preview - clickable for lightbox */}
                                   <img
                                     src={`data:${img.type};base64,${img.data}`}
                                     alt={img.filename}
-                                    className="w-full h-24 object-cover"
+                                    className="w-full h-24 object-cover hover:opacity-80 transition-opacity"
+                                    onClick={() => {
+                                      setLightbox({
+                                        activityId: activity.activity_id,
+                                        imageIndex: imgIdx,
+                                        images: images,
+                                      })
+                                    }}
                                   />
 
                                   {/* Overlay with actions */}
                                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
                                     <button
-                                      onClick={() => downloadFile(img.data, img.filename)}
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setLightbox({
+                                          activityId: activity.activity_id,
+                                          imageIndex: imgIdx,
+                                          images: images,
+                                        })
+                                      }}
+                                      className="p-1.5 bg-white rounded-md text-slate-700 hover:text-blue-600 transition-colors"
+                                      title="View image"
+                                    >
+                                      <ImageIcon className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        downloadFile(img.data, img.filename)
+                                      }}
                                       className="p-1.5 bg-white rounded-md text-slate-700 hover:text-blue-600 transition-colors"
                                       title="Download image"
                                     >
                                       <Download className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        removeActivityAttachment(activity.activity_id, imgIdx)
+                                      }}
+                                      className="p-1.5 bg-white rounded-md text-slate-700 hover:text-red-600 transition-colors"
+                                      title="Delete image"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
                                     </button>
                                   </div>
 
@@ -206,6 +259,101 @@ export function ActivityTimeline({ entityType, entityId, className }: ActivityTi
           </div>
         )
       })}
+
+      {/* Image Lightbox Modal */}
+      {lightbox && (
+        <Dialog open={!!lightbox} onOpenChange={(open) => !open && setLightbox(null)}>
+          <DialogContent className="max-w-4xl bg-slate-900 border-slate-700 p-0">
+            <DialogHeader className="bg-slate-800 border-b border-slate-700 px-4 py-3 sr-only">
+              <DialogTitle>Image Preview</DialogTitle>
+            </DialogHeader>
+
+            <div className="relative w-full h-[70vh] bg-slate-950 flex items-center justify-center group">
+              {/* Close button */}
+              <button
+                onClick={() => setLightbox(null)}
+                className="absolute top-4 right-4 z-50 p-1.5 bg-slate-800 hover:bg-slate-700 rounded-md text-white transition-colors"
+              >
+                <XIcon className="w-5 h-5" />
+              </button>
+
+              {/* Image */}
+              <img
+                src={`data:${lightbox.images[lightbox.imageIndex].type};base64,${lightbox.images[lightbox.imageIndex].data}`}
+                alt={lightbox.images[lightbox.imageIndex].filename}
+                className="max-w-full max-h-full object-contain"
+              />
+
+              {/* Navigation - Previous */}
+              {lightbox.imageIndex > 0 && (
+                <button
+                  onClick={() =>
+                    setLightbox({
+                      ...lightbox,
+                      imageIndex: lightbox.imageIndex - 1,
+                    })
+                  }
+                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-slate-800 hover:bg-slate-700 rounded-md text-white transition-colors opacity-0 group-hover:opacity-100"
+                  title="Previous image"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+              )}
+
+              {/* Navigation - Next */}
+              {lightbox.imageIndex < lightbox.images.length - 1 && (
+                <button
+                  onClick={() =>
+                    setLightbox({
+                      ...lightbox,
+                      imageIndex: lightbox.imageIndex + 1,
+                    })
+                  }
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-slate-800 hover:bg-slate-700 rounded-md text-white transition-colors opacity-0 group-hover:opacity-100"
+                  title="Next image"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              )}
+
+              {/* Image counter */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-sm px-3 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                {lightbox.imageIndex + 1} / {lightbox.images.length}
+              </div>
+            </div>
+
+            {/* Actions footer */}
+            <div className="bg-slate-800 border-t border-slate-700 px-4 py-3 flex items-center justify-between">
+              <p className="text-sm text-slate-300 truncate">
+                {lightbox.images[lightbox.imageIndex].filename}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => downloadFile(lightbox.images[lightbox.imageIndex].data, lightbox.images[lightbox.imageIndex].filename)}
+                  className="h-8 border-slate-600 text-slate-300 hover:bg-slate-700"
+                >
+                  <Download className="w-4 h-4 mr-1.5" />
+                  Download
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => {
+                    removeActivityAttachment(lightbox.activityId, lightbox.imageIndex)
+                    setLightbox(null)
+                  }}
+                  className="h-8"
+                >
+                  <Trash2 className="w-4 h-4 mr-1.5" />
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

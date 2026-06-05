@@ -152,6 +152,7 @@ interface CRMStore {
 
   // Activities
   addActivity: (activity: Activity) => Promise<void>
+  removeActivityAttachment: (activityId: string, attachmentIndex: number) => Promise<void>
 }
 
 export const useCRMStore = create<CRMStore>()((set, get) => ({
@@ -963,6 +964,34 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
         await db.activityQueries.create(activity)
       } catch (error) {
         set({ error: error instanceof Error ? error.message : 'Failed to create activity' })
+      }
+    }
+  },
+
+  removeActivityAttachment: async (activityId, attachmentIndex) => {
+    set((s) => ({
+      activities: s.activities.map((a) => {
+        if (a.activity_id === activityId && a.attachments) {
+          return {
+            ...a,
+            attachments: a.attachments.filter((_, idx) => idx !== attachmentIndex),
+          }
+        }
+        return a
+      }),
+    }))
+
+    // Sync to Supabase if enabled
+    if (USE_SUPABASE) {
+      try {
+        const activity = get().activities.find((a) => a.activity_id === activityId)
+        if (activity) {
+          await db.activityQueries.update(activityId, {
+            attachments: activity.attachments,
+          })
+        }
+      } catch (error) {
+        set({ error: error instanceof Error ? error.message : 'Failed to remove attachment' })
       }
     }
   },

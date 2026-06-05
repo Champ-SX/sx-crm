@@ -395,6 +395,17 @@ export const activityQueries = {
     if (error) throw error
     return data as Activity
   },
+
+  async update(id: string, updates: Partial<Activity>) {
+    const { data, error } = await supabase
+      .from('activities')
+      .update(updates)
+      .eq('activity_id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data as Activity
+  },
 }
 
 // ===== TASKS =====
