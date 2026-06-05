@@ -432,7 +432,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       job_id: crypto.randomUUID(),
       job_number: newJobNumber,
       // Map lead fields → WonJob title components
-      event_date: lop.event_date ?? '',
+      event_date: lop.event_date || null,       // Send null for invalid dates, not empty string
       product_type: lop.service_type,            // e.g. "CAP*TURES"
       product_name: lop.name,                    // lead name as working title
       place: lop.venue ?? '',                    // lead venue → place
