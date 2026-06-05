@@ -514,11 +514,24 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
           }),
         ])
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error)
+        // Extract error message from various error formats
+        let errorMsg = 'Unknown error'
+        if (error instanceof Error) {
+          errorMsg = error.message
+        } else if (typeof error === 'object' && error !== null) {
+          // Handle Supabase error objects
+          const err = error as any
+          errorMsg = err.message || err.error_description || err.msg || JSON.stringify(err)
+        } else {
+          errorMsg = String(error)
+        }
+
         console.error('[CRM Store] Failed to mark lead as won:', {
           leadOpId,
           jobId: newJob.job_id,
-          error: errorMsg,
+          newJob, // Log the full payload to see what was sent
+          errorMsg,
+          errorType: error instanceof Error ? 'Error' : typeof error,
           fullError: error,
         })
         set({ error: `Failed to mark as won: ${errorMsg}` })
