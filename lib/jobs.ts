@@ -127,7 +127,7 @@ export function blankWonJobFields(): Omit<WonJob, 'job_id' | 'job_number' | 'eve
     install_point: null,     // Nullable - use null instead of empty string
     team_meeting_time: null, // Nullable - use null instead of empty string
     onsite_notes: null,      // Nullable - use null instead of empty string
-    staff_list: null,        // Nullable - use null instead of empty array
+    // staff_list is not a database column - it's managed separately
     company_account: { company_name: null }, // Simplified: just empty account
     payment_status: 'unpaid',
     staff_status: 'pending',

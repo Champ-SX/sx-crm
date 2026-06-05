@@ -495,8 +495,11 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
     // Sync to Supabase if enabled (before optimistic update)
     if (USE_SUPABASE) {
       try {
+        // Remove fields that don't exist in the database schema before sending
+        const { staff_list, ...jobToCreate } = newJob as any
+
         // Create wonJob FIRST - this is the critical operation
-        await db.wonJobQueries.create(newJob)
+        await db.wonJobQueries.create(jobToCreate as WonJob)
         console.log('[CRM Store] Successfully created wonJob:', newJob.job_id)
 
         // Then update lead status and create activity
