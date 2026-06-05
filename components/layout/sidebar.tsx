@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useState } from 'react'
 import {
   LayoutDashboard,
   Users,
@@ -12,10 +13,14 @@ import {
   Zap,
   Upload,
   X,
+  LogOut,
+  Shield,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCRMStore } from '@/store/crm-store'
 import { useMobileNav } from '@/components/layout/mobile-nav-context'
+import { useAuth } from '@/components/auth-provider'
+import { signOut } from '@/lib/supabase/auth'
 import { OP_STAGES } from '@/types'
 
 const navItems = [
@@ -34,7 +39,10 @@ const bottomItems = [
 
 function NavContent({ onNavClick }: { onNavClick?: () => void }) {
   const pathname = usePathname()
+  const router = useRouter()
+  const { user } = useAuth()
   const { leadOpportunities, wonJobs, tasks } = useCRMStore()
+  const [showUserMenu, setShowUserMenu] = useState(false)
 
   const openLeadsCount = leadOpportunities.filter((l) => l.status === 'open').length
   const today = new Date().toISOString().split('T')[0]
@@ -116,15 +124,55 @@ function NavContent({ onNavClick }: { onNavClick?: () => void }) {
         ))}
 
         {/* User */}
-        <div className="flex items-center gap-2.5 px-3 py-2.5 mt-1 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
-          <div className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center text-[var(--sidebar-primary)] text-xs font-bold shrink-0">
-            V
+        {user && (
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 mt-1 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              <div className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center text-[var(--sidebar-primary)] text-xs font-bold shrink-0">
+                {(user.name?.charAt(0) || user.email?.charAt(0) || 'U').toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-slate-700 text-[13px] font-medium leading-tight truncate">
+                  {user.name || 'User'}
+                </p>
+                <p className="text-slate-400 text-[10px] leading-tight capitalize">{user.role}</p>
+              </div>
+            </button>
+
+            {/* User Menu Dropdown */}
+            {showUserMenu && (
+              <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-slate-200 rounded-lg shadow-lg z-50">
+                {user.role === 'admin' && (
+                  <Link
+                    href="/admin/users"
+                    onClick={() => {
+                      setShowUserMenu(false)
+                      onNavClick?.()
+                    }}
+                    className="flex items-center gap-2.5 px-3 py-2.5 text-[13px] text-slate-700 hover:bg-slate-50 transition-colors border-b border-slate-200"
+                  >
+                    <Shield className="w-4 h-4" />
+                    Admin Panel
+                  </Link>
+                )}
+                <button
+                  onClick={async () => {
+                    setShowUserMenu(false)
+                    onNavClick?.()
+                    await signOut()
+                    router.push('/login')
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[13px] text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
+              </div>
+            )}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-slate-700 text-[13px] font-medium leading-tight">Vitta</p>
-            <p className="text-slate-400 text-[10px] leading-tight">Admin</p>
-          </div>
-        </div>
+        )}
       </div>
     </>
   )
