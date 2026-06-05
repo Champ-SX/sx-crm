@@ -28,6 +28,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 const activityConfig: Record<
   Activity['activity_type'],
@@ -160,42 +166,9 @@ export function ActivityTimeline({ entityType, entityId, className }: ActivityTi
                                     }}
                                   />
 
-                                  {/* Overlay with actions */}
-                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        setLightbox({
-                                          activityId: activity.activity_id,
-                                          imageIndex: imgIdx,
-                                          images: images,
-                                        })
-                                      }}
-                                      className="p-1.5 bg-white rounded-md text-slate-700 hover:text-blue-600 transition-colors"
-                                      title="View image"
-                                    >
-                                      <ImageIcon className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        downloadFile(img.data, img.filename)
-                                      }}
-                                      className="p-1.5 bg-white rounded-md text-slate-700 hover:text-blue-600 transition-colors"
-                                      title="Download image"
-                                    >
-                                      <Download className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        removeActivityAttachment(activity.activity_id, imgIdx)
-                                      }}
-                                      className="p-1.5 bg-white rounded-md text-slate-700 hover:text-red-600 transition-colors"
-                                      title="Delete image"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
+                                  {/* Overlay with click to view hint */}
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                    <p className="text-white text-xs font-medium">Click to view</p>
                                   </div>
 
                                   {/* Filename tooltip on hover */}
@@ -269,19 +242,50 @@ export function ActivityTimeline({ entityType, entityId, className }: ActivityTi
             </DialogHeader>
 
             <div className="relative w-full h-[70vh] bg-slate-950 flex items-center justify-center group">
-              {/* Close button */}
-              <button
-                onClick={() => setLightbox(null)}
-                className="absolute top-4 right-4 z-50 p-1.5 bg-slate-800 hover:bg-slate-700 rounded-md text-white transition-colors"
-              >
-                <XIcon className="w-5 h-5" />
-              </button>
+              {/* Top bar with close and menu buttons */}
+              <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+                {/* More menu button */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="p-2 bg-slate-800 hover:bg-slate-700 rounded-md text-white transition-colors">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                      <circle cx="12" cy="5" r="2" />
+                      <circle cx="12" cy="12" r="2" />
+                      <circle cx="12" cy="19" r="2" />
+                    </svg>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
+                    <DropdownMenuItem
+                      onClick={() => {
+                        removeActivityAttachment(lightbox.activityId, lightbox.imageIndex)
+                        setLightbox(null)
+                      }}
+                      className="text-red-400 hover:text-red-300 cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete image
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-              {/* Image */}
+                {/* Close button */}
+                <button
+                  onClick={() => setLightbox(null)}
+                  className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-md text-white transition-colors"
+                  title="Close (ESC)"
+                >
+                  <XIcon className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Image - right click to save */}
               <img
                 src={`data:${lightbox.images[lightbox.imageIndex].type};base64,${lightbox.images[lightbox.imageIndex].data}`}
                 alt={lightbox.images[lightbox.imageIndex].filename}
-                className="max-w-full max-h-full object-contain"
+                className="max-w-full max-h-full object-contain cursor-context-menu"
+                onContextMenu={(e) => {
+                  // Allow browser's native right-click save
+                  return true
+                }}
               />
 
               {/* Navigation - Previous */}
@@ -322,34 +326,14 @@ export function ActivityTimeline({ entityType, entityId, className }: ActivityTi
               </div>
             </div>
 
-            {/* Actions footer */}
+            {/* Footer with filename and counter */}
             <div className="bg-slate-800 border-t border-slate-700 px-4 py-3 flex items-center justify-between">
-              <p className="text-sm text-slate-300 truncate">
+              <p className="text-sm text-slate-300 truncate flex-1">
                 {lightbox.images[lightbox.imageIndex].filename}
               </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => downloadFile(lightbox.images[lightbox.imageIndex].data, lightbox.images[lightbox.imageIndex].filename)}
-                  className="h-8 border-slate-600 text-slate-300 hover:bg-slate-700"
-                >
-                  <Download className="w-4 h-4 mr-1.5" />
-                  Download
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => {
-                    removeActivityAttachment(lightbox.activityId, lightbox.imageIndex)
-                    setLightbox(null)
-                  }}
-                  className="h-8"
-                >
-                  <Trash2 className="w-4 h-4 mr-1.5" />
-                  Delete
-                </Button>
-              </div>
+              <p className="text-xs text-slate-400 ml-4 flex-shrink-0">
+                {lightbox.imageIndex + 1} / {lightbox.images.length}
+              </p>
             </div>
           </DialogContent>
         </Dialog>
