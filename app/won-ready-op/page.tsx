@@ -36,6 +36,7 @@ import {
   Pencil, Check, X, ChevronDown, ChevronUp,
   ClipboardList, Truck, CreditCard,
   Users, Banknote, ArrowUpDown, GripVertical,
+  Trash2,
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 
@@ -146,7 +147,17 @@ function FieldRow({ label, value, onSave, multiline, placeholder, rows, dateInpu
 }
 
 // ── Job Card ──────────────────────────────────────────────────────────────────
-function JobCard({ job, onClick, isDragging }: { job: WonJob; onClick: () => void; isDragging?: boolean }) {
+function JobCard({
+  job,
+  onClick,
+  isDragging,
+  onDelete,
+}: {
+  job: WonJob
+  onClick: () => void
+  isDragging?: boolean
+  onDelete?: (jobId: string) => void
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging: isSortableDragging } = useSortable({ id: job.job_id })
   const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined
   const isBeingDragged = isDragging || isSortableDragging
@@ -193,6 +204,18 @@ function JobCard({ job, onClick, isDragging }: { job: WonJob; onClick: () => voi
           <span className="text-[10px] font-medium text-slate-400 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded-full shrink-0">{job.owner}</span>
         </div>
       </div>
+
+      {/* Delete Button - appears on hover */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          onDelete?.(job.job_id)
+        }}
+        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-50 rounded-lg shrink-0"
+        title="Delete card"
+      >
+        <Trash2 className="w-4 h-4 text-red-500" />
+      </button>
     </div>
   )
 }
@@ -206,6 +229,7 @@ function KanbanColumn({
   onDeleteStage,
   onChangeColor,
   onAddStage,
+  onDeleteCard,
   opStages,
 }: {
   stage: string
@@ -215,6 +239,7 @@ function KanbanColumn({
   onDeleteStage?: (stage: string) => void
   onChangeColor?: (stage: string) => void
   onAddStage?: () => void
+  onDeleteCard?: (jobId: string) => void
   opStages: any[]
 }) {
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({ id: stage })
@@ -373,6 +398,7 @@ function KanbanColumn({
               job={job}
               onClick={() => onCardClick(job)}
               isDragging={activeId === job.job_id}
+              onDelete={onDeleteCard}
             />
           ))}
           {jobs.length === 0 && (
@@ -899,6 +925,7 @@ export default function WonReadyOpPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [stageToDelete, setStageToDelete] = useState<string | null>(null)
   const [stageToColorize, setStageToColorize] = useState<string | null>(null)
+  const [jobToDelete, setJobToDelete] = useState<string | null>(null)
   const [showAddStageDialog, setShowAddStageDialog] = useState(false)
   const [newStageName, setNewStageName] = useState('')
   const [newStageColor, setNewStageColor] = useState('blue')
@@ -1020,6 +1047,24 @@ export default function WonReadyOpPage() {
     setStageToColorize(stage)
   }
 
+  const handleDeleteCard = (jobId: string) => {
+    setJobToDelete(jobId)
+  }
+
+  const confirmDeleteCard = async () => {
+    if (!jobToDelete) return
+
+    try {
+      console.log('[Delete Card] Deleting job:', jobToDelete)
+      const { deleteWonJob } = useCRMStore.getState()
+      await deleteWonJob(jobToDelete)
+      setJobToDelete(null)
+      console.log('[Delete Card] Job deleted successfully')
+    } catch (error) {
+      console.error('[Delete Card] Error deleting job:', error)
+    }
+  }
+
   const activeCount = wonJobs.filter((j) => j.op_stage !== 'OP_DONE_PAYMENT').length
   const totalValue = wonJobs
     .filter((j) => j.op_stage !== 'OP_DONE_PAYMENT')
@@ -1079,6 +1124,7 @@ export default function WonReadyOpPage() {
                   activeId={activeId}
                   onDeleteStage={handleDeleteStage}
                   onChangeColor={handleChangeColor}
+                  onDeleteCard={handleDeleteCard}
                   onAddStage={() => setShowAddStageDialog(true)}
                   opStages={opStages}
                 />
@@ -1173,6 +1219,37 @@ export default function WonReadyOpPage() {
               onClick={() => setStageToColorize(null)}
             >
               Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Card Confirmation Dialog */}
+      <Dialog open={!!jobToDelete} onOpenChange={(open) => !open && setJobToDelete(null)}>
+        <DialogContent>
+          <DialogTitle>Delete Card</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to permanently delete this card? This action cannot be undone.
+            {jobToDelete && wonJobs.find((j) => j.job_id === jobToDelete) && (
+              <>
+                <br />
+                <br />
+                <strong>{formatJobTitleShort(wonJobs.find((j) => j.job_id === jobToDelete)!)}</strong>
+              </>
+            )}
+          </DialogDescription>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setJobToDelete(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={confirmDeleteCard}
+            >
+              Delete Permanently
             </Button>
           </DialogFooter>
         </DialogContent>
