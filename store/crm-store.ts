@@ -492,6 +492,41 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       }
     }
 
+    // Sync to Supabase if enabled (before optimistic update)
+    if (USE_SUPABASE) {
+      try {
+        // Create wonJob FIRST - this is the critical operation
+        await db.wonJobQueries.create(newJob)
+        console.log('[CRM Store] Successfully created wonJob:', newJob.job_id)
+
+        // Then update lead status and create activity
+        await Promise.all([
+          db.leadOpportunityQueries.update(leadOpId, { status: 'won' }),
+          db.activityQueries.create({
+            activity_id: crypto.randomUUID(),
+            entity_type: 'lead_opportunity',
+            entity_id: leadOpId,
+            activity_type: 'deal_won',
+            title: '🎉 Marked as Won',
+            description: `Job #${newJobNumber} created and added to Won Job List.`,
+            created_by: lop.owner,
+            created_at: now,
+          }),
+        ])
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error)
+        console.error('[CRM Store] Failed to mark lead as won:', {
+          leadOpId,
+          jobId: newJob.job_id,
+          error: errorMsg,
+          fullError: error,
+        })
+        set({ error: `Failed to mark as won: ${errorMsg}` })
+        throw error // Re-throw so UI knows about the failure
+      }
+    }
+
+    // Only update UI if database operation succeeded (or if not using Supabase)
     set((s) => ({
       leadOpportunities: s.leadOpportunities.map((l) =>
         l.lead_op_id === leadOpId
@@ -513,28 +548,6 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
         },
       ],
     }))
-
-    // Sync to Supabase if enabled
-    if (USE_SUPABASE) {
-      try {
-        await Promise.all([
-          db.leadOpportunityQueries.update(leadOpId, { status: 'won' }),
-          db.wonJobQueries.create(newJob),
-          db.activityQueries.create({
-            activity_id: crypto.randomUUID(),
-            entity_type: 'lead_opportunity',
-            entity_id: leadOpId,
-            activity_type: 'deal_won',
-            title: '🎉 Marked as Won',
-            description: `Job #${newJobNumber} created and added to Won Job List.`,
-            created_by: lop.owner,
-            created_at: now,
-          }),
-        ])
-      } catch (error) {
-        set({ error: error instanceof Error ? error.message : 'Failed to mark as won' })
-      }
-    }
 
     return newJob
   },

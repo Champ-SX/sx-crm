@@ -114,21 +114,21 @@ export function emptyCompanyAccount(): CompanyAccount {
 // ─── Blank WonJob template (used when marking a lead as won) ─────────────────
 export function blankWonJobFields(): Omit<WonJob, 'job_id' | 'job_number' | 'event_date' | 'product_name' | 'customer_name' | 'customer_id' | 'lead_op_id' | 'estimated_value' | 'owner' | 'op_stage' | 'created_at' | 'updated_at'> {
   return {
-    product_type: '',
-    product_cat: 'Event',
-    place: '',
-    event_display_name: '',
-    event_time: '',
-    venue: '',
-    job_detail_notes: '',
-    onsite_contact_name: '',
-    onsite_contact_phone: '',
-    onsite_line_id: '',
-    install_point: '',
-    team_meeting_time: '',
-    onsite_notes: '',
-    staff_list: [],
-    company_account: emptyCompanyAccount(),
+    product_type: null,      // Nullable - use null instead of empty string
+    product_cat: null,       // Nullable - use null instead of default
+    place: null,             // Nullable - use null instead of empty string
+    event_display_name: null, // Nullable - use null instead of empty string
+    event_time: null,        // Nullable - use null instead of empty string
+    venue: null,             // Nullable - use null instead of empty string
+    job_detail_notes: null,  // Nullable - use null instead of empty string
+    onsite_contact_name: null, // Nullable - use null instead of empty string
+    onsite_contact_phone: null, // Nullable - use null instead of empty string
+    onsite_line_id: null,    // Nullable - use null instead of empty string
+    install_point: null,     // Nullable - use null instead of empty string
+    team_meeting_time: null, // Nullable - use null instead of empty string
+    onsite_notes: null,      // Nullable - use null instead of empty string
+    staff_list: null,        // Nullable - use null instead of empty array
+    company_account: { company_name: null }, // Simplified: just empty account
     payment_status: 'unpaid',
     staff_status: 'pending',
     doc_status: 'pending',
