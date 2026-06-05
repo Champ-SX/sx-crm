@@ -156,8 +156,13 @@ export function ActivityTimeline({ entityType, entityId, className }: ActivityTi
                                   <img
                                     src={`data:${img.type};base64,${img.data}`}
                                     alt={img.filename}
-                                    className="w-full h-24 object-cover hover:opacity-80 transition-opacity"
+                                    className="w-full h-24 object-cover hover:opacity-80 transition-opacity cursor-pointer"
                                     onClick={() => {
+                                      console.log('[ActivityTimeline] Image clicked, opening lightbox:', {
+                                        activityId: activity.activity_id,
+                                        imageIndex: imgIdx,
+                                        totalImages: images.length
+                                      })
                                       setLightbox({
                                         activityId: activity.activity_id,
                                         imageIndex: imgIdx,
@@ -235,7 +240,12 @@ export function ActivityTimeline({ entityType, entityId, className }: ActivityTi
 
       {/* Image Lightbox Modal */}
       {lightbox && (
-        <Dialog open={!!lightbox} onOpenChange={(open) => !open && setLightbox(null)}>
+        <>
+          {console.log('[ActivityTimeline] Rendering lightbox:', lightbox)}
+          <Dialog open={!!lightbox} onOpenChange={(open) => {
+            console.log('[ActivityTimeline] Dialog onOpenChange:', open)
+            if (!open) setLightbox(null)
+          }}>
           <DialogContent className="max-w-4xl bg-slate-900 border-slate-700 p-0">
             <DialogHeader className="bg-slate-800 border-b border-slate-700 px-4 py-3 sr-only">
               <DialogTitle>Image Preview</DialogTitle>
@@ -337,6 +347,7 @@ export function ActivityTimeline({ entityType, entityId, className }: ActivityTi
             </div>
           </DialogContent>
         </Dialog>
+        </>
       )}
     </div>
   )
