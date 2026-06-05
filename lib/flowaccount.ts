@@ -296,7 +296,7 @@ export function buildPayloadFromJob(
     name:        `${job.product_type} #${job.job_number}`,
     description: [job.event_display_name, job.venue].filter(Boolean).join(' — '),
     quantity:    1,
-    unitPrice:   job.estimated_value,
+    unitPrice:   job.estimated_value || 0,
     unitName:    'งาน',
   }
 
@@ -316,8 +316,8 @@ export function buildPayloadFromJob(
     dueDate:         options?.dueDate,
     creditDays:      options?.creditDays,
     referenceNumber: options?.referenceNumber ?? `JOB-${job.job_number}`,
-    salesName:       options?.salesName ?? job.owner,
-    projectName:     job.event_display_name,
+    salesName:       options?.salesName ?? job.owner ?? undefined,
+    projectName:     job.event_display_name ?? undefined,
     note:            job.job_detail_notes || undefined,
 
     lineItems:   [lineItem],

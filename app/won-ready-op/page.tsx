@@ -717,7 +717,7 @@ function JobDetail({
                   )}
                   <FieldRow
                     label="Company Name / Account"
-                    value={linkedCustomer ? linkedCustomer.company_name : job.company_account.company_name}
+                    value={linkedCustomer ? (linkedCustomer.company_name ?? '') : (job.company_account.company_name ?? '')}
                     placeholder="ชื่อบริษัท"
                     onSave={(v) => uc ? uc({ company_name: v }) : u({ company_account: { ...job.company_account, company_name: v } })}
                   />
@@ -730,7 +730,7 @@ function JobDetail({
                     />
                     <FieldRow
                       label="Phone"
-                      value={linkedCustomer ? linkedCustomer.phone : (job.company_account.phone_number ?? '')}
+                      value={linkedCustomer ? (linkedCustomer.phone ?? '') : (job.company_account.phone_number ?? '')}
                       placeholder="เบอร์โทร"
                       onSave={(v) => uc ? uc({ phone: v }) : u({ company_account: { ...job.company_account, phone_number: v } })}
                     />
@@ -744,7 +744,7 @@ function JobDetail({
                     />
                     <FieldRow
                       label="Email"
-                      value={linkedCustomer ? linkedCustomer.email : (job.company_account.email ?? '')}
+                      value={linkedCustomer ? (linkedCustomer.email ?? '') : (job.company_account.email ?? '')}
                       placeholder="อีเมล"
                       onSave={(v) => uc ? uc({ email: v }) : u({ company_account: { ...job.company_account, email: v } })}
                     />
@@ -855,7 +855,7 @@ function JobDetail({
               {/* Log Activity */}
               <div>
                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">Log Activity</p>
-                <AddActivityForm entityType="won_job" entityId={job.job_id} owner={job.owner} />
+                <AddActivityForm entityType="won_job" entityId={job.job_id} owner={job.owner || ''} />
               </div>
 
               <Separator />
@@ -880,7 +880,7 @@ function JobDetail({
                   <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${openSections.Activity ? 'rotate-0' : '-rotate-90'}`} />
                 </button>
                 <div className={`px-4 pb-3 ${openSections.Activity ? 'block' : 'hidden'}`}>
-                  <AddActivityForm entityType="won_job" entityId={job.job_id} owner={job.owner} />
+                  <AddActivityForm entityType="won_job" entityId={job.job_id} owner={job.owner || ''} />
                 </div>
               </div>
 
@@ -1070,7 +1070,7 @@ export default function WonReadyOpPage() {
   const activeCount = wonJobs.filter((j) => j.op_stage !== 'OP_DONE_PAYMENT').length
   const totalValue = wonJobs
     .filter((j) => j.op_stage !== 'OP_DONE_PAYMENT')
-    .reduce((s, j) => s + j.estimated_value, 0)
+    .reduce((s, j) => s + (j.estimated_value || 0), 0)
 
   // Sort stages based on their order property in the store, including custom stages
   const sortedStages = useMemo(() => {
