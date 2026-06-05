@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/auth-provider'
 import { authClient } from '@/lib/supabase/auth'
+import { getMockSession, getMockUsers, updateMockUserRole, toggleMockUserActive } from '@/lib/supabase/mock-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -57,6 +58,16 @@ export default function AdminUsersPage() {
   const loadUsers = async () => {
     try {
       setIsLoading(true)
+
+      // Check if in test mode
+      const mockSession = getMockSession()
+      if (mockSession) {
+        // Use mock users for testing
+        const mockUsers = getMockUsers()
+        setUsers(mockUsers)
+        return
+      }
+
       const { data, error } = await authClient.from('users').select('*').order('created_at', { ascending: false })
 
       if (error) throw error
@@ -70,6 +81,18 @@ export default function AdminUsersPage() {
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {
+      // Check if in test mode
+      const mockSession = getMockSession()
+      if (mockSession) {
+        // Find user by ID and update role
+        const user = users.find(u => u.id === userId)
+        if (user) {
+          updateMockUserRole(user.email, newRole as any)
+          loadUsers()
+        }
+        return
+      }
+
       const { error } = await authClient
         .from('users')
         .update({ role: newRole })
@@ -84,6 +107,18 @@ export default function AdminUsersPage() {
 
   const handleToggleActive = async (userId: string, currentState: boolean) => {
     try {
+      // Check if in test mode
+      const mockSession = getMockSession()
+      if (mockSession) {
+        // Find user by ID and toggle active state
+        const user = users.find(u => u.id === userId)
+        if (user) {
+          toggleMockUserActive(user.email)
+          loadUsers()
+        }
+        return
+      }
+
       const { error } = await authClient
         .from('users')
         .update({ is_active: !currentState })
