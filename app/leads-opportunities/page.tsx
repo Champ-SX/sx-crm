@@ -163,7 +163,7 @@ function LeadRow({
       {/* Value */}
       <td className="px-4 py-3.5">
         <p className="text-[13px] font-bold text-slate-800">
-          {item.estimated_value > 0 ? `฿${item.estimated_value.toLocaleString()}` : <span className="text-slate-300 font-normal">—</span>}
+          {item.estimated_value && item.estimated_value > 0 ? `฿${item.estimated_value.toLocaleString()}` : <span className="text-slate-300 font-normal">—</span>}
         </p>
       </td>
       {/* Owner */}
@@ -411,7 +411,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Estimated Value</p>
                   <InlineEdit
-                    value={item.estimated_value > 0 ? item.estimated_value.toString() : ''}
+                    value={item.estimated_value && item.estimated_value > 0 ? item.estimated_value.toString() : ''}
                     placeholder="0"
                     onSave={(v) => updateLeadOpportunity(item.lead_op_id, { estimated_value: parseFloat(v) || 0 })}
                   />
@@ -729,7 +729,7 @@ export default function LeadsOpportunitiesPage() {
   })
 
   const openCount = leadOpportunities.filter((l) => l.status === 'open').length
-  const pipelineValue = leadOpportunities.filter((l) => l.status === 'open').reduce((s, l) => s + l.estimated_value, 0)
+  const pipelineValue = leadOpportunities.filter((l) => l.status === 'open').reduce((s, l) => s + (l.estimated_value || 0), 0)
 
   function toggleSelectForDuplicate(id: string) {
     const newSet = new Set(selectedForDuplicate)

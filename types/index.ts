@@ -60,20 +60,20 @@ export interface Customer {
   contact_person: string    // Excel col B
   phone: string             // Excel col C
   email: string             // Excel col D
-  line_id?: string          // Excel col E
-  social?: string           // Excel col F
+  line_id?: string | null   // Excel col E
+  social?: string | null    // Excel col F
   customer_type: CustomerType // Excel col G
   notes: string             // Excel col H
   // Billing / Company Account (written once, auto-fills Section C on new jobs)
-  tax_id?: string
-  company_address?: string
-  branch?: string                // e.g. "สำนักงานใหญ่"
-  billing_contact?: string       // contact for billing (may differ from main contact)
-  billing_notes?: string
-  bank_name?: string
-  bank_account_number?: string
-  bank_account_name?: string
-  bank_branch?: string
+  tax_id?: string | null
+  company_address?: string | null
+  branch?: string | null    // e.g. "สำนักงานใหญ่"
+  billing_contact?: string | null // contact for billing (may differ from main contact)
+  billing_notes?: string | null
+  bank_name?: string | null
+  bank_account_number?: string | null
+  bank_account_name?: string | null
+  bank_branch?: string | null
   created_at: string
   updated_at: string
 }

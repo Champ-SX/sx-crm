@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "verify-position": "ts-node scripts/verify-position.ts",
-    "verify-position:fix": "ts-node scripts/verify-position.ts --fix"
+    "verify-position:fix": "ts-node scripts/verify-position.ts --fix",
+    "generate:types": "npx supabase gen types typescript --project-id=ujgiaqfuywnrimjjcekb > lib/database.types.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
@@ -37,6 +38,7 @@
     "zustand": "^5.0.13"
   },
   "devDependencies": {
+    "@supabase/cli": "^1.0.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

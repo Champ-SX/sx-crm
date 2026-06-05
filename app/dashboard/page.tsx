@@ -130,7 +130,7 @@ export default function DashboardPage() {
   // Upcoming events
   const upcomingJobs = wonJobs
     .filter((j) => j.event_date && j.event_date >= todayStr && j.event_date <= in30DaysStr)
-    .sort((a, b) => a.event_date.localeCompare(b.event_date))
+    .sort((a, b) => (a.event_date || '').localeCompare(b.event_date || ''))
     .slice(0, 6)
 
   // Overdue / due-today tasks

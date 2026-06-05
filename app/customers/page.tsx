@@ -635,7 +635,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                           <p className="text-[11px] text-muted-foreground">{l.service_type}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-[13px] font-bold text-foreground">฿{l.estimated_value.toLocaleString()}</p>
+                          <p className="text-[13px] font-bold text-foreground">฿{(l.estimated_value || 0).toLocaleString()}</p>
                           <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${l.status === 'won' ? 'bg-emerald-50 text-emerald-600' : l.status === 'lost' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-600'}`}>
                             {l.status}
                           </span>
@@ -664,7 +664,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                           </div>
                         </div>
                         <div className="text-right shrink-0 ml-2">
-                          <p className="text-[13px] font-bold text-foreground">{formatCurrency(j.estimated_value)}</p>
+                          <p className="text-[13px] font-bold text-foreground">{formatCurrency(j.estimated_value || 0)}</p>
                           <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
                             {j.op_stage.replace(/_/g, ' ').toLowerCase()}
                           </span>

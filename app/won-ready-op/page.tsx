@@ -245,7 +245,7 @@ function KanbanColumn({
         headerBg: `bg-purple-50/60`,
         colBg: `bg-purple-50/20`,
       }
-  const totalValue = jobs.reduce((s, j) => s + j.estimated_value, 0)
+  const totalValue = jobs.reduce((s, j) => s + (j.estimated_value || 0), 0)
   const [sortBy, setSortBy] = useState<'position' | 'date' | 'value' | 'name'>('position')
   const [sortMenuOpen, setSortMenuOpen] = useState(false)
 
@@ -409,14 +409,14 @@ function StaffSheet({ jobId, onClose }: { jobId: string; onClose: () => void }) 
   if (!jobMaybe) return null
   const job = jobMaybe  // const — TS carries WonJob type into closures
 
-  const assignedIds = new Set(job.staff_list.map((s) => s.staff_id))
+  const assignedIds = new Set((job.staff_list || []).map((s) => s.staff_id))
   const available = allStaff.filter(
     (s) => !assignedIds.has(s.staff_id) &&
       (s.name.toLowerCase().includes(search.toLowerCase()) || s.nickname.toLowerCase().includes(search.toLowerCase()))
   )
 
   function handleAddFromRegistry(member: StaffMember) {
-    updateWonJob(job.job_id, { staff_list: [...job.staff_list, member] })
+    updateWonJob(job.job_id, { staff_list: [...(job.staff_list || []), member] })
   }
 
   function handleCreateNew(e: React.FormEvent) {
@@ -427,7 +427,7 @@ function StaffSheet({ jobId, onClose }: { jobId: string; onClose: () => void }) 
       ...newForm,
     }
     addStaff(newMember)
-    updateWonJob(job.job_id, { staff_list: [...job.staff_list, newMember] })
+    updateWonJob(job.job_id, { staff_list: [...(job.staff_list || []), newMember] })
     setNewForm({ name: '', nickname: '', phone: '', bank_name: '', bank_account_number: '', bank_account_name: '', bank_branch: '' })
   }
 
@@ -544,7 +544,7 @@ function JobDetail({
     : null
 
   function removeStaff(staffId: string) {
-    u({ staff_list: job.staff_list.filter((s) => s.staff_id !== staffId) })
+    u({ staff_list: (job.staff_list || []).filter((s) => s.staff_id !== staffId) })
   }
 
   return (
@@ -664,11 +664,11 @@ function JobDetail({
                       <ChevronDown className={`w-3.5 h-3.5 text-rose-400 transition-transform duration-200 ${openSections.Staff ? 'rotate-0' : '-rotate-90'}`} />
                     </button>
                     {openSections.Staff && <div className="bg-white px-4 py-3 space-y-2">
-                      {job.staff_list.length === 0 ? (
+                      {(job.staff_list || []).length === 0 ? (
                         <p className="text-xs text-muted-foreground italic">No staff assigned yet.</p>
                       ) : (
                         <ul className="space-y-2">
-                          {job.staff_list.map((s) => (
+                          {(job.staff_list || []).map((s) => (
                             <li key={s.staff_id} className="flex items-start justify-between p-3 rounded-lg border border-border/60 bg-muted/20">
                               <div>
                                 <p className="text-sm font-medium">{s.name} <span className="text-muted-foreground">({s.nickname})</span></p>
