@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { getMockSession, mockSignOut } from './mock-auth'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -19,6 +20,9 @@ export const createAuthClient = () => {
 
 export const authClient = createAuthClient()
 
+// Test mode detection
+const isTestMode = typeof window !== 'undefined' && getMockSession() !== null
+
 // Auth types
 export interface User {
   id: string
@@ -32,6 +36,12 @@ export interface User {
 
 // Get current user from auth session
 export async function getCurrentUser() {
+  // Check if in test mode first
+  const mockSession = getMockSession()
+  if (mockSession) {
+    return mockSession as User
+  }
+
   const {
     data: { session },
   } = await authClient.auth.getSession()
@@ -69,6 +79,12 @@ export async function signInWithGoogle() {
 
 // Sign out
 export async function signOut() {
+  // Check if in test mode
+  const mockSession = getMockSession()
+  if (mockSession) {
+    return await mockSignOut()
+  }
+
   const { error } = await authClient.auth.signOut()
   return { error }
 }
@@ -83,6 +99,28 @@ export async function getSession() {
 
 // Watch auth changes
 export function onAuthStateChange(callback: (user: User | null) => void) {
+  // Check if in test mode
+  const mockSession = getMockSession()
+  if (mockSession) {
+    // For test mode, just return the mock session
+    callback(mockSession as User)
+
+    // Watch for storage changes (for other tabs)
+    const handleStorageChange = () => {
+      const newMockSession = getMockSession()
+      callback(newMockSession as User | null)
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    return {
+      data: {
+        subscription: {
+          unsubscribe: () => window.removeEventListener('storage', handleStorageChange),
+        },
+      },
+    }
+  }
+
   return authClient.auth.onAuthStateChange(async (event, session) => {
     if (session?.user) {
       const user = await getCurrentUser()

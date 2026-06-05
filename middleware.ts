@@ -5,8 +5,8 @@ export async function middleware(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const pathname = requestUrl.pathname
 
-  // Allow login page and auth callback without auth
-  if (pathname === '/login' || pathname.startsWith('/auth/')) {
+  // Allow login pages and auth callback without auth
+  if (pathname === '/login' || pathname === '/login-test' || pathname.startsWith('/auth/')) {
     return NextResponse.next()
   }
 
