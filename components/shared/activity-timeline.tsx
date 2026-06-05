@@ -186,48 +186,27 @@ export function ActivityTimeline({ entityType, entityId, className }: ActivityTi
                           </div>
                         )}
 
-                        {/* Document files */}
+                        {/* Document files - always visible */}
                         {documents.length > 0 && (
                           <div className="space-y-1">
-                            <button
-                              onClick={() => {
-                                const newSet = new Set(expandedAttachments)
-                                if (isExpanded) {
-                                  newSet.delete(activity.activity_id)
-                                } else {
-                                  newSet.add(activity.activity_id)
-                                }
-                                setExpandedAttachments(newSet)
-                              }}
-                              className="text-[11px] text-blue-600 hover:text-blue-700 font-medium"
-                            >
-                              {isExpanded ? '▼' : '▶'} {documents.length} document{documents.length !== 1 ? 's' : ''}
-                            </button>
-
-                            {isExpanded && (
-                              <div className="bg-slate-50 rounded-md p-2 space-y-1 border border-slate-200">
-                                {activity.attachments!.map((att, attIdx) => (
-                                  !isImageFile(att.type) && (
-                                    <div key={attIdx} className="flex items-center justify-between bg-white rounded p-2 text-[11px] hover:bg-slate-100 transition-colors group">
-                                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        <FileIcon className="w-3 h-3 text-slate-400 flex-shrink-0" />
-                                        <span className="truncate text-slate-700 font-medium">{att.filename}</span>
-                                        <span className="text-slate-500 flex-shrink-0">({formatFileSize(att.size)})</span>
-                                      </div>
-                                      <div className="flex items-center gap-1 flex-shrink-0 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button
-                                          onClick={() => removeActivityAttachment(activity.activity_id, attIdx)}
-                                          className="p-1 text-slate-400 hover:text-red-600 transition-colors"
-                                          title="Delete file"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                      </div>
-                                    </div>
-                                  )
-                                ))}
-                              </div>
-                            )}
+                            {activity.attachments!.map((att, attIdx) => (
+                              !isImageFile(att.type) && (
+                                <div key={attIdx} className="flex items-center justify-between bg-slate-50 rounded p-2.5 text-[11px] border border-slate-200 hover:bg-slate-100 transition-colors group">
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <FileIcon className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                                    <span className="truncate text-slate-700 font-medium">{att.filename}</span>
+                                    <span className="text-slate-500 flex-shrink-0">({formatFileSize(att.size)})</span>
+                                  </div>
+                                  <button
+                                    onClick={() => removeActivityAttachment(activity.activity_id, attIdx)}
+                                    className="flex-shrink-0 ml-2 text-slate-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                                    title="Delete file"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              )
+                            ))}
                           </div>
                         )}
                       </>
