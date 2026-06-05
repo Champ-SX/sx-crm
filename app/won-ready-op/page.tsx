@@ -151,12 +151,10 @@ function JobCard({
   job,
   onClick,
   isDragging,
-  onDelete,
 }: {
   job: WonJob
   onClick: () => void
   isDragging?: boolean
-  onDelete?: (jobId: string) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging: isSortableDragging } = useSortable({ id: job.job_id })
   const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined
@@ -205,17 +203,6 @@ function JobCard({
         </div>
       </div>
 
-      {/* Delete Button - appears on hover */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          onDelete?.(job.job_id)
-        }}
-        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-50 rounded-lg shrink-0"
-        title="Delete card"
-      >
-        <Trash2 className="w-4 h-4 text-red-500" />
-      </button>
     </div>
   )
 }
@@ -229,7 +216,6 @@ function KanbanColumn({
   onDeleteStage,
   onChangeColor,
   onAddStage,
-  onDeleteCard,
   opStages,
 }: {
   stage: string
@@ -239,7 +225,6 @@ function KanbanColumn({
   onDeleteStage?: (stage: string) => void
   onChangeColor?: (stage: string) => void
   onAddStage?: () => void
-  onDeleteCard?: (jobId: string) => void
   opStages: any[]
 }) {
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({ id: stage })
@@ -398,7 +383,6 @@ function KanbanColumn({
               job={job}
               onClick={() => onCardClick(job)}
               isDragging={activeId === job.job_id}
-              onDelete={onDeleteCard}
             />
           ))}
           {jobs.length === 0 && (
@@ -530,7 +514,15 @@ function StaffSheet({ jobId, onClose }: { jobId: string; onClose: () => void }) 
 }
 
 // ── Job detail drawer ─────────────────────────────────────────────────────────
-function JobDetail({ jobId, onClose }: { jobId: string; onClose: () => void }) {
+function JobDetail({
+  jobId,
+  onClose,
+  onDelete,
+}: {
+  jobId: string
+  onClose: () => void
+  onDelete?: (jobId: string) => void
+}) {
   const { wonJobs, updateWonJob, moveWonJobStage, customers, updateCustomer } = useCRMStore()
   const jobMaybe = wonJobs.find((j) => j.job_id === jobId)
   const [stageOpen, setStageOpen] = useState(false)
@@ -576,6 +568,16 @@ function JobDetail({ jobId, onClose }: { jobId: string; onClose: () => void }) {
                 </p>
               </div>
               <div className="flex items-center gap-3 shrink-0">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDelete?.(job.job_id)
+                  }}
+                  className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Delete card"
+                >
+                  <Trash2 className="w-4 h-4 text-red-500" />
+                </button>
                 <div className="text-right">
                   <p className="text-xl font-bold text-slate-800">{formatCurrency(job.estimated_value)}</p>
                   <Select value={job.owner} onValueChange={(v) => v && u({ owner: v })}>
@@ -1124,7 +1126,6 @@ export default function WonReadyOpPage() {
                   activeId={activeId}
                   onDeleteStage={handleDeleteStage}
                   onChangeColor={handleChangeColor}
-                  onDeleteCard={handleDeleteCard}
                   onAddStage={() => setShowAddStageDialog(true)}
                   opStages={opStages}
                 />
@@ -1144,7 +1145,7 @@ export default function WonReadyOpPage() {
         </DragOverlay>
       </DndContext>
 
-      {selectedId && <JobDetail jobId={selectedId} onClose={() => setSelectedId(null)} />}
+      {selectedId && <JobDetail jobId={selectedId} onClose={() => setSelectedId(null)} onDelete={handleDeleteCard} />}
 
       {/* Delete Stage Confirmation Dialog */}
       <Dialog open={!!stageToDelete} onOpenChange={(open) => !open && setStageToDelete(null)}>
