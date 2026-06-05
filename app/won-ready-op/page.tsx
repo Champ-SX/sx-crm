@@ -614,16 +614,16 @@ function JobDetail({
                 </button>
                 {openSections.A && <div className="bg-white px-4 py-4 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <FieldRow label="Event Date" value={job.event_date} placeholder="YYYY-MM-DD" dateInput onSave={(v) => u({ event_date: v })} />
-                    <FieldRow label="Event Time" value={job.event_time} placeholder="e.g. 17.00-23.00" onSave={(v) => u({ event_time: v })} />
+                    <FieldRow label="Event Date" value={job.event_date || ''} placeholder="YYYY-MM-DD" dateInput onSave={(v) => u({ event_date: v })} />
+                    <FieldRow label="Event Time" value={job.event_time || ''} placeholder="e.g. 17.00-23.00" onSave={(v) => u({ event_time: v })} />
                   </div>
-                  <FieldRow label="Event Display Name" value={job.event_display_name} placeholder="e.g. Sephora Staff Party 2026" onSave={(v) => u({ event_display_name: v })} />
-                  <FieldRow label="Venue" value={job.venue} placeholder="e.g. Eastin Grand Hotel Phayathai" onSave={(v) => u({ venue: v })} />
+                  <FieldRow label="Event Display Name" value={job.event_display_name || ''} placeholder="e.g. Sephora Staff Party 2026" onSave={(v) => u({ event_display_name: v })} />
+                  <FieldRow label="Venue" value={job.venue || ''} placeholder="e.g. Eastin Grand Hotel Phayathai" onSave={(v) => u({ venue: v })} />
                   <div className="grid grid-cols-2 gap-4">
-                    <FieldRow label="Product Type" value={job.product_type} placeholder="e.g. LCA + Film" onSave={(v) => u({ product_type: v })} />
-                    <FieldRow label="Product Cat" value={job.product_cat} placeholder="Event / Roadshow / Rental / Campaign" onSave={(v) => u({ product_cat: v })} />
+                    <FieldRow label="Product Type" value={job.product_type || ''} placeholder="e.g. LCA + Film" onSave={(v) => u({ product_type: v })} />
+                    <FieldRow label="Product Cat" value={job.product_cat || ''} placeholder="Event / Roadshow / Rental / Campaign" onSave={(v) => u({ product_cat: v })} />
                   </div>
-                  <FieldRow label="รายละเอียดงาน / Notes" value={job.job_detail_notes} placeholder="รายละเอียดบริการ, backdrop, หมายเหตุ…" multiline rows={5} onSave={(v) => u({ job_detail_notes: v })} />
+                  <FieldRow label="รายละเอียดงาน / Notes" value={job.job_detail_notes || ''} placeholder="รายละเอียดบริการ, backdrop, หมายเหตุ…" multiline rows={5} onSave={(v) => u({ job_detail_notes: v })} />
                 </div>}
               </div>
 
@@ -642,13 +642,13 @@ function JobDetail({
                 </button>
                 {openSections.B && <div className="bg-white px-4 py-4 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <FieldRow label="Onsite Contact" value={job.onsite_contact_name} placeholder="ชื่อผู้ติดต่อหน้างาน" onSave={(v) => u({ onsite_contact_name: v })} />
-                    <FieldRow label="Phone" value={job.onsite_contact_phone} placeholder="08x-xxx-xxxx" onSave={(v) => u({ onsite_contact_phone: v })} />
+                    <FieldRow label="Onsite Contact" value={job.onsite_contact_name || ''} placeholder="ชื่อผู้ติดต่อหน้างาน" onSave={(v) => u({ onsite_contact_name: v })} />
+                    <FieldRow label="Phone" value={job.onsite_contact_phone || ''} placeholder="08x-xxx-xxxx" onSave={(v) => u({ onsite_contact_phone: v })} />
                   </div>
-                  <FieldRow label="Line ID" value={job.onsite_line_id} placeholder="Line ID ผู้ติดต่อหน้างาน" onSave={(v) => u({ onsite_line_id: v })} />
-                  <FieldRow label="Install Point" value={job.install_point} placeholder="จุดติดตั้ง / Backdrop location" multiline onSave={(v) => u({ install_point: v })} />
-                  <FieldRow label="Team Meeting Time" value={job.team_meeting_time} placeholder="e.g. 15.00" onSave={(v) => u({ team_meeting_time: v })} />
-                  <FieldRow label="Onsite Notes" value={job.onsite_notes} placeholder="หมายเหตุหน้างาน (parking, loading, etc.)" multiline onSave={(v) => u({ onsite_notes: v })} />
+                  <FieldRow label="Line ID" value={job.onsite_line_id || ''} placeholder="Line ID ผู้ติดต่อหน้างาน" onSave={(v) => u({ onsite_line_id: v })} />
+                  <FieldRow label="Install Point" value={job.install_point || ''} placeholder="จุดติดตั้ง / Backdrop location" multiline onSave={(v) => u({ install_point: v })} />
+                  <FieldRow label="Team Meeting Time" value={job.team_meeting_time || ''} placeholder="e.g. 15.00" onSave={(v) => u({ team_meeting_time: v })} />
+                  <FieldRow label="Onsite Notes" value={job.onsite_notes || ''} placeholder="หมายเหตุหน้างาน (parking, loading, etc.)" multiline onSave={(v) => u({ onsite_notes: v })} />
 
                   {/* Staff sub-section */}
                   <div className="rounded-xl border border-rose-200 overflow-hidden mt-1">
