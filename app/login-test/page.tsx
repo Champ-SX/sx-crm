@@ -58,6 +58,15 @@ export default function LoginTestPage() {
       setIsSigningIn(true)
       const { user } = await mockSignIn(role)
       setCurrentSession(user)
+
+      // Store test mode flag in sessionStorage (accessible by middleware via client)
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('test_mode', 'true')
+      }
+
+      // Wait a bit for localStorage to sync
+      await new Promise(resolve => setTimeout(resolve, 100))
+
       router.push('/won-ready-op')
     } catch (err) {
       console.error('Sign in error:', err)

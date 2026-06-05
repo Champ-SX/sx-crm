@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/auth-provider'
 import { signInWithGoogle } from '@/lib/supabase/auth'
+import { getMockSession } from '@/lib/supabase/mock-auth'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -12,11 +13,19 @@ export default function LoginPage() {
   const { user, loading } = useAuth()
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showTestModeNote, setShowTestModeNote] = useState(false)
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (!loading && user) {
-      router.push('/won-ready-op')
+    // Check if in test mode
+    const mockSession = getMockSession()
+    if (!loading) {
+      if (user || mockSession) {
+        router.push('/won-ready-op')
+      } else {
+        // Show note if test page available
+        setShowTestModeNote(true)
+      }
     }
   }, [user, loading, router])
 
@@ -106,6 +115,21 @@ export default function LoginPage() {
               <p>Sign in with your Google account to access the CRM.</p>
             </div>
           </div>
+
+          {/* Test Mode Note */}
+          {showTestModeNote && (
+            <div className="mt-6 p-3 bg-blue-50 border border-blue-200 rounded text-center text-xs">
+              <p className="text-blue-800 mb-2">
+                💡 <strong>Testing locally?</strong>
+              </p>
+              <button
+                onClick={() => router.push('/login-test')}
+                className="text-blue-600 hover:text-blue-700 underline font-semibold"
+              >
+                Use mock authentication instead
+              </button>
+            </div>
+          )}
 
           {/* Footer */}
           <div className="mt-8 pt-8 border-t border-gray-200 text-center text-xs text-gray-500">
