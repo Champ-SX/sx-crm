@@ -969,12 +969,16 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
   },
 
   removeActivityAttachment: async (activityId, attachmentIndex) => {
+    console.log('[removeActivityAttachment] Removing attachment from activity:', { activityId, attachmentIndex })
+
     set((s) => ({
       activities: s.activities.map((a) => {
         if (a.activity_id === activityId && a.attachments) {
+          const updatedAttachments = a.attachments.filter((_, idx) => idx !== attachmentIndex)
+          console.log('[removeActivityAttachment] Updated attachments:', { before: a.attachments.length, after: updatedAttachments.length })
           return {
             ...a,
-            attachments: a.attachments.filter((_, idx) => idx !== attachmentIndex),
+            attachments: updatedAttachments,
           }
         }
         return a
@@ -986,11 +990,16 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       try {
         const activity = get().activities.find((a) => a.activity_id === activityId)
         if (activity) {
-          await db.activityQueries.update(activityId, {
+          console.log('[removeActivityAttachment] Syncing to Supabase:', { activityId, attachmentCount: activity.attachments?.length ?? 0 })
+          const result = await db.activityQueries.update(activityId, {
             attachments: activity.attachments,
           })
+          console.log('[removeActivityAttachment] Supabase update successful:', result)
+        } else {
+          console.error('[removeActivityAttachment] Activity not found in store:', activityId)
         }
       } catch (error) {
+        console.error('[removeActivityAttachment] Supabase sync failed:', error)
         set({ error: error instanceof Error ? error.message : 'Failed to remove attachment' })
       }
     }
