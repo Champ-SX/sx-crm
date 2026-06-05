@@ -976,18 +976,25 @@ export default function WonReadyOpPage() {
     let targetStage: OPStage | null = null
     let targetJob = null
 
-    if (OP_STAGES.includes(overId as OPStage)) {
-      // Direct drop on stage header
+    // Check if dropped directly on a stage (built-in or custom)
+    // Use sortedStages which includes both built-in and custom stages
+    if (sortedStages.includes(overId as OPStage)) {
+      // Direct drop on stage header (works for built-in and custom stages)
       targetStage = overId as OPStage
+      console.log('[onDragEnd] Dropped on stage:', targetStage)
     } else {
       // Check if dropped on a job card - if so, map to parent stage
       targetJob = wonJobs.find((j) => j.job_id === overId)
       if (targetJob) {
         targetStage = targetJob.op_stage
+        console.log('[onDragEnd] Dropped on job, parent stage:', targetStage)
       }
     }
 
-    if (!targetStage) return
+    if (!targetStage) {
+      console.log('[onDragEnd] No valid target stage found')
+      return
+    }
 
     // If dropping on different stage, move the card
     if (activeJob.op_stage !== targetStage) {
