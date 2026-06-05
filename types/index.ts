@@ -166,7 +166,7 @@ export interface StaffMember {
 
 // ── Company Account (for billing/invoicing) ───────────────────────────────────
 export interface CompanyAccount {
-  company_name: string        // ชื่อบริษัท / Account
+  company_name: string | null // ชื่อบริษัท / Account
   contact_point?: string      // ผู้ติดต่อ
   phone_number?: string       // เบอร์โทร
   line_id?: string            // Line ID
@@ -187,46 +187,46 @@ export interface WonJob {
   job_id: string
 
   // ── Title components (generate display title from these) ──
-  event_date: string         // ISO "2026-05-21" → displayed as "2026.05.21"
+  event_date: string | null  // ISO "2026-05-21" → displayed as "2026.05.21" (nullable if not provided)
   job_number: string         // "041"
-  product_type: string       // "LCA + Film" | "LCA" | "Pop Up" | "K15" | "SX Portable"
-  product_cat: string        // "Event" | "Roadshow" | "Rental" | "Campaign"
-  product_name: string       // short name for title, e.g. "Sephora"
-  place: string              // short venue for title, e.g. "EastinGrand"
+  product_type: string | null       // "LCA + Film" | "LCA" | "Pop Up" | "K15" | "SX Portable"
+  product_cat: string | null        // "Event" | "Roadshow" | "Rental" | "Campaign"
+  product_name: string | null       // short name for title, e.g. "Sephora"
+  place: string | null              // short venue for title, e.g. "EastinGrand"
 
   // ── A: รายละเอียดงาน ──
-  event_display_name: string // full event name, e.g. "Sephora Staff Party 2026"
-  event_time: string         // e.g. "17.00-23.00"
-  venue: string              // full venue name, e.g. "Eastin Grand Hotel Phayathai"
-  job_detail_notes: string   // รายละเอียดงาน / Notes (replaces service_details + backdrop + job_notes)
+  event_display_name: string | null // full event name, e.g. "Sephora Staff Party 2026"
+  event_time: string | null         // e.g. "17.00-23.00"
+  venue: string | null              // full venue name, e.g. "Eastin Grand Hotel Phayathai"
+  job_detail_notes: string | null   // รายละเอียดงาน / Notes (replaces service_details + backdrop + job_notes)
 
   // ── B: ข้อมูลหน้างาน ──
-  onsite_contact_name: string   // ชื่อผู้ติดต่อหน้างาน
-  onsite_contact_phone: string  // เบอร์โทรผู้ติดต่อหน้างาน
-  onsite_line_id: string        // Line ID ผู้ติดต่อหน้างาน
-  install_point: string         // จุดติดตั้ง / Backdrop location
-  team_meeting_time: string     // เวลานัดหมายทีม
-  onsite_notes: string          // หมายเหตุหน้างาน
-  staff_list: StaffMember[]     // Staff assigned to this job
+  onsite_contact_name: string | null   // ชื่อผู้ติดต่อหน้างาน
+  onsite_contact_phone: string | null  // เบอร์โทรผู้ติดต่อหน้างาน
+  onsite_line_id: string | null        // Line ID ผู้ติดต่อหน้างาน
+  install_point: string | null         // จุดติดตั้ง / Backdrop location
+  team_meeting_time: string | null     // เวลานัดหมายทีม
+  onsite_notes: string | null          // หมายเหตุหน้างาน
+  staff_list: StaffMember[] | null     // Staff assigned to this job
 
   // ── C: Company Account ──
   company_account: CompanyAccount
 
   // ── Operations ──
-  estimated_value: number
+  estimated_value: number | null
   payment_status: PaymentStatus
   staff_status: StaffStatus
   doc_status: DocStatus
   op_stage: OPStage
   position: number // Position within stage for vertical ordering (0 = first)
-  owner: string
+  owner: string | null
 
   // ── Relations ──
   // New relational FKs (Phase 1+)
   company_id?: string           // FK → Company
   contact_person_id?: string    // FK → ContactPerson
   // Legacy display cache (Phase 1 compat — removed in Phase 5)
-  customer_name: string         // denormalized display name
+  customer_name: string | null  // denormalized display name
   customer_id?: string          // old FK → Customer (deprecated)
   lead_op_id?: string
   created_at: string
