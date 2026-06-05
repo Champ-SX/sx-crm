@@ -1,4 +1,5 @@
 import { supabase } from './client'
+import { transformStageFromDB, transformStagesFromDB } from './transformers'
 import type {
   Company,
   ContactPerson,
@@ -305,28 +306,53 @@ export const opStageQueries = {
       .select('*')
       .order('order')
     if (error) throw error
-    return (data || []) as DynamicOPStage[]
+    // Transform snake_case from DB to camelCase for TypeScript
+    return transformStagesFromDB(data || [])
   },
 
   async create(stage: DynamicOPStage) {
+    // Convert camelCase to snake_case for database insert
+    const dbStage = {
+      stage_id: stage.id,
+      label: stage.label,
+      order: stage.order,
+      accent_color: stage.accentColor,
+      dot_color: stage.dotColor,
+      header_bg: stage.headerBg,
+      column_bg: stage.columnBg,
+      is_custom: stage.isCustom,
+    }
+
     const { data, error } = await supabase
       .from('dynamic_op_stages')
-      .insert([stage])
+      .insert([dbStage])
       .select()
       .single()
     if (error) throw error
-    return data as DynamicOPStage
+    // Transform response back to camelCase
+    return transformStageFromDB(data)
   },
 
   async update(id: string, updates: Partial<DynamicOPStage>) {
+    // Convert camelCase fields to snake_case for database update
+    const dbUpdates: any = {}
+    if (updates.label !== undefined) dbUpdates.label = updates.label
+    if (updates.order !== undefined) dbUpdates.order = updates.order
+    if (updates.accentColor !== undefined) dbUpdates.accent_color = updates.accentColor
+    if (updates.dotColor !== undefined) dbUpdates.dot_color = updates.dotColor
+    if (updates.headerBg !== undefined) dbUpdates.header_bg = updates.headerBg
+    if (updates.columnBg !== undefined) dbUpdates.column_bg = updates.columnBg
+    if (updates.isCustom !== undefined) dbUpdates.is_custom = updates.isCustom
+
     const { data, error } = await supabase
       .from('dynamic_op_stages')
-      .update(updates)
+      .update(dbUpdates)
       .eq('stage_id', id)
       .select()
       .single()
     if (error) throw error
-    return data as DynamicOPStage
+    // Transform response back to camelCase
+    return transformStageFromDB(data)
   },
 
   async delete(id: string) {
