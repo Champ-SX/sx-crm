@@ -37,6 +37,7 @@ export function AddActivityForm({ entityType, entityId, owner }: AddActivityForm
         resolve(result.split(',')[1]) // Remove "data:image/png;base64," prefix
       }
       reader.onerror = reject
+      reader.readAsDataURL(file) // Start reading the file
     })
   }
 
