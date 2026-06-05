@@ -171,8 +171,8 @@ export function ActivityTimeline({ entityType, entityId, className }: ActivityTi
                                     }}
                                   />
 
-                                  {/* Overlay with click to view hint */}
-                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                  {/* Overlay with click to view hint - pointer-events-none allows clicks to pass through */}
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
                                     <p className="text-white text-xs font-medium">Click to view</p>
                                   </div>
 
