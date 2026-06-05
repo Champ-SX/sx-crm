@@ -535,7 +535,8 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
           fullError: error,
         })
         set({ error: `Failed to mark as won: ${errorMsg}` })
-        throw error // Re-throw so UI knows about the failure
+        // Don't update UI if Supabase operation failed
+        return newJob // Return early, don't proceed with UI updates
       }
     }
 
