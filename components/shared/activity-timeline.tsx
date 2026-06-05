@@ -240,53 +240,52 @@ export function ActivityTimeline({ entityType, entityId, className }: ActivityTi
 
       {/* Image Lightbox Modal */}
       {lightbox && (
-        <>
-          {console.log('[ActivityTimeline] Rendering lightbox:', lightbox)}
-          <Dialog open={!!lightbox} onOpenChange={(open) => {
-            console.log('[ActivityTimeline] Dialog onOpenChange:', open)
-            if (!open) setLightbox(null)
-          }}>
-          <DialogContent className="max-w-4xl bg-slate-900 border-slate-700 p-0">
-            <DialogHeader className="bg-slate-800 border-b border-slate-700 px-4 py-3 sr-only">
-              <DialogTitle>Image Preview</DialogTitle>
-            </DialogHeader>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => setLightbox(null)}
+        >
+          {/* Modal Container */}
+          <div
+            className="relative w-full h-full max-w-5xl max-h-[90vh] flex flex-col bg-slate-900/95 rounded-lg overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Bar - Close and Menu */}
+            <div className="absolute top-0 right-0 z-50 flex items-center gap-2 p-4">
+              {/* More menu button */}
+              <DropdownMenu>
+                <DropdownMenuTrigger className="p-2 bg-slate-700 hover:bg-slate-600 rounded-md text-white transition-colors">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="5" r="2" />
+                    <circle cx="12" cy="12" r="2" />
+                    <circle cx="12" cy="19" r="2" />
+                  </svg>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      removeActivityAttachment(lightbox.activityId, lightbox.imageIndex)
+                      setLightbox(null)
+                    }}
+                    className="text-red-400 hover:text-red-300 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete image
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-            <div className="relative w-full h-[70vh] bg-slate-950 flex items-center justify-center group">
-              {/* Top bar with close and menu buttons */}
-              <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
-                {/* More menu button */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="p-2 bg-slate-800 hover:bg-slate-700 rounded-md text-white transition-colors">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <circle cx="12" cy="5" r="2" />
-                      <circle cx="12" cy="12" r="2" />
-                      <circle cx="12" cy="19" r="2" />
-                    </svg>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
-                    <DropdownMenuItem
-                      onClick={() => {
-                        removeActivityAttachment(lightbox.activityId, lightbox.imageIndex)
-                        setLightbox(null)
-                      }}
-                      className="text-red-400 hover:text-red-300 cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete image
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              {/* Close button */}
+              <button
+                onClick={() => setLightbox(null)}
+                className="p-2 bg-slate-700 hover:bg-slate-600 rounded-md text-white transition-colors"
+                title="Close (ESC)"
+              >
+                <XIcon className="w-5 h-5" />
+              </button>
+            </div>
 
-                {/* Close button */}
-                <button
-                  onClick={() => setLightbox(null)}
-                  className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-md text-white transition-colors"
-                  title="Close (ESC)"
-                >
-                  <XIcon className="w-5 h-5" />
-                </button>
-              </div>
-
+            {/* Image Container */}
+            <div className="flex-1 flex items-center justify-center overflow-hidden bg-black/40 relative group">
               {/* Image - right click to save */}
               <img
                 src={`data:${lightbox.images[lightbox.imageIndex].type};base64,${lightbox.images[lightbox.imageIndex].data}`}
@@ -307,10 +306,10 @@ export function ActivityTimeline({ entityType, entityId, className }: ActivityTi
                       imageIndex: lightbox.imageIndex - 1,
                     })
                   }
-                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-slate-800 hover:bg-slate-700 rounded-md text-white transition-colors opacity-0 group-hover:opacity-100"
-                  title="Previous image"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-white transition-colors opacity-0 group-hover:opacity-100"
+                  title="Previous image (←)"
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className="w-6 h-6" />
                 </button>
               )}
 
@@ -323,31 +322,32 @@ export function ActivityTimeline({ entityType, entityId, className }: ActivityTi
                       imageIndex: lightbox.imageIndex + 1,
                     })
                   }
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-slate-800 hover:bg-slate-700 rounded-md text-white transition-colors opacity-0 group-hover:opacity-100"
-                  title="Next image"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-white transition-colors opacity-0 group-hover:opacity-100"
+                  title="Next image (→)"
                 >
-                  <ChevronRight className="w-5 h-5" />
+                  <ChevronRight className="w-6 h-6" />
                 </button>
               )}
 
-              {/* Image counter */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-sm px-3 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* Image counter - center bottom on hover */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                 {lightbox.imageIndex + 1} / {lightbox.images.length}
               </div>
             </div>
 
-            {/* Footer with filename and counter */}
-            <div className="bg-slate-800 border-t border-slate-700 px-4 py-3 flex items-center justify-between">
-              <p className="text-sm text-slate-300 truncate flex-1">
-                {lightbox.images[lightbox.imageIndex].filename}
-              </p>
-              <p className="text-xs text-slate-400 ml-4 flex-shrink-0">
-                {lightbox.imageIndex + 1} / {lightbox.images.length}
-              </p>
+            {/* Footer - Filename and Info */}
+            <div className="bg-slate-800/80 backdrop-blur-sm border-t border-slate-700 px-6 py-4 flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-200 truncate">
+                  {lightbox.images[lightbox.imageIndex].filename}
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Right-click to save image
+                </p>
+              </div>
             </div>
-          </DialogContent>
-        </Dialog>
-        </>
+          </div>
+        </div>
       )}
     </div>
   )
