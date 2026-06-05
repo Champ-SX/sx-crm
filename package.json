@@ -9,7 +9,13 @@
     "lint": "eslint",
     "verify-position": "ts-node scripts/verify-position.ts",
     "verify-position:fix": "ts-node scripts/verify-position.ts --fix",
-    "generate:types": "npx supabase gen types typescript --project-id=ujgiaqfuywnrimjjcekb > lib/database.types.ts"
+    "generate:types": "npx supabase gen types typescript --project-id=ujgiaqfuywnrimjjcekb > lib/database.types.ts",
+    "db:setup": "bash scripts/setup-local-db.sh",
+    "db:start": "npx supabase start",
+    "db:stop": "npx supabase stop",
+    "db:status": "npx supabase status",
+    "db:push": "npx supabase db push",
+    "db:pull": "npx supabase db pull"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
@@ -45,6 +51,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "supabase": "^2.105.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
