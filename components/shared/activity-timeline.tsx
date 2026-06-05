@@ -107,46 +107,97 @@ export function ActivityTimeline({ entityType, entityId, className }: ActivityTi
 
               {/* Attachments section */}
               {hasAttachments && (
-                <div className="mt-2 space-y-1">
-                  <button
-                    onClick={() => {
-                      const newSet = new Set(expandedAttachments)
-                      if (isExpanded) {
-                        newSet.delete(activity.activity_id)
-                      } else {
-                        newSet.add(activity.activity_id)
-                      }
-                      setExpandedAttachments(newSet)
-                    }}
-                    className="text-[11px] text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    {isExpanded ? '▼' : '▶'} {activity.attachments!.length} attachment{activity.attachments!.length !== 1 ? 's' : ''}
-                  </button>
+                <div className="mt-3 space-y-2">
+                  {/* Separate images and documents */}
+                  {(() => {
+                    const images = activity.attachments!.filter(a => isImageFile(a.type))
+                    const documents = activity.attachments!.filter(a => !isImageFile(a.type))
 
-                  {isExpanded && (
-                    <div className="bg-slate-50 rounded-md p-2 space-y-1 border border-slate-200">
-                      {activity.attachments!.map((att, attIdx) => (
-                        <div key={attIdx} className="flex items-center justify-between bg-white rounded p-2 text-[11px] hover:bg-slate-50 transition-colors group">
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            {isImageFile(att.type) ? (
-                              <ImageIcon className="w-3 h-3 text-blue-500 flex-shrink-0" />
-                            ) : (
-                              <FileIcon className="w-3 h-3 text-slate-400 flex-shrink-0" />
-                            )}
-                            <span className="truncate text-slate-700 font-medium">{att.filename}</span>
-                            <span className="text-slate-500 flex-shrink-0">({formatFileSize(att.size)})</span>
+                    return (
+                      <>
+                        {/* Image previews */}
+                        {images.length > 0 && (
+                          <div className="space-y-2">
+                            <p className="text-[11px] font-medium text-slate-600">
+                              {images.length} image{images.length !== 1 ? 's' : ''}
+                            </p>
+                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                              {images.map((img, imgIdx) => (
+                                <div
+                                  key={imgIdx}
+                                  className="relative group rounded-lg overflow-hidden bg-slate-100 border border-slate-200 hover:border-blue-400 transition-colors"
+                                >
+                                  {/* Image preview */}
+                                  <img
+                                    src={`data:${img.type};base64,${img.data}`}
+                                    alt={img.filename}
+                                    className="w-full h-24 object-cover"
+                                  />
+
+                                  {/* Overlay with actions */}
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
+                                    <button
+                                      onClick={() => downloadFile(img.data, img.filename)}
+                                      className="p-1.5 bg-white rounded-md text-slate-700 hover:text-blue-600 transition-colors"
+                                      title="Download image"
+                                    >
+                                      <Download className="w-4 h-4" />
+                                    </button>
+                                  </div>
+
+                                  {/* Filename tooltip on hover */}
+                                  <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[10px] px-1.5 py-0.5 truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {img.filename}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                          <button
-                            onClick={() => downloadFile(att.data, att.filename)}
-                            className="flex-shrink-0 ml-2 text-slate-400 hover:text-blue-600 transition-colors opacity-0 group-hover:opacity-100"
-                            title="Download file"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        )}
+
+                        {/* Document files */}
+                        {documents.length > 0 && (
+                          <div className="space-y-1">
+                            <button
+                              onClick={() => {
+                                const newSet = new Set(expandedAttachments)
+                                if (isExpanded) {
+                                  newSet.delete(activity.activity_id)
+                                } else {
+                                  newSet.add(activity.activity_id)
+                                }
+                                setExpandedAttachments(newSet)
+                              }}
+                              className="text-[11px] text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                              {isExpanded ? '▼' : '▶'} {documents.length} document{documents.length !== 1 ? 's' : ''}
+                            </button>
+
+                            {isExpanded && (
+                              <div className="bg-slate-50 rounded-md p-2 space-y-1 border border-slate-200">
+                                {documents.map((doc, docIdx) => (
+                                  <div key={docIdx} className="flex items-center justify-between bg-white rounded p-2 text-[11px] hover:bg-slate-50 transition-colors group">
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                      <FileIcon className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                      <span className="truncate text-slate-700 font-medium">{doc.filename}</span>
+                                      <span className="text-slate-500 flex-shrink-0">({formatFileSize(doc.size)})</span>
+                                    </div>
+                                    <button
+                                      onClick={() => downloadFile(doc.data, doc.filename)}
+                                      className="flex-shrink-0 ml-2 text-slate-400 hover:text-blue-600 transition-colors opacity-0 group-hover:opacity-100"
+                                      title="Download file"
+                                    >
+                                      <Download className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )
+                  })()}
                 </div>
               )}
 
