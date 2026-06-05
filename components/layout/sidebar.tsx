@@ -16,6 +16,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useCRMStore } from '@/store/crm-store'
 import { useMobileNav } from '@/components/layout/mobile-nav-context'
+import { OP_STAGES } from '@/types'
 
 const navItems = [
   { href: '/dashboard',            label: 'Dashboard',        icon: LayoutDashboard },
@@ -40,7 +41,11 @@ function NavContent({ onNavClick }: { onNavClick?: () => void }) {
   const pendingTasksToday = tasks.filter(
     (t) => t.status !== 'done' && t.due_date <= today
   ).length
-  const activeOPJobs = wonJobs.filter((j) => j.op_stage !== 'OP_DONE_PAYMENT').length
+  // Count only jobs in built-in (non-custom) stages, excluding completed jobs
+  const activeOPJobs = wonJobs.filter((j) =>
+    OP_STAGES.includes(j.op_stage as typeof OP_STAGES[number]) &&
+    j.op_stage !== 'OP_DONE_PAYMENT'
+  ).length
 
   const badges: Record<string, number> = {
     '/leads-opportunities': openLeadsCount,

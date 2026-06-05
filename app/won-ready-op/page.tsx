@@ -1121,7 +1121,7 @@ export default function WonReadyOpPage() {
                 <KanbanColumn
                   key={stage}
                   stage={stage}
-                  jobs={wonJobs.filter((j) => j.op_stage === stage || j.op_stage === stage)}
+                  jobs={wonJobs.filter((j) => j.op_stage === stage)}
                   onCardClick={(job) => setSelectedId(job.job_id)}
                   activeId={activeId}
                   onDeleteStage={handleDeleteStage}
