@@ -752,16 +752,30 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
 
   // ── OP Stages (dynamic management) ──────────────────────────────────────────
   addOpStage: async (stage) => {
+    // Optimistically add to store first
     set((s) => ({ opStages: [...s.opStages, stage] }))
+
     if (USE_SUPABASE) {
       try {
-        console.log('[addOpStage] Creating stage:', stage)
+        console.log('[addOpStage] Attempting to save stage to database:', stage)
         const result = await db.opStageQueries.create(stage)
-        console.log('[addOpStage] Stage created successfully:', result)
+        console.log('[addOpStage] ✅ Stage saved successfully:', result)
+        // Stage already in store from optimistic update, no need to update again
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Failed to create stage'
-        console.error('[addOpStage] Error creating stage:', errorMsg, error)
-        set({ error: errorMsg })
+        const errorMsg = error instanceof Error ? error.message : 'Failed to save stage to database'
+        console.error('[addOpStage] ❌ Error saving stage to database:', errorMsg, error)
+
+        // Show error toast to user
+        set({ error: `Stage created locally but failed to save: ${errorMsg}. Try refreshing the page if it disappears.` })
+
+        // Log full error for debugging
+        if (error instanceof Error) {
+          console.error('[addOpStage] Full error details:', {
+            message: error.message,
+            stack: error.stack,
+            cause: error.cause,
+          })
+        }
       }
     }
   },
