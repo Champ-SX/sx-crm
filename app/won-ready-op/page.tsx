@@ -561,10 +561,14 @@ function JobDetail({
                   <span className="text-[10px] font-mono font-semibold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md">#{job.job_number}</span>
                   {job.event_date && <span className="text-[11px] text-slate-400">{job.event_date.replace(/-/g, '.')}</span>}
                 </div>
-                <DialogTitle className="text-[15px] font-semibold text-slate-800 leading-snug">
-                  {formatJobTitleShort(job)}
+                <DialogTitle className="text-[15px] font-semibold text-slate-800 leading-snug mb-2">
+                  <InlineEdit
+                    value={job.event_display_name || formatJobTitleShort(job)}
+                    onSave={(v) => u({ event_display_name: v })}
+                    placeholder="Enter event name…"
+                  />
                 </DialogTitle>
-                <p className="text-[10px] font-mono text-slate-400 mt-0.5 break-all leading-relaxed">
+                <p className="text-[10px] font-mono text-slate-400 break-all leading-relaxed">
                   {formatJobTitle(job)}
                 </p>
               </div>
@@ -580,7 +584,17 @@ function JobDetail({
                   <Trash2 className="w-4 h-4 text-red-500" />
                 </button>
                 <div className="text-right">
-                  <p className="text-xl font-bold text-slate-800">{formatCurrency(job.estimated_value)}</p>
+                  <div className="mb-1">
+                    <Label className="text-xs font-medium text-muted-foreground mb-1 block">Value</Label>
+                    <InlineEdit
+                      value={job.estimated_value ? job.estimated_value.toString() : ''}
+                      onSave={(v) => {
+                        const num = parseFloat(v) || 0
+                        u({ estimated_value: num })
+                      }}
+                      placeholder="0"
+                    />
+                  </div>
                   <Select value={job.owner} onValueChange={(v) => v && u({ owner: v })}>
                     <SelectTrigger className="h-6 text-xs border-0 px-0 focus:ring-0 w-auto gap-1 text-slate-400 justify-end">
                       <SelectValue />
