@@ -561,35 +561,52 @@ function JobDetail({
                   <span className="text-[10px] font-mono font-semibold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md">#{job.job_number}</span>
                   {job.event_date && <span className="text-[11px] text-slate-400">{job.event_date.replace(/-/g, '.')}</span>}
                 </div>
-                <DialogTitle className="text-[15px] font-semibold text-slate-800 leading-snug">
-                  {formatJobTitleShort(job)}
-                </DialogTitle>
-                <p className="text-[10px] font-mono text-slate-400 mt-0.5 break-all leading-relaxed">
+                {/* Editable title */}
+                <div className="mb-2">
+                  <InlineEdit
+                    value={job.event_display_name || formatJobTitleShort(job)}
+                    onSave={(v) => u({ event_display_name: v })}
+                    placeholder="Enter event name…"
+                  />
+                </div>
+                <p className="text-[10px] font-mono text-slate-400 break-all leading-relaxed">
                   {formatJobTitle(job)}
                 </p>
               </div>
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-start gap-4 shrink-0">
+                {/* Value and Owner - now editable */}
+                <div className="text-right">
+                  <Label className="text-xs font-medium text-muted-foreground mb-1 block">Estimated Value</Label>
+                  <InlineEdit
+                    value={job.estimated_value ? job.estimated_value.toString() : ''}
+                    onSave={(v) => {
+                      const num = parseFloat(v) || 0
+                      u({ estimated_value: num })
+                    }}
+                    placeholder="0"
+                  />
+                  <div className="mt-2">
+                    <Select value={job.owner} onValueChange={(v) => v && u({ owner: v })}>
+                      <SelectTrigger className="h-6 text-xs border-0 px-0 focus:ring-0 w-auto gap-1 text-slate-400 justify-end">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {OWNERS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                {/* Delete button - now on the far right */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
                     onDelete?.(job.job_id)
                   }}
-                  className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                  className="p-2 hover:bg-red-50 rounded-lg transition-colors shrink-0 mt-6"
                   title="Delete card"
                 >
                   <Trash2 className="w-4 h-4 text-red-500" />
                 </button>
-                <div className="text-right">
-                  <p className="text-xl font-bold text-slate-800">{formatCurrency(job.estimated_value)}</p>
-                  <Select value={job.owner} onValueChange={(v) => v && u({ owner: v })}>
-                    <SelectTrigger className="h-6 text-xs border-0 px-0 focus:ring-0 w-auto gap-1 text-slate-400 justify-end">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {OWNERS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
             </div>
           </div>
