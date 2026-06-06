@@ -4,12 +4,13 @@ import { getMockSession, mockSignOut } from './mock-auth'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
-}
-
-// Client-side auth instance
+// Client-side auth instance - lazy init to allow builds without env vars
 export const createAuthClient = () => {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('Supabase credentials not configured - using mock auth only')
+    return null as any
+  }
+
   return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: true,
@@ -121,7 +122,11 @@ export function onAuthStateChange(callback: (user: User | null) => void) {
     }
   }
 
-  return authClient.auth.onAuthStateChange(async (event, session) => {
+  if (!authClient) {
+    return { data: { subscription: { unsubscribe: () => {} } } }
+  }
+
+  return authClient.auth.onAuthStateChange(async (event: any, session: any) => {
     if (session?.user) {
       const user = await getCurrentUser()
       callback(user)
