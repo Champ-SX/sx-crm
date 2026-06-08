@@ -258,13 +258,9 @@ function StepIndicator({ step }: { step: number }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function ImportPage() {
-  const { companies: existingCompanies, contactPersons: existingContacts, customers: existingCustomers, addCompany, addContactPerson, addCustomer, initializeData } = useCRMStore()
+  const { companies: existingCompanies, contactPersons: existingContacts, customers: existingCustomers, addCompany, addContactPerson, addCustomer } = useCRMStore()
 
   const [step, setStep]         = useState<1 | 2 | 3>(1)
-
-  useEffect(() => {
-    void initializeData()
-  }, [initializeData])
   const [fileName, setFileName] = useState('')
   const [preview, setPreview]   = useState<ImportPreview | null>(null)
   const [error, setError]       = useState('')

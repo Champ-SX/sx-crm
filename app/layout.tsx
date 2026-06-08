@@ -4,6 +4,7 @@ import './globals.css'
 import { Sidebar } from '@/components/layout/sidebar'
 import { MobileNavProvider } from '@/components/layout/mobile-nav-context'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { DataInitializer } from '@/components/data-initializer'
 
 const inter = Inter({ variable: '--font-sans', subsets: ['latin'], display: 'swap' })
 
@@ -18,6 +19,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full flex font-sans">
         <TooltipProvider>
           <MobileNavProvider>
+            {/* Initialize CRM data once at app startup */}
+            <DataInitializer />
+
             <Sidebar />
             <main className="flex-1 flex flex-col min-h-screen bg-background overflow-hidden">
               {children}
