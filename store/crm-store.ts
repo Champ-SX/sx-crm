@@ -187,11 +187,12 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
 
         const currentState = get()
 
-        // FIX C: Runtime safety check - if USE_SUPABASE is false, show clear warning
+        // FIX C: Runtime safety check - if USE_SUPABASE is false, use mock data gracefully
         if (!USE_SUPABASE) {
           const warnMsg = '⚠️ [CRM Store] USE_SUPABASE is false. Using mock data. Check your Supabase environment variables (NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY) in Vercel settings.'
           console.warn(warnMsg)
-          set({ error: warnMsg })
+          // Mark initialization as complete with mock data loaded (already in initial state)
+          set({ error: warnMsg, isInitialized: true, isLoading: false })
           return
         }
 
