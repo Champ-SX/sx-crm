@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/shared/empty-state'
 import { CreateQuotationModal } from '@/components/shared/create-quotation-modal'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
+import { LinkifyText } from '@/components/shared/linkify-text'
 import { JobDetailTabs } from '@/components/shared/job-detail-tabs'
 import { AddLeadOpForm } from '@/components/shared/add-lead-op-form'
 import { Button } from '@/components/ui/button'
@@ -50,9 +51,18 @@ function InlineEdit({
 
   if (!editing) {
     return (
-      <div className="flex items-start gap-3 cursor-pointer rounded px-3 py-2.5 -mx-3 hover:bg-muted/50 active:bg-muted/70 transition-colors" onClick={() => { setDraft(value); setEditing(true) }}>
-        <p className={`text-sm flex-1 leading-relaxed whitespace-pre-wrap ${value ? 'text-foreground/80' : 'text-muted-foreground italic'}`}>{value || placeholder}</p>
-        <Pencil className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5 flex-none" />
+      <div className="group flex items-start gap-2 rounded px-2 py-1.5 -mx-2 hover:bg-muted/50">
+        <div className={`text-sm flex-1 leading-relaxed whitespace-pre-wrap select-text ${value ? 'text-foreground' : 'text-muted-foreground italic'}`} style={{ userSelect: 'text', pointerEvents: 'auto' }}>
+          <LinkifyText text={value || placeholder} />
+        </div>
+        <button
+          onClick={() => { setDraft(value); setEditing(true) }}
+          className="flex-shrink-0 mt-0.5 p-1 rounded hover:bg-blue-100 transition-colors cursor-pointer"
+          title="Edit"
+          type="button"
+        >
+          <Pencil className="w-3 h-3 text-muted-foreground group-hover:text-blue-600" />
+        </button>
       </div>
     )
   }
@@ -84,9 +94,16 @@ function DateInlineEdit({
 
   if (!editing) {
     return (
-      <div className="flex items-start gap-3 cursor-pointer rounded px-3 py-2.5 -mx-3 hover:bg-muted/50 active:bg-muted/70 transition-colors" onClick={() => { setDraft(value); setEditing(true) }}>
-        <p className={`text-sm flex-1 leading-relaxed whitespace-pre-wrap ${value ? 'text-foreground/80' : 'text-muted-foreground italic'}`}>{displayValue || placeholder}</p>
-        <Pencil className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5 flex-none" />
+      <div className="group flex items-start gap-2 rounded px-2 py-1.5 -mx-2 hover:bg-muted/50">
+        <p className={`text-sm flex-1 leading-relaxed whitespace-pre-wrap select-text ${value ? 'text-foreground' : 'text-muted-foreground italic'}`} style={{ userSelect: 'text', pointerEvents: 'auto' }}>{displayValue || placeholder}</p>
+        <button
+          onClick={() => { setDraft(value); setEditing(true) }}
+          className="flex-shrink-0 mt-0.5 p-1 rounded hover:bg-blue-100 transition-colors cursor-pointer"
+          title="Edit"
+          type="button"
+        >
+          <Pencil className="w-3 h-3 text-muted-foreground group-hover:text-blue-600" />
+        </button>
       </div>
     )
   }
@@ -740,7 +757,9 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                               className="text-sm resize-none min-h-[80px]"
                             />
                           ) : (
-                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{item.notes}</p>
+                            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                              <LinkifyText text={item.notes} />
+                            </p>
                           )}
                         </div>
                       </>

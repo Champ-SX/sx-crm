@@ -434,6 +434,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       // Pre-fill detail section A
       event_display_name: lop.name,
       venue: lop.venue ?? '',
+      job_detail_notes: lop.notes || null,  // Copy notes from lead
       // Relations — new FKs (Phase 1+)
       company_id: lop.company_id,
       contact_person_id: lop.contact_person_id,

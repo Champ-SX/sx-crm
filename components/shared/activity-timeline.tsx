@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useCRMStore } from '@/store/crm-store'
 import type { Activity } from '@/types'
+import { LinkifyText } from './linkify-text'
 import {
   Phone,
   Mail,
@@ -85,8 +86,22 @@ export function ActivityTimeline({ entityType, entityId, className }: ActivityTi
   const [expandedAttachments, setExpandedAttachments] = useState<Set<string>>(new Set())
   const [lightbox, setLightbox] = useState<Lightbox | null>(null)
 
+  // For 'lead_opportunity' type, also include activities stored as 'won_job' with same ID
+  // (handles case where lead becomes won - old activities stored as 'lead_opportunity' should still show)
   const activities = allActivities
-    .filter((a) => a.entity_type === entityType && a.entity_id === entityId)
+    .filter((a) => {
+      const isMatchingType = a.entity_type === entityType
+      const isMatchingId = a.entity_id === entityId
+
+      // If entity_type is 'lead_opportunity', also match 'won_job' activities with same ID
+      // and vice versa (to handle status transitions)
+      const isAlternateType = (
+        (entityType === 'lead_opportunity' && a.entity_type === 'won_job' && a.entity_id === entityId) ||
+        (entityType === 'won_job' && a.entity_type === 'lead_opportunity' && a.entity_id === entityId)
+      )
+
+      return (isMatchingType && isMatchingId) || isAlternateType
+    })
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
   if (activities.length === 0) {
@@ -126,7 +141,7 @@ export function ActivityTimeline({ entityType, entityId, className }: ActivityTi
               </div>
               {activity.description && (
                 <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                  {activity.description}
+                  <LinkifyText text={activity.description} />
                 </p>
               )}
 

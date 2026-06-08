@@ -24,6 +24,7 @@ import type { WonJob, OPStage, StaffMember } from '@/types'
 import { formatJobTitle, formatJobTitleShort } from '@/lib/jobs'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
+import { LinkifyText } from '@/components/shared/linkify-text'
 import { JobDetailTabs } from '@/components/shared/job-detail-tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -72,14 +73,18 @@ function InlineEdit({
 
   if (!editing) {
     return (
-      <div
-        className="group flex items-start gap-2 cursor-pointer rounded px-2 py-1.5 -mx-2 hover:bg-muted/50"
-        onClick={() => { setDraft(value); setEditing(true) }}
-      >
-        <p className={`text-base flex-1 leading-relaxed whitespace-pre-wrap ${value ? 'text-foreground' : 'text-muted-foreground italic'}`}>
-          {value || placeholder}
-        </p>
-        <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0 mt-1" />
+      <div className="group flex items-start gap-2 rounded px-2 py-1.5 -mx-2 hover:bg-muted/50">
+        <div className={`text-base flex-1 leading-relaxed whitespace-pre-wrap select-text ${value ? 'text-foreground' : 'text-muted-foreground italic'}`} style={{ userSelect: 'text', pointerEvents: 'auto' }}>
+          <LinkifyText text={value || placeholder} />
+        </div>
+        <button
+          onClick={() => { setDraft(value); setEditing(true) }}
+          className="flex-shrink-0 mt-1 p-1 rounded hover:bg-blue-100 transition-colors cursor-pointer"
+          title="Edit"
+          type="button"
+        >
+          <Pencil className="w-3 h-3 text-muted-foreground group-hover:text-blue-600" />
+        </button>
       </div>
     )
   }
@@ -111,13 +116,18 @@ function InlineEditDate({
   if (!editing) {
     return (
       <div
-        className="group flex items-start gap-2 cursor-pointer rounded px-2 py-1.5 -mx-2 hover:bg-muted/50"
-        onClick={() => { setDraft(value); setEditing(true) }}
+        className="group flex items-start gap-2 rounded px-2 py-1.5 -mx-2 hover:bg-muted/50"
       >
         <p className={`text-base flex-1 leading-relaxed ${value ? 'text-foreground' : 'text-muted-foreground italic'}`}>
           {value || placeholder}
         </p>
-        <Pencil className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0 mt-1" />
+        <button
+          onClick={(e) => { e.stopPropagation(); setDraft(value); setEditing(true) }}
+          className="flex-shrink-0 mt-1 p-1 rounded hover:bg-blue-100 transition-colors cursor-pointer"
+          title="Edit"
+        >
+          <Pencil className="w-3 h-3 text-muted-foreground group-hover:text-blue-600" />
+        </button>
       </div>
     )
   }
@@ -871,7 +881,7 @@ function JobDetail({
               {/* Log Activity */}
               <div>
                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">Log Activity</p>
-                <AddActivityForm entityType="won_job" entityId={job.job_id} owner={job.owner || ''} />
+                <AddActivityForm entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} owner={job.owner || ''} />
               </div>
 
               <Separator />
@@ -879,7 +889,7 @@ function JobDetail({
               {/* History */}
               <div>
                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">History</p>
-                <ActivityTimeline entityType="won_job" entityId={job.job_id} />
+                <ActivityTimeline entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} />
               </div>
             </div>
 
@@ -1144,7 +1154,7 @@ function JobDetail({
                     {/* Log Activity Form */}
                     <div>
                       <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">Log Activity</p>
-                      <AddActivityForm entityType="won_job" entityId={job.job_id} owner={job.owner || ''} />
+                      <AddActivityForm entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} owner={job.owner || ''} />
                     </div>
 
                     <Separator />
@@ -1152,7 +1162,7 @@ function JobDetail({
                     {/* Activity Timeline */}
                     <div>
                       <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">History</p>
-                      <ActivityTimeline entityType="won_job" entityId={job.job_id} />
+                      <ActivityTimeline entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} />
                     </div>
                   </div>
                 ),

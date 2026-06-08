@@ -54,11 +54,12 @@ function parseCustomerDatabaseFormat(rows: RawRow[]): ParsedContact[] {
 /** Detect and parse the "flat contact list" format (File 1) */
 function parseFlatFormat(rows: RawRow[]): ParsedContact[] {
   // Expected cols: Email, Name, Telphone, Remark
+  // If company_name column exists, use it; otherwise use Name as company
   return rows
     .filter((r) => clean(r['Email']) || clean(r['Name']))
     .map((r) => ({
       contactName: clean(r['Name']),
-      companyName: clean(r['Name']),       // Name IS the company/org in this file
+      companyName: clean(r['company_name']) || clean(r['Company']) || clean(r['COMPANY']) || clean(r['Company Name']) || clean(r['Name']),  // Use company_name if available, else Name
       email:       clean(r['Email']),
       phone:       clean(r['Telphone']) || clean(r['Tel']) || clean(r['Phone']) || '',
       notes:       '',
@@ -274,8 +275,19 @@ export default function ImportPage() {
     const reader = new FileReader()
     reader.onload = (e) => {
       try {
-        const data = new Uint8Array(e.target!.result as ArrayBuffer)
-        const wb   = XLSX.read(data, { type: 'array' })
+        // For CSV files, read as text to preserve UTF-8 encoding (Thai, etc.)
+        // For Excel files, read as binary
+        let wb: any
+
+        if (file.name.endsWith('.csv')) {
+          // CSV: Read as text to preserve UTF-8
+          const csvText = e.target!.result as string
+          wb = XLSX.read(csvText, { type: 'string' })
+        } else {
+          // Excel: Read as binary array
+          const data = new Uint8Array(e.target!.result as ArrayBuffer)
+          wb = XLSX.read(data, { type: 'array' })
+        }
 
         let allContacts: ParsedContact[] = []
 
@@ -316,7 +328,13 @@ export default function ImportPage() {
         setError(`Failed to parse file: ${err instanceof Error ? err.message : 'Unknown error'}`)
       }
     }
-    reader.readAsArrayBuffer(file)
+    // For CSV files, read as text to preserve UTF-8 encoding
+    // For Excel files, read as binary
+    if (file.name.endsWith('.csv')) {
+      reader.readAsText(file, 'UTF-8')
+    } else {
+      reader.readAsArrayBuffer(file)
+    }
   }, [])
 
   const onDrop = useCallback((accepted: File[]) => {
@@ -366,8 +384,13 @@ export default function ImportPage() {
       const key = ct.companyName.toLowerCase()
       const companyId =
         batchCompanyIds.get(key) ??
-        existingCompanies.find((c) => c.company_name.toLowerCase() === key)?.company_id ??
-        ''
+        existingCompanies.find((c) => c.company_name.toLowerCase() === key)?.company_id
+
+      // Skip if company not found (should not happen, but safety check)
+      if (!companyId) {
+        console.warn(`[Import] Skipping contact "${ct.name}" - company "${ct.companyName}" not found`)
+        continue
+      }
 
       const id = `ctct-imp-${crypto.randomUUID()}`
       const newContact: ContactPerson = {

@@ -112,7 +112,7 @@ export function AddActivityForm({ entityType, entityId, owner }: AddActivityForm
         entity_id: entityId,
         activity_type: 'note',
         title: attachments.length > 0 ? 'Note with attachments' : 'Note added',
-        description: text.trim() || `[${attachments.length} file${attachments.length !== 1 ? 's' : ''} attached]`,
+        description: attachments.length > 0 ? `[${attachments.length} file${attachments.length !== 1 ? 's' : ''} attached]` : '[Note]',
         created_by: owner,
         created_at: new Date().toISOString(),
         attachments: attachments.length > 0 ? attachments : undefined,
