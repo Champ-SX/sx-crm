@@ -894,7 +894,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function LeadsOpportunitiesPage() {
   const isHydrated = useHydrated()
-  const { leadOpportunities, addLeadOpportunity, deleteLeadOpportunity, initializeData } = useCRMStore()
+  const { leadOpportunities, addLeadOpportunity, deleteLeadOpportunity } = useCRMStore()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('open')
   const [serviceFilter, setServiceFilter] = useState<string>('all')
@@ -902,14 +902,6 @@ export default function LeadsOpportunitiesPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedForDuplicate, setSelectedForDuplicate] = useState<Set<string>>(new Set())
   const [creating, setCreating] = useState(false)
-
-  useEffect(() => {
-    console.log('[Leads Page] useEffect called, isHydrated =', isHydrated)
-    if (isHydrated) {
-      console.log('[Leads Page] Calling initializeData()')
-      void initializeData()
-    }
-  }, [isHydrated, initializeData])
 
   // Don't render until hydration completes to prevent SSR/client mismatch
   if (!isHydrated) return null
