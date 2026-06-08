@@ -18,10 +18,9 @@ export function formatJobTitle(job: Pick<WonJob, 'event_date' | 'job_number' | '
 
 // Short version for card subtitle line
 export function formatJobTitleShort(job: Pick<WonJob, 'product_cat' | 'product_name' | 'place'>): string {
-  const cat = job.product_cat || '—'
-  const name = job.product_name || '—'
+  const name = job.product_name || job.product_cat || '—'
   const place = job.place || '—'
-  return `${cat} - ${name}@${place}`
+  return `${name}@${place}`
 }
 
 // ─── Title parser (backward compat) ──────────────────────────────────────────
