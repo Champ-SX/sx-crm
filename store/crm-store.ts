@@ -102,7 +102,6 @@ interface CRMStore {
   // ── State management ────────────────────────────────────────────────────────
   isLoading: boolean
   error: string | null
-  isInitialized: boolean
 
   // ── Data initialization ────────────────────────────────────────────────────
   initializeData: () => Promise<void>
@@ -179,44 +178,61 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       // ── State management ────────────────────────────────────────────────────────
       isLoading: false,
       error: null,
-      isInitialized: false,
 
       // ── Data initialization ────────────────────────────────────────────────────
       initializeData: async () => {
         console.log('[CRM Store] initializeData called')
-
-        const currentState = get()
-
-        // FIX C: Runtime safety check - if USE_SUPABASE is false, show clear warning
         if (!USE_SUPABASE) {
-          const warnMsg = '⚠️ [CRM Store] USE_SUPABASE is false. Using mock data. Check your Supabase environment variables (NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY) in Vercel settings.'
-          console.warn(warnMsg)
-          set({ error: warnMsg })
+          console.log('[CRM Store] USE_SUPABASE is false, skipping')
           return
         }
 
-        // FIX B: Only initialize once (prevent redundant API calls)
-        if (currentState.isInitialized) {
-          console.log('[CRM Store] Already initialized, skipping')
-          return
+        const currentState = get()
+        console.log('[CRM Store] Current state:', {
+          companiesCount: currentState.companies.length,
+          leadsCount: currentState.leadOpportunities.length,
+          wonJobsCount: currentState.wonJobs.length,
+        })
+
+        // Determine if this is first load or subsequent load
+        const isFirstLoad = currentState.companies.length === 0 && currentState.leadOpportunities.length === 0
+
+        // Always load wonJobs, but skip full load if we already have data
+        if (!isFirstLoad && currentState.wonJobs.length > 0) {
+          console.log('[CRM Store] Already loaded, skipping')
+          return // Already loaded, skip
         }
 
         console.log('[CRM Store] Starting data initialization...')
-        set({ isLoading: true, error: null })
 
+        set({ isLoading: true, error: null })
         try {
-          // Load all data in parallel
-          const [companies, contactPersons, leadOpportunities, activities, tasks, staff, opStages, wonJobs] =
-            await Promise.all([
-              db.companyQueries.getAll(),
-              db.contactPersonQueries.getAll(),
-              db.leadOpportunityQueries.getAll(),
-              db.activityQueries.getAll(),
-              db.taskQueries.getAll(),
-              db.staffQueries.getAll(),
-              db.opStageQueries.getAll(),
-              db.wonJobQueries.getAll(),
-            ])
+          // On first load, get everything. On subsequent loads, only get wonJobs.
+          let companies = currentState.companies
+          let contactPersons = currentState.contactPersons
+          let leadOpportunities = currentState.leadOpportunities
+          let activities = currentState.activities
+          let tasks = currentState.tasks
+          let staff = currentState.staff
+          let opStages = currentState.opStages
+
+          if (isFirstLoad) {
+            // Full load on first initialization
+            [companies, contactPersons, leadOpportunities, activities, tasks, staff, opStages] =
+              await Promise.all([
+                db.companyQueries.getAll(),
+                db.contactPersonQueries.getAll(),
+                db.leadOpportunityQueries.getAll(),
+                db.activityQueries.getAll(),
+                db.taskQueries.getAll(),
+                db.staffQueries.getAll(),
+                db.opStageQueries.getAll(),
+              ])
+          }
+
+          // Always load wonJobs
+          const wonJobs = await db.wonJobQueries.getAll()
+          console.log('[CRM Store] Loaded wonJobs:', wonJobs.length, 'records', wonJobs.slice(0, 2))
 
           // Load customers separately with fallback to empty array if table doesn't exist
           let customers: Customer[] = []
@@ -225,15 +241,8 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
           } catch (err) {
             console.warn('[CRM Store] Could not load customers (table may not exist yet):',
               err instanceof Error ? err.message : String(err))
+            // Continue with empty customers array
           }
-
-          console.log('[CRM Store] Data loaded successfully:', {
-            companies: companies.length,
-            contacts: contactPersons.length,
-            leads: leadOpportunities.length,
-            wonJobs: wonJobs.length,
-            activities: activities.length,
-          })
 
           set({
             companies,
@@ -246,16 +255,14 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
             staff,
             opStages: opStages.length > 0 ? opStages : DEFAULT_OP_STAGES,
             isLoading: false,
-            isInitialized: true,
-            error: null,
           })
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error)
           console.error('[CRM Store] Database initialization error:', errorMsg, error)
+          console.log('[CRM Store] Full error:', error)
           set({
             error: errorMsg,
             isLoading: false,
-            isInitialized: false,
           })
         }
       },

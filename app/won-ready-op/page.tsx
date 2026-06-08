@@ -1179,6 +1179,7 @@ export default function WonReadyOpPage() {
   const addOpStage = useCRMStore((s) => s.addOpStage)
   const reorderStages = useCRMStore((s) => s.reorderStages)
   const reorderWonJobWithinStage = useCRMStore((s) => s.reorderWonJobWithinStage)
+  const initializeData = useCRMStore((s) => s.initializeData)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [stageToDelete, setStageToDelete] = useState<string | null>(null)
@@ -1187,6 +1188,13 @@ export default function WonReadyOpPage() {
   const [showAddStageDialog, setShowAddStageDialog] = useState(false)
   const [newStageName, setNewStageName] = useState('')
   const [newStageColor, setNewStageColor] = useState('blue')
+
+  // Load data from Supabase after hydration completes
+  useEffect(() => {
+    if (isHydrated) {
+      void initializeData()
+    }
+  }, [isHydrated])
 
   const sensors = useSensors(
     useSensor(MouseSensor, {

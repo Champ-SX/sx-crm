@@ -974,7 +974,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 export default function CustomersPage() {
   const isHydrated = useHydrated()
   const router = useRouter()
-  const { customers } = useCRMStore()
+  const { customers, initializeData } = useCRMStore()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -982,6 +982,12 @@ export default function CustomersPage() {
   const [newLeadCustomer, setNewLeadCustomer] = useState<Customer | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 25
+
+  useEffect(() => {
+    if (isHydrated) {
+      void initializeData()
+    }
+  }, [isHydrated, initializeData])
 
   // Reset to page 1 when search/filter changes
   useEffect(() => {
