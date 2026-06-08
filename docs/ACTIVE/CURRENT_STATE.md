@@ -66,8 +66,8 @@ None currently. Phase 1 complete and stable.
 
 ### Medium Priority (Phase 2.1+)
 - [ ] Advanced search and filtering
-- [ ] Email service integration (Phase 2.3)
-- [ ] Mentions/notifications system (Phase 2.3)
+- [ ] Email service integration (Phase 2.3) — See PHASE_2_3_MENTIONS_NOTIFICATIONS.md
+- [ ] @Mentions/notifications system (Phase 2.3) — See PHASE_2_3_MENTIONS_NOTIFICATIONS.md
 - [ ] Bulk operations support
 
 ---
