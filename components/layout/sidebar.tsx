@@ -12,10 +12,13 @@ import {
   Zap,
   Upload,
   X,
+  LogOut,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCRMStore } from '@/store/crm-store'
 import { useMobileNav } from '@/components/layout/mobile-nav-context'
+import { useAuth } from '@/components/auth-provider'
+import { Button } from '@/components/ui/button'
 import { OP_STAGES } from '@/types'
 
 const navItems = [
@@ -29,6 +32,72 @@ const bottomItems = [
   { href: '/import',   label: 'Import',   icon: Upload },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
+
+// ── User Profile Component ─────────────────────────────────────────────────────
+
+function UserProfile() {
+  const { user, role, loading, signOut } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2.5 px-3 py-2.5 mt-1 rounded-lg">
+        <div className="w-7 h-7 rounded-full bg-slate-200 animate-pulse" />
+        <div className="flex-1 min-w-0">
+          <div className="h-4 bg-slate-200 rounded animate-pulse mb-1" />
+          <div className="h-3 bg-slate-200 rounded w-2/3 animate-pulse" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
+  }
+
+  const initials = user.user_metadata?.full_name
+    ? user.user_metadata.full_name
+        .split(' ')
+        .map((n: string) => n[0])
+        .join('')
+        .toUpperCase()
+    : user.email?.[0]?.toUpperCase() || 'U'
+
+  return (
+    <div className="mt-3 space-y-2">
+      <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-slate-50 cursor-default transition-colors">
+        {user.user_metadata?.avatar_url ? (
+          <img
+            src={user.user_metadata.avatar_url}
+            alt={user.email}
+            className="w-7 h-7 rounded-full object-cover shrink-0"
+          />
+        ) : (
+          <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold shrink-0">
+            {initials}
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="text-slate-700 text-[13px] font-medium leading-tight truncate">
+            {user.user_metadata?.full_name || user.email}
+          </p>
+          <p className="text-slate-400 text-[10px] leading-tight uppercase tracking-wide">
+            {role}
+          </p>
+        </div>
+      </div>
+
+      <Button
+        onClick={signOut}
+        variant="ghost"
+        size="sm"
+        className="w-full justify-start gap-2 text-slate-500 hover:text-slate-700 h-8 px-3"
+      >
+        <LogOut className="w-3.5 h-3.5" />
+        <span className="text-[13px]">Sign out</span>
+      </Button>
+    </div>
+  )
+}
 
 // ── Shared nav content ────────────────────────────────────────────────────────
 
@@ -115,16 +184,8 @@ function NavContent({ onNavClick }: { onNavClick?: () => void }) {
           <NavLink key={item.href} {...item} />
         ))}
 
-        {/* User */}
-        <div className="flex items-center gap-2.5 px-3 py-2.5 mt-1 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
-          <div className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center text-[var(--sidebar-primary)] text-xs font-bold shrink-0">
-            V
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-slate-700 text-[13px] font-medium leading-tight">Vitta</p>
-            <p className="text-slate-400 text-[10px] leading-tight">Admin</p>
-          </div>
-        </div>
+        {/* User Profile */}
+        <UserProfile />
       </div>
     </>
   )
