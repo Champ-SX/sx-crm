@@ -7,8 +7,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
-export function createClient() {
-  return createSupabaseClient(supabaseUrl, supabaseAnonKey)
-}
-
-export const supabase = createClient()
+// Single instance - reuse everywhere to prevent multiple GoTrueClient instances
+export const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+})

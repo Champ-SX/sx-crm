@@ -25,14 +25,15 @@ export function DataInitializer() {
     }
   }, [isInitialized, isLoading, initializeData])
 
-  // Safety timeout: if still loading after 5 seconds, assume Supabase isn't available
+  // Safety timeout: if still loading after 15 seconds, assume Supabase isn't available
   // and fall back to mock data (which should already be loaded by store)
+  // Increased from 5s to 15s to handle slower network/cold starts in production
   useEffect(() => {
     if (isLoading && !isInitialized) {
       const timer = setTimeout(() => {
         console.warn('[DataInitializer] Loading timeout - likely using mock data')
         setLoadingTimeout(true)
-      }, 5000)
+      }, 15000)
       return () => clearTimeout(timer)
     }
   }, [isLoading, isInitialized])

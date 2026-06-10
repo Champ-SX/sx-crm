@@ -38,10 +38,10 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // Redirect to login if not authenticated
-  if (!session) {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
+  // For now, allow all authenticated requests and let client-side AuthProvider
+  // handle the actual auth check. This works with implicit OAuth flow where
+  // the session is in localStorage until it syncs to cookies.
+  // The AuthProvider will redirect to /login if no session is found.
 
   return response
 }

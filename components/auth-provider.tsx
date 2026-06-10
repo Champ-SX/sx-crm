@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import type { Session } from '@supabase/supabase-js'
 
 interface AuthContextType {
@@ -26,10 +26,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const supabase = createClient()
-
   useEffect(() => {
-    // Check current session
+    // Check current session and sync to cookies
     const checkSession = async () => {
       const {
         data: { session },
@@ -39,25 +37,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session)
         setUser(session.user)
 
+        // Sync session to cookies for middleware
+        // This ensures server-side middleware can see the session
+        document.cookie = `sb-session=${JSON.stringify(session)}; path=/`
+
         // Fetch user role from database
         try {
-          const { data } = await supabase
+          const { data, error } = await supabase
             .from('users')
             .select('role')
             .eq('id', session.user.id)
             .single()
 
-          setRole(data?.role || 'user')
+          if (error) {
+            console.error('[AuthProvider] Error fetching user role:', error)
+            throw error
+          }
+
+          console.log('[AuthProvider] User role fetched:', data?.role)
+          setRole(data?.role || 'operation')
         } catch (error) {
+          console.error('[AuthProvider] Error in role fetch, creating user:', error)
           // User record doesn't exist yet, create it
           await supabase.from('users').insert({
             id: session.user.id,
             email: session.user.email,
-            full_name: session.user.user_metadata?.full_name,
-            avatar_url: session.user.user_metadata?.avatar_url,
-            role: 'user',
+            name: session.user.user_metadata?.full_name,
+            role: 'operation',
           })
-          setRole('user')
+          setRole('operation')
         }
       }
 
@@ -76,23 +84,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Fetch role when session changes
         try {
-          const { data } = await supabase
+          const { data, error } = await supabase
             .from('users')
             .select('role')
             .eq('id', session.user.id)
             .single()
 
-          setRole(data?.role || 'user')
+          if (error) throw error
+          setRole(data?.role || 'operation')
         } catch (error) {
-          // Create user record if it doesn't exist
+          console.error('[AuthProvider] Error fetching role in onAuthStateChange:', error)
+          // User record doesn't exist, create it
           await supabase.from('users').insert({
             id: session.user.id,
             email: session.user.email,
-            full_name: session.user.user_metadata?.full_name,
-            avatar_url: session.user.user_metadata?.avatar_url,
-            role: 'user',
+            name: session.user.user_metadata?.full_name,
+            role: 'operation',
           })
-          setRole('user')
+          setRole('operation')
         }
       } else {
         setSession(null)
@@ -107,10 +116,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signOut = async () => {
-    await supabase.auth.signOut()
-    setSession(null)
-    setUser(null)
-    setRole(null)
+    try {
+      // Sign out from Supabase
+      await supabase.auth.signOut()
+
+      // Clear localStorage
+      localStorage.clear()
+
+      // Clear custom cookie
+      document.cookie = 'sb-session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;'
+
+      // Clear state
+      setSession(null)
+      setUser(null)
+      setRole(null)
+
+      // Redirect to login
+      window.location.href = '/login'
+    } catch (error) {
+      console.error('Sign out error:', error)
+    }
   }
 
   return (

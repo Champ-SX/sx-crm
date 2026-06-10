@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
@@ -9,7 +9,6 @@ import { useState } from 'react'
 function LoginPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const error = searchParams.get('error')
 

@@ -156,9 +156,9 @@ function NavContent({ onNavClick }: { onNavClick?: () => void }) {
   }
 
   return (
-    <>
+    <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="px-5 pt-6 pb-5 border-b border-[var(--sidebar-border)] shrink-0">
+      <div className="px-5 pt-4 pb-3 border-b border-[var(--sidebar-border)] shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-[var(--sidebar-primary)] flex items-center justify-center shrink-0 shadow-sm">
             <Zap className="w-4 h-4 text-white" />
@@ -171,15 +171,15 @@ function NavContent({ onNavClick }: { onNavClick?: () => void }) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2">Menu</p>
+      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
+        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest px-3 mb-1">Menu</p>
         {navItems.map((item) => (
           <NavLink key={item.href} {...item} />
         ))}
       </nav>
 
       {/* Bottom */}
-      <div className="px-3 py-3 border-t border-[var(--sidebar-border)] shrink-0">
+      <div className="px-3 py-2 border-t border-[var(--sidebar-border)] shrink-0">
         {bottomItems.map((item) => (
           <NavLink key={item.href} {...item} />
         ))}
@@ -187,7 +187,7 @@ function NavContent({ onNavClick }: { onNavClick?: () => void }) {
         {/* User Profile */}
         <UserProfile />
       </div>
-    </>
+    </div>
   )
 }
 
