@@ -29,8 +29,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [session, loading, pathname, isPublicRoute, router])
 
-  // Show loading state while checking auth
-  if (loading) {
+  // Show loading state while checking auth (but NOT for public routes)
+  if (loading && !isPublicRoute) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
         <div className="text-center">

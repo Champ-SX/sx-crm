@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useCRMStore } from '@/store/crm-store'
+import { useAuth } from '@/components/auth-provider'
 
 /**
  * DataInitializer Component
@@ -12,18 +13,21 @@ import { useCRMStore } from '@/store/crm-store'
  * - Should be placed in app/layout.tsx to load ONCE per app session
  * - Shows loading overlay while data is fetching
  * - Handles missing environment variables gracefully (falls back to mock data)
+ * - Only initializes when user is authenticated
+ * - Middleware handles route protection, so we only check session status
  */
 export function DataInitializer() {
+  const { session } = useAuth()
   const { isInitialized, isLoading, error, initializeData } = useCRMStore()
   const [loadingTimeout, setLoadingTimeout] = useState(false)
 
   useEffect(() => {
-    // Only initialize once, on first mount
-    if (!isInitialized && !isLoading) {
+    // Only initialize if authenticated and not already initialized
+    if (session && !isInitialized && !isLoading) {
       console.log('[DataInitializer] Triggering data initialization')
       void initializeData()
     }
-  }, [isInitialized, isLoading, initializeData])
+  }, [session, isInitialized, isLoading, initializeData])
 
   // Safety timeout: if still loading after 15 seconds, assume Supabase isn't available
   // and fall back to mock data (which should already be loaded by store)

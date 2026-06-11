@@ -27,106 +27,63 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check current session and sync to cookies
-    const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+    // Single initialization: restore session from cookies (set by exchangeCodeForSession)
+    // and fetch user role from database. No onAuthStateChange listener needed.
+    const initializeAuth = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
 
-      if (session) {
-        setSession(session)
-        setUser(session.user)
+        if (session) {
+          setSession(session)
+          setUser(session.user)
 
-        // Sync session to cookies for middleware
-        // This ensures server-side middleware can see the session
-        document.cookie = `sb-session=${JSON.stringify(session)}; path=/`
+          // Fetch user role from database
+          try {
+            const { data, error } = await supabase
+              .from('users')
+              .select('role')
+              .eq('id', session.user.id)
+              .single()
 
-        // Fetch user role from database
-        try {
-          const { data, error } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', session.user.id)
-            .single()
+            if (error) {
+              console.error('[AuthProvider] Error fetching user role:', error)
+              throw error
+            }
 
-          if (error) {
-            console.error('[AuthProvider] Error fetching user role:', error)
-            throw error
+            console.log('[AuthProvider] User role fetched:', data?.role)
+            setRole(data?.role || 'operation')
+          } catch (error) {
+            console.error('[AuthProvider] Error in role fetch, creating user:', error)
+            // User record doesn't exist yet, create it
+            const { error: insertError } = await supabase.from('users').insert({
+              id: session.user.id,
+              email: session.user.email,
+              name: session.user.user_metadata?.full_name,
+              role: 'operation',
+            })
+
+            if (insertError && !insertError.message.includes('duplicate')) {
+              console.error('[AuthProvider] Error creating user:', insertError)
+            }
+            setRole('operation')
           }
-
-          console.log('[AuthProvider] User role fetched:', data?.role)
-          setRole(data?.role || 'operation')
-        } catch (error) {
-          console.error('[AuthProvider] Error in role fetch, creating user:', error)
-          // User record doesn't exist yet, create it
-          await supabase.from('users').insert({
-            id: session.user.id,
-            email: session.user.email,
-            name: session.user.user_metadata?.full_name,
-            role: 'operation',
-          })
-          setRole('operation')
         }
+      } finally {
+        setLoading(false)
       }
-
-      setLoading(false)
     }
 
-    checkSession()
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        setSession(session)
-        setUser(session.user)
-
-        // Fetch role when session changes
-        try {
-          const { data, error } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', session.user.id)
-            .single()
-
-          if (error) throw error
-          setRole(data?.role || 'operation')
-        } catch (error) {
-          console.error('[AuthProvider] Error fetching role in onAuthStateChange:', error)
-          // User record doesn't exist, create it
-          await supabase.from('users').insert({
-            id: session.user.id,
-            email: session.user.email,
-            name: session.user.user_metadata?.full_name,
-            role: 'operation',
-          })
-          setRole('operation')
-        }
-      } else {
-        setSession(null)
-        setUser(null)
-        setRole(null)
-      }
-    })
-
-    return () => {
-      subscription?.unsubscribe()
-    }
+    initializeAuth()
   }, [])
 
   const signOut = async () => {
     try {
-      // Sign out from Supabase
+      // Sign out from Supabase (clears cookies and localStorage)
       await supabase.auth.signOut()
 
-      // Clear localStorage
-      localStorage.clear()
-
-      // Clear custom cookie
-      document.cookie = 'sb-session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;'
-
-      // Clear state
+      // Clear app state
       setSession(null)
       setUser(null)
       setRole(null)

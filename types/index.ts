@@ -79,7 +79,7 @@ export interface Customer {
 }
 
 // ─── Leads & Opportunities (merged) ──────────────────────────────────────────
-export type LeadOpStatus = 'open' | 'won' | 'lost'
+export type LeadOpStatus = 'open' | 'negotiating' | 'won' | 'lost'
 export type ServiceType =
   | 'CAP*TURES'
   | 'Andy & Fine'

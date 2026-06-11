@@ -12,12 +12,13 @@ import { CreateQuotationModal } from '@/components/shared/create-quotation-modal
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
 import { LinkifyText } from '@/components/shared/linkify-text'
-import { JobDetailTabs } from '@/components/shared/job-detail-tabs'
+import { MobileCardView } from '@/components/shared/mobile-card-view'
 import { AddLeadOpForm } from '@/components/shared/add-lead-op-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import type { LeadOpportunity, LeadOpStatus } from '@/types'
@@ -34,8 +35,49 @@ const OWNERS = ['Vitta', 'Andy', 'Fern', 'Nong']
 
 const statusConfig: Record<LeadOpStatus, { label: string; class: string }> = {
   open: { label: 'Open', class: 'bg-blue-50 text-blue-600 border-blue-200' },
+  negotiating: { label: 'Negotiating', class: 'bg-amber-50 text-amber-700 border-amber-200' },
   won: { label: 'Won', class: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
   lost: { label: 'Lost', class: 'bg-red-50 text-red-500 border-red-200' },
+}
+
+const STATUS_ORDER: LeadOpStatus[] = ['open', 'negotiating', 'won', 'lost']
+
+// ── Clickable status pill ───────────────────────────────────────────────────────
+// The pill itself is the trigger: click → pick a status → it applies immediately.
+// The parent's onSelect decides routing (Open/Negotiating persist directly;
+// Won/Lost route through the confirm dialogs since they convert the lead).
+function StatusPill({
+  status,
+  onSelect,
+}: {
+  status: LeadOpStatus
+  onSelect: (next: LeadOpStatus) => void
+}) {
+  const cfg = statusConfig[status]
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border cursor-pointer hover:opacity-80 transition-opacity ${cfg.class}`}
+        aria-label={`Change status (current: ${cfg.label})`}
+      >
+        {cfg.label}
+        <ChevronDown className="w-3 h-3 opacity-70" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[150px]">
+        {STATUS_ORDER.map((s) => (
+          <DropdownMenuItem
+            key={s}
+            onClick={() => onSelect(s)}
+            className="text-xs gap-2 cursor-pointer"
+          >
+            <span className={`w-2 h-2 rounded-full border ${statusConfig[s].class}`} />
+            {statusConfig[s].label}
+            {s === status && <Check className="w-3 h-3 ml-auto text-muted-foreground" />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
 }
 
 // ── Inline edit ───────────────────────────────────────────────────────────────
@@ -266,6 +308,16 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
     onClose()
   }
 
+  // Direct status change from the clickable pill.
+  // Open/Negotiating persist immediately; Won/Lost route through the confirm
+  // dialogs because markAsWon/markAsLost also convert the lead and close the drawer.
+  function handleStatusSelect(next: LeadOpStatus) {
+    if (!item || next === item.status) return
+    if (next === 'won') { setConfirmWon(true); return }
+    if (next === 'lost') { setConfirmLost(true); return }
+    void updateLeadOpportunity(item.lead_op_id, { status: next })
+  }
+
   async function handleDuplicate() {
     if (!item) return
     const newId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -302,18 +354,19 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                 />
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                   {isEditing ? (
-                    <Select value={editData?.status || 'open'} onValueChange={(v) => handleFieldChange('status', v as 'open' | 'won' | 'lost')}>
+                    <Select value={editData?.status || 'open'} onValueChange={(v) => handleFieldChange('status', v as LeadOpStatus)}>
                       <SelectTrigger className="h-6 text-xs border-0 px-0 focus:ring-0 w-auto font-medium gap-1">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="open">Open</SelectItem>
+                        <SelectItem value="negotiating">Negotiating</SelectItem>
                         <SelectItem value="won">Won</SelectItem>
                         <SelectItem value="lost">Lost</SelectItem>
                       </SelectContent>
                     </Select>
                   ) : (
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${cfg.class}`}>{cfg.label}</span>
+                    <StatusPill status={item.status} onSelect={handleStatusSelect} />
                   )}
                   {isEditing ? (
                     <Input
@@ -337,7 +390,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                   >
                     <Send className="w-4 h-4" /> Create Quotation
                   </Button>
-                  {item.status === 'open' && (
+                  {(item.status === 'open' || item.status === 'negotiating') && (
                     <>
                       <Button
                         size="sm"
@@ -369,7 +422,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                 >
                   <Send className="w-4 h-4" /> <span className="hidden md:inline">Create Quotation</span>
                 </Button>
-                {item.status === 'open' && (
+                {(item.status === 'open' || item.status === 'negotiating') && (
                   <>
                     <Button
                       size="sm"
@@ -644,12 +697,9 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
             </div>
           </div>
 
-          {/* Mobile: Tab interface */}
-          <div className="sm:hidden flex flex-col flex-1 overflow-hidden">
-            <JobDetailTabs>
-              {{
-                details: (
-                  <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+          {/* Mobile: Trello-style single-scroll card with sticky comment bar */}
+          <MobileCardView entityType="lead_opportunity" entityId={item.lead_op_id} owner={item.owner}>
+                  <div className="px-4 py-4 space-y-5">
                     {/* Key info */}
                     <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                       <div>
@@ -839,27 +889,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                       </>
                     )}
                   </div>
-                ),
-                activity: (
-                  <div className="px-4 py-4 overflow-y-auto space-y-5">
-                    {/* Log Activity Form */}
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Log Activity</p>
-                      <AddActivityForm entityType="lead_opportunity" entityId={item.lead_op_id} owner={item.owner} />
-                    </div>
-
-                    <Separator />
-
-                    {/* Activity Timeline */}
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">History</p>
-                      <ActivityTimeline entityType="lead_opportunity" entityId={item.lead_op_id} />
-                    </div>
-                  </div>
-                ),
-              }}
-            </JobDetailTabs>
-          </div>
+          </MobileCardView>
 
         </DialogContent>
       </Dialog>
@@ -1079,7 +1109,7 @@ export default function LeadsOpportunitiesPage() {
         })()}
         {/* Status pills */}
         <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
-          {(['all', 'open', 'won', 'lost'] as const).map((s) => {
+          {(['all', 'open', 'negotiating', 'won', 'lost'] as const).map((s) => {
             const count = s === 'all' ? leadOpportunities.length : leadOpportunities.filter((l) => l.status === s).length
             return (
               <button

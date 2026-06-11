@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/shared/page-header'
 import { EmptyState } from '@/components/shared/empty-state'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
-import { JobDetailTabs } from '@/components/shared/job-detail-tabs'
+import { MobileCardView } from '@/components/shared/mobile-card-view'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { AddLeadOpForm } from '@/components/shared/add-lead-op-form'
 import { Button } from '@/components/ui/button'
@@ -696,12 +696,9 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
           </div>
         </div>
 
-        {/* Mobile: Tab interface */}
-        <div className="sm:hidden flex flex-col flex-1 overflow-hidden">
-          <JobDetailTabs>
-            {{
-              details: (
-                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        {/* Mobile: Trello-style single-scroll card with sticky comment bar */}
+        <MobileCardView entityType="customer" entityId={customer.customer_id} owner="Vitta">
+                <div className="px-4 py-4 space-y-4">
                   {/* Company name edit */}
                   <div>
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Company Name</p>
@@ -934,27 +931,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                     </>
                   )}
                 </div>
-              ),
-              activity: (
-                <div className="px-4 py-4 overflow-y-auto space-y-5">
-                  {/* Log Activity Form */}
-                  <div>
-                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">Log Activity</p>
-                    <AddActivityForm entityType="customer" entityId={customer.customer_id} owner="Vitta" />
-                  </div>
-
-                  <Separator />
-
-                  {/* Activity Timeline */}
-                  <div>
-                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">History</p>
-                    <ActivityTimeline entityType="customer" entityId={customer.customer_id} />
-                  </div>
-                </div>
-              ),
-            }}
-          </JobDetailTabs>
-        </div>
+        </MobileCardView>
       </DialogContent>
     </Dialog>
 

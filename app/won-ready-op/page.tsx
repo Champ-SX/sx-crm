@@ -25,7 +25,7 @@ import { formatJobTitle, formatJobTitleShort } from '@/lib/jobs'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
 import { LinkifyText } from '@/components/shared/linkify-text'
-import { JobDetailTabs } from '@/components/shared/job-detail-tabs'
+import { MobileCardView } from '@/components/shared/mobile-card-view'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -895,12 +895,9 @@ function JobDetail({
 
           </div>
 
-          {/* ── Mobile: Tab interface ── */}
-          <div className="sm:hidden flex flex-col flex-1 overflow-hidden">
-            <JobDetailTabs>
-              {{
-                details: (
-                  <div className="px-6 py-5 space-y-5 overflow-y-auto">
+          {/* ── Mobile: Trello-style single-scroll card with sticky comment bar ── */}
+          <MobileCardView entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} owner={job.owner || ''}>
+                  <div className="px-6 py-5 space-y-5">
                     {/* Section A: รายละเอียดงาน */}
                     <div className="rounded-xl border border-blue-200 overflow-hidden">
                       <button
@@ -1148,27 +1145,7 @@ function JobDetail({
                       </div>}
                     </div>
                   </div>
-                ),
-                activity: (
-                  <div className="px-6 py-5 overflow-y-auto space-y-6">
-                    {/* Log Activity Form */}
-                    <div>
-                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">Log Activity</p>
-                      <AddActivityForm entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} owner={job.owner || ''} />
-                    </div>
-
-                    <Separator />
-
-                    {/* Activity Timeline */}
-                    <div>
-                      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">History</p>
-                      <ActivityTimeline entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} />
-                    </div>
-                  </div>
-                ),
-              }}
-            </JobDetailTabs>
-          </div>
+          </MobileCardView>
 
         </DialogContent>
       </Dialog>

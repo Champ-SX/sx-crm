@@ -105,7 +105,10 @@ function NavContent({ onNavClick }: { onNavClick?: () => void }) {
   const pathname = usePathname()
   const { leadOpportunities, wonJobs, tasks } = useCRMStore()
 
-  const openLeadsCount = leadOpportunities.filter((l) => l.status === 'open').length
+  // Active = open or negotiating (both are in-flight leads needing attention)
+  const openLeadsCount = leadOpportunities.filter(
+    (l) => l.status === 'open' || l.status === 'negotiating'
+  ).length
   const today = new Date().toISOString().split('T')[0]
   const pendingTasksToday = tasks.filter(
     (t) => t.status !== 'done' && t.due_date <= today
