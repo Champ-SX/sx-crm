@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { Task, TaskPriority, TaskStatus } from '@/types'
 import { EmptyState } from '@/components/shared/empty-state'
+import { OwnerSelectItems } from '@/components/shared/owner-select-items'
 import {
   Plus,
   CheckSquare,
@@ -26,7 +27,6 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 
-const OWNERS = ['Vitta', 'Andy', 'Fern', 'Nong']
 
 const priorityConfig = {
   high: { label: 'High', class: 'border-red-200 text-red-600 bg-red-50' },
@@ -139,7 +139,7 @@ function CreateTaskForm({ onClose }: { onClose: () => void }) {
             <Select value={form.owner} onValueChange={(v) => v && setForm({ ...form, owner: v })}>
               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {OWNERS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                <OwnerSelectItems />
               </SelectContent>
             </Select>
           </div>
@@ -228,7 +228,7 @@ export default function TasksPage() {
           <SelectTrigger className="w-[130px] h-8 text-[12px] bg-slate-50 border-slate-200"><SelectValue placeholder="All owners" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All owners</SelectItem>
-            {OWNERS.map((o) => <SelectItem key={o} value={o} className="text-[12px]">{o}</SelectItem>)}
+            <OwnerSelectItems className="text-[12px]" />
           </SelectContent>
         </Select>
         <Select value={priorityFilter} onValueChange={(v) => setPriorityFilter(v ?? 'all')}>

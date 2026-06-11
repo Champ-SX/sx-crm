@@ -13,6 +13,7 @@ import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
 import { LinkifyText } from '@/components/shared/linkify-text'
 import { MobileCardView } from '@/components/shared/mobile-card-view'
+import { OwnerSelectItems } from '@/components/shared/owner-select-items'
 import { AddLeadOpForm } from '@/components/shared/add-lead-op-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,7 +32,6 @@ import {
 import { format } from 'date-fns'
 
 const SERVICES = ['CAP*TURES', 'Andy & Fine', 'SX Event', 'Booth Rental', 'Custom Activation', 'Other']
-const OWNERS = ['Vitta', 'Andy', 'Fern', 'Nong']
 
 const statusConfig: Record<LeadOpStatus, { label: string; class: string }> = {
   open: { label: 'Open', class: 'bg-blue-50 text-blue-600 border-blue-200' },
@@ -494,7 +494,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {OWNERS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                      <OwnerSelectItems />
                     </SelectContent>
                   </Select>
                 </div>
@@ -743,7 +743,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {OWNERS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                            <OwnerSelectItems />
                           </SelectContent>
                         </Select>
                       </div>
@@ -1135,7 +1135,7 @@ export default function LeadsOpportunitiesPage() {
           <SelectTrigger className="w-[120px] h-8 text-[12px] bg-slate-50 border-slate-200"><SelectValue placeholder="All owners" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All owners</SelectItem>
-            {OWNERS.map((o) => <SelectItem key={o} value={o} className="text-[12px]">{o}</SelectItem>)}
+            <OwnerSelectItems className="text-[12px]" />
           </SelectContent>
         </Select>
         {selectedForDuplicate.size > 0 && (

@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client'
 import type { Session } from '@supabase/supabase-js'
 
 interface AuthContextType {
@@ -27,6 +27,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // MOCK MODE (local dev, no Supabase env vars): bypass auth entirely with a
+    // fake admin dev user so the app is usable without a login wall. This branch
+    // never runs in production, where the env vars are always present.
+    if (!isSupabaseConfigured) {
+      const devUser = {
+        id: 'dev-user',
+        email: 'dev@localhost',
+        user_metadata: { full_name: 'Dev User' },
+      }
+      setUser(devUser)
+      setRole('admin')
+      // Minimal truthy session so AuthGuard/DataInitializer treat us as signed in.
+      setSession({ user: devUser, access_token: 'mock', token_type: 'bearer' } as unknown as Session)
+      setLoading(false)
+      return
+    }
+
     // Single initialization: restore session from cookies (set by exchangeCodeForSession)
     // and fetch user role from database. No onAuthStateChange listener needed.
     const initializeAuth = async () => {
@@ -79,6 +96,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signOut = async () => {
+    // Mock mode has no real session to clear and /login can't sign back in,
+    // so signing out is a no-op locally.
+    if (!isSupabaseConfigured) return
+
     try {
       // Sign out from Supabase (clears cookies and localStorage)
       await supabase.auth.signOut()

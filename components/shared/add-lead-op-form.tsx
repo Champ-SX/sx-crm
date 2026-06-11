@@ -9,10 +9,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Building2, Plus, ChevronDown } from 'lucide-react'
+import { OwnerSelectItems } from '@/components/shared/owner-select-items'
 import type { LeadOpportunity, Customer } from '@/types'
 
 const SERVICES = ['CAP*TURES', 'Andy & Fine', 'SX Event', 'Booth Rental', 'Custom Activation', 'Other']
-const OWNERS = ['Vitta', 'Andy', 'Fern', 'Nong']
 
 interface AddLeadOpFormProps {
   onClose: () => void
@@ -363,7 +363,7 @@ export function AddLeadOpForm({
               <Label className="text-xs">Owner</Label>
               <Select value={form.owner} onValueChange={(v) => v && setForm({ ...form, owner: v })}>
                 <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>{OWNERS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+                <SelectContent><OwnerSelectItems /></SelectContent>
               </Select>
             </div>
           </div>

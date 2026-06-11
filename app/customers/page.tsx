@@ -44,7 +44,6 @@ import {
 } from 'lucide-react'
 
 const CUSTOMER_TYPES: CustomerType[] = ['brand', 'agency', 'venue', 'organizer', 'individual', 'partner']
-const OWNERS = ['Vitta', 'Andy', 'Fern', 'Nong']
 
 // ── Company combobox ──────────────────────────────────────────────────────────
 // Lets user type a new company name OR pick one from existing customers.

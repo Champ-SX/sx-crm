@@ -79,6 +79,17 @@ export interface Customer {
 }
 
 // ─── Leads & Opportunities (merged) ──────────────────────────────────────────
+// ─── Team Member (a signed-in user; sourced from the Supabase `users` table) ───
+// In production these are the people who signed in with Google. Locally (mock
+// mode) they come from mockTeamMembers. Used to populate owner dropdowns + the
+// Settings team list, replacing the old hardcoded OWNERS array.
+export interface TeamMember {
+  id: string
+  name: string
+  email: string
+  role: string // 'admin' | 'operation' | 'sales' | 'user'
+}
+
 export type LeadOpStatus = 'open' | 'negotiating' | 'won' | 'lost'
 export type ServiceType =
   | 'CAP*TURES'

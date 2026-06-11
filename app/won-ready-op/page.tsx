@@ -17,6 +17,7 @@ import { SortableContext, verticalListSortingStrategy, horizontalListSortingStra
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useCRMStore } from '@/store/crm-store'
+import { OwnerSelectItems } from '@/components/shared/owner-select-items'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { OP_STAGES, OP_STAGE_LABELS } from '@/types'
@@ -42,7 +43,6 @@ import {
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 
-const OWNERS = ['Vitta', 'Andy', 'Fern', 'Nong']
 
 // ── Stage visual config ───────────────────────────────────────────────────────
 const stageConfig: Record<OPStage, { accent: string; dot: string; headerBg: string; colBg: string }> = {
@@ -610,7 +610,7 @@ function JobDetail({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {OWNERS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                      <OwnerSelectItems />
                     </SelectContent>
                   </Select>
                 </div>

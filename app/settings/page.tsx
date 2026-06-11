@@ -6,8 +6,10 @@ import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Zap, Database, Users, Layers, GitBranch } from 'lucide-react'
+import { useCRMStore } from '@/store/crm-store'
 
 export default function SettingsPage() {
+  const teamMembers = useCRMStore((s) => s.teamMembers)
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Settings" description="Workspace configuration" />
@@ -66,19 +68,33 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {['Vitta', 'Andy', 'Fern', 'Nong'].map((name) => (
-                <div key={name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
-                      {name[0]}
+              {teamMembers.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No team members yet. People who sign in with Google will appear here.
+                </p>
+              ) : (
+                teamMembers.map((m) => {
+                  const display = m.name || m.email
+                  return (
+                    <div key={m.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                          {display[0]?.toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium leading-tight">{display}</p>
+                          {m.email && m.name && (
+                            <p className="text-[11px] text-muted-foreground leading-tight">{m.email}</p>
+                          )}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] capitalize">
+                        {m.role}
+                      </Badge>
                     </div>
-                    <p className="text-sm font-medium">{name}</p>
-                  </div>
-                  <Badge variant="outline" className="text-[10px]">
-                    {name === 'Vitta' ? 'Admin' : 'Member'}
-                  </Badge>
-                </div>
-              ))}
+                  )
+                })
+              )}
             </div>
           </CardContent>
         </Card>

@@ -1,6 +1,16 @@
-import type { Customer, Company, ContactPerson, LeadOpportunity, WonJob, Activity, Task, StaffMember } from '@/types'
+import type { Customer, Company, ContactPerson, LeadOpportunity, WonJob, Activity, Task, StaffMember, TeamMember } from '@/types'
 
-export const MOCK_USERS = ['Vitta', 'Andy', 'Fern', 'Nong']
+// Mock team — stands in for the Supabase `users` table (Google sign-ins) when
+// running locally on mock data. Names match existing mock leads' owner fields.
+export const mockTeamMembers: TeamMember[] = [
+  { id: 'u-vitta', name: 'Vitta', email: 'vitta@sixsheet.me', role: 'admin' },
+  { id: 'u-andy', name: 'Andy', email: 'andy@sixsheet.me', role: 'operation' },
+  { id: 'u-fern', name: 'Fern', email: 'fern@sixsheet.me', role: 'sales' },
+  { id: 'u-nong', name: 'Nong', email: 'nong@sixsheet.me', role: 'operation' },
+]
+
+// Back-compat: name-only list (some callers just need owner names).
+export const MOCK_USERS = mockTeamMembers.map((m) => m.name)
 
 // ─── Customers ───────────────────────────────────────────────────────────────
 export const mockCustomers: Customer[] = [

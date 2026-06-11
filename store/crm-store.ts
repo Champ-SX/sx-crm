@@ -4,7 +4,7 @@ import { create } from 'zustand'
 import type {
   Customer, Company, ContactPerson,
   LeadOpportunity, WonJob, Activity, Task, OPStage, StaffMember,
-  DynamicOPStage, JobSortOption,
+  DynamicOPStage, JobSortOption, TeamMember,
 } from '@/types'
 import {
   mockCustomers,
@@ -15,6 +15,7 @@ import {
   mockActivities,
   mockTasks,
   mockStaff,
+  mockTeamMembers,
 } from '@/lib/mock-data'
 import { blankWonJobFields, companyToAccount, customerToAccount } from '@/lib/jobs'
 import * as db from '@/lib/supabase/db'
@@ -94,6 +95,7 @@ interface CRMStore {
   activities: Activity[]
   tasks: Task[]
   staff: StaffMember[]
+  teamMembers: TeamMember[]  // signed-in users (owner/team source of truth)
 
   // ── OP Kanban Stages (dynamic) ──────────────────────────────────────────────
   opStages: DynamicOPStage[]
@@ -171,6 +173,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       activities: USE_SUPABASE ? [] : mockActivities,
       tasks: USE_SUPABASE ? [] : mockTasks,
       staff: USE_SUPABASE ? [] : mockStaff,
+      teamMembers: USE_SUPABASE ? [] : mockTeamMembers,
 
       // ── OP Kanban Stages ────────────────────────────────────────────────────────
       opStages: DEFAULT_OP_STAGES,
@@ -228,6 +231,15 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
               err instanceof Error ? err.message : String(err))
           }
 
+          // Load team members (signed-in users) with graceful fallback if RLS blocks
+          let teamMembers: TeamMember[] = []
+          try {
+            teamMembers = await db.userQueries.getAll()
+          } catch (err) {
+            console.warn('[CRM Store] Could not load team members from users table:',
+              err instanceof Error ? err.message : String(err))
+          }
+
           console.log('[CRM Store] Data loaded successfully:', {
             companies: companies.length,
             contacts: contactPersons.length,
@@ -245,6 +257,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
             activities,
             tasks,
             staff,
+            teamMembers,
             opStages: opStages.length > 0 ? opStages : DEFAULT_OP_STAGES,
             isLoading: false,
             isInitialized: true,

@@ -11,9 +11,22 @@ import type {
   StaffMember,
   DynamicOPStage,
   OPStage,
+  TeamMember,
 } from '@/types'
 
 // ===== COMPANIES =====
+export const userQueries = {
+  // Team members = rows in the `users` table (people who signed in with Google).
+  async getAll() {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name, email, role')
+      .order('name')
+    if (error) throw error
+    return (data || []) as TeamMember[]
+  },
+}
+
 export const companyQueries = {
   async getAll() {
     const { data, error } = await supabase

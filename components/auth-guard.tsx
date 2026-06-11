@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/components/auth-provider'
+import { isSupabaseConfigured } from '@/lib/supabase/client'
 
 /**
  * AuthGuard Component
@@ -20,6 +21,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route))
 
   useEffect(() => {
+    // Mock mode (local dev, no Supabase): no auth, never redirect.
+    if (!isSupabaseConfigured) return
     // Wait for auth to load
     if (loading) return
 
@@ -28,6 +31,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       router.push('/login')
     }
   }, [session, loading, pathname, isPublicRoute, router])
+
+  // Mock mode: no auth wall — render everything (hooks above stay unconditional).
+  if (!isSupabaseConfigured) return children
 
   // Show loading state while checking auth (but NOT for public routes)
   if (loading && !isPublicRoute) {
