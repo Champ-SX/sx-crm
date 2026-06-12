@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client'
 import { useAuth } from '@/components/auth-provider'
+import { useCRMStore } from '@/store/crm-store'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 
@@ -17,6 +18,7 @@ interface User {
 export default function AdminUsersPage() {
   const router = useRouter()
   const { user: currentUser, role: currentRole, loading } = useAuth()
+  const teamMembers = useCRMStore((s) => s.teamMembers)
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [updatingUser, setUpdatingUser] = useState<string | null>(null)
@@ -31,6 +33,12 @@ export default function AdminUsersPage() {
   // Load all users
   useEffect(() => {
     const loadUsers = async () => {
+      // Mock mode: show the store's team (no DB to query)
+      if (!isSupabaseConfigured) {
+        setUsers(teamMembers.map((m) => ({ ...m, created_at: '' })))
+        setIsLoading(false)
+        return
+      }
       try {
         console.log('[AdminUsers] Loading users...')
         const { data, error } = await supabase
@@ -50,18 +58,21 @@ export default function AdminUsersPage() {
     if (currentRole === 'admin') {
       loadUsers()
     }
-  }, [currentRole])
+  }, [currentRole, teamMembers])
 
   // Update user role
   const updateUserRole = async (userId: string, newRole: string) => {
     setUpdatingUser(userId)
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({ role: newRole })
-        .eq('id', userId)
+      // Mock mode: update local view only (no DB to persist to)
+      if (isSupabaseConfigured) {
+        const { error } = await supabase
+          .from('users')
+          .update({ role: newRole })
+          .eq('id', userId)
 
-      if (error) throw error
+        if (error) throw error
+      }
 
       // Update local state
       setUsers(

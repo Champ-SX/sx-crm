@@ -5,11 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Zap, Database, Users, Layers, GitBranch } from 'lucide-react'
+import { Zap, Database, Users, Layers, GitBranch, ShieldCheck } from 'lucide-react'
 import { useCRMStore } from '@/store/crm-store'
+import { useAuth } from '@/components/auth-provider'
+import Link from 'next/link'
 
 export default function SettingsPage() {
   const teamMembers = useCRMStore((s) => s.teamMembers)
+  const { role } = useAuth()
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Settings" description="Workspace configuration" />
@@ -62,8 +65,18 @@ export default function SettingsPage() {
 
         <Card className="border-border/60">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Users className="w-4 h-4 text-purple-500" /> Team Members
+            <CardTitle className="text-sm font-semibold flex items-center justify-between gap-2">
+              <span className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-purple-500" /> Team Members
+              </span>
+              {role === 'admin' && (
+                <Link
+                  href="/admin/users"
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" /> Manage roles
+                </Link>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
