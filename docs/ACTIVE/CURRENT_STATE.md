@@ -1,82 +1,111 @@
-# 📊 Current State - SX-CRM June 9, 2026
+# 📊 Current State - SX-CRM June 13, 2026
 
 ## 🎯 Project Status
 
 **Production URL:** https://sx-crm.vercel.app  
 **Build Status:** ✅ Passing  
-**Last Update:** June 9, 2026  
-**Current Phase:** Phase 2.3 - @Mentions & Email Notifications (Week Starting 7/1)
+**Last Update:** June 13, 2026  
+**Current Phase:** Phase 2.3 Complete ✅ — Phase 2.4 Planning
 
-### Deployment Status
+### Deployment History
 - **v1.0.0** (June 2, 2026) — Phase 1 Complete ✅
-  - All dashboard features working
-  - Kanban board with stage management
-  - Mobile responsive (375px, 768px, 1280px+)
-  - 0 console errors, 0 build warnings
+- **v2.0** (June 9, 2026) — Google OAuth + Role Dashboards ✅
+- **v2.1** (June 13, 2026) — Phase 2.3 @Mentions + Notifications ✅
+- **v2.1.1** (June 13, 2026) — Fix: activity log author uses signed-in user ✅
 
 ---
 
-## 📋 Active Development
+## ✅ Completed Phases
 
-### Phase 2 Timeline - REVISED (June 9 - June 14, 2026)
+### Phase 2.0 — Google OAuth + Admin
+- Google OAuth login (PKCE flow via `@supabase/ssr`)
+- Admin user management panel (`/admin/users`)
+- Role assignment (Admin / Operation / Sales)
+- Mock mode for local dev (env-var gated, never reaches prod)
 
-```
-✅ COMPLETE: Phase 2.0 - Google Auth + Notes Features (6/8-9)
-  └─ Deployed Friday 6/9 ✅
-  └─ LinkifyText, Notes Inheritance, Fixed Click Behavior
+### Phase 2.1 — Role-Based Dashboards
+- Auto-detect role from auth, admin gets override dropdown
+- Admin / Operation / Sales dashboards
+- Negotiating lead status + clickable status pill
 
-🚀 STARTING TOMORROW: Phase 2.3 - @Mentions & Email Notifications (6/10-14)
-  └─ Deploy Friday 6/14
-  └─ @mention team members in notes
-  └─ Email notifications via Resend
-  
-POSTPONED: Phase 2.1 & 2.2 (Dashboards & Mobile Tabs)
-  └─ Phase 2.1: June 17-21
-  └─ Phase 2.2: June 24-28
-```
+### Phase 2.2 — Mobile Trello Cards
+- Trello-style single-scroll mobile card (all 3 entity types)
+- Sticky comment composer with `100dvh` fix
+- "Log activity" label above composer
 
-### Current Sprint: Phase 2.3 (@Mentions & Email Notifications)
-**Duration:** 8.5 hours over 5 days  
-**Status:** 🚀 **STARTING TOMORROW (June 10)**
-
-**Tasks (Mon-Fri, 6/10-14):**
-- [ ] Mon 6/10: Database + Resend setup (2.5h)
-- [ ] Tue 6/11: Mention detection logic (2h)
-- [ ] Wed 6/12: Frontend UI - @mention dropdown (2h)
-- [ ] Thu 6/13: Testing & QA (2h)
-- [ ] Fri 6/14: Deploy to Production (1.5h) 🚀
-
-**Output by Friday:**
-- Users can mention team members with @name
-- Email notifications sent via Resend
-- Mention tracking in database
-- Ready for Phase 2.1 (Role-based Dashboards)
+### Phase 2.3 — @Mentions & In-App Notifications
+- `@mention` autocomplete in note textarea (desktop)
+- In-app notification bell (sidebar) with unread badge
+- Click notification → navigate to entity + mark read
+- Reply on notes (inline box pre-filled with `@author`)
+- Delete notes (confirm dialog + optimistic update + rollback)
+- History restyle: content-first bubbles, subtext metadata
+- Activity log saves actual user text (not `[Note]` placeholder)
+- Activity author = signed-in user (not card owner)
+- Team/owner dropdowns driven by real Supabase users
 
 ---
 
-## 🚨 Known Issues & Blockers
+## 🚀 Phase 2.4 — Real Notifications (Planned)
 
-### Critical (Must Fix Before Phase 2.0 Deploy)
-None currently. Phase 1 complete and stable.
+**Goal:** Make @mention notifications actually reach teammates across sessions and devices.
 
-### High Priority (Phase 2 Planning)
-1. **Environment Variables** — Vercel needs Google OAuth credentials
-   - Status: Pending setup in Phase 2.0 sprint
-   - Action: Add GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET to Vercel Settings
+### What's missing from Phase 2.3
+| Gap | Impact |
+|-----|--------|
+| Notifications in-memory only | Lost on page reload |
+| Email is a stub (`console.log`) | No emails sent |
+| No mobile push | No alert when away from browser |
 
-2. **RLS Policies for Users Table** — Security rules for role-based access
-   - Status: Design planned
-   - Action: SE will implement during Phase 2.0
+### Phase 2.4 Scope
 
-3. **Mobile Auth Flow** — Login on 375px devices
-   - Status: Design not yet reviewed
-   - Action: FG will test on real device during Phase 2.0
+#### 2.4.1 — Persist Notifications (Supabase)
+- Create `notifications` table with RLS (each user reads only their own)
+- `notifyMentions()` writes to DB + Zustand
+- `initializeData()` loads unread notifications on login
+- Mark read persists to DB
 
-### Medium Priority (Phase 2.1+)
-- [ ] Advanced search and filtering
-- [ ] Email service integration (Phase 2.3) — See PHASE_2_3_MENTIONS_NOTIFICATIONS.md
-- [ ] @Mentions/notifications system (Phase 2.3) — See PHASE_2_3_MENTIONS_NOTIFICATIONS.md
-- [ ] Bulk operations support
+#### 2.4.2 — Email via Resend
+- Sign up resend.com (free: 3,000 emails/month)
+- Verify domain `sixsheet.me` (2 DNS records)
+- Add `RESEND_API_KEY` to Vercel env vars
+- Replace `notifyByEmail()` stub in `lib/mentions.ts` with real API call
+- Email template: who mentioned you, in which record, message preview
+
+#### 2.4.3 — Web Push (PWA)
+- Add `manifest.json` + service worker → installable PWA
+- Generate VAPID keys, store in Vercel env vars
+- Subscribe users on login, save `push_subscriptions` table
+- Send push on @mention (works on Android Chrome natively; iOS requires "Add to Home Screen")
+- Works even when browser tab is closed
+
+### Estimated Effort
+| Task | Hours |
+|------|-------|
+| Supabase notifications table + RLS | 2h |
+| Resend email integration | 2h |
+| Web Push / PWA setup | 4h |
+| Testing end-to-end | 2h |
+| **Total** | **~10h** |
+
+### Cost
+| Service | Free Tier | Paid |
+|---------|-----------|------|
+| Resend | 3,000 emails/month ✅ | $20/mo for 50k |
+| Web Push | Free (browser native) ✅ | — |
+| Supabase (notifications table) | Within existing free tier ✅ | — |
+
+**Phase 2.4 is free to run at current team size.**
+
+---
+
+## 🚨 Known Issues
+
+### Medium Priority
+- [ ] Notifications not persisted — lost on reload (Phase 2.4)
+- [ ] Email notifications not sent — stub only (Phase 2.4)
+- [ ] Mobile @mention autocomplete — mobile composer uses plain `<input>`, not `MentionTextarea`
+- [ ] `activity_id` column name — verify Supabase `activities` table uses `activity_id` not `id` before delete is exercised in prod
 
 ---
 
@@ -85,103 +114,40 @@ None currently. Phase 1 complete and stable.
 ### Code Quality
 - **TypeScript Errors:** 0 ✅
 - **Console Errors:** 0 ✅
-- **Console Warnings:** 0 ✅
 - **Build Time:** ~27 seconds ✅
 
 ### Test Coverage
 - **Desktop (1280px+):** ✅ All features working
 - **Tablet (768px):** ✅ All features responsive
-- **Mobile (375px):** ✅ Vertical stacking, no horizontal scroll
-- **Touch Targets:** ✅ All ≥44px
-
-### Production Performance
-- **Page Load:** ~137ms ✅
-- **State Changes:** <500ms ✅
-- **Database Writes:** Persisting correctly ✅
+- **Mobile (375px):** ✅ Trello cards, sticky composer, dvh fix
 
 ---
 
 ## 📊 Database Status
 
 ### Schema
-- **Tables:** 9 created (companies, contacts, opportunities, jobs, activities, tasks, staff, etc.)
+- **Tables:** 9 created + `users` table (Phase 2.0)
 - **Migrations:** All applied ✅
-- **RLS Policies:** Basic policies in place ✅
-- **Backups:** Daily automatic (Supabase)
+- **RLS Policies:** In place ✅
+- **Pending (Phase 2.4):** `notifications`, `push_subscriptions` tables
 
 ### Data
-- **Customers:** 998 records loaded
-- **Leads:** 21 records (2 open, 19 won)
-- **Jobs (Won):** Active and displaying correctly
-- **Recent Activity:** Logging all changes
-
----
-
-## 🎯 Next Steps (This Week - Phase 2.3)
-
-### Today (Monday 6/9)
-- ✅ Phase 2.0 complete and deployed
-- ✅ Phase 2.3 documentation finalized
-- [ ] Review Phase 2.3 specification
-- [ ] Prepare Resend account
-
-### Tomorrow (Tuesday 6/10) - Phase 2.3 Starts 🚀
-- [ ] Create database migration (mentions, notifications tables)
-- [ ] Set up Resend API key
-- [ ] Start mention detection logic
-- [ ] Daily standup on progress
-
-### Wed-Thu (6/12-13)
-- [ ] Complete frontend UI (@mention dropdown)
-- [ ] Comprehensive testing
-- [ ] QA sign-off
-
-### Friday 6/14
-- [ ] Final deployment to production
-- [ ] Monitor email delivery rate
-- [ ] Celebrate Phase 2.3 launch! 🎉
-
----
-
-## 📝 Recent Changes
-
-### June 9, 2026 - Phase 2.0 Complete + Phase 2.3 Ready
-✅ Phase 2.0: Google Auth deployment complete  
-✅ LinkifyText component (URLs as blue links)  
-✅ Notes inheritance (LeadOpportunity → WonJob)  
-✅ Fixed click behavior (pencil icon only)  
-✅ Phase 2.3 documentation finalized  
-✅ Resend + Email notification spec ready  
-✅ 5-day implementation plan created
-
-### June 8, 2026 - Phase 2.0 Development
-✅ Implemented notes features (URL linking, edit UX)  
-✅ CSV import fixes (Thai character support)  
-✅ Activity timeline improvements  
-✅ Production deployment a81b590
-
-### June 2, 2026 - Phase 1 Complete
-✅ Phase 1.5: Mobile Activity/History expand by default  
-✅ Production deployment v1.0.0  
-✅ All features tested and working
-
-### June 5, 2026 - Documentation Reorganization
-✅ Created AGENTS.md (role definitions)  
-✅ Reorganized docs/ into ACTIVE/ and ARCHIVE/  
-✅ Updated CLAUDE.md (navigation hub)
+- **Customers:** 998 records
+- **Leads:** Active
+- **Jobs (Won):** Active
+- **Users:** Populated from Google sign-ins
 
 ---
 
 ## 🔗 Key Resources
 
-- **Active Roadmap:** See `ARCHITECTURE.md` for Phase 2 details
-- **Requirements:** See `PRODUCT.md` for feature definitions
-- **Database:** See `DATABASE_SCHEMA.md` for schema details
-- **Testing:** See `REGRESSION_TESTS.md` for QA procedures
-- **Development:** See `PROJECT_GUARDRAILS.md` for patterns and rules
+- **Requirements:** `PRODUCT.md`
+- **Architecture:** `ARCHITECTURE.md`
+- **Database:** `DATABASE_SCHEMA.md`
+- **Testing:** `REGRESSION_TESTS.md`
+- **Dev patterns:** `PROJECT_GUARDRAILS.md`
 
 ---
 
-**Last Updated:** June 9, 2026, 11:45 PM  
-**Updated By:** Claude + Team  
-**Next Review:** Friday 6/14 (Phase 2.3 deployment)
+**Last Updated:** June 13, 2026  
+**Next Phase:** 2.4 — Real notifications (Resend email + Web Push PWA)
