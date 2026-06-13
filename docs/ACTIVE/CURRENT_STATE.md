@@ -99,6 +99,71 @@
 
 ---
 
+## 🎨 Phase 2.5 — UI/UX Design System Refresh (Planned)
+
+**Goal:** Establish a consistent visual design language across all screens — desktop and mobile — so the app feels professional, readable, and easy to use.
+
+### Issues to Fix (from design audit)
+
+| Area | Problem | Fix |
+|------|---------|-----|
+| **Typography** | No clear scale — title, label, value, caption all feel ad-hoc | Define 5-level type scale, apply everywhere |
+| **Field hierarchy** | Labels and values same weight — hard to scan | Labels muted/small, values bold/dark |
+| **Subtitle/breadcrumb** | Wall of dashes, duplicated text bug | Shorten to meaningful info, fix duplication |
+| **Edit touch targets** | Pencil icons ~16px — too small on mobile | Minimum 44px tap area on all edit controls |
+| **Button system** | Log, Attach, Reply, Delete — all different sizes/styles | Define 4 button types: Primary / Secondary / Ghost / Destructive |
+| **Color tokens** | `text-primary`, `text-muted`, `text-placeholder` used inconsistently | Standardize semantic color tokens across all components |
+| **Section headers** | Blue A / Green B — decorative but no consistent meaning | Review color coding system, document the pattern |
+| **Card header layout** | ID chip, date, title, subtitle, icons, value, dropdown — too crowded | Restructure into clear hierarchy zones |
+| **Spacing density** | Field rows packed unevenly | Standardize: 48px row height, 16px section padding, 12px field gap |
+| **Value display** | "Value" label disconnected from number top-right | Integrate into card header cleanly |
+| **Placeholder text** | Colour too close to real values in some fields | Use consistent `text-muted-foreground` token |
+| **Mobile consistency** | Some components untested at 375px after desktop changes | Full mobile audit pass on all 3 entity types |
+
+### Scope by Component
+
+#### 2.5.1 — Design Tokens
+- Finalize type scale: `text-2xl` Title / `text-base` Body / `text-sm` Label / `text-xs` Caption
+- Semantic color aliases: `text-field-label`, `text-field-value`, `text-placeholder`
+- Standardize spacing scale in Tailwind config
+
+#### 2.5.2 — Card Header Redesign
+- Clean 2-row structure: [ID + date chip] / [Title large] / [Owner + Value inline right]
+- Remove clutter from single row
+- Fix breadcrumb duplication bug
+
+#### 2.5.3 — Field & Edit UI
+- Label: `text-xs font-medium text-muted-foreground uppercase tracking-wide`
+- Value: `text-sm font-medium text-foreground`
+- Edit pencil: wrapped in 44px tap target, visible on hover (desktop) / always visible (mobile)
+
+#### 2.5.4 — Button System
+- **Primary:** filled, brand color — Log, Save, Confirm
+- **Secondary:** outline — Attach, Cancel
+- **Ghost:** text only — Reply, Edit
+- **Destructive:** red text or filled red — Delete
+
+#### 2.5.5 — Mobile Audit
+- All 3 card types (Customer, Lead, Won) at 375px
+- Touch targets ≥ 44px verified
+- No horizontal scroll
+- Sticky composer remains above browser chrome (`100dvh`)
+
+### Estimated Effort
+| Task | Hours |
+|------|-------|
+| Design token audit + Tailwind config | 2h |
+| Card header redesign | 2h |
+| Field + edit UI standardisation | 3h |
+| Button system unification | 2h |
+| Mobile audit + fixes | 2h |
+| **Total** | **~11h** |
+
+**Risk:** Low — CSS/styling only, no logic or data changes.  
+**Deploy:** One Friday release.
+
+---
+
 ## 🚨 Known Issues
 
 ### Medium Priority
