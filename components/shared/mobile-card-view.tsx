@@ -88,12 +88,12 @@ export function MobileCardView({
       activity_type: 'note',
       title: comment.trim() || (attachments.length > 0 ? 'Attachment added' : 'Note added'),
       description: comment.trim() || (attachments.length > 0 ? `[${attachments.length} file(s)]` : '[Note]'),
-      created_by: owner,
+      created_by: user?.user_metadata?.full_name ?? user?.email ?? owner,
       created_at: new Date().toISOString(),
       attachments: attachments.length > 0 ? attachments : undefined,
     })
     if (comment.trim()) {
-      notifyMentions({ text: comment, actor: owner, entityType, entityId, entityName: entityName || '' })
+      notifyMentions({ text: comment, actor: user?.user_metadata?.full_name ?? user?.email ?? owner, entityType, entityId, entityName: entityName || '' })
     }
     setComment('')
     setAttachments([])

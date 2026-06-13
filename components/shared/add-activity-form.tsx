@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useCRMStore } from '@/store/crm-store'
+import { useAuth } from '@/components/auth-provider'
 import { Button } from '@/components/ui/button'
 import { MentionTextarea } from '@/components/shared/mention-textarea'
 import { Send, Paperclip, X, AlertCircle, Image as ImageIcon, File as FileIcon } from 'lucide-react'
@@ -20,6 +21,7 @@ const ALLOWED_FILE_TYPES = ['application/pdf', 'application/msword', 'applicatio
 
 export function AddActivityForm({ entityType, entityId, owner, entityName }: AddActivityFormProps) {
   const { addActivity, notifyMentions } = useCRMStore()
+  const { user } = useAuth()
   const [text, setText] = useState('')
   const [attachments, setAttachments] = useState<ActivityAttachment[]>([])
   const [saving, setSaving] = useState(false)
@@ -121,7 +123,7 @@ export function AddActivityForm({ entityType, entityId, owner, entityName }: Add
         description: noteText
           ? (fileMarker ? `${noteText}\n${fileMarker}` : noteText)
           : (fileMarker || '[Note]'),
-        created_by: owner,
+        created_by: user?.user_metadata?.full_name ?? user?.email ?? owner,
         created_at: new Date().toISOString(),
         attachments: attachments.length > 0 ? attachments : undefined,
       })
