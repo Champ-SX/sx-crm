@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils'
 import { useCRMStore } from '@/store/crm-store'
 import { useMobileNav } from '@/components/layout/mobile-nav-context'
 import { useAuth } from '@/components/auth-provider'
+import { NotificationBell } from '@/components/shared/notification-bell'
 import { Button } from '@/components/ui/button'
 import { OP_STAGES } from '@/types'
 
@@ -169,6 +170,9 @@ function NavContent({ onNavClick }: { onNavClick?: () => void }) {
           <div>
             <p className="text-slate-800 font-bold text-[14px] leading-tight tracking-tight">SX CRM</p>
             <p className="text-slate-400 text-[10px] leading-tight">by SIXSHEET</p>
+          </div>
+          <div className="ml-auto">
+            <NotificationBell />
           </div>
         </div>
       </div>

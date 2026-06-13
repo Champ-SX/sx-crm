@@ -419,6 +419,14 @@ export const activityQueries = {
     if (error) throw error
     return data as Activity
   },
+
+  async delete(id: string) {
+    const { error } = await supabase
+      .from('activities')
+      .delete()
+      .eq('activity_id', id)
+    if (error) throw error
+  },
 }
 
 // ===== TASKS =====

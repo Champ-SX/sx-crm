@@ -42,14 +42,16 @@ export function MobileCardView({
   entityType,
   entityId,
   owner,
+  entityName,
   children,
 }: {
   entityType: 'customer' | 'lead_opportunity' | 'won_job'
   entityId: string
   owner: string
+  entityName?: string
   children: React.ReactNode
 }) {
-  const { addActivity } = useCRMStore()
+  const { addActivity, notifyMentions } = useCRMStore()
   const { user } = useAuth()
   const [comment, setComment] = useState('')
   const [attachments, setAttachments] = useState<ActivityAttachment[]>([])
@@ -80,7 +82,7 @@ export function MobileCardView({
   function submit() {
     if (!comment.trim() && attachments.length === 0) return
     addActivity({
-      activity_id: `act-${Date.now()}`,
+      activity_id: `act-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       entity_type: entityType,
       entity_id: entityId,
       activity_type: 'note',
@@ -90,6 +92,9 @@ export function MobileCardView({
       created_at: new Date().toISOString(),
       attachments: attachments.length > 0 ? attachments : undefined,
     })
+    if (comment.trim()) {
+      notifyMentions({ text: comment, actor: owner, entityType, entityId, entityName: entityName || '' })
+    }
     setComment('')
     setAttachments([])
     setError(null)
@@ -112,14 +117,17 @@ export function MobileCardView({
 
         {/* Activity feed */}
         <div className="px-4 pb-4">
-          <ActivityTimeline entityType={entityType} entityId={entityId} />
+          <ActivityTimeline entityType={entityType} entityId={entityId} entityName={entityName} />
         </div>
       </div>
 
       {/* Sticky comment composer */}
       <div className="shrink-0 border-t border-border bg-background">
+        <p className="px-3 pt-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+          Log activity
+        </p>
         {error && (
-          <p className="px-3 pt-2 text-[11px] text-red-500">{error}</p>
+          <p className="px-3 pt-1 text-[11px] text-red-500">{error}</p>
         )}
         {attachments.length > 0 && (
           <div className="flex flex-wrap gap-1.5 px-3 pt-2">

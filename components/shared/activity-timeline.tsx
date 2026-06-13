@@ -21,7 +21,9 @@ import {
   X as XIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { format } from 'date-fns'
+import { format, formatDistanceToNow } from 'date-fns'
+import { useAuth } from '@/components/auth-provider'
+import { MentionTextarea } from '@/components/shared/mention-textarea'
 import {
   Dialog,
   DialogContent,
@@ -53,6 +55,7 @@ interface ActivityTimelineProps {
   entityType: 'customer' | 'lead_opportunity' | 'won_job'
   entityId: string
   className?: string
+  entityName?: string  // for reply @mention notification context
 }
 
 function isImageFile(mimeType: string): boolean {
@@ -80,11 +83,47 @@ interface Lightbox {
   images: Array<{ data: string; type: string; filename: string }>
 }
 
-export function ActivityTimeline({ entityType, entityId, className }: ActivityTimelineProps) {
+export function ActivityTimeline({ entityType, entityId, className, entityName }: ActivityTimelineProps) {
   const allActivities = useCRMStore((s) => s.activities)
-  const { removeActivityAttachment } = useCRMStore()
+  const { removeActivityAttachment, addActivity, deleteActivity, notifyMentions } = useCRMStore()
+  const { user } = useAuth()
   const [expandedAttachments, setExpandedAttachments] = useState<Set<string>>(new Set())
   const [lightbox, setLightbox] = useState<Lightbox | null>(null)
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const [replyText, setReplyText] = useState('')
+
+  const currentUserName = user?.user_metadata?.full_name || user?.email || 'You'
+
+  // Open the inline reply box for an activity, pre-filling @author so the
+  // original author gets notified when the reply is sent.
+  function startReply(activityId: string, authorName: string) {
+    setReplyingTo(activityId)
+    setReplyText(`@${authorName} `)
+  }
+
+  function submitReply() {
+    const text = replyText.trim()
+    if (!text) return
+    addActivity({
+      activity_id: `act-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      entity_type: entityType,
+      entity_id: entityId,
+      activity_type: 'note',
+      title: 'Reply',
+      description: text,
+      created_by: currentUserName,
+      created_at: new Date().toISOString(),
+    })
+    notifyMentions({ text, actor: currentUserName, entityType, entityId, entityName: entityName || '' })
+    setReplyText('')
+    setReplyingTo(null)
+  }
+
+  function handleDelete(activityId: string) {
+    if (window.confirm('Delete this note? This cannot be undone.')) {
+      void deleteActivity(activityId)
+    }
+  }
 
   // For 'lead_opportunity' type, also include activities stored as 'won_job' with same ID
   // (handles case where lead becomes won - old activities stored as 'lead_opportunity' should still show)
@@ -132,17 +171,25 @@ export function ActivityTimeline({ entityType, entityId, className }: ActivityTi
             </div>
 
             {/* Content */}
-            <div className={cn('pb-4 flex-1', isLast ? 'pb-0' : '')}>
-              <div className="flex items-baseline justify-between gap-2">
-                <p className="text-sm font-medium text-foreground">{activity.title}</p>
-                <span className="text-[11px] text-muted-foreground shrink-0">
-                  {format(new Date(activity.created_at), 'MMM d, h:mm a')}
+            <div className={cn('pb-4 flex-1 min-w-0', isLast ? 'pb-0' : '')}>
+              {/* Sub-text header: actor · category · time */}
+              <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground mb-1">
+                <span className="font-semibold text-foreground/80">{activity.created_by}</span>
+                <span>·</span>
+                <span>{activity.title}</span>
+                <span>·</span>
+                <span title={format(new Date(activity.created_at), 'MMM d, yyyy h:mm a')}>
+                  {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
                 </span>
               </div>
+
+              {/* Content — primary, prominent */}
               {activity.description && (
-                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                  <LinkifyText text={activity.description} />
-                </p>
+                <div className="inline-block max-w-full rounded-xl border border-border bg-card px-3 py-2">
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap break-words">
+                    <LinkifyText text={activity.description} />
+                  </p>
+                </div>
               )}
 
               {/* Attachments section */}
@@ -230,7 +277,50 @@ export function ActivityTimeline({ entityType, entityId, className }: ActivityTi
                 </div>
               )}
 
-              <p className="text-[11px] text-muted-foreground/60 mt-1">by {activity.created_by}</p>
+              {/* Actions */}
+              <div className="flex items-center gap-3 mt-1.5">
+                <button
+                  type="button"
+                  onClick={() => (replyingTo === activity.activity_id ? setReplyingTo(null) : startReply(activity.activity_id, activity.created_by))}
+                  className="text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Reply
+                </button>
+                <span className="text-[11px] text-muted-foreground/40">·</span>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(activity.activity_id)}
+                  className="text-[11px] font-medium text-muted-foreground hover:text-red-600 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+
+              {/* Inline reply box */}
+              {replyingTo === activity.activity_id && (
+                <div className="mt-2 space-y-2">
+                  <MentionTextarea
+                    value={replyText}
+                    onChange={setReplyText}
+                    placeholder="Write a reply… type @ to mention"
+                    className="text-sm resize-none min-h-[64px]"
+                    onSubmitShortcut={submitReply}
+                  />
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" className="h-7 px-3 text-xs" onClick={submitReply} disabled={!replyText.trim()}>
+                      Reply
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-3 text-xs"
+                      onClick={() => { setReplyingTo(null); setReplyText('') }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )

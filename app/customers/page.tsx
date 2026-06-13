@@ -398,7 +398,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
   return (
     <>
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="!w-[95vw] sm:!w-[95vw] md:!w-[900px] lg:!w-[1000px] !max-w-none sm:!max-w-none !max-h-[96vh] sm:!max-h-[88vh] !top-[2vh] sm:!top-[4vh] !translate-y-0 !p-0 !gap-0 !overflow-hidden !flex !flex-col">
+      <DialogContent className="!w-[95vw] sm:!w-[95vw] md:!w-[900px] lg:!w-[1000px] !max-w-none sm:!max-w-none !max-h-[96dvh] sm:!max-h-[88vh] !top-[2vh] sm:!top-[4vh] !translate-y-0 !p-0 !gap-0 !overflow-hidden !flex !flex-col">
 
         {/* Header */}
         <div className="px-4 sm:px-7 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b shrink-0">
@@ -682,7 +682,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
             {/* Log Activity */}
             <div>
               <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">Log Activity</p>
-              <AddActivityForm entityType="customer" entityId={customer.customer_id} owner="Vitta" />
+              <AddActivityForm entityType="customer" entityId={customer.customer_id} owner="Vitta" entityName={customer.company_name} />
             </div>
 
             <Separator />
@@ -690,13 +690,13 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
             {/* History */}
             <div>
               <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">History</p>
-              <ActivityTimeline entityType="customer" entityId={customer.customer_id} />
+              <ActivityTimeline entityType="customer" entityId={customer.customer_id} entityName={customer.company_name} />
             </div>
           </div>
         </div>
 
         {/* Mobile: Trello-style single-scroll card with sticky comment bar */}
-        <MobileCardView entityType="customer" entityId={customer.customer_id} owner="Vitta">
+        <MobileCardView entityType="customer" entityId={customer.customer_id} owner="Vitta" entityName={customer.company_name}>
                 <div className="px-4 py-4 space-y-4">
                   {/* Company name edit */}
                   <div>

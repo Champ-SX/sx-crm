@@ -274,6 +274,23 @@ export interface Activity {
   attachments?: ActivityAttachment[]
 }
 
+// ─── Notification (in-app, from @mentions) ──────────────────────────────────────
+// Created when someone @mentions a team member in an activity note. The bell in
+// the sidebar shows unread notifications for the current user; clicking one jumps
+// to the record it references.
+export interface Notification {
+  id: string
+  recipient_id: string       // TeamMember.id of who is notified
+  recipient_name: string     // denormalized for matching/display
+  actor: string              // who wrote the note (display name)
+  entity_type: 'customer' | 'lead_opportunity' | 'won_job'
+  entity_id: string
+  entity_name: string        // e.g. lead/customer/job title for context
+  message: string            // short preview of the note
+  read: boolean
+  created_at: string
+}
+
 // ─── Task ────────────────────────────────────────────────────────────────────
 export type TaskPriority = 'low' | 'medium' | 'high'
 export type TaskStatus = 'pending' | 'in_progress' | 'done'

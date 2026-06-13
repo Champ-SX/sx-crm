@@ -561,7 +561,7 @@ function JobDetail({
   return (
     <>
       <Dialog open onOpenChange={onClose}>
-        <DialogContent className="w-[88vw] max-w-[88vw] sm:max-w-[88vw] top-[4vh] translate-y-0 p-0 gap-0 overflow-hidden max-h-[88vh] flex flex-col">
+        <DialogContent className="w-[88vw] max-w-[88vw] sm:max-w-[88vw] top-[4vh] translate-y-0 p-0 gap-0 overflow-hidden max-h-[88dvh] flex flex-col">
 
           {/* ── Header ── */}
           <div className="px-7 pt-5 pb-4 border-b shrink-0 bg-white">
@@ -881,7 +881,7 @@ function JobDetail({
               {/* Log Activity */}
               <div>
                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">Log Activity</p>
-                <AddActivityForm entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} owner={job.owner || ''} />
+                <AddActivityForm entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} owner={job.owner || ''} entityName={job.event_display_name || job.product_name || `#${job.job_number}`} />
               </div>
 
               <Separator />
@@ -889,14 +889,14 @@ function JobDetail({
               {/* History */}
               <div>
                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">History</p>
-                <ActivityTimeline entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} />
+                <ActivityTimeline entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} entityName={job.event_display_name || job.product_name || `#${job.job_number}`} />
               </div>
             </div>
 
           </div>
 
           {/* ── Mobile: Trello-style single-scroll card with sticky comment bar ── */}
-          <MobileCardView entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} owner={job.owner || ''}>
+          <MobileCardView entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} owner={job.owner || ''} entityName={job.event_display_name || job.product_name || `#${job.job_number}`}>
                   <div className="px-6 py-5 space-y-5">
                     {/* Section A: รายละเอียดงาน */}
                     <div className="rounded-xl border border-blue-200 overflow-hidden">

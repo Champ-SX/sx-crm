@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { useCRMStore } from '@/store/crm-store'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
+import { MentionTextarea } from '@/components/shared/mention-textarea'
 import { Send, Paperclip, X, AlertCircle, Image as ImageIcon, File as FileIcon } from 'lucide-react'
 import { ActivityAttachment } from '@/types'
 
@@ -11,14 +11,15 @@ interface AddActivityFormProps {
   entityType: 'customer' | 'lead_opportunity' | 'won_job'
   entityId: string
   owner: string
+  entityName?: string  // record title, for @mention notification context
 }
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 const ALLOWED_FILE_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/plain', 'application/zip']
 
-export function AddActivityForm({ entityType, entityId, owner }: AddActivityFormProps) {
-  const { addActivity } = useCRMStore()
+export function AddActivityForm({ entityType, entityId, owner, entityName }: AddActivityFormProps) {
+  const { addActivity, notifyMentions } = useCRMStore()
   const [text, setText] = useState('')
   const [attachments, setAttachments] = useState<ActivityAttachment[]>([])
   const [saving, setSaving] = useState(false)
@@ -106,17 +107,34 @@ export function AddActivityForm({ entityType, entityId, owner }: AddActivityForm
 
     setSaving(true)
     try {
+      const fileMarker = attachments.length > 0
+        ? `📎 ${attachments.length} file${attachments.length !== 1 ? 's' : ''} attached`
+        : ''
+      const noteText = text.trim()
       addActivity({
-        activity_id: `act-${Date.now()}`,
+        activity_id: `act-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         entity_type: entityType,
         entity_id: entityId,
         activity_type: 'note',
-        title: attachments.length > 0 ? 'Note with attachments' : 'Note added',
-        description: attachments.length > 0 ? `[${attachments.length} file${attachments.length !== 1 ? 's' : ''} attached]` : '[Note]',
+        title: 'Note',
+        // Store what the user actually wrote so the history shows it (not a placeholder)
+        description: noteText
+          ? (fileMarker ? `${noteText}\n${fileMarker}` : noteText)
+          : (fileMarker || '[Note]'),
         created_by: owner,
         created_at: new Date().toISOString(),
         attachments: attachments.length > 0 ? attachments : undefined,
       })
+      // Create in-app notifications (+ stubbed email) for any @mentions
+      if (text.trim()) {
+        notifyMentions({
+          text,
+          actor: owner,
+          entityType,
+          entityId,
+          entityName: entityName || '',
+        })
+      }
       setText('')
       setAttachments([])
       setError(null)
@@ -137,20 +155,18 @@ export function AddActivityForm({ entityType, entityId, owner }: AddActivityForm
       )}
 
       <div className="relative">
-        <Textarea
+        <MentionTextarea
           value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Write a note for this record… (optional if uploading files)"
+          onChange={setText}
+          placeholder="Write a note… type @ to mention a teammate"
           className="text-sm resize-none min-h-[80px] pr-16"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit(e as unknown as React.FormEvent)
-          }}
+          onSubmitShortcut={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
         />
         <Button
           type="submit"
           size="sm"
           disabled={(!text.trim() && attachments.length === 0) || saving}
-          className="absolute bottom-2 right-2 h-7 px-2.5 text-xs gap-1"
+          className="absolute bottom-2 right-2 h-7 px-2.5 text-xs gap-1 z-10"
         >
           <Send className="w-3 h-3" /> {saving ? 'Saving…' : 'Log'}
         </Button>

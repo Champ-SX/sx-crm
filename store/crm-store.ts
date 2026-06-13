@@ -4,8 +4,9 @@ import { create } from 'zustand'
 import type {
   Customer, Company, ContactPerson,
   LeadOpportunity, WonJob, Activity, Task, OPStage, StaffMember,
-  DynamicOPStage, JobSortOption, TeamMember,
+  DynamicOPStage, JobSortOption, TeamMember, Notification,
 } from '@/types'
+import { parseMentions, notifyByEmail } from '@/lib/mentions'
 import {
   mockCustomers,
   mockCompanies,
@@ -96,6 +97,7 @@ interface CRMStore {
   tasks: Task[]
   staff: StaffMember[]
   teamMembers: TeamMember[]  // signed-in users (owner/team source of truth)
+  notifications: Notification[]  // in-app @mention notifications
 
   // ── OP Kanban Stages (dynamic) ──────────────────────────────────────────────
   opStages: DynamicOPStage[]
@@ -155,7 +157,19 @@ interface CRMStore {
 
   // Activities
   addActivity: (activity: Activity) => Promise<void>
+  deleteActivity: (activityId: string) => Promise<void>
   removeActivityAttachment: (activityId: string, attachmentIndex: number) => Promise<void>
+
+  // Notifications (@mentions)
+  notifyMentions: (opts: {
+    text: string
+    actor: string
+    entityType: 'customer' | 'lead_opportunity' | 'won_job'
+    entityId: string
+    entityName: string
+  }) => void
+  markNotificationRead: (id: string) => void
+  markAllNotificationsRead: () => void
 }
 
 export const useCRMStore = create<CRMStore>()((set, get) => ({
@@ -174,6 +188,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       tasks: USE_SUPABASE ? [] : mockTasks,
       staff: USE_SUPABASE ? [] : mockStaff,
       teamMembers: USE_SUPABASE ? [] : mockTeamMembers,
+      notifications: [],
 
       // ── OP Kanban Stages ────────────────────────────────────────────────────────
       opStages: DEFAULT_OP_STAGES,
@@ -976,6 +991,19 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
     }
   },
 
+  deleteActivity: async (activityId) => {
+    const prev = get().activities
+    set({ activities: prev.filter((a) => a.activity_id !== activityId) })
+    if (USE_SUPABASE) {
+      try {
+        await db.activityQueries.delete(activityId)
+      } catch (error) {
+        // Roll back on failure so UI stays truthful
+        set({ activities: prev, error: error instanceof Error ? error.message : 'Failed to delete activity' })
+      }
+    }
+  },
+
   removeActivityAttachment: async (activityId, attachmentIndex) => {
     console.log('[removeActivityAttachment] Removing attachment from activity:', { activityId, attachmentIndex })
 
@@ -1011,6 +1039,49 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
         set({ error: error instanceof Error ? error.message : 'Failed to remove attachment' })
       }
     }
+  },
+
+  // ── Notifications (@mentions) ───────────────────────────────────────────────
+  notifyMentions: ({ text, actor, entityType, entityId, entityName }) => {
+    const mentioned = parseMentions(text, get().teamMembers)
+    if (mentioned.length === 0) return
+
+    const now = new Date().toISOString()
+    const newNotifications: Notification[] = mentioned.map((m) => ({
+      id: `notif-${Date.now()}-${m.id}`,
+      recipient_id: m.id,
+      recipient_name: m.name || m.email,
+      actor,
+      entity_type: entityType,
+      entity_id: entityId,
+      entity_name: entityName,
+      message: text.length > 120 ? text.slice(0, 120) + '…' : text,
+      read: false,
+      created_at: now,
+    }))
+
+    set((s) => ({ notifications: [...newNotifications, ...s.notifications] }))
+
+    // Email is deferred (stub logs locally). Fire-and-forget.
+    for (const m of mentioned) {
+      void notifyByEmail({
+        to: m.email,
+        recipientName: m.name || m.email,
+        actor,
+        entityName,
+        message: text,
+      })
+    }
+  },
+
+  markNotificationRead: (id) => {
+    set((s) => ({
+      notifications: s.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    }))
+  },
+
+  markAllNotificationsRead: () => {
+    set((s) => ({ notifications: s.notifications.map((n) => ({ ...n, read: true })) }))
   },
 }));
 

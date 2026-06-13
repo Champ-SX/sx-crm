@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client'
+import { mockTeamMembers } from '@/lib/mock-data'
 import type { Session } from '@supabase/supabase-js'
 
 interface AuthContextType {
@@ -31,13 +32,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // fake admin dev user so the app is usable without a login wall. This branch
     // never runs in production, where the env vars are always present.
     if (!isSupabaseConfigured) {
+      // Sign in locally AS the admin team member, so owner/mentions/notifications
+      // all reference a real identity in the mock team (id matches teamMembers).
+      const admin = mockTeamMembers.find((m) => m.role === 'admin') ?? mockTeamMembers[0]
       const devUser = {
-        id: 'dev-user',
-        email: 'dev@localhost',
-        user_metadata: { full_name: 'Dev User' },
+        id: admin?.id ?? 'dev-user',
+        email: admin?.email ?? 'dev@localhost',
+        user_metadata: { full_name: admin?.name ?? 'Dev User' },
       }
       setUser(devUser)
-      setRole('admin')
+      setRole(admin?.role ?? 'admin')
       // Minimal truthy session so AuthGuard/DataInitializer treat us as signed in.
       setSession({ user: devUser, access_token: 'mock', token_type: 'bearer' } as unknown as Session)
       setLoading(false)

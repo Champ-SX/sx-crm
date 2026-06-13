@@ -340,7 +340,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
   return (
     <>
       <Dialog open onOpenChange={onClose}>
-        <DialogContent className="!fixed !top-0 !left-0 !-translate-x-0 !-translate-y-0 !w-screen !h-screen !max-w-none !grid-cols-1 !p-0 !gap-0 sm:!w-[85vw] sm:!h-auto sm:!top-1/2 sm:!left-1/2 sm:!-translate-x-1/2 sm:!-translate-y-1/2 md:!w-[82vw] !overflow-hidden !max-h-screen sm:!max-h-[88vh] !flex !flex-col !rounded-none sm:!rounded-lg">
+        <DialogContent className="!fixed !top-0 !left-0 !-translate-x-0 !-translate-y-0 !w-screen !h-[100dvh] !max-w-none !grid-cols-1 !p-0 !gap-0 sm:!w-[85vw] sm:!h-auto sm:!top-1/2 sm:!left-1/2 sm:!-translate-x-1/2 sm:!-translate-y-1/2 md:!w-[82vw] !overflow-hidden !max-h-[100dvh] sm:!max-h-[88vh] !flex !flex-col !rounded-none sm:!rounded-lg">
 
           {/* ── Header ── */}
           <div className="px-4 sm:px-7 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b shrink-0">
@@ -684,7 +684,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
               {/* Log Activity */}
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Log Activity</p>
-                <AddActivityForm entityType="lead_opportunity" entityId={item.lead_op_id} owner={item.owner} />
+                <AddActivityForm entityType="lead_opportunity" entityId={item.lead_op_id} owner={item.owner} entityName={item.name} />
               </div>
 
               <Separator />
@@ -692,13 +692,13 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
               {/* History */}
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">History</p>
-                <ActivityTimeline entityType="lead_opportunity" entityId={item.lead_op_id} />
+                <ActivityTimeline entityType="lead_opportunity" entityId={item.lead_op_id} entityName={item.name} />
               </div>
             </div>
           </div>
 
           {/* Mobile: Trello-style single-scroll card with sticky comment bar */}
-          <MobileCardView entityType="lead_opportunity" entityId={item.lead_op_id} owner={item.owner}>
+          <MobileCardView entityType="lead_opportunity" entityId={item.lead_op_id} owner={item.owner} entityName={item.name}>
                   <div className="px-4 py-4 space-y-5">
                     {/* Key info */}
                     <div className="grid grid-cols-2 gap-x-6 gap-y-4">
