@@ -42,7 +42,7 @@ export function MentionTextarea({
   const matches = open
     ? teamMembers
         .filter((m) => (m.name || m.email).toLowerCase().includes(query.toLowerCase()))
-        .slice(0, 6)
+        .slice(0, 5)
     : []
 
   function handleChange(text: string) {

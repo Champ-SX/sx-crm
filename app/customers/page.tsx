@@ -265,6 +265,57 @@ function CustomerRow({
   )
 }
 
+// ── Customer card (stacked list, replaces the table < sm) ──────────────────────
+function CustomerCard({
+  customer, onClick, onNewLead,
+}: { customer: Customer; onClick: () => void; onNewLead: () => void }) {
+  const colorClass = typeColors[customer.customer_type] ?? 'bg-slate-50 text-slate-600 border-slate-200'
+  return (
+    <div
+      className="flex items-start gap-3 border-b border-border/50 px-4 py-3.5 active:bg-slate-50 transition-colors"
+      onClick={onClick}
+    >
+      <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 text-[11px] font-bold shrink-0 mt-0.5">
+        {customer.company_name.charAt(0).toUpperCase()}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-[14px] font-semibold text-slate-800 leading-snug">{customer.company_name}</p>
+          <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize ${colorClass}`}>
+            {customer.customer_type}
+          </span>
+        </div>
+        {customer.contact_person && (
+          <p className="text-[12px] text-slate-400 mt-0.5">{customer.contact_person}</p>
+        )}
+        <div className="mt-2 space-y-1">
+          {customer.phone && (
+            <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+              <Phone className="w-3 h-3 text-muted-foreground/60 shrink-0" /><span className="truncate">{customer.phone}</span>
+            </div>
+          )}
+          {customer.email && (
+            <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+              <Mail className="w-3 h-3 text-muted-foreground/60 shrink-0" /><span className="truncate">{customer.email}</span>
+            </div>
+          )}
+          {customer.line_id && (
+            <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+              <MessageCircle className="w-3 h-3 text-green-400 shrink-0" /><span className="truncate">{customer.line_id}</span>
+            </div>
+          )}
+        </div>
+        <button
+          onClick={(e) => { e.stopPropagation(); onNewLead() }}
+          className="mt-2.5 flex items-center gap-1 text-[11px] font-medium text-primary bg-primary/8 hover:bg-primary/15 px-2.5 py-1 rounded-md transition-colors"
+        >
+          <Plus className="w-3 h-3" /> New Lead
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Add customer form ─────────────────────────────────────────────────────────
 function AddCustomerForm({ onClose }: { onClose: () => void }) {
   const { addCustomer, customers } = useCRMStore()
@@ -1037,7 +1088,20 @@ export default function CustomersPage() {
               ? <EmptyState icon={Search} title="No customers match" description="Try adjusting your search or filter." />
               : <EmptyState icon={Users} title="No customers yet" description="Add your first customer to start building your database." action={{ label: '+ Add Customer', onClick: () => setCreating(true) }} />
           ) : (
-            <table className="w-full">
+            <>
+            {/* Mobile: stacked cards */}
+            <div className="sm:hidden">
+              {paginatedItems.map((c) => (
+                <CustomerCard
+                  key={c.customer_id}
+                  customer={c}
+                  onClick={() => setSelectedId(c.customer_id)}
+                  onNewLead={() => setNewLeadCustomer(c)}
+                />
+              ))}
+            </div>
+            {/* Desktop: table */}
+            <table className="hidden sm:table w-full">
               <thead className="sticky top-0 z-10">
                 <tr className="border-b border-border/60 bg-muted/50 backdrop-blur-sm">
                   <th className="px-5 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Company</th>
@@ -1059,6 +1123,7 @@ export default function CustomersPage() {
                 ))}
               </tbody>
             </table>
+            </>
           )}
         </div>
 

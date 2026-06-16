@@ -5,7 +5,7 @@ import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
 import { Button } from '@/components/ui/button'
 import { MentionTextarea } from '@/components/shared/mention-textarea'
-import { Send, Paperclip, X, AlertCircle, Image as ImageIcon, File as FileIcon } from 'lucide-react'
+import { Send, Paperclip, X, AlertCircle, File as FileIcon } from 'lucide-react'
 import { ActivityAttachment } from '@/types'
 
 interface AddActivityFormProps {
@@ -26,6 +26,7 @@ export function AddActivityForm({ entityType, entityId, owner, entityName }: Add
   const [attachments, setAttachments] = useState<ActivityAttachment[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [dragOver, setDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   function isImageFile(mimeType: string): boolean {
@@ -44,57 +45,43 @@ export function AddActivityForm({ entityType, entityId, owner, entityName }: Add
     })
   }
 
-  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+  // Validate + read each file, appending with a functional update so multiple
+  // files (e.g. a multi-file drop) all stick instead of clobbering each other.
+  async function processFiles(fileList: FileList | File[]) {
     setError(null)
-    const files = e.target.files
-    if (!files) return
-
-    for (const file of Array.from(files)) {
-      // Validate file size
+    for (const file of Array.from(fileList)) {
       if (file.size > MAX_FILE_SIZE) {
         setError(`File "${file.name}" is too large. Maximum size is 5MB.`)
         continue
       }
-
-      // Validate file type
       const isImage = isImageFile(file.type)
       const isAllowedFile = ALLOWED_FILE_TYPES.includes(file.type)
-
       if (!isImage && !isAllowedFile) {
-        setError(`File type "${file.type}" is not supported. Allowed: images (JPEG, PNG, GIF, WebP) and documents (PDF, Word, Excel, TXT, ZIP).`)
+        setError(`File type "${file.type || 'unknown'}" is not supported. Allowed: images (JPEG, PNG, GIF, WebP) and documents (PDF, Word, Excel, TXT, ZIP).`)
         continue
       }
-
       try {
         const base64 = await convertFileToBase64(file)
-        const attachment: ActivityAttachment = {
-          filename: file.name,
-          size: file.size,
-          type: file.type,
-          data: base64,
-        }
-        setAttachments([...attachments, attachment])
-      } catch (err) {
+        setAttachments((prev) => [...prev, { filename: file.name, size: file.size, type: file.type, data: base64 }])
+      } catch {
         setError(`Failed to process file "${file.name}". Please try again.`)
       }
     }
+  }
 
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files) await processFiles(e.target.files)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  async function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setDragOver(false)
+    if (e.dataTransfer.files?.length) await processFiles(e.dataTransfer.files)
   }
 
   function removeAttachment(index: number) {
-    setAttachments(attachments.filter((_, i) => i !== index))
-  }
-
-  function getFileIcon(attachment: ActivityAttachment) {
-    return isImageFile(attachment.type) ? (
-      <ImageIcon className="w-3 h-3" />
-    ) : (
-      <FileIcon className="w-3 h-3" />
-    )
+    setAttachments((prev) => prev.filter((_, i) => i !== index))
   }
 
   function formatFileSize(bytes: number): string {
@@ -156,7 +143,12 @@ export function AddActivityForm({ entityType, entityId, owner, entityName }: Add
         </div>
       )}
 
-      <div className="relative">
+      <div
+        className={`relative rounded-md transition-colors ${dragOver ? 'ring-2 ring-primary ring-offset-1' : ''}`}
+        onDragOver={(e) => { e.preventDefault(); if (!dragOver) setDragOver(true) }}
+        onDragLeave={(e) => { e.preventDefault(); if (e.currentTarget === e.target) setDragOver(false) }}
+        onDrop={handleDrop}
+      >
         <MentionTextarea
           value={text}
           onChange={setText}
@@ -172,24 +164,43 @@ export function AddActivityForm({ entityType, entityId, owner, entityName }: Add
         >
           <Send className="w-3 h-3" /> {saving ? 'Saving…' : 'Log'}
         </Button>
+        {dragOver && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center rounded-md border-2 border-dashed border-primary bg-primary/5 pointer-events-none">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-primary">
+              <Paperclip className="w-3.5 h-3.5" /> Drop files to attach
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Attachments display */}
       {attachments.length > 0 && (
-        <div className="space-y-2 bg-slate-50 rounded-md p-3 border border-slate-200">
-          <p className="text-xs font-medium text-slate-700">Attachments ({attachments.length})</p>
-          <div className="space-y-1">
+        <div className="space-y-2 bg-muted/50 rounded-md p-3 border border-border">
+          <p className="text-xs font-medium text-foreground">Attachments ({attachments.length})</p>
+          <div className="space-y-1.5">
             {attachments.map((att, idx) => (
-              <div key={idx} className="flex items-center justify-between bg-white rounded p-2 text-xs">
+              <div key={idx} className="flex items-center justify-between bg-background rounded p-1.5 text-xs border border-border">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  {getFileIcon(att)}
-                  <span className="truncate text-slate-700">{att.filename}</span>
-                  <span className="text-slate-500 flex-shrink-0">({formatFileSize(att.size)})</span>
+                  {isImageFile(att.type) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={`data:${att.type};base64,${att.data}`}
+                      alt={att.filename}
+                      className="w-9 h-9 rounded object-cover shrink-0 border border-border"
+                    />
+                  ) : (
+                    <span className="w-9 h-9 rounded bg-muted flex items-center justify-center shrink-0 text-muted-foreground">
+                      <FileIcon className="w-4 h-4" />
+                    </span>
+                  )}
+                  <span className="truncate text-foreground">{att.filename}</span>
+                  <span className="text-muted-foreground flex-shrink-0">({formatFileSize(att.size)})</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => removeAttachment(idx)}
-                  className="flex-shrink-0 ml-2 text-slate-400 hover:text-red-600 transition-colors"
+                  className="flex-shrink-0 ml-2 text-muted-foreground hover:text-destructive transition-colors p-1"
+                  aria-label={`Remove ${att.filename}`}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -214,12 +225,12 @@ export function AddActivityForm({ entityType, entityId, owner, entityName }: Add
           variant="outline"
           size="sm"
           onClick={() => fileInputRef.current?.click()}
-          className="h-7 px-2.5 text-xs gap-1"
+          className="h-8 px-3 text-xs gap-1.5"
         >
-          <Paperclip className="w-3 h-3" /> Attach
+          <Paperclip className="w-3.5 h-3.5" /> Upload file
         </Button>
         <p className="text-[10px] text-muted-foreground">
-          Max 5MB per file • Images & documents only
+          or drop files here • max 5MB • images &amp; documents
         </p>
       </div>
 

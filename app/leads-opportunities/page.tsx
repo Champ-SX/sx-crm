@@ -225,7 +225,7 @@ function LeadRow({
       {/* Value */}
       <td className="px-4 py-3.5">
         <p className="text-[13px] font-bold text-slate-800">
-          {item.estimated_value && item.estimated_value > 0 ? `฿${item.estimated_value.toLocaleString()}` : <span className="text-slate-300 font-normal">—</span>}
+          {item.estimated_value && item.estimated_value > 0 ? `฿ ${item.estimated_value.toLocaleString()}` : <span className="text-slate-300 font-normal">—</span>}
         </p>
       </td>
       {/* Owner */}
@@ -241,6 +241,60 @@ function LeadRow({
         <ChevronRight className="w-3.5 h-3.5 text-slate-300 opacity-0 group-hover:opacity-100 group-hover:text-slate-500 transition-all" />
       </td>
     </tr>
+  )
+}
+
+// ── Mobile card (stacked list, replaces the horizontal-scroll table < sm) ──────
+function LeadCard({
+  item,
+  onClick,
+  isSelected = false,
+  onToggleSelect,
+}: {
+  item: LeadOpportunity
+  onClick: () => void
+  isSelected?: boolean
+  onToggleSelect?: () => void
+}) {
+  const cfg = statusConfig[item.status]
+  return (
+    <div
+      className="flex items-start gap-3 border-b border-border/50 px-4 py-3.5 active:bg-slate-50 transition-colors"
+      onClick={onClick}
+    >
+      <input
+        type="checkbox"
+        checked={isSelected}
+        onChange={(e) => { e.stopPropagation(); onToggleSelect?.() }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-4 h-4 rounded cursor-pointer mt-0.5 shrink-0"
+      />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-[14px] font-semibold text-slate-800 leading-snug">{item.name}</p>
+          <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${cfg.class}`}>{cfg.label}</span>
+        </div>
+        {item.contact_person && (
+          <p className="text-[12px] text-slate-400 mt-0.5">{item.contact_person}</p>
+        )}
+        <div className="flex items-center gap-2 mt-1.5 text-[12px] text-slate-600">
+          <div className="w-5 h-5 rounded-md bg-slate-100 flex items-center justify-center text-slate-500 text-[9px] font-bold shrink-0">
+            {(item.customer_name || '?').charAt(0).toUpperCase()}
+          </div>
+          <span className="truncate">{item.customer_name || '—'}</span>
+        </div>
+        <div className="flex items-center justify-between gap-2 mt-2">
+          <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">{item.service_type}</span>
+          <span className="text-[13px] font-bold text-slate-800">
+            {item.estimated_value && item.estimated_value > 0 ? `฿ ${item.estimated_value.toLocaleString()}` : <span className="text-slate-300 font-normal">—</span>}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-2 mt-1.5 text-[11px] text-slate-400">
+          <span>{item.event_date ? format(new Date(item.event_date + 'T00:00:00'), 'dd MMM yyyy') : '—'}</span>
+          <span className="bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full text-slate-500">{item.owner}</span>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -428,15 +482,16 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                   <>
                     <Button
                       size="sm"
-                      className="h-10 px-4 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm min-w-[44px]"
+                      variant="success"
+                      className="h-10 px-4 gap-2 text-xs sm:text-sm min-w-[44px]"
                       onClick={() => setConfirmWon(true)}
                     >
                       <Trophy className="w-4 h-4" /> <span className="hidden sm:inline">Won</span>
                     </Button>
                     <Button
                       size="sm"
-                      variant="outline"
-                      className="h-10 px-4 gap-2 border-red-200 text-red-500 hover:bg-red-50 text-xs sm:text-sm min-w-[44px]"
+                      variant="destructive"
+                      className="h-10 px-4 gap-2 text-xs sm:text-sm min-w-[44px]"
                       onClick={() => setConfirmLost(true)}
                     >
                       <XCircle className="w-4 h-4" /> <span className="hidden sm:inline">Lost</span>
@@ -486,7 +541,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                   <InlineEdit
                     value={item.estimated_value && item.estimated_value > 0 ? item.estimated_value.toString() : ''}
                     placeholder="0"
-                    formatDisplay={(v) => `฿${(parseFloat(v) || 0).toLocaleString()}`}
+                    formatDisplay={(v) => `฿ ${(parseFloat(v) || 0).toLocaleString()}`}
                     onSave={(v) => updateLeadOpportunity(item.lead_op_id, { estimated_value: parseFloat(v) || 0 })}
                   />
                 </div>
@@ -736,7 +791,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                         <InlineEdit
                           value={item.estimated_value && item.estimated_value > 0 ? item.estimated_value.toString() : ''}
                           placeholder="0"
-                          formatDisplay={(v) => `฿${(parseFloat(v) || 0).toLocaleString()}`}
+                          formatDisplay={(v) => `฿ ${(parseFloat(v) || 0).toLocaleString()}`}
                           onSave={(v) => updateLeadOpportunity(item.lead_op_id, { estimated_value: parseFloat(v) || 0 })}
                         />
                       </div>
@@ -909,7 +964,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmWon(false)}>Cancel</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleMarkWon}>
+            <Button variant="success" onClick={handleMarkWon}>
               Confirm Win
             </Button>
           </DialogFooter>
@@ -1174,7 +1229,21 @@ export default function LeadsOpportunitiesPage() {
               ? <EmptyState icon={FileText} title="No open leads yet" description="Add your first lead or opportunity to start tracking." action={{ label: '+ Add Lead / Opp', onClick: () => setCreating(true) }} />
               : <EmptyState icon={FileText} title={`No ${statusFilter} items`} description="Nothing here yet." />
         ) : (
-          <table className="w-full">
+          <>
+          {/* Mobile: stacked cards */}
+          <div className="sm:hidden">
+            {filtered.map((item) => (
+              <LeadCard
+                key={item.lead_op_id}
+                item={item}
+                onClick={() => setSelectedId(item.lead_op_id)}
+                isSelected={selectedForDuplicate.has(item.lead_op_id)}
+                onToggleSelect={() => toggleSelectForDuplicate(item.lead_op_id)}
+              />
+            ))}
+          </div>
+          {/* Desktop: table */}
+          <table className="hidden sm:table w-full">
             <thead className="sticky top-0 z-10">
               <tr className="border-b border-border/60 bg-slate-50/80 backdrop-blur-sm">
                 <th className="px-3 py-2.5 text-center w-10">
@@ -1209,6 +1278,7 @@ export default function LeadsOpportunitiesPage() {
               ))}
             </tbody>
           </table>
+          </>
         )}
       </div>
 

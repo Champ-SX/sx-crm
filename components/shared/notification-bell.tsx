@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Bell } from 'lucide-react'
 import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
 import { formatDistanceToNow } from 'date-fns'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 // Where a notification's record lives (its list page).
 const ENTITY_ROUTE: Record<string, string> = {
@@ -21,7 +22,6 @@ export function NotificationBell() {
   const markNotificationRead = useCRMStore((s) => s.markNotificationRead)
   const markAllNotificationsRead = useCRMStore((s) => s.markAllNotificationsRead)
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
 
   // Only notifications addressed to the current user (by team id, name, or email).
   const mine = notifications.filter(
@@ -32,16 +32,6 @@ export function NotificationBell() {
   )
   const unread = mine.filter((n) => !n.read).length
 
-  // Close on outside click
-  useEffect(() => {
-    if (!open) return
-    const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', onClick)
-    return () => document.removeEventListener('mousedown', onClick)
-  }, [open])
-
   function handleClick(n: (typeof mine)[number]) {
     markNotificationRead(n.id)
     setOpen(false)
@@ -49,38 +39,44 @@ export function NotificationBell() {
   }
 
   return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="relative flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--sidebar-accent)] transition-colors"
-        aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ''}`}
-      >
-        <Bell className="w-4 h-4 text-[var(--sidebar-foreground)]" />
-        {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-            {unread > 9 ? '9+' : unread}
-          </span>
-        )}
-      </button>
-
-      {open && (
-        <div className="absolute right-0 top-full mt-1 w-80 max-w-[90vw] z-50 bg-background border border-border rounded-lg shadow-xl overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-            <span className="text-sm font-semibold text-foreground">Notifications</span>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            className="relative flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--sidebar-accent)] transition-colors"
+            aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ''}`}
+          >
+            <Bell className="w-4 h-4 text-[var(--sidebar-foreground)]" />
             {unread > 0 && (
-              <button
-                type="button"
-                onClick={() => markAllNotificationsRead()}
-                className="text-[11px] font-medium text-primary hover:underline"
-              >
-                Mark all read
-              </button>
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                {unread > 9 ? '9+' : unread}
+              </span>
             )}
-          </div>
+          </button>
+        }
+      />
 
-          <div className="max-h-80 overflow-y-auto">
-            {mine.length === 0 ? (
+      <PopoverContent
+        align="end"
+        side="bottom"
+        className="w-80 max-w-[calc(100vw-1.5rem)] gap-0 overflow-hidden p-0"
+      >
+        <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+          <span className="text-sm font-semibold text-foreground">Notifications</span>
+          {unread > 0 && (
+            <button
+              type="button"
+              onClick={() => markAllNotificationsRead()}
+              className="text-[11px] font-medium text-primary hover:underline"
+            >
+              Mark all read
+            </button>
+          )}
+        </div>
+
+        <div className="max-h-80 overflow-y-auto">
+          {mine.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <Bell className="w-7 h-7 text-muted-foreground/30 mx-auto mb-2" />
                 <p className="text-[12px] text-muted-foreground">No notifications yet.</p>
@@ -113,9 +109,8 @@ export function NotificationBell() {
                 ))}
               </ul>
             )}
-          </div>
         </div>
-      )}
-    </div>
+      </PopoverContent>
+    </Popover>
   )
 }

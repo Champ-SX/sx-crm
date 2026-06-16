@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
 import { ActivityTimeline } from './activity-timeline'
+import { MentionTextarea } from './mention-textarea'
 import type { ActivityAttachment } from '@/types'
 import { ListChecks, Paperclip, ArrowUp, X } from 'lucide-react'
 
@@ -56,15 +57,16 @@ export function MobileCardView({
   const [comment, setComment] = useState('')
   const [attachments, setAttachments] = useState<ActivityAttachment[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [dragOver, setDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const initials = initialsFor(user?.user_metadata?.full_name, user?.email)
 
-  async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
+  // Validate + read each file, appending so multiple files all stick.
+  // Shared by the file picker and drag-and-drop.
+  async function processFiles(fileList: FileList | File[]) {
     setError(null)
-    const files = e.target.files
-    if (!files) return
-    for (const file of Array.from(files)) {
+    for (const file of Array.from(fileList)) {
       if (file.size > MAX_FILE_SIZE) {
         setError(`"${file.name}" is over 5MB.`)
         continue
@@ -76,7 +78,17 @@ export function MobileCardView({
         setError(`Couldn't attach "${file.name}".`)
       }
     }
+  }
+
+  async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files) await processFiles(e.target.files)
     if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  async function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setDragOver(false)
+    if (e.dataTransfer.files?.length) await processFiles(e.dataTransfer.files)
   }
 
   function submit() {
@@ -122,7 +134,19 @@ export function MobileCardView({
       </div>
 
       {/* Sticky comment composer */}
-      <div className="shrink-0 border-t border-border bg-background">
+      <div
+        className={`relative shrink-0 border-t border-border bg-background transition-colors ${dragOver ? 'ring-2 ring-primary ring-inset' : ''}`}
+        onDragOver={(e) => { e.preventDefault(); if (!dragOver) setDragOver(true) }}
+        onDragLeave={(e) => { e.preventDefault(); if (e.currentTarget === e.target) setDragOver(false) }}
+        onDrop={handleDrop}
+      >
+        {dragOver && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center border-2 border-dashed border-primary bg-primary/5 pointer-events-none">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-primary">
+              <Paperclip className="w-3.5 h-3.5" /> Drop files to attach
+            </span>
+          </div>
+        )}
         <p className="px-3 pt-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
           Log activity
         </p>
@@ -152,20 +176,17 @@ export function MobileCardView({
             {initials}
           </div>
 
-          {/* Comment input */}
-          <div className="flex-1 flex items-center gap-1 bg-muted rounded-full pl-4 pr-1.5 py-1">
-            <input
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  submit()
-                }
-              }}
-              placeholder="Comment…"
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground min-w-0"
-            />
+          {/* Comment input — MentionTextarea so @ autocomplete works on mobile */}
+          <div className="flex-1 flex items-end gap-1 bg-muted rounded-2xl pl-3 pr-1.5 py-0.5 min-w-0">
+            <div className="flex-1 min-w-0">
+              <MentionTextarea
+                value={comment}
+                onChange={setComment}
+                placeholder="Comment… type @ to mention"
+                className="bg-transparent border-0 shadow-none resize-none min-h-0 h-8 py-1.5 px-0 text-sm leading-tight focus-visible:ring-0 focus-visible:ring-offset-0"
+                onSubmitShortcut={submit}
+              />
+            </div>
             <input
               ref={fileInputRef}
               type="file"
