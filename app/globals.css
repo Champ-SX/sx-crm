@@ -159,10 +159,13 @@
     @apply text-sm italic text-muted-foreground/60;
   }
 
-  /* Edit control: 44px tap target on touch, compact on desktop hover ------ */
+  /* Edit control: 44px tap target on touch, compact on desktop. On desktop it
+     stays out of the way until you hover the field (.group), so values read
+     cleanly; on touch there's no hover, so it's always visible. */
   .edit-affordance {
     @apply inline-flex items-center justify-center rounded-md text-muted-foreground/70
-           hover:text-foreground hover:bg-muted transition-colors
-           min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 sm:w-7 sm:h-7;
+           hover:text-foreground hover:bg-muted transition-all
+           min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 sm:w-7 sm:h-7
+           sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100;
   }
 }
