@@ -6,6 +6,7 @@ import {
   isPushSupported,
   currentPushPermission,
   requestPushPermission,
+  useAuth,
 } from '@/components/auth-provider'
 import { isSupabaseConfigured } from '@/lib/supabase/client'
 
@@ -14,7 +15,9 @@ import { isSupabaseConfigured } from '@/lib/supabase/client'
  * Uses a button tap to trigger Notification.requestPermission() — required by iOS.
  */
 export function PushPermissionBanner() {
+  const { user } = useAuth()
   const [status, setStatus] = useState<'idle' | 'asking' | 'granted' | 'denied' | 'hidden'>('idle')
+  const [testState, setTestState] = useState<'idle' | 'sending' | 'sent' | 'none' | 'error'>('idle')
 
   useEffect(() => {
     // Only show in prod (Supabase configured) where push actually works
@@ -32,13 +35,50 @@ export function PushPermissionBanner() {
     setStatus(granted ? 'granted' : 'denied')
   }
 
+  async function handleTest() {
+    if (!user?.id) return
+    setTestState('sending')
+    try {
+      const res = await fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientId: user.id,
+          title: 'SX CRM test',
+          body: 'Push notifications are working ✅',
+          url: '/dashboard',
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) setTestState('error')
+      else if (data.sent > 0) setTestState('sent')
+      else setTestState('none') // no subscription registered for this user
+    } catch {
+      setTestState('error')
+    }
+  }
+
   if (status === 'hidden' || status === 'denied') return null
 
   if (status === 'granted') {
     return (
-      <div className="mx-3 mb-2 flex items-center gap-2 rounded-lg bg-green-50 dark:bg-green-950 px-3 py-2 text-xs text-green-700 dark:text-green-400">
-        <Bell className="w-3.5 h-3.5 shrink-0" />
-        <span>Notifications on</span>
+      <div className="mx-3 mb-2 rounded-lg bg-green-50 dark:bg-green-950 px-3 py-2">
+        <div className="flex items-center gap-2 text-xs text-green-700 dark:text-green-400">
+          <Bell className="w-3.5 h-3.5 shrink-0" />
+          <span>Notifications on</span>
+        </div>
+        <button
+          type="button"
+          onClick={handleTest}
+          disabled={testState === 'sending'}
+          className="mt-1.5 text-[11px] font-medium text-green-700 dark:text-green-400 underline disabled:opacity-60"
+        >
+          {testState === 'sending' ? 'Sending…'
+            : testState === 'sent' ? 'Test sent — check your device'
+            : testState === 'none' ? 'No subscription found — re-enable'
+            : testState === 'error' ? 'Test failed — try again'
+            : 'Send test notification'}
+        </button>
       </div>
     )
   }

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useCRMStore } from '@/store/crm-store'
+import { useAuth } from '@/components/auth-provider'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client'
 
 // How often to poll for new activity while the app is visible. This is the
@@ -24,13 +25,21 @@ const POLL_INTERVAL_MS = 20_000
  */
 export function RealtimeSync() {
   const refreshActivities = useCRMStore((s) => s.refreshActivities)
+  const refreshNotifications = useCRMStore((s) => s.refreshNotifications)
   const isInitialized = useCRMStore((s) => s.isInitialized)
+  const { user } = useAuth()
+  const userId = user?.id
 
   useEffect(() => {
     if (!isSupabaseConfigured || !isInitialized) return
 
-    // ── 1. Supabase Realtime subscription ──────────────────────────────────
-    const channel = supabase
+    const refreshAll = () => {
+      void refreshActivities()
+      void refreshNotifications()
+    }
+
+    // ── 1. Supabase Realtime subscriptions ──────────────────────────────────
+    const activityChannel = supabase
       .channel('activities-realtime')
       .on(
         'postgres_changes',
@@ -39,9 +48,24 @@ export function RealtimeSync() {
       )
       .subscribe()
 
+    // Only this user's notifications (matched server-side by recipient_id).
+    const notifChannel = supabase
+      .channel('notifications-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          ...(userId ? { filter: `recipient_id=eq.${userId}` } : {}),
+        },
+        () => { void refreshNotifications() }
+      )
+      .subscribe()
+
     // ── 2. Foreground refetch (covers iOS bfcache restore) ──────────────────
     function refetchIfVisible() {
-      if (document.visibilityState === 'visible') void refreshActivities()
+      if (document.visibilityState === 'visible') refreshAll()
     }
     document.addEventListener('visibilitychange', refetchIfVisible)
     window.addEventListener('focus', refetchIfVisible)
@@ -49,17 +73,18 @@ export function RealtimeSync() {
 
     // ── 3. Visible-interval poll (iOS safety net) ───────────────────────────
     const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') void refreshActivities()
+      if (document.visibilityState === 'visible') refreshAll()
     }, POLL_INTERVAL_MS)
 
     return () => {
-      void supabase.removeChannel(channel)
+      void supabase.removeChannel(activityChannel)
+      void supabase.removeChannel(notifChannel)
       document.removeEventListener('visibilitychange', refetchIfVisible)
       window.removeEventListener('focus', refetchIfVisible)
       window.removeEventListener('pageshow', refetchIfVisible)
       clearInterval(interval)
     }
-  }, [isInitialized, refreshActivities])
+  }, [isInitialized, userId, refreshActivities, refreshNotifications])
 
   return null
 }

@@ -111,6 +111,7 @@ interface CRMStore {
   // ── Data initialization ────────────────────────────────────────────────────
   initializeData: () => Promise<void>
   refreshActivities: () => Promise<void>
+  refreshNotifications: () => Promise<void>
 
   // Companies
   addCompany: (c: Company) => Promise<void>
@@ -312,6 +313,21 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
           set({ activities })
         } catch (err) {
           console.warn('[CRM Store] refreshActivities failed:', err)
+        }
+      },
+
+      // Re-fetch the signed-in user's notifications so the bell stays current
+      // when someone @mentions them from another device.
+      refreshNotifications: async () => {
+        if (!USE_SUPABASE) return
+        try {
+          const { supabase } = await import('@/lib/supabase/client')
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user?.id) return
+          const notifications = await db.notificationQueries.getUnread(user.id)
+          set({ notifications })
+        } catch (err) {
+          console.warn('[CRM Store] refreshNotifications failed:', err)
         }
       },
 
@@ -1129,7 +1145,15 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
 
   markAllNotificationsRead: () => {
     set((s) => ({ notifications: s.notifications.map((n) => ({ ...n, read: true })) }))
-    // DB update is per-user; notification-bell calls this after reading user.id
+    if (USE_SUPABASE) {
+      void (async () => {
+        try {
+          const { supabase } = await import('@/lib/supabase/client')
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user?.id) await db.notificationQueries.markAllRead(user.id)
+        } catch { /* optimistic UI already updated */ }
+      })()
+    }
   },
 }));
 
