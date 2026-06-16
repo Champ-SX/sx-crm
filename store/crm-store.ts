@@ -110,6 +110,7 @@ interface CRMStore {
 
   // ── Data initialization ────────────────────────────────────────────────────
   initializeData: () => Promise<void>
+  refreshActivities: () => Promise<void>
 
   // Companies
   addCompany: (c: Company) => Promise<void>
@@ -299,6 +300,18 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
             isLoading: false,
             isInitialized: false,
           })
+        }
+      },
+
+      // Lightweight refresh — re-fetches only activities from DB.
+      // Called by RealtimeSync on visibilitychange and Supabase Realtime events.
+      refreshActivities: async () => {
+        if (!USE_SUPABASE) return
+        try {
+          const activities = await db.activityQueries.getAll()
+          set({ activities })
+        } catch (err) {
+          console.warn('[CRM Store] refreshActivities failed:', err)
         }
       },
 

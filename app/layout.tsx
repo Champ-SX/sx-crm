@@ -7,6 +7,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { DataInitializer } from '@/components/data-initializer'
 import { AuthProvider } from '@/components/auth-provider'
 import { AuthGuard } from '@/components/auth-guard'
+import { RealtimeSync } from '@/components/layout/realtime-sync'
 
 const inter = Inter({ variable: '--font-sans', subsets: ['latin'], display: 'swap' })
 
@@ -27,6 +28,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <MobileNavProvider>
                 {/* Initialize CRM data once at app startup */}
                 <DataInitializer />
+                {/* Keep activity feed live via Realtime + visibilitychange */}
+                <RealtimeSync />
 
                 <Sidebar />
                 <main className="flex-1 flex flex-col min-h-screen bg-background overflow-hidden">
