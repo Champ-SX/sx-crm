@@ -82,9 +82,10 @@ function StatusPill({
 
 // ── Inline edit ───────────────────────────────────────────────────────────────
 function InlineEdit({
-  value, onSave, multiline = false, placeholder = 'Click to edit…',
+  value, onSave, multiline = false, placeholder = 'Click to edit…', formatDisplay,
 }: {
   value: string; onSave: (v: string) => void; multiline?: boolean; placeholder?: string
+  formatDisplay?: (v: string) => string
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(value)
@@ -92,18 +93,19 @@ function InlineEdit({
   function cancel() { setDraft(value); setEditing(false) }
 
   if (!editing) {
+    const display = value ? (formatDisplay ? formatDisplay(value) : value) : placeholder
     return (
-      <div className="group flex items-start gap-2 rounded px-2 py-1.5 -mx-2 hover:bg-muted/50">
-        <div className={`text-sm flex-1 leading-relaxed whitespace-pre-wrap select-text ${value ? 'text-foreground' : 'text-muted-foreground italic'}`} style={{ userSelect: 'text', pointerEvents: 'auto' }}>
-          <LinkifyText text={value || placeholder} />
+      <div className="group flex items-start gap-1 rounded px-2 py-1 -mx-2 hover:bg-muted/50">
+        <div className={`flex-1 leading-relaxed select-text ${value ? 'field-value' : 'field-placeholder'}`} style={{ userSelect: 'text', pointerEvents: 'auto' }}>
+          <LinkifyText text={display} />
         </div>
         <button
           onClick={() => { setDraft(value); setEditing(true) }}
-          className="flex-shrink-0 mt-0.5 p-1 rounded hover:bg-blue-100 transition-colors cursor-pointer"
+          className="edit-affordance flex-shrink-0"
           title="Edit"
           type="button"
         >
-          <Pencil className="w-3 h-3 text-muted-foreground group-hover:text-blue-600" />
+          <Pencil className="w-3.5 h-3.5" />
         </button>
       </div>
     )
@@ -136,15 +138,15 @@ function DateInlineEdit({
 
   if (!editing) {
     return (
-      <div className="group flex items-start gap-2 rounded px-2 py-1.5 -mx-2 hover:bg-muted/50">
-        <p className={`text-sm flex-1 leading-relaxed whitespace-pre-wrap select-text ${value ? 'text-foreground' : 'text-muted-foreground italic'}`} style={{ userSelect: 'text', pointerEvents: 'auto' }}>{displayValue || placeholder}</p>
+      <div className="group flex items-start gap-1 rounded px-2 py-1 -mx-2 hover:bg-muted/50">
+        <p className={`flex-1 leading-relaxed select-text ${value ? 'field-value' : 'field-placeholder'}`} style={{ userSelect: 'text', pointerEvents: 'auto' }}>{displayValue || placeholder}</p>
         <button
           onClick={() => { setDraft(value); setEditing(true) }}
-          className="flex-shrink-0 mt-0.5 p-1 rounded hover:bg-blue-100 transition-colors cursor-pointer"
+          className="edit-affordance flex-shrink-0"
           title="Edit"
           type="button"
         >
-          <Pencil className="w-3 h-3 text-muted-foreground group-hover:text-blue-600" />
+          <Pencil className="w-3.5 h-3.5" />
         </button>
       </div>
     )
@@ -454,7 +456,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
               {/* Key info */}
               <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Customer</p>
+                  <p className="field-label">Customer</p>
                   {isEditing ? (
                     <Input
                       value={editData?.customer_name || ''}
@@ -463,11 +465,11 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                       className="h-7 text-sm"
                     />
                   ) : (
-                    <p className="text-sm font-medium">{item.customer_name || '—'}</p>
+                    <p className="field-value">{item.customer_name || '—'}</p>
                   )}
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Contact</p>
+                  <p className="field-label">Contact</p>
                   {isEditing ? (
                     <Input
                       value={editData?.contact_person || ''}
@@ -476,19 +478,20 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                       className="h-7 text-sm"
                     />
                   ) : (
-                    <p className="text-sm font-medium">{item.contact_person || '—'}</p>
+                    <p className="field-value">{item.contact_person || '—'}</p>
                   )}
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Estimated Value</p>
+                  <p className="field-label">Estimated Value</p>
                   <InlineEdit
                     value={item.estimated_value && item.estimated_value > 0 ? item.estimated_value.toString() : ''}
                     placeholder="0"
+                    formatDisplay={(v) => `฿${(parseFloat(v) || 0).toLocaleString()}`}
                     onSave={(v) => updateLeadOpportunity(item.lead_op_id, { estimated_value: parseFloat(v) || 0 })}
                   />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Owner</p>
+                  <p className="field-label">Owner</p>
                   <Select value={item.owner} onValueChange={(v) => v && updateLeadOpportunity(item.lead_op_id, { owner: v })}>
                     <SelectTrigger className="h-7 text-sm border-0 px-0 focus:ring-0 w-auto gap-1 font-medium">
                       <SelectValue />
@@ -588,7 +591,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
 
               {/* Notes */}
               <div>
-                <p className="text-xs text-muted-foreground mb-1.5">Notes</p>
+                <p className="field-label">Notes</p>
                 <InlineEdit
                   value={item.notes}
                   placeholder="Click to add notes…"
@@ -703,7 +706,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                     {/* Key info */}
                     <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                       <div>
-                        <p className="text-xs text-muted-foreground mb-1">Customer</p>
+                        <p className="field-label">Customer</p>
                         {isEditing ? (
                           <Input
                             value={editData?.customer_name || ''}
@@ -712,11 +715,11 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                             className="h-7 text-sm"
                           />
                         ) : (
-                          <p className="text-sm font-medium">{item.customer_name || '—'}</p>
+                          <p className="field-value">{item.customer_name || '—'}</p>
                         )}
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground mb-1">Contact</p>
+                        <p className="field-label">Contact</p>
                         {isEditing ? (
                           <Input
                             value={editData?.contact_person || ''}
@@ -725,19 +728,20 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                             className="h-7 text-sm"
                           />
                         ) : (
-                          <p className="text-sm font-medium">{item.contact_person || '—'}</p>
+                          <p className="field-value">{item.contact_person || '—'}</p>
                         )}
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground mb-1">Estimated Value</p>
+                        <p className="field-label">Estimated Value</p>
                         <InlineEdit
                           value={item.estimated_value && item.estimated_value > 0 ? item.estimated_value.toString() : ''}
                           placeholder="0"
+                          formatDisplay={(v) => `฿${(parseFloat(v) || 0).toLocaleString()}`}
                           onSave={(v) => updateLeadOpportunity(item.lead_op_id, { estimated_value: parseFloat(v) || 0 })}
                         />
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground mb-1">Owner</p>
+                        <p className="field-label">Owner</p>
                         <Select value={item.owner} onValueChange={(v) => v && updateLeadOpportunity(item.lead_op_id, { owner: v })}>
                           <SelectTrigger className="h-7 text-sm border-0 px-0 focus:ring-0 w-auto gap-1 font-medium">
                             <SelectValue />
