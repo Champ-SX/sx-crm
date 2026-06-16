@@ -4,14 +4,15 @@
 
 **Production URL:** https://sx-crm.vercel.app  
 **Build Status:** ✅ Passing  
-**Last Update:** June 13, 2026  
-**Current Phase:** Phase 2.3 Complete ✅ — Phase 2.4 Planning
+**Last Update:** June 16, 2026  
+**Current Phase:** Phase 2.4 Complete ✅ — Phase 2.5 (UI/UX Refresh) Active 🎨
 
 ### Deployment History
 - **v1.0.0** (June 2, 2026) — Phase 1 Complete ✅
 - **v2.0** (June 9, 2026) — Google OAuth + Role Dashboards ✅
 - **v2.1** (June 13, 2026) — Phase 2.3 @Mentions + Notifications ✅
 - **v2.1.1** (June 13, 2026) — Fix: activity log author uses signed-in user ✅
+- **v2.4** (June 16, 2026) — Web Push PWA + persisted notifications + cross-device sync ✅
 
 ---
 
@@ -46,56 +47,20 @@
 
 ---
 
-## 🚀 Phase 2.4 — Real Notifications (Planned)
+### Phase 2.4 — Web Push PWA + Persisted Notifications ✅
+- `notifications` + `push_subscriptions` tables in Supabase (with RLS)
+- Notifications persist to DB + load on login (no longer lost on reload)
+- Bell syncs across devices: Supabase Realtime + 20s visible-poll + foreground refetch
+- Activity feed syncs across devices (same three-layer mechanism)
+- Installable PWA (`manifest.json` + service worker + icons)
+- Web Push via `web-push` + VAPID — delivers even when tab closed
+- iOS-compatible: permission requested via user-gesture button in sidebar banner
+- "Send test notification" self-test button (verified working end-to-end)
 
-**Goal:** Make @mention notifications actually reach teammates across sessions and devices.
-
-### What's missing from Phase 2.3
-| Gap | Impact |
-|-----|--------|
-| Notifications in-memory only | Lost on page reload |
-| Email is a stub (`console.log`) | No emails sent |
-| No mobile push | No alert when away from browser |
-
-### Phase 2.4 Scope
-
-#### 2.4.1 — Persist Notifications (Supabase)
-- Create `notifications` table with RLS (each user reads only their own)
-- `notifyMentions()` writes to DB + Zustand
-- `initializeData()` loads unread notifications on login
-- Mark read persists to DB
-
-#### 2.4.2 — Email via Resend
-- Sign up resend.com (free: 3,000 emails/month)
-- Verify domain `sixsheet.me` (2 DNS records)
-- Add `RESEND_API_KEY` to Vercel env vars
-- Replace `notifyByEmail()` stub in `lib/mentions.ts` with real API call
-- Email template: who mentioned you, in which record, message preview
-
-#### 2.4.3 — Web Push (PWA)
-- Add `manifest.json` + service worker → installable PWA
-- Generate VAPID keys, store in Vercel env vars
-- Subscribe users on login, save `push_subscriptions` table
-- Send push on @mention (works on Android Chrome natively; iOS requires "Add to Home Screen")
-- Works even when browser tab is closed
-
-### Estimated Effort
-| Task | Hours |
-|------|-------|
-| Supabase notifications table + RLS | 2h |
-| Resend email integration | 2h |
-| Web Push / PWA setup | 4h |
-| Testing end-to-end | 2h |
-| **Total** | **~10h** |
-
-### Cost
-| Service | Free Tier | Paid |
-|---------|-----------|------|
-| Resend | 3,000 emails/month ✅ | $20/mo for 50k |
-| Web Push | Free (browser native) ✅ | — |
-| Supabase (notifications table) | Within existing free tier ✅ | — |
-
-**Phase 2.4 is free to run at current team size.**
+**Deferred → Phase 2.4b (Email):** Resend email blocked on DNS — `sixsheet.co`
+is on Wix (no subdomain MX support) and `sixsheet.me` is reserved for API/payments.
+Resolve later with a non-Wix DNS domain (e.g. `crm.sixsheet.me`). Web Push covers
+the mobile-alert need in the meantime, so email is low priority.
 
 ---
 
@@ -167,10 +132,14 @@
 ## 🚨 Known Issues
 
 ### Medium Priority
-- [ ] Notifications not persisted — lost on reload (Phase 2.4)
-- [ ] Email notifications not sent — stub only (Phase 2.4)
+- [ ] Email notifications not sent — deferred to Phase 2.4b (blocked on non-Wix DNS domain)
 - [ ] Mobile @mention autocomplete — mobile composer uses plain `<input>`, not `MentionTextarea`
 - [ ] `activity_id` column name — verify Supabase `activities` table uses `activity_id` not `id` before delete is exercised in prod
+
+### Resolved (Phase 2.4)
+- [x] Notifications now persist to Supabase (survive reload)
+- [x] Bell + activity feed sync across devices (Realtime + poll + foreground)
+- [x] Web Push delivers to mobile (verified end-to-end on iOS)
 
 ---
 
