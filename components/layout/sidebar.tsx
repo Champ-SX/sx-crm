@@ -19,6 +19,7 @@ import { useCRMStore } from '@/store/crm-store'
 import { useMobileNav } from '@/components/layout/mobile-nav-context'
 import { useAuth } from '@/components/auth-provider'
 import { NotificationBell } from '@/components/shared/notification-bell'
+import { PushPermissionBanner } from '@/components/shared/push-permission-banner'
 import { Button } from '@/components/ui/button'
 import { OP_STAGES } from '@/types'
 
@@ -184,6 +185,9 @@ function NavContent({ onNavClick }: { onNavClick?: () => void }) {
           <NavLink key={item.href} {...item} />
         ))}
       </nav>
+
+      {/* Push notification opt-in banner */}
+      <PushPermissionBanner />
 
       {/* Bottom */}
       <div className="px-3 py-2 border-t border-[var(--sidebar-border)] shrink-0">

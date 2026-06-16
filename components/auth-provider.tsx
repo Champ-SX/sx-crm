@@ -51,8 +51,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(session)
           setUser(session.user)
 
-          // Register service worker + subscribe to push notifications (fire-and-forget)
-          void registerPush()
+          // Register SW only — permission prompt needs a user gesture (button tap).
+          // See PushPermissionBanner in sidebar for the explicit opt-in step.
+          void registerServiceWorker()
 
           // Fetch user role from database
           try {
@@ -114,19 +115,33 @@ export const useAuth = () => {
 
 // ── Web Push helpers (module-level, not inside component) ─────────────────────
 
-async function registerPush() {
-  if (typeof window === 'undefined') return
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
-  const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-  if (!vapidKey) return
-
+// Step 1: Register SW only — safe to call automatically on login, no permission prompt.
+export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+  if (typeof window === 'undefined') return null
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null
   try {
     const reg = await navigator.serviceWorker.register('/sw.js')
     await navigator.serviceWorker.ready
+    return reg
+  } catch (err) {
+    console.warn('[push] SW registration failed:', err)
+    return null
+  }
+}
 
+// Step 2: Request permission + subscribe — MUST be called from a user gesture (button tap).
+// iOS blocks Notification.requestPermission() if called automatically on page load.
+export async function requestPushPermission(): Promise<boolean> {
+  if (typeof window === 'undefined') return false
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false
+  const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  if (!vapidKey) return false
+
+  try {
     const permission = await Notification.requestPermission()
-    if (permission !== 'granted') return
+    if (permission !== 'granted') return false
 
+    const reg = await navigator.serviceWorker.ready
     const existing = await reg.pushManager.getSubscription()
     const subscription = existing ?? await reg.pushManager.subscribe({
       userVisibleOnly: true,
@@ -138,9 +153,23 @@ async function registerPush() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ subscription }),
     })
+    return true
   } catch (err) {
-    console.warn('[push] registration failed:', err)
+    console.warn('[push] subscribe failed:', err)
+    return false
   }
+}
+
+export function isPushSupported(): boolean {
+  return typeof window !== 'undefined' &&
+    'serviceWorker' in navigator &&
+    'PushManager' in window &&
+    'Notification' in window
+}
+
+export function currentPushPermission(): NotificationPermission | null {
+  if (typeof window === 'undefined' || !('Notification' in window)) return null
+  return Notification.permission
 }
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
