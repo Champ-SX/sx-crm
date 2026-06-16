@@ -132,3 +132,37 @@
     @apply font-sans;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SX-CRM Design System (Phase 2.5)
+   Reusable type scale, field hierarchy, and tap-target primitives so every
+   detail card reads the same way on desktop and mobile. Prefer these classes
+   over ad-hoc text-[..]/font-* combinations.
+   ───────────────────────────────────────────────────────────────────────────── */
+@layer components {
+  /* Type scale ------------------------------------------------------------ */
+  .text-title    { @apply text-[15px] sm:text-base font-semibold text-foreground leading-snug; }
+  .text-subtitle { @apply text-[11px] font-mono text-muted-foreground/70 leading-relaxed break-all; }
+  .text-caption  { @apply text-[10px] text-muted-foreground/70; }
+
+  /* Field hierarchy ------------------------------------------------------- */
+  /* Label: small, muted, uppercase — recedes so the value stands out. */
+  .field-label {
+    @apply block text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-0.5;
+  }
+  /* Value: the information that matters — prominent and dark. */
+  .field-value {
+    @apply text-sm font-medium text-foreground;
+    white-space: pre-wrap; /* preserve newlines in notes/venue/addresses */
+  }
+  .field-placeholder {
+    @apply text-sm italic text-muted-foreground/60;
+  }
+
+  /* Edit control: 44px tap target on touch, compact on desktop hover ------ */
+  .edit-affordance {
+    @apply inline-flex items-center justify-center rounded-md text-muted-foreground/70
+           hover:text-foreground hover:bg-muted transition-colors
+           min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 sm:w-7 sm:h-7;
+  }
+}

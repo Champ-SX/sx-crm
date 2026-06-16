@@ -13,14 +13,27 @@ export function formatJobTitle(job: Pick<WonJob, 'event_date' | 'job_number' | '
   const cat  = job.product_cat  || '—'
   const name = job.product_name || '—'
   const place = job.place       || '—'
-  return `${dateStr} - ${num} - ${type} - ${cat} - ${name}@${place}`
+  return `${dateStr} - ${num} - ${type} - ${cat} - ${joinNameAndPlace(name, place)}`
 }
 
 // Short version for card subtitle line
 export function formatJobTitleShort(job: Pick<WonJob, 'product_cat' | 'product_name' | 'place'>): string {
   const name = job.product_name || job.product_cat || '—'
   const place = job.place || '—'
-  return `${name}@${place}`
+  return joinNameAndPlace(name, place)
+}
+
+// Join "name@place" without duplicating the venue. Product names sometimes
+// already include the venue (e.g. "Rayban @Central World"), which previously
+// produced "Rayban @Central World@Central World". Skip the suffix when the
+// name already ends with the place (with or without a leading @).
+function joinNameAndPlace(name: string, place: string): string {
+  if (!place || place === '—') return name
+  const n = name.trim()
+  const p = place.trim()
+  const tail = n.toLowerCase().replace(/\s*@\s*/g, '').slice(-p.length)
+  if (tail === p.toLowerCase()) return n
+  return `${n}@${p}`
 }
 
 // ─── Title parser (backward compat) ──────────────────────────────────────────

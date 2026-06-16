@@ -73,17 +73,17 @@ function InlineEdit({
 
   if (!editing) {
     return (
-      <div className="group flex items-start gap-2 rounded px-2 py-1.5 -mx-2 hover:bg-muted/50">
-        <div className={`text-base flex-1 leading-relaxed whitespace-pre-wrap select-text ${value ? 'text-foreground' : 'text-muted-foreground italic'}`} style={{ userSelect: 'text', pointerEvents: 'auto' }}>
+      <div className="group flex items-start gap-1 rounded px-2 py-1 -mx-2 hover:bg-muted/50">
+        <div className={`flex-1 leading-relaxed select-text ${value ? 'field-value' : 'field-placeholder'}`} style={{ userSelect: 'text', pointerEvents: 'auto' }}>
           <LinkifyText text={value || placeholder} />
         </div>
         <button
           onClick={() => { setDraft(value); setEditing(true) }}
-          className="flex-shrink-0 mt-1 p-1 rounded hover:bg-blue-100 transition-colors cursor-pointer"
+          className="edit-affordance flex-shrink-0"
           title="Edit"
           type="button"
         >
-          <Pencil className="w-3 h-3 text-muted-foreground group-hover:text-blue-600" />
+          <Pencil className="w-3.5 h-3.5" />
         </button>
       </div>
     )
@@ -116,17 +116,17 @@ function InlineEditDate({
   if (!editing) {
     return (
       <div
-        className="group flex items-start gap-2 rounded px-2 py-1.5 -mx-2 hover:bg-muted/50"
+        className="group flex items-start gap-1 rounded px-2 py-1 -mx-2 hover:bg-muted/50"
       >
-        <p className={`text-base flex-1 leading-relaxed ${value ? 'text-foreground' : 'text-muted-foreground italic'}`}>
+        <p className={`flex-1 leading-relaxed ${value ? 'field-value' : 'field-placeholder'}`}>
           {value || placeholder}
         </p>
         <button
           onClick={(e) => { e.stopPropagation(); setDraft(value); setEditing(true) }}
-          className="flex-shrink-0 mt-1 p-1 rounded hover:bg-blue-100 transition-colors cursor-pointer"
+          className="edit-affordance flex-shrink-0"
           title="Edit"
         >
-          <Pencil className="w-3 h-3 text-muted-foreground group-hover:text-blue-600" />
+          <Pencil className="w-3.5 h-3.5" />
         </button>
       </div>
     )
@@ -148,7 +148,7 @@ function FieldRow({ label, value, onSave, multiline, placeholder, rows, dateInpu
 }) {
   return (
     <div>
-      <Label className="text-sm font-medium text-muted-foreground mb-0.5 block">{label}</Label>
+      <Label className="field-label">{label}</Label>
       {dateInput
         ? <InlineEditDate value={value} onSave={onSave} placeholder={placeholder} />
         : <InlineEdit value={value} onSave={onSave} multiline={multiline} placeholder={placeholder} rows={rows} />
@@ -568,17 +568,17 @@ function JobDetail({
             <div className="flex items-start gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] font-mono font-semibold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md">#{job.job_number}</span>
-                  {job.event_date && <span className="text-[11px] text-slate-400">{job.event_date.replace(/-/g, '.')}</span>}
+                  <span className="text-[10px] font-mono font-semibold bg-muted text-muted-foreground px-2 py-0.5 rounded-md">#{job.job_number}</span>
+                  {job.event_date && <span className="text-caption">{job.event_date.replace(/-/g, '.')}</span>}
                 </div>
-                <DialogTitle className="text-[15px] font-semibold text-slate-800 leading-snug mb-2">
+                <DialogTitle className="text-title mb-2">
                   <InlineEdit
                     value={job.event_display_name || formatJobTitleShort(job)}
                     onSave={(v) => u({ event_display_name: v })}
                     placeholder="Enter event name…"
                   />
                 </DialogTitle>
-                <p className="text-[10px] font-mono text-slate-400 mt-0.5 break-all leading-relaxed">
+                <p className="text-subtitle mt-0.5">
                   {formatJobTitle(job)}
                 </p>
               </div>
@@ -595,7 +595,7 @@ function JobDetail({
                 </button>
                 <div className="text-right">
                   <div className="mb-1">
-                    <Label className="text-xs font-medium text-muted-foreground mb-1 block">Value</Label>
+                    <Label className="field-label">Value</Label>
                     <InlineEdit
                       value={job.estimated_value ? job.estimated_value.toString() : ''}
                       onSave={(v) => {
@@ -606,7 +606,7 @@ function JobDetail({
                     />
                   </div>
                   <Select value={job.owner} onValueChange={(v) => v && u({ owner: v })}>
-                    <SelectTrigger className="h-6 text-xs border-0 px-0 focus:ring-0 w-auto gap-1 text-slate-400 justify-end">
+                    <SelectTrigger className="h-6 text-xs border-0 px-0 focus:ring-0 w-auto gap-1 text-muted-foreground justify-end">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
