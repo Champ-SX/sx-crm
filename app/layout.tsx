@@ -13,6 +13,8 @@ const inter = Inter({ variable: '--font-sans', subsets: ['latin'], display: 'swa
 export const metadata: Metadata = {
   title: 'SX CRM',
   description: 'SIXSHEET Sales Operating System',
+  manifest: '/manifest.json',
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'SX CRM' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -12,6 +12,7 @@ import type {
   DynamicOPStage,
   OPStage,
   TeamMember,
+  Notification,
 } from '@/types'
 
 // ===== COMPANIES =====
@@ -469,6 +470,42 @@ export const taskQueries = {
       .single()
     if (error) throw error
     return data as Task
+  },
+}
+
+// ===== NOTIFICATIONS =====
+export const notificationQueries = {
+  async getUnread(recipientId: string): Promise<Notification[]> {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('recipient_id', recipientId)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    if (error) throw error
+    return (data || []) as Notification[]
+  },
+
+  async insert(n: Omit<Notification, 'id' | 'created_at'>): Promise<void> {
+    const { error } = await supabase.from('notifications').insert([n])
+    if (error) throw error
+  },
+
+  async markRead(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', id)
+    if (error) throw error
+  },
+
+  async markAllRead(recipientId: string): Promise<void> {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('recipient_id', recipientId)
+      .eq('read', false)
+    if (error) throw error
   },
 }
 

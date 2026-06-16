@@ -255,6 +255,18 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
               err instanceof Error ? err.message : String(err))
           }
 
+          // Load notifications for the current user
+          let notifications: Notification[] = []
+          try {
+            const { supabase } = await import('@/lib/supabase/client')
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user?.id) {
+              notifications = await db.notificationQueries.getUnread(user.id)
+            }
+          } catch (err) {
+            console.warn('[CRM Store] Could not load notifications:', err instanceof Error ? err.message : String(err))
+          }
+
           console.log('[CRM Store] Data loaded successfully:', {
             companies: companies.length,
             contacts: contactPersons.length,
@@ -273,6 +285,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
             tasks,
             staff,
             teamMembers,
+            notifications,
             opStages: opStages.length > 0 ? opStages : DEFAULT_OP_STAGES,
             isLoading: false,
             isInitialized: true,
@@ -1047,6 +1060,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
     if (mentioned.length === 0) return
 
     const now = new Date().toISOString()
+    const truncated = text.length > 120 ? text.slice(0, 120) + '…' : text
     const newNotifications: Notification[] = mentioned.map((m) => ({
       id: `notif-${Date.now()}-${m.id}`,
       recipient_id: m.id,
@@ -1055,22 +1069,39 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       entity_type: entityType,
       entity_id: entityId,
       entity_name: entityName,
-      message: text.length > 120 ? text.slice(0, 120) + '…' : text,
+      message: truncated,
       read: false,
       created_at: now,
     }))
 
+    // Update local state immediately
     set((s) => ({ notifications: [...newNotifications, ...s.notifications] }))
 
-    // Email is deferred (stub logs locally). Fire-and-forget.
-    for (const m of mentioned) {
-      void notifyByEmail({
-        to: m.email,
-        recipientName: m.name || m.email,
-        actor,
-        entityName,
-        message: text,
-      })
+    if (USE_SUPABASE) {
+      for (const n of newNotifications) {
+        // Persist to DB (fire-and-forget)
+        void db.notificationQueries.insert({
+          recipient_id: n.recipient_id,
+          recipient_name: n.recipient_name,
+          actor: n.actor,
+          entity_type: n.entity_type,
+          entity_id: n.entity_id,
+          entity_name: n.entity_name,
+          message: n.message,
+          read: false,
+        })
+        // Send web push (fire-and-forget)
+        void fetch('/api/push/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipientId: n.recipient_id,
+            title: `${actor} mentioned you`,
+            body: truncated,
+            url: `/${entityType === 'customer' ? 'customers' : entityType === 'lead_opportunity' ? 'leads-opportunities' : 'won-ready-op'}`,
+          }),
+        }).catch((err) => console.warn('[push] send failed:', err))
+      }
     }
   },
 
@@ -1078,10 +1109,14 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
     set((s) => ({
       notifications: s.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)),
     }))
+    if (USE_SUPABASE) {
+      void db.notificationQueries.markRead(id).catch(() => {})
+    }
   },
 
   markAllNotificationsRead: () => {
     set((s) => ({ notifications: s.notifications.map((n) => ({ ...n, read: true })) }))
+    // DB update is per-user; notification-bell calls this after reading user.id
   },
 }));
 
