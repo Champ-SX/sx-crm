@@ -170,7 +170,7 @@ function InlineEdit({
         <p className={`flex-1 leading-relaxed ${value ? 'field-value' : 'field-placeholder'}`}>
           {value || placeholder}
         </p>
-        <span className="edit-affordance shrink-0"><Pencil className="w-3.5 h-3.5" /></span>
+        <button type="button" className="edit-affordance shrink-0" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>
       </div>
     )
   }
@@ -497,7 +497,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 
             {/* Company name edit */}
             <div>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Company Name</p>
+              <p className="field-label mb-2">Company Name</p>
               <CompanyCombobox
                 value={customer.company_name}
                 onChange={(v) => updateCustomer(customer.customer_id, { company_name: v })}
@@ -510,7 +510,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 
             {/* Contact person edit */}
             <div>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Contact Person</p>
+              <p className="field-label mb-2">Contact Person</p>
               <InlineEdit value={customer.contact_person} placeholder="Name of contact" onSave={(v) => updateCustomer(customer.customer_id, { contact_person: v })} />
             </div>
 
@@ -518,10 +518,10 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 
             {/* Contact info */}
             <div className="space-y-3">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Contact Details</p>
+              <p className="field-label mb-2">Contact Details</p>
               <div className="space-y-2.5">
                 <div>
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                  <label className="field-label mb-1.5 flex items-center gap-1.5">
                     <Mail className="w-3.5 h-3.5 text-muted-foreground/60" /> Email
                   </label>
                   <InlineEdit
@@ -537,7 +537,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                  <label className="field-label mb-1.5 flex items-center gap-1.5">
                     <Phone className="w-3.5 h-3.5 text-muted-foreground/60" /> Phone
                   </label>
                   <InlineEdit
@@ -547,7 +547,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                  <label className="field-label mb-1.5 flex items-center gap-1.5">
                     <MessageCircle className="w-3.5 h-3.5 text-green-400" /> LINE ID
                   </label>
                   <InlineEdit
@@ -557,7 +557,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                  <label className="field-label mb-1.5 flex items-center gap-1.5">
                     <AtSign className="w-3.5 h-3.5 text-muted-foreground/60" /> Social (IG/FB)
                   </label>
                   <InlineEdit
@@ -573,7 +573,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 
             {/* Customer type edit */}
             <div>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Customer Type</p>
+              <p className="field-label mb-2">Customer Type</p>
               <div className="space-y-1.5">
                 <Select value={customer.customer_type} onValueChange={(v) => updateCustomer(customer.customer_id, { customer_type: v as CustomerType })}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
@@ -588,7 +588,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 
             {/* Meta */}
             <div>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Created</p>
+              <p className="field-label">Created</p>
               <p className="text-[13px] text-foreground">{new Date(customer.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
             </div>
 
@@ -596,7 +596,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 
             {/* Notes */}
             <div>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Notes</p>
+              <p className="field-label mb-2">Notes</p>
               <InlineEdit value={customer.notes} placeholder="Click to add notes…" multiline onSave={(v) => updateCustomer(customer.customer_id, { notes: v })} />
             </div>
 
@@ -619,25 +619,25 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                 <div className="bg-background px-4 py-4 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Tax ID (เลขประจำตัวผู้เสียภาษี)</p>
+                      <p className="field-label">Tax ID (เลขประจำตัวผู้เสียภาษี)</p>
                       <InlineEdit value={customer.tax_id ?? ''} placeholder="0105xxx" onSave={(v) => updateCustomer(customer.customer_id, { tax_id: v })} />
                     </div>
                     <div>
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Branch</p>
+                      <p className="field-label">Branch</p>
                       <InlineEdit value={customer.branch ?? ''} placeholder="สาขา / สำนักงานใหญ่" onSave={(v) => updateCustomer(customer.customer_id, { branch: v })} />
                     </div>
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Company Address</p>
+                    <p className="field-label">Company Address</p>
                     <InlineEdit value={customer.company_address ?? ''} placeholder="ที่อยู่บริษัท" multiline onSave={(v) => updateCustomer(customer.customer_id, { company_address: v })} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Billing Contact</p>
+                      <p className="field-label">Billing Contact</p>
                       <InlineEdit value={customer.billing_contact ?? ''} placeholder="ผู้ติดต่อด้านบัญชี" onSave={(v) => updateCustomer(customer.customer_id, { billing_contact: v })} />
                     </div>
                     <div>
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Billing Notes</p>
+                      <p className="field-label">Billing Notes</p>
                       <InlineEdit value={customer.billing_notes ?? ''} placeholder="หมายเหตุการวางบิล" onSave={(v) => updateCustomer(customer.customer_id, { billing_notes: v })} />
                     </div>
                   </div>
@@ -652,20 +652,20 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Bank Name</p>
+                      <p className="field-label">Bank Name</p>
                       <InlineEdit value={customer.bank_name ?? ''} placeholder="SCB / KBANK / BBL" onSave={(v) => updateCustomer(customer.customer_id, { bank_name: v })} />
                     </div>
                     <div>
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Bank Branch</p>
+                      <p className="field-label">Bank Branch</p>
                       <InlineEdit value={customer.bank_branch ?? ''} placeholder="สาขา" onSave={(v) => updateCustomer(customer.customer_id, { bank_branch: v })} />
                     </div>
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Account Number</p>
+                    <p className="field-label">Account Number</p>
                     <InlineEdit value={customer.bank_account_number ?? ''} placeholder="เลขบัญชี" onSave={(v) => updateCustomer(customer.customer_id, { bank_account_number: v })} />
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Account Name</p>
+                    <p className="field-label">Account Name</p>
                     <InlineEdit value={customer.bank_account_name ?? ''} placeholder="ชื่อบัญชี" onSave={(v) => updateCustomer(customer.customer_id, { bank_account_name: v })} />
                   </div>
                 </div>
@@ -677,7 +677,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
               <>
                 <Separator />
                 <div>
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Leads &amp; Opportunities ({linkedLeads.length})</p>
+                  <p className="field-label mb-3">Leads &amp; Opportunities ({linkedLeads.length})</p>
                   <div className="space-y-2">
                     {linkedLeads.map((l) => (
                       <div key={l.lead_op_id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/60">
@@ -703,7 +703,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
               <>
                 <Separator />
                 <div>
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Won Jobs ({linkedWonJobs.length})</p>
+                  <p className="field-label mb-3">Won Jobs ({linkedWonJobs.length})</p>
                   <div className="space-y-2">
                     {linkedWonJobs.map((j) => (
                       <div key={j.job_id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/60">
@@ -732,7 +732,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
           <div className="hidden sm:flex flex-col w-[320px] shrink-0 overflow-y-auto px-5 py-5 space-y-5 bg-muted/30">
             {/* Log Activity */}
             <div>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Log Activity</p>
+              <p className="field-label mb-3">Log Activity</p>
               <AddActivityForm entityType="customer" entityId={customer.customer_id} owner="Vitta" entityName={customer.company_name} />
             </div>
 
@@ -740,7 +740,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 
             {/* History */}
             <div>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">History</p>
+              <p className="field-label mb-3">History</p>
               <ActivityTimeline entityType="customer" entityId={customer.customer_id} entityName={customer.company_name} />
             </div>
           </div>
@@ -751,7 +751,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                 <div className="px-4 py-4 space-y-4">
                   {/* Company name edit */}
                   <div>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Company Name</p>
+                    <p className="field-label mb-2">Company Name</p>
                     <CompanyCombobox
                       value={customer.company_name}
                       onChange={(v) => updateCustomer(customer.customer_id, { company_name: v })}
@@ -764,7 +764,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 
                   {/* Contact person edit */}
                   <div>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Contact Person</p>
+                    <p className="field-label mb-2">Contact Person</p>
                     <InlineEdit value={customer.contact_person} placeholder="Name of contact" onSave={(v) => updateCustomer(customer.customer_id, { contact_person: v })} />
                   </div>
 
@@ -772,10 +772,10 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 
                   {/* Contact info */}
                   <div className="space-y-3">
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Contact Details</p>
+                    <p className="field-label mb-2">Contact Details</p>
                     <div className="space-y-2.5">
                       <div>
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                        <label className="field-label mb-1.5 flex items-center gap-1.5">
                           <Mail className="w-3.5 h-3.5 text-muted-foreground/60" /> Email
                         </label>
                         <InlineEdit
@@ -791,7 +791,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                        <label className="field-label mb-1.5 flex items-center gap-1.5">
                           <Phone className="w-3.5 h-3.5 text-muted-foreground/60" /> Phone
                         </label>
                         <InlineEdit
@@ -801,7 +801,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                        <label className="field-label mb-1.5 flex items-center gap-1.5">
                           <MessageCircle className="w-3.5 h-3.5 text-green-400" /> LINE ID
                         </label>
                         <InlineEdit
@@ -811,7 +811,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                        <label className="field-label mb-1.5 flex items-center gap-1.5">
                           <AtSign className="w-3.5 h-3.5 text-muted-foreground/60" /> Social (IG/FB)
                         </label>
                         <InlineEdit
@@ -827,7 +827,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 
                   {/* Customer type edit */}
                   <div>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Customer Type</p>
+                    <p className="field-label mb-2">Customer Type</p>
                     <div className="space-y-1.5">
                       <Select value={customer.customer_type} onValueChange={(v) => updateCustomer(customer.customer_id, { customer_type: v as CustomerType })}>
                         <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
@@ -842,7 +842,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 
                   {/* Meta */}
                   <div>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Created</p>
+                    <p className="field-label">Created</p>
                     <p className="text-[13px] text-foreground">{new Date(customer.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                   </div>
 
@@ -850,7 +850,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 
                   {/* Notes */}
                   <div>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Notes</p>
+                    <p className="field-label mb-2">Notes</p>
                     <InlineEdit value={customer.notes} placeholder="Click to add notes…" multiline onSave={(v) => updateCustomer(customer.customer_id, { notes: v })} />
                   </div>
 
@@ -873,25 +873,25 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                       <div className="bg-background px-4 py-4 space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Tax ID (เลขประจำตัวผู้เสียภาษี)</p>
+                            <p className="field-label">Tax ID (เลขประจำตัวผู้เสียภาษี)</p>
                             <InlineEdit value={customer.tax_id ?? ''} placeholder="0105xxx" onSave={(v) => updateCustomer(customer.customer_id, { tax_id: v })} />
                           </div>
                           <div>
-                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Branch</p>
+                            <p className="field-label">Branch</p>
                             <InlineEdit value={customer.branch ?? ''} placeholder="สาขา / สำนักงานใหญ่" onSave={(v) => updateCustomer(customer.customer_id, { branch: v })} />
                           </div>
                         </div>
                         <div>
-                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Company Address</p>
+                          <p className="field-label">Company Address</p>
                           <InlineEdit value={customer.company_address ?? ''} placeholder="ที่อยู่บริษัท" multiline onSave={(v) => updateCustomer(customer.customer_id, { company_address: v })} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Billing Contact</p>
+                            <p className="field-label">Billing Contact</p>
                             <InlineEdit value={customer.billing_contact ?? ''} placeholder="ผู้ติดต่อด้านบัญชี" onSave={(v) => updateCustomer(customer.customer_id, { billing_contact: v })} />
                           </div>
                           <div>
-                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Billing Notes</p>
+                            <p className="field-label">Billing Notes</p>
                             <InlineEdit value={customer.billing_notes ?? ''} placeholder="หมายเหตุการวางบิล" onSave={(v) => updateCustomer(customer.customer_id, { billing_notes: v })} />
                           </div>
                         </div>
@@ -906,20 +906,20 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
 
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Bank Name</p>
+                            <p className="field-label">Bank Name</p>
                             <InlineEdit value={customer.bank_name ?? ''} placeholder="SCB / KBANK / BBL" onSave={(v) => updateCustomer(customer.customer_id, { bank_name: v })} />
                           </div>
                           <div>
-                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Bank Branch</p>
+                            <p className="field-label">Bank Branch</p>
                             <InlineEdit value={customer.bank_branch ?? ''} placeholder="สาขา" onSave={(v) => updateCustomer(customer.customer_id, { bank_branch: v })} />
                           </div>
                         </div>
                         <div>
-                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Account Number</p>
+                          <p className="field-label">Account Number</p>
                           <InlineEdit value={customer.bank_account_number ?? ''} placeholder="เลขบัญชี" onSave={(v) => updateCustomer(customer.customer_id, { bank_account_number: v })} />
                         </div>
                         <div>
-                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Account Name</p>
+                          <p className="field-label">Account Name</p>
                           <InlineEdit value={customer.bank_account_name ?? ''} placeholder="ชื่อบัญชี" onSave={(v) => updateCustomer(customer.customer_id, { bank_account_name: v })} />
                         </div>
                       </div>
@@ -931,7 +931,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                     <>
                       <Separator />
                       <div>
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Leads &amp; Opportunities ({linkedLeads.length})</p>
+                        <p className="field-label mb-3">Leads &amp; Opportunities ({linkedLeads.length})</p>
                         <div className="space-y-2">
                           {linkedLeads.map((l) => (
                             <div key={l.lead_op_id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/60">
@@ -957,7 +957,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                     <>
                       <Separator />
                       <div>
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Won Jobs ({linkedWonJobs.length})</p>
+                        <p className="field-label mb-3">Won Jobs ({linkedWonJobs.length})</p>
                         <div className="space-y-2">
                           {linkedWonJobs.map((j) => (
                             <div key={j.job_id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/60">

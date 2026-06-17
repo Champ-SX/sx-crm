@@ -875,7 +875,7 @@ function JobDetail({
 
               {/* Log Activity */}
               <div>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">Log Activity</p>
+                <p className="field-label mb-3">Log Activity</p>
                 <AddActivityForm entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} owner={job.owner || ''} entityName={job.event_display_name || job.product_name || `#${job.job_number}`} />
               </div>
 
@@ -883,7 +883,7 @@ function JobDetail({
 
               {/* History */}
               <div>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-3">History</p>
+                <p className="field-label mb-3">History</p>
                 <ActivityTimeline entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} entityName={job.event_display_name || job.product_name || `#${job.job_number}`} />
               </div>
             </div>

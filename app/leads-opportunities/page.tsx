@@ -603,7 +603,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
 
               {/* Event details */}
               <div className="space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Event Details</p>
+                <p className="field-label">Event Details</p>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     <Calendar className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -683,25 +683,25 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                         <p className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded-md">Changes here are saved to the Customer record and shared across all jobs.</p>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Tax ID</p>
+                            <p className="field-label">Tax ID</p>
                             <InlineEdit value={linkedCustomer.tax_id ?? ''} placeholder="0105xxx" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { tax_id: v })} />
                           </div>
                           <div>
-                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Branch</p>
+                            <p className="field-label">Branch</p>
                             <InlineEdit value={linkedCustomer.branch ?? ''} placeholder="สาขา / สำนักงานใหญ่" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { branch: v })} />
                           </div>
                         </div>
                         <div>
-                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Company Address</p>
+                          <p className="field-label">Company Address</p>
                           <InlineEdit value={linkedCustomer.company_address ?? ''} placeholder="ที่อยู่บริษัท" multiline onSave={(v) => updateCustomer(linkedCustomer.customer_id, { company_address: v })} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Billing Contact</p>
+                            <p className="field-label">Billing Contact</p>
                             <InlineEdit value={linkedCustomer.billing_contact ?? ''} placeholder="ผู้ติดต่อด้านบัญชี" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { billing_contact: v })} />
                           </div>
                           <div>
-                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Billing Notes</p>
+                            <p className="field-label">Billing Notes</p>
                             <InlineEdit value={linkedCustomer.billing_notes ?? ''} placeholder="หมายเหตุการวางบิล" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { billing_notes: v })} />
                           </div>
                         </div>
@@ -714,20 +714,20 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Bank Name</p>
+                            <p className="field-label">Bank Name</p>
                             <InlineEdit value={linkedCustomer.bank_name ?? ''} placeholder="SCB / KBANK / BBL" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { bank_name: v })} />
                           </div>
                           <div>
-                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Bank Branch</p>
+                            <p className="field-label">Bank Branch</p>
                             <InlineEdit value={linkedCustomer.bank_branch ?? ''} placeholder="สาขา" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { bank_branch: v })} />
                           </div>
                         </div>
                         <div>
-                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Account Number</p>
+                          <p className="field-label">Account Number</p>
                           <InlineEdit value={linkedCustomer.bank_account_number ?? ''} placeholder="เลขบัญชี" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { bank_account_number: v })} />
                         </div>
                         <div>
-                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Account Name</p>
+                          <p className="field-label">Account Name</p>
                           <InlineEdit value={linkedCustomer.bank_account_name ?? ''} placeholder="ชื่อบัญชี" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { bank_account_name: v })} />
                         </div>
                       </div>
@@ -741,7 +741,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
             <div className="hidden sm:flex flex-col w-[340px] shrink-0 overflow-y-auto px-6 py-4 space-y-5 bg-muted/20">
               {/* Log Activity */}
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Log Activity</p>
+                <p className="field-label mb-3">Log Activity</p>
                 <AddActivityForm entityType="lead_opportunity" entityId={item.lead_op_id} owner={item.owner} entityName={item.name} />
               </div>
 
@@ -749,7 +749,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
 
               {/* History */}
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">History</p>
+                <p className="field-label mb-3">History</p>
                 <ActivityTimeline entityType="lead_opportunity" entityId={item.lead_op_id} entityName={item.name} />
               </div>
             </div>
@@ -857,7 +857,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                       <>
                         <Separator />
                         <div>
-                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">Notes</p>
+                          <p className="field-label mb-2">Notes</p>
                           {isEditing ? (
                             <Textarea
                               value={editData?.notes || ''}
@@ -895,25 +895,25 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                               <p className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded-md">Changes here are saved to the Customer record and shared across all jobs.</p>
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Tax ID</p>
+                                  <p className="field-label">Tax ID</p>
                                   <InlineEdit value={linkedCustomer.tax_id ?? ''} placeholder="0105xxx" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { tax_id: v })} />
                                 </div>
                                 <div>
-                                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Branch</p>
+                                  <p className="field-label">Branch</p>
                                   <InlineEdit value={linkedCustomer.branch ?? ''} placeholder="สาขา / สำนักงานใหญ่" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { branch: v })} />
                                 </div>
                               </div>
                               <div>
-                                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Company Address</p>
+                                <p className="field-label">Company Address</p>
                                 <InlineEdit value={linkedCustomer.company_address ?? ''} placeholder="ที่อยู่บริษัท" multiline onSave={(v) => updateCustomer(linkedCustomer.customer_id, { company_address: v })} />
                               </div>
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Billing Contact</p>
+                                  <p className="field-label">Billing Contact</p>
                                   <InlineEdit value={linkedCustomer.billing_contact ?? ''} placeholder="ผู้ติดต่อด้านบัญชี" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { billing_contact: v })} />
                                 </div>
                                 <div>
-                                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Billing Notes</p>
+                                  <p className="field-label">Billing Notes</p>
                                   <InlineEdit value={linkedCustomer.billing_notes ?? ''} placeholder="หมายเหตุการวางบิล" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { billing_notes: v })} />
                                 </div>
                               </div>
@@ -926,20 +926,20 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                               </div>
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Bank Name</p>
+                                  <p className="field-label">Bank Name</p>
                                   <InlineEdit value={linkedCustomer.bank_name ?? ''} placeholder="SCB / KBANK / BBL" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { bank_name: v })} />
                                 </div>
                                 <div>
-                                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Bank Branch</p>
+                                  <p className="field-label">Bank Branch</p>
                                   <InlineEdit value={linkedCustomer.bank_branch ?? ''} placeholder="สาขา" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { bank_branch: v })} />
                                 </div>
                               </div>
                               <div>
-                                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Account Number</p>
+                                <p className="field-label">Account Number</p>
                                 <InlineEdit value={linkedCustomer.bank_account_number ?? ''} placeholder="เลขบัญชี" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { bank_account_number: v })} />
                               </div>
                               <div>
-                                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">Account Name</p>
+                                <p className="field-label">Account Name</p>
                                 <InlineEdit value={linkedCustomer.bank_account_name ?? ''} placeholder="ชื่อบัญชี" onSave={(v) => updateCustomer(linkedCustomer.customer_id, { bank_account_name: v })} />
                               </div>
                             </div>
