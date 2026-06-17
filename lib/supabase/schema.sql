@@ -125,7 +125,8 @@ CREATE TABLE IF NOT EXISTS activities (
   title TEXT NOT NULL,
   description TEXT,
   created_by TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  attachments JSONB DEFAULT NULL -- Array of ActivityAttachment: {filename, size, type, data}
 );
 
 -- ===== Tasks =====
