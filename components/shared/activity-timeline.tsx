@@ -277,23 +277,26 @@ export function ActivityTimeline({ entityType, entityId, className, entityName }
                 </div>
               )}
 
-              {/* Actions */}
-              <div className="flex items-center gap-3 mt-1.5">
-                <button
+              {/* Actions — Ghost type per the button system */}
+              <div className="flex items-center gap-1 mt-1.5 -ml-2">
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="xs"
+                  className="text-muted-foreground"
                   onClick={() => (replyingTo === activity.activity_id ? setReplyingTo(null) : startReply(activity.activity_id, activity.created_by))}
-                  className="text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Reply
-                </button>
-                <span className="text-[11px] text-muted-foreground/40">·</span>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="xs"
+                  className="text-muted-foreground hover:text-destructive"
                   onClick={() => handleDelete(activity.activity_id)}
-                  className="text-[11px] font-medium text-muted-foreground hover:text-red-600 transition-colors"
                 >
                   Delete
-                </button>
+                </Button>
               </div>
 
               {/* Inline reply box */}
