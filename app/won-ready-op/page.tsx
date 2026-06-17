@@ -22,7 +22,7 @@ import { useHydrated } from '@/hooks/use-hydrated'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { OP_STAGES, OP_STAGE_LABELS } from '@/types'
 import type { WonJob, OPStage, StaffMember } from '@/types'
-import { formatJobTitle, formatJobTitleShort } from '@/lib/jobs'
+import { formatJobMeta, formatJobTitleShort } from '@/lib/jobs'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
 import { LinkifyText } from '@/components/shared/linkify-text'
@@ -603,7 +603,7 @@ function JobDetail({
                   />
                 </DialogTitle>
                 <p className="text-subtitle mt-0.5">
-                  {formatJobTitle(job)}
+                  {formatJobMeta(job)}
                 </p>
               </div>
               <div className="flex flex-row sm:flex-col items-center sm:items-end w-full sm:w-auto shrink-0 gap-3 sm:gap-1 flex-wrap">

@@ -23,6 +23,14 @@ export function formatJobTitleShort(job: Pick<WonJob, 'product_cat' | 'product_n
   return joinNameAndPlace(name, place)
 }
 
+// Metadata breadcrumb for the detail header — product type · category.
+// Excludes date/#num (already in the chip row above) and name/place (already
+// the large title), and drops blank segments so we never render "— —" gaps.
+// Output: "CAP*TURES · Roadshow"
+export function formatJobMeta(job: Pick<WonJob, 'product_type' | 'product_cat'>): string {
+  return [job.product_type || '', job.product_cat || ''].filter(Boolean).join(' · ')
+}
+
 // Join "name@place" without duplicating the venue. Product names sometimes
 // already include the venue (e.g. "Rayban @Central World"), which previously
 // produced "Rayban @Central World@Central World". Skip the suffix when the

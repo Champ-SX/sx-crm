@@ -450,15 +450,16 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                     <>
                       <Button
                         size="sm"
-                        className="h-8 px-3 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                        variant="success"
+                        className="h-8 px-3 gap-2 text-xs"
                         onClick={() => setConfirmWon(true)}
                       >
                         <Trophy className="w-4 h-4" /> Won
                       </Button>
                       <Button
                         size="sm"
-                        variant="outline"
-                        className="h-8 px-3 gap-2 border-red-200 text-red-500 hover:bg-red-50 text-xs"
+                        variant="destructive"
+                        className="h-8 px-3 gap-2 text-xs"
                         onClick={() => setConfirmLost(true)}
                       >
                         <XCircle className="w-4 h-4" /> Lost
