@@ -588,9 +588,9 @@ function JobDetail({
         <DialogContent className="w-[88vw] max-w-[88vw] sm:max-w-[88vw] top-[4vh] translate-y-0 p-0 gap-0 overflow-hidden max-h-[88dvh] flex flex-col">
 
           {/* ── Header ── */}
-          <div className="px-7 pt-5 pb-4 border-b shrink-0 bg-white">
-            <div className="flex items-start gap-4">
-              <div className="flex-1 min-w-0">
+          <div className="px-4 sm:px-7 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b shrink-0 bg-white">
+            <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+              <div className="flex-1 min-w-0 w-full sm:w-auto">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-[10px] font-mono font-semibold bg-muted text-muted-foreground px-2 py-0.5 rounded-md">#{job.job_number}</span>
                   {job.event_date && <span className="text-caption">{job.event_date.replace(/-/g, '.')}</span>}
@@ -606,8 +606,8 @@ function JobDetail({
                   {formatJobTitle(job)}
                 </p>
               </div>
-              <div className="flex flex-col items-end shrink-0 gap-1">
-                <div className="text-right">
+              <div className="flex flex-row sm:flex-col items-center sm:items-end w-full sm:w-auto shrink-0 gap-3 sm:gap-1 flex-wrap">
+                <div className="text-left sm:text-right">
                   <Label className="field-label">Value</Label>
                   <div className="text-base font-bold text-foreground">
                     <InlineEdit
@@ -617,12 +617,12 @@ function JobDetail({
                         u({ estimated_value: num })
                       }}
                       placeholder="0"
-                      formatDisplay={(v) => `฿${(parseFloat(v) || 0).toLocaleString()}`}
+                      formatDisplay={(v) => `฿ ${(parseFloat(v) || 0).toLocaleString()}`}
                     />
                   </div>
                 </div>
                 <Select value={job.owner} onValueChange={(v) => v && u({ owner: v })}>
-                  <SelectTrigger className="h-6 text-xs border-0 px-0 focus:ring-0 w-auto gap-1 text-muted-foreground justify-end">
+                  <SelectTrigger className="h-6 text-xs border-0 px-0 focus:ring-0 w-auto gap-1 text-muted-foreground justify-start sm:justify-end">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -634,7 +634,7 @@ function JobDetail({
                     e.stopPropagation()
                     onDelete?.(job.job_id)
                   }}
-                  className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground/70 hover:text-destructive transition-colors"
+                  className="mt-0 sm:mt-1 ml-auto sm:ml-0 inline-flex items-center gap-1 text-[11px] text-muted-foreground/70 hover:text-destructive transition-colors"
                   title="Delete card"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Delete
