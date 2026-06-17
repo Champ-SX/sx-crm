@@ -1,11 +1,11 @@
-# 📊 Current State - SX-CRM June 13, 2026
+# 📊 Current State - SX-CRM June 17, 2026
 
 ## 🎯 Project Status
 
 **Production URL:** https://sx-crm.vercel.app  
 **Build Status:** ✅ Passing  
-**Last Update:** June 16, 2026  
-**Current Phase:** Phase 2.4 Complete ✅ — Phase 2.5 (UI/UX Refresh) Active 🎨
+**Last Update:** June 17, 2026  
+**Current Phase:** Phase 2.5 (UI/UX Refresh) Complete ✅
 
 ### Deployment History
 - **v1.0.0** (June 2, 2026) — Phase 1 Complete ✅
@@ -13,6 +13,7 @@
 - **v2.1** (June 13, 2026) — Phase 2.3 @Mentions + Notifications ✅
 - **v2.1.1** (June 13, 2026) — Fix: activity log author uses signed-in user ✅
 - **v2.4** (June 16, 2026) — Web Push PWA + persisted notifications + cross-device sync ✅
+- **v2.5** (June 17, 2026) — UI/UX Design System Refresh ✅
 
 ---
 
@@ -64,9 +65,16 @@ the mobile-alert need in the meantime, so email is low priority.
 
 ---
 
-## 🎨 Phase 2.5 — UI/UX Design System Refresh (Planned)
+## 🎨 Phase 2.5 — UI/UX Design System Refresh ✅ (Complete — June 17, 2026)
 
 **Goal:** Establish a consistent visual design language across all screens — desktop and mobile — so the app feels professional, readable, and easy to use.
+
+**Shipped:**
+- **2.5.1 Design tokens** — type scale + `.field-label`/`.field-value`/`.field-placeholder` + `.edit-affordance` (44px tap target) in `app/globals.css`.
+- **2.5.2 Card headers** — Won detail header stacks responsively on mobile; breadcrumb duplication bug fixed (`formatJobMeta` = clean "type · category", no empty `—` segments); Leads/Customers headers already responsive.
+- **2.5.3 Field & edit UI** — all detail-card labels migrated to `.field-label`; Customers edit pencil `<span>`→`<button>` (keyboard-focusable).
+- **2.5.4 Button system** — 4 types (Primary/Secondary/Ghost/Destructive); added `success` variant; Won/Lost + dialogs + inline Reply/Delete all on-system.
+- **2.5.5 Mobile audit** — Leads & Customers stacked card lists at 375px; notification dropdown rebuilt on portal Popover (no clipping); drag-drop file attach on mobile composer; `฿` glyph spacing.
 
 ### Issues to Fix (from design audit)
 
