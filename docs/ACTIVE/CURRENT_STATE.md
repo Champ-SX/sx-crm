@@ -166,6 +166,33 @@ list instead of a Trello-style horizontal board.
 
 ---
 
+## ⏰ Phase 2.7 — Won Card Due Date + Scheduled Push (Planned)
+
+**Goal:** Add a Due date (date **+ time**) to Won cards. When the due datetime
+arrives, send a push notification (and in-app notification) to the users
+involved with that card.
+
+### Reuses (already built — Phase 2.4)
+- Web Push send pipeline: `app/api/push/send/route.ts` (`recipientId` → `push_subscriptions` → web-push/VAPID).
+- In-app notifications: `notifications` table + the `notifyMentions()` pattern in `store/crm-store.ts` (creates notification + fires push together) — the due-date notifier mirrors this.
+- User→subscription mapping via `users` table / `TeamMember.id`.
+
+### New work
+- **Data:** add `due_at TIMESTAMPTZ` + `due_notified_at TIMESTAMPTZ` to the Won jobs table + `WonJob` type. (`event_date` is date-only; `event_time` is a free string — neither is a real datetime.)
+- **UI:** date + time picker on the Won detail card (per the requirement mockup) with inline-edit save.
+- **Scheduler (the crux — nothing scheduled exists today):** `app/api/cron/check-due-jobs` that runs every few minutes, selects jobs where `due_at <= now()` AND `due_notified_at IS NULL`, sends push + in-app notification to involved users, then stamps `due_notified_at` (dedup).
+- **Involved-users resolution:** map `owner` (a name string) → `TeamMember.id`; `staff_list` are gig workers (no login/push). May need a new `assignee_ids TEXT[]` field to notify more than the owner.
+
+### Open decisions (resolve before building)
+1. **Who is "involved"?** Owner only, or add an explicit `assignee_ids` field? (Staff cannot receive push.)
+2. **Timing:** fire exactly at `due_at`, or support a lead-time reminder (e.g. 1h / 1 day before)?
+3. **Scheduler choice:** Vercel **Hobby crons run only once/day** — insufficient for time-precise alerts. Needs **Vercel Pro** (per-minute cron) OR Supabase `pg_cron` OR an external trigger. This decides feasibility/accuracy.
+4. **Timezone:** store `due_at` as UTC timestamptz; ensure the picker and cron comparison agree on the user's timezone.
+
+**Risk:** Medium-High — the scheduler is net-new infrastructure with an external dependency (Vercel plan / pg_cron) and a dedup requirement; push delivery itself is already proven.
+
+---
+
 ## 🚨 Known Issues
 
 ### Medium Priority
