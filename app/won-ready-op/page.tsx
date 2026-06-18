@@ -316,7 +316,7 @@ function KanbanColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col w-full sm:min-w-[240px] sm:max-w-[240px] rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/20' : ''} ${isDragging ? 'opacity-50' : ''} ${cfg.colBg} shadow-sm cursor-grab active:cursor-grabbing`}
+      className={`flex flex-col w-[82vw] min-w-[82vw] max-w-[82vw] sm:w-auto sm:min-w-[240px] sm:max-w-[240px] rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/20' : ''} ${isDragging ? 'opacity-50' : ''} ${cfg.colBg} shadow-sm cursor-grab active:cursor-grabbing`}
       {...attributes}
       {...listeners}
     >
@@ -1148,7 +1148,9 @@ export default function WonReadyOpPage() {
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 150, // Reduced delay for quicker response
+        // Press-and-hold to drag; a quick swipe scrolls the board instead.
+        // Higher delay disambiguates horizontal stage-swipe from stage-reorder drag on mobile.
+        delay: 220,
         tolerance: 8,
       }
     })
@@ -1314,10 +1316,10 @@ export default function WonReadyOpPage() {
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
       >
-        {/* Mobile: Vertical stack, Desktop: Horizontal scroll */}
+        {/* Horizontal stage board on all sizes: swipe between stages, cards stack vertically within each */}
         <div className="flex-1 overflow-x-auto overflow-y-auto sm:overflow-y-hidden bg-background">
           <SortableContext items={sortedStages} strategy={horizontalListSortingStrategy}>
-            <div className="flex flex-col sm:flex-row gap-4 p-4 sm:p-6 h-full sm:min-w-max sm:items-start sm:min-h-max">
+            <div className="flex flex-row gap-4 p-4 sm:p-6 h-full min-w-max items-start min-h-max">
               {sortedStages.map((stage) => (
                 <KanbanColumn
                   key={stage}
