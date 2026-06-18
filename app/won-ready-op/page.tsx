@@ -588,26 +588,65 @@ function JobDetail({
         <DialogContent className="w-[88vw] max-w-[88vw] sm:max-w-[88vw] top-[4vh] translate-y-0 p-0 gap-0 overflow-hidden max-h-[88dvh] flex flex-col">
 
           {/* ── Header ── */}
-          <div className="px-4 sm:px-7 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b shrink-0 bg-white">
-            <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+          {/* Mobile compacts to 3 rows (chip+delete / title / inline value·meta·owner) so the
+              A/B/C detail sections start higher; desktop keeps the value/owner/delete right column. */}
+          <div className="px-4 sm:px-7 pt-3 sm:pt-5 pb-2.5 sm:pb-4 border-b shrink-0 bg-white">
+            <div className="flex flex-col sm:flex-row items-start justify-between gap-2 sm:gap-4">
               <div className="flex-1 min-w-0 w-full sm:w-auto">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-[10px] font-mono font-semibold bg-muted text-muted-foreground px-2 py-0.5 rounded-md">#{job.job_number}</span>
                   {job.event_date && <span className="text-caption">{job.event_date.replace(/-/g, '.')}</span>}
+                  {/* Mobile-only delete (desktop has it in the right column) */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDelete?.(job.job_id) }}
+                    className="sm:hidden ml-auto mr-9 p-1 text-muted-foreground/70 hover:text-destructive transition-colors"
+                    title="Delete card"
+                    aria-label="Delete card"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-                <DialogTitle className="text-title mb-2">
+                <DialogTitle className="text-title mb-1.5 sm:mb-2">
                   <InlineEdit
                     value={job.event_display_name || formatJobTitleShort(job)}
                     onSave={(v) => u({ event_display_name: v })}
                     placeholder="Enter event name…"
                   />
                 </DialogTitle>
-                <p className="text-subtitle mt-0.5">
+                {/* Desktop subtitle */}
+                <p className="hidden sm:block text-subtitle mt-0.5">
                   {formatJobMeta(job)}
                 </p>
+                {/* Mobile inline meta: value · type/cat · owner */}
+                <div className="sm:hidden flex items-center gap-1.5 flex-wrap text-foreground">
+                  <span className="text-base font-bold">
+                    <InlineEdit
+                      value={job.estimated_value ? job.estimated_value.toString() : ''}
+                      onSave={(v) => u({ estimated_value: parseFloat(v) || 0 })}
+                      placeholder="0"
+                      formatDisplay={(v) => `฿ ${(parseFloat(v) || 0).toLocaleString()}`}
+                    />
+                  </span>
+                  {formatJobMeta(job) && (
+                    <>
+                      <span className="text-muted-foreground/40">·</span>
+                      <span className="text-xs text-muted-foreground">{formatJobMeta(job)}</span>
+                    </>
+                  )}
+                  <span className="text-muted-foreground/40">·</span>
+                  <Select value={job.owner} onValueChange={(v) => v && u({ owner: v })}>
+                    <SelectTrigger className="h-5 text-xs border-0 px-0 focus:ring-0 w-auto gap-0.5 text-muted-foreground">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <OwnerSelectItems />
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="flex flex-row sm:flex-col items-center sm:items-end w-full sm:w-auto shrink-0 gap-3 sm:gap-1 flex-wrap">
-                <div className="text-left sm:text-right">
+              {/* Desktop right column */}
+              <div className="hidden sm:flex flex-col items-end shrink-0 gap-1">
+                <div className="text-right">
                   <Label className="field-label">Value</Label>
                   <div className="text-base font-bold text-foreground">
                     <InlineEdit
@@ -622,7 +661,7 @@ function JobDetail({
                   </div>
                 </div>
                 <Select value={job.owner} onValueChange={(v) => v && u({ owner: v })}>
-                  <SelectTrigger className="h-6 text-xs border-0 px-0 focus:ring-0 w-auto gap-1 text-muted-foreground justify-start sm:justify-end">
+                  <SelectTrigger className="h-6 text-xs border-0 px-0 focus:ring-0 w-auto gap-1 text-muted-foreground justify-end">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -634,7 +673,7 @@ function JobDetail({
                     e.stopPropagation()
                     onDelete?.(job.job_id)
                   }}
-                  className="mt-0 sm:mt-1 ml-auto sm:ml-0 inline-flex items-center gap-1 text-[11px] text-muted-foreground/70 hover:text-destructive transition-colors"
+                  className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground/70 hover:text-destructive transition-colors"
                   title="Delete card"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Delete
