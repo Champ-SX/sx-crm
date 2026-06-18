@@ -137,6 +137,35 @@ the mobile-alert need in the meantime, so email is low priority.
 
 ---
 
+## 📋 Phase 2.6 — Won Board Mobile Parity (Planned)
+
+**Goal:** Make the Won & Ready for OP board behave the same on mobile as on
+desktop — **stages arranged horizontally** (swipe left/right between stages),
+**cards stacked vertically** inside each stage. Today mobile stacks stages
+vertically (`flex-col sm:flex-row`), so the board reads as one long vertical
+list instead of a Trello-style horizontal board.
+
+### Scope
+- **Layout flip (small):** board container `flex flex-col sm:flex-row` →
+  `flex flex-row` (always horizontal); give columns a swipeable mobile width
+  (e.g. `w-[80vw] min-w-[80vw] sm:min-w-[240px] sm:max-w-[240px]`); ensure
+  `min-w-max` + horizontal scroll apply on mobile. `app/won-ready-op/page.tsx`
+  ~lines 319, 1318–1320. Cards already use `verticalListSortingStrategy` — no change.
+- **Touch-gesture handling (the real work / main risk):** the whole column is
+  currently a drag handle (`cursor-grab` + dnd listeners on the wrapper, line
+  319–321). On a horizontal-scrolling mobile board this collides with native
+  swipe-to-scroll between stages and with card drags. Needs a **dedicated drag
+  handle** on mobile and/or dnd-kit touch-sensor activation constraints
+  (press-delay + distance) so scroll vs. drag are distinguishable.
+- **Vertical overflow per column:** confirm a tall stage scrolls cleanly inside
+  its column at 375px without breaking the board's horizontal scroll.
+
+### Notes
+- Deliberately revisits the Phase 2.2 "mobile single-scroll" decision for this board only — Details/Activity drawers keep their current mobile layout.
+- **Risk:** Medium — the CSS flip is trivial; the dnd/touch gesture disambiguation is where the effort and regression risk live. Test drag-reorder of stages, drag-move of cards between stages, and horizontal/vertical scroll all on a real touch device at 375px.
+
+---
+
 ## 🚨 Known Issues
 
 ### Medium Priority
