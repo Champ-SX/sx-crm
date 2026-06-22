@@ -23,6 +23,13 @@ export function formatJobTitleShort(job: Pick<WonJob, 'product_cat' | 'product_n
   return joinNameAndPlace(name, place)
 }
 
+// Single source of truth for the title shown on the board card AND the detail
+// header: the user-set event_display_name when present, else the derived short
+// title. Keeps the Kanban card in sync when the display name is edited.
+export function jobDisplayTitle(job: Pick<WonJob, 'event_display_name' | 'product_cat' | 'product_name' | 'place'>): string {
+  return job.event_display_name || formatJobTitleShort(job)
+}
+
 // Metadata breadcrumb for the detail header — product type · category.
 // Excludes date/#num (already in the chip row above) and name/place (already
 // the large title), and drops blank segments so we never render "— —" gaps.

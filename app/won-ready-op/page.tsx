@@ -22,7 +22,7 @@ import { useHydrated } from '@/hooks/use-hydrated'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { OP_STAGES, OP_STAGE_LABELS } from '@/types'
 import type { WonJob, OPStage, StaffMember } from '@/types'
-import { formatJobMeta, formatJobTitleShort } from '@/lib/jobs'
+import { formatJobMeta, jobDisplayTitle } from '@/lib/jobs'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
 import { LinkifyText } from '@/components/shared/linkify-text'
@@ -214,7 +214,7 @@ function JobCard({
 
         {/* Title */}
         <p className="text-[12px] font-semibold text-slate-800 leading-snug mb-2 line-clamp-2">
-          {formatJobTitleShort(job)}
+          {jobDisplayTitle(job)}
         </p>
 
         {/* Customer */}
@@ -608,7 +608,7 @@ function JobDetail({
                 </div>
                 <DialogTitle className="text-title mb-1.5 sm:mb-2">
                   <InlineEdit
-                    value={job.event_display_name || formatJobTitleShort(job)}
+                    value={jobDisplayTitle(job)}
                     onSave={(v) => u({ event_display_name: v })}
                     placeholder="Enter event name…"
                   />
@@ -1380,7 +1380,7 @@ export default function WonReadyOpPage() {
           {activeJob && (
             <div className="bg-white rounded-lg border border-primary/30 shadow-xl p-3 w-[230px] opacity-95">
               <p className="text-[10px] font-mono text-muted-foreground/60 mb-1">#{activeJob.job_number}</p>
-              <p className="text-sm font-semibold text-foreground leading-snug">{formatJobTitleShort(activeJob)}</p>
+              <p className="text-sm font-semibold text-foreground leading-snug">{jobDisplayTitle(activeJob)}</p>
               <p className="text-xs text-muted-foreground mt-1">{activeJob.customer_name}</p>
             </div>
           )}
@@ -1477,7 +1477,7 @@ export default function WonReadyOpPage() {
               <>
                 <br />
                 <br />
-                <strong>{formatJobTitleShort(wonJobs.find((j) => j.job_id === jobToDelete)!)}</strong>
+                <strong>{jobDisplayTitle(wonJobs.find((j) => j.job_id === jobToDelete)!)}</strong>
               </>
             )}
           </DialogDescription>
