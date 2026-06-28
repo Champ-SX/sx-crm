@@ -389,6 +389,18 @@ export const activityQueries = {
     return (data || []) as Activity[]
   },
 
+  // Metadata only — excludes the `attachments` JSONB blob (base64 file data).
+  // Used by the frequent realtime/poll refresh so we don't re-pull megabytes of
+  // file data on every sync. Callers merge to preserve already-loaded attachments.
+  async getAllLite() {
+    const { data, error } = await supabase
+      .from('activities')
+      .select('activity_id, entity_type, entity_id, activity_type, title, description, created_by, created_at')
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return (data || []) as Omit<Activity, 'attachments'>[]
+  },
+
   async getForEntity(entityType: string, entityId: string) {
     const { data, error } = await supabase
       .from('activities')

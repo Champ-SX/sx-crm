@@ -309,7 +309,17 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       refreshActivities: async () => {
         if (!USE_SUPABASE) return
         try {
-          const activities = await db.activityQueries.getAll()
+          // Pull metadata only (no base64 attachment blobs) to keep egress low,
+          // then carry over any attachments already loaded in memory so thumbnails
+          // don't disappear on refresh. Full attachment data loads once at startup
+          // (initializeData) and is added optimistically when a file is attached.
+          const lite = await db.activityQueries.getAllLite()
+          const prev = get().activities
+          const byId = new Map(prev.map((a) => [a.activity_id, a.attachments]))
+          const activities = lite.map((a) => {
+            const attachments = byId.get(a.activity_id)
+            return attachments ? { ...a, attachments } : (a as Activity)
+          })
           set({ activities })
         } catch (err) {
           console.warn('[CRM Store] refreshActivities failed:', err)

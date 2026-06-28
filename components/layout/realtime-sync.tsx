@@ -5,11 +5,12 @@ import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client'
 
-// How often to poll for new activity while the app is visible. This is the
-// iOS safety net: iOS suspends a backgrounded PWA's JS (killing the Realtime
-// WebSocket) and doesn't reliably resume the socket on foreground, so we can't
-// depend on Realtime there. Polling keeps an open app fresh regardless.
-const POLL_INTERVAL_MS = 20_000
+// How often to poll for new activity while the app is visible. This is only the
+// iOS safety net (iOS suspends a backgrounded PWA's JS, killing the Realtime
+// WebSocket); Realtime is the primary live-update path on every other platform.
+// Kept long to minimise egress — the refresh fetches metadata only (no
+// attachment blobs), but there's no need to hammer it every few seconds.
+const POLL_INTERVAL_MS = 60_000
 
 /**
  * Mounts once in the root layout. Keeps the activity feed up-to-date across
@@ -20,8 +21,8 @@ const POLL_INTERVAL_MS = 20_000
  * 2. Foreground refetch — pageshow / focus / visibilitychange all trigger a
  *    refetch. iOS often restores a PWA from bfcache WITHOUT firing
  *    visibilitychange, so we listen to pageshow + focus as well.
- * 3. Visible-interval poll — every 20s while the tab is visible. The reliable
- *    floor for iOS where the WebSocket is suspended.
+ * 3. Visible-interval poll — every 60s while the tab is visible (metadata only).
+ *    The reliable floor for iOS where the WebSocket is suspended.
  */
 export function RealtimeSync() {
   const refreshActivities = useCRMStore((s) => s.refreshActivities)
