@@ -193,6 +193,36 @@ involved with that card.
 
 ---
 
+## 🗄️ Phase 2.8 — Move Attachments to Supabase Storage (Planned)
+
+**Goal:** Stop storing file attachments as base64 inside `activities.attachments`
+(JSONB) and move the bytes to a Supabase **Storage** bucket, keeping only a
+small reference (path / filename / size / type) in the row. This is the durable
+fix for the egress overage (19 GB against a 5 GB cap, June 2026).
+
+### Why
+Files-as-base64 means file bytes (≈+33% over binary) travel through DB egress on
+every activity query. A stop-gap already shipped (commit `9669186`): the frequent
+refresh fetches metadata only (`getAllLite`) and the poll was slowed 20s→60s — but
+startup (`initializeData`) still pulls all base64 once per session, and the design
+is inherently egress-heavy. Storage fixes it permanently: list queries stay tiny;
+files download on demand as binary, only when opened.
+
+### Scope
+- **Storage bucket** (e.g. `activity-attachments`) with RLS; signed or public URLs as appropriate.
+- **Upload path:** on attach, upload the file to Storage; store `{ path, filename, size, type }` in `activities.attachments` instead of `{ data: base64 }`.
+- **Render path:** activity feed shows filename/size + a thumbnail/download that fetches from Storage on click (not inline base64).
+- **Migration:** one-off script to move existing base64 attachments into the bucket and rewrite rows to references. Keep a fallback render for any legacy base64 rows until migrated.
+- **Cleanup:** delete the Storage object when a note/attachment is deleted.
+
+### Notes
+- Revisit `initializeData` so it no longer needs `select('*')` with blobs (use `getAllLite` everywhere; attachments load per-open-record).
+- Storage has its own egress, but on-demand + binary is far cheaper than base64-on-every-poll.
+
+**Risk:** Medium — touches upload, render, delete, plus a data migration of existing attachments. Worth a branch + careful test of attach/view/delete and the legacy fallback.
+
+---
+
 ## 🚨 Known Issues
 
 ### Medium Priority
