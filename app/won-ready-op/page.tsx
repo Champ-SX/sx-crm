@@ -1006,11 +1006,30 @@ function JobDetail({
                               <ul className="space-y-2">
                                 {(job.staff_list || []).map((s) => (
                                   <li key={s.staff_id} className="flex items-start justify-between p-3 rounded-lg border border-border/60 bg-muted/20">
-                                    <div>
+                                    <div className="min-w-0">
                                       <p className="text-sm font-medium">{s.name} <span className="text-muted-foreground">({s.nickname})</span></p>
                                       <p className="text-xs text-muted-foreground">{s.phone}</p>
                                       <p className="text-xs text-muted-foreground">{s.bank_name} · {s.bank_account_number} · {s.bank_account_name}</p>
                                       {s.bank_branch && <p className="text-xs text-muted-foreground">สาขา: {s.bank_branch}</p>}
+                                      {/* ค่าจ้าง — per-job fee in THB (commits on blur) */}
+                                      <div className="flex items-center gap-1.5 mt-2">
+                                        <label className="text-xs font-medium text-rose-700">ค่าจ้าง</label>
+                                        <span className="text-xs text-muted-foreground">฿</span>
+                                        <input
+                                          type="number"
+                                          inputMode="numeric"
+                                          min={0}
+                                          defaultValue={s.fee_thb ?? ''}
+                                          placeholder="0"
+                                          onBlur={(e) => {
+                                            const raw = e.target.value.trim()
+                                            const next = raw === '' ? null : Math.max(0, Math.round(parseFloat(raw) || 0))
+                                            const cur = s.fee_thb ?? null
+                                            if (next !== cur) updateStaffFee(s.staff_id, next)
+                                          }}
+                                          className="h-7 w-28 rounded-md border border-border bg-background px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200"
+                                        />
+                                      </div>
                                     </div>
                                     <button onClick={() => removeStaff(s.staff_id)} className="text-muted-foreground hover:text-red-500 transition-colors ml-2 shrink-0">
                                       <X className="w-4 h-4" />
