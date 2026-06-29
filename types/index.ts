@@ -173,6 +173,7 @@ export interface StaffMember {
   bank_account_number: string
   bank_account_name: string
   bank_branch: string
+  fee_thb?: number // ค่าจ้าง — per-job staff fee in THB (lives on the job's staff_list entry, not the registry)
 }
 
 // ── Company Account (for billing/invoicing) ───────────────────────────────────

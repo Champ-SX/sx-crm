@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS won_jobs (
   customer_name TEXT,
   customer_id TEXT,
   lead_op_id TEXT REFERENCES lead_opportunities(lead_op_id),
+  staff_list JSONB DEFAULT NULL, -- per-job StaffMember assignments (incl. fee_thb)
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
