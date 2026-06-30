@@ -223,6 +223,59 @@ files download on demand as binary, only when opened.
 
 ---
 
+## 🌗 Phase 2.9 — Dark Theme (Planned)
+
+**Goal:** A working, complete dark mode across every screen.
+
+**Current state:** A `theme-provider` (`components/layout/theme-provider.tsx`) and a
+"Switch to dark mode" toggle already exist, and CSS color tokens support both
+modes — but only ~13 files use `dark:` classes. Most screens were built with
+hardcoded light colors (`text-slate-800`, `bg-white`, `bg-rose-50`, etc.), so
+toggling dark today leaves large parts of the UI broken or unreadable.
+
+### Scope
+- Audit every screen (dashboards, customers, leads, won board + detail drawers, admin, login).
+- Replace hardcoded colors with semantic tokens / add `dark:` variants; lean on the design-token vars from Phase 2.5.
+- Verify both modes at 375px and desktop; ensure the toggle persists the preference.
+
+**Risk:** Low-medium — CSS only, but broad (touches nearly every component).
+
+---
+
+## 👤 Phase 3.0 — Admin: Manage + Delete Users (Planned)
+
+**Goal:** Let an admin remove a user, not just change their role.
+
+**Current state:** `app/admin/users/page.tsx` can change a user's role; there is
+**no delete**.
+
+### Scope
+- Add delete-user (admin-only) with a confirmation dialog showing impact.
+- Guards: can't delete yourself; can't remove the last admin.
+- Remove the Supabase auth user + `users` row; decide handling of their assigned leads/jobs/notifications (reassign vs. leave with orphaned owner name).
+
+**Risk:** Medium — destructive + touches auth; must follow the deletion rules (confirm, clear impact).
+
+---
+
+## 🧹 Phase 3.1 — Admin: Delete Staff from Registry (Planned)
+
+**Goal:** Let an admin delete a staff member (จ่ายเงินน้องออกงาน) from the registry.
+
+**Current state:** Staff live in the `staff_members` table; the Won board only
+**un-assigns** staff from a job (`removeStaff`) — it can't delete from the registry.
+A `staffQueries.delete` may need adding.
+
+### Scope
+- Admin-only "delete staff" action (likely a manage-staff view) with confirmation.
+- Handle staff already referenced in jobs' `staff_list`: leave the per-job snapshot intact (incl. fee_thb), just remove from the pickable registry.
+
+**Risk:** Low-medium — destructive but isolated; admin-gated.
+
+**Note:** 3.0 and 3.1 are both admin-gated destructive actions — both need a role check + the standard confirm-dialog / clear-impact deletion pattern.
+
+---
+
 ## 🚨 Known Issues
 
 ### Medium Priority
