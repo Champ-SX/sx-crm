@@ -389,9 +389,23 @@ export const activityQueries = {
     return (data || []) as Activity[]
   },
 
+  // Attachments for one record only — fetched lazily when its detail opens.
+  // Matches by entity_id alone so lead→won records pick up activities stored
+  // under either entity_type. New rows hold tiny storage refs; legacy rows may
+  // still hold base64 until the migration script runs.
+  async getAttachmentsForRecord(entityId: string) {
+    const { data, error } = await supabase
+      .from('activities')
+      .select('activity_id, attachments')
+      .eq('entity_id', entityId)
+      .not('attachments', 'is', null)
+    if (error) throw error
+    return (data || []) as Pick<Activity, 'activity_id' | 'attachments'>[]
+  },
+
   // Metadata only — excludes the `attachments` JSONB blob (base64 file data).
-  // Used by the frequent realtime/poll refresh so we don't re-pull megabytes of
-  // file data on every sync. Callers merge to preserve already-loaded attachments.
+  // Used by the frequent realtime/poll refresh AND startup so we never bulk-pull
+  // file data. Callers merge to preserve already-loaded attachments.
   async getAllLite() {
     const { data, error } = await supabase
       .from('activities')

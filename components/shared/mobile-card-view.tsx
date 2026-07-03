@@ -6,6 +6,8 @@ import { useAuth } from '@/components/auth-provider'
 import { ActivityTimeline } from './activity-timeline'
 import { MentionTextarea } from './mention-textarea'
 import type { ActivityAttachment } from '@/types'
+import { isSupabaseConfigured } from '@/lib/supabase/client'
+import { uploadAttachmentFile, deleteAttachmentFiles } from '@/lib/supabase/storage'
 import { ListChecks, Paperclip, ArrowUp, X } from 'lucide-react'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
@@ -72,8 +74,14 @@ export function MobileCardView({
         continue
       }
       try {
-        const data = await fileToBase64(file)
-        setAttachments((prev) => [...prev, { filename: file.name, size: file.size, type: file.type, data }])
+        if (isSupabaseConfigured) {
+          // Phase 2.8: bytes go to Storage; the activity row keeps a small reference
+          const storage_path = await uploadAttachmentFile(file)
+          setAttachments((prev) => [...prev, { filename: file.name, size: file.size, type: file.type, storage_path }])
+        } else {
+          const data = await fileToBase64(file)
+          setAttachments((prev) => [...prev, { filename: file.name, size: file.size, type: file.type, data }])
+        }
       } catch {
         setError(`Couldn't attach "${file.name}".`)
       }
@@ -160,7 +168,11 @@ export function MobileCardView({
                 <span className="truncate max-w-[120px]">{a.filename}</span>
                 <button
                   type="button"
-                  onClick={() => setAttachments((prev) => prev.filter((_, j) => j !== i))}
+                  onClick={() => {
+                    // Free the already-uploaded Storage object so un-sent files don't orphan
+                    if (a.storage_path) void deleteAttachmentFiles([a])
+                    setAttachments((prev) => prev.filter((_, j) => j !== i))
+                  }}
                   className="rounded-full hover:bg-background/60 p-0.5"
                   aria-label={`Remove ${a.filename}`}
                 >

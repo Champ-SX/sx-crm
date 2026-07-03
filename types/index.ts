@@ -250,7 +250,8 @@ export interface ActivityAttachment {
   filename: string
   size: number              // bytes
   type: string              // MIME type (e.g. "image/png")
-  data: string              // base64 encoded file content
+  data?: string             // LEGACY: base64 file content (pre-Storage rows; Phase 2.8 moved bytes out of the DB)
+  storage_path?: string     // path in the 'activity-attachments' Storage bucket (new rows)
 }
 
 // ─── Activity ────────────────────────────────────────────────────────────────

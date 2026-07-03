@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { MentionTextarea } from '@/components/shared/mention-textarea'
 import { Send, Paperclip, X, AlertCircle, File as FileIcon } from 'lucide-react'
 import { ActivityAttachment } from '@/types'
+import { isSupabaseConfigured } from '@/lib/supabase/client'
+import { uploadAttachmentFile, attachmentUrl, deleteAttachmentFiles } from '@/lib/supabase/storage'
 
 interface AddActivityFormProps {
   entityType: 'customer' | 'lead_opportunity' | 'won_job'
@@ -61,10 +63,17 @@ export function AddActivityForm({ entityType, entityId, owner, entityName }: Add
         continue
       }
       try {
-        const base64 = await convertFileToBase64(file)
-        setAttachments((prev) => [...prev, { filename: file.name, size: file.size, type: file.type, data: base64 }])
+        if (isSupabaseConfigured) {
+          // Phase 2.8: bytes go to Storage; the activity row keeps a small reference
+          const storage_path = await uploadAttachmentFile(file)
+          setAttachments((prev) => [...prev, { filename: file.name, size: file.size, type: file.type, storage_path }])
+        } else {
+          // Local/mock mode without Supabase — keep base64 so previews still work
+          const base64 = await convertFileToBase64(file)
+          setAttachments((prev) => [...prev, { filename: file.name, size: file.size, type: file.type, data: base64 }])
+        }
       } catch {
-        setError(`Failed to process file "${file.name}". Please try again.`)
+        setError(`Failed to upload "${file.name}". Please try again.`)
       }
     }
   }
@@ -81,6 +90,9 @@ export function AddActivityForm({ entityType, entityId, owner, entityName }: Add
   }
 
   function removeAttachment(index: number) {
+    // Free the already-uploaded Storage object so un-sent files don't orphan
+    const removed = attachments[index]
+    if (removed?.storage_path) void deleteAttachmentFiles([removed])
     setAttachments((prev) => prev.filter((_, i) => i !== index))
   }
 
@@ -184,7 +196,7 @@ export function AddActivityForm({ entityType, entityId, owner, entityName }: Add
                   {isImageFile(att.type) ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={`data:${att.type};base64,${att.data}`}
+                      src={attachmentUrl(att) ?? undefined}
                       alt={att.filename}
                       className="w-9 h-9 rounded object-cover shrink-0 border border-border"
                     />

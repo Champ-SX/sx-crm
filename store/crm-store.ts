@@ -7,6 +7,7 @@ import type {
   DynamicOPStage, JobSortOption, TeamMember, Notification,
 } from '@/types'
 import { parseMentions, notifyByEmail } from '@/lib/mentions'
+import { deleteAttachmentFiles } from '@/lib/supabase/storage'
 import {
   mockCustomers,
   mockCompanies,
@@ -161,6 +162,8 @@ interface CRMStore {
   addActivity: (activity: Activity) => Promise<void>
   deleteActivity: (activityId: string) => Promise<void>
   removeActivityAttachment: (activityId: string, attachmentIndex: number) => Promise<void>
+  // Lazily pull one record's attachments when its detail opens (startup no longer bulk-loads them)
+  loadActivityAttachments: (entityId: string) => Promise<void>
 
   // Notifications (@mentions)
   notifyMentions: (opts: {
@@ -232,7 +235,8 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
               db.companyQueries.getAll(),
               db.contactPersonQueries.getAll(),
               db.leadOpportunityQueries.getAll(),
-              db.activityQueries.getAll(),
+              // Metadata only — attachment blobs load lazily per record (Phase 2.8 egress fix)
+              db.activityQueries.getAllLite(),
               db.taskQueries.getAll(),
               db.staffQueries.getAll(),
               db.opStageQueries.getAll(),
@@ -1045,10 +1049,13 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
 
   deleteActivity: async (activityId) => {
     const prev = get().activities
+    const removed = prev.find((a) => a.activity_id === activityId)
     set({ activities: prev.filter((a) => a.activity_id !== activityId) })
     if (USE_SUPABASE) {
       try {
         await db.activityQueries.delete(activityId)
+        // Best-effort: free the Storage objects the deleted note referenced
+        void deleteAttachmentFiles(removed?.attachments)
       } catch (error) {
         // Roll back on failure so UI stays truthful
         set({ activities: prev, error: error instanceof Error ? error.message : 'Failed to delete activity' })
@@ -1056,8 +1063,29 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
     }
   },
 
+  // Fetch attachments for every activity on one record, merging into the store.
+  // Called when a detail drawer opens — startup deliberately skips attachment
+  // blobs (Phase 2.8 egress fix), so this is what makes thumbnails appear.
+  loadActivityAttachments: async (entityId) => {
+    if (!USE_SUPABASE) return
+    try {
+      const rows = await db.activityQueries.getAttachmentsForRecord(entityId)
+      if (rows.length === 0) return
+      const byId = new Map(rows.map((r) => [r.activity_id, r.attachments]))
+      set((s) => ({
+        activities: s.activities.map((a) => {
+          const attachments = byId.get(a.activity_id)
+          return attachments ? { ...a, attachments } : a
+        }),
+      }))
+    } catch (err) {
+      console.warn('[CRM Store] loadActivityAttachments failed:', err)
+    }
+  },
+
   removeActivityAttachment: async (activityId, attachmentIndex) => {
     console.log('[removeActivityAttachment] Removing attachment from activity:', { activityId, attachmentIndex })
+    const removedAtt = get().activities.find((a) => a.activity_id === activityId)?.attachments?.[attachmentIndex]
 
     set((s) => ({
       activities: s.activities.map((a) => {
@@ -1083,6 +1111,8 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
             attachments: activity.attachments,
           })
           console.log('[removeActivityAttachment] Supabase update successful:', result)
+          // Best-effort: free the removed attachment's Storage object
+          if (removedAtt) void deleteAttachmentFiles([removedAtt])
         } else {
           console.error('[removeActivityAttachment] Activity not found in store:', activityId)
         }

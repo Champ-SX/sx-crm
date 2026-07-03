@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCRMStore } from '@/store/crm-store'
-import type { Activity } from '@/types'
+import type { Activity, ActivityAttachment } from '@/types'
 import { LinkifyText } from './linkify-text'
+import { attachmentUrl } from '@/lib/supabase/storage'
 import {
   Phone,
   Mail,
@@ -80,12 +81,12 @@ function downloadFile(base64: string, filename: string) {
 interface Lightbox {
   activityId: string
   imageIndex: number
-  images: Array<{ data: string; type: string; filename: string }>
+  images: ActivityAttachment[]
 }
 
 export function ActivityTimeline({ entityType, entityId, className, entityName }: ActivityTimelineProps) {
   const allActivities = useCRMStore((s) => s.activities)
-  const { removeActivityAttachment, addActivity, deleteActivity, notifyMentions } = useCRMStore()
+  const { removeActivityAttachment, addActivity, deleteActivity, notifyMentions, loadActivityAttachments } = useCRMStore()
   const { user } = useAuth()
   const [expandedAttachments, setExpandedAttachments] = useState<Set<string>>(new Set())
   const [lightbox, setLightbox] = useState<Lightbox | null>(null)
@@ -93,6 +94,13 @@ export function ActivityTimeline({ entityType, entityId, className, entityName }
   const [replyText, setReplyText] = useState('')
 
   const currentUserName = user?.user_metadata?.full_name || user?.email || 'You'
+
+  // Startup skips attachment blobs (Phase 2.8 egress fix) — pull this record's
+  // attachments once its timeline mounts so thumbnails/files appear.
+  useEffect(() => {
+    void loadActivityAttachments(entityId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entityId])
 
   // Open the inline reply box for an activity, pre-filling @author so the
   // original author gets notified when the reply is sent.
@@ -216,7 +224,7 @@ export function ActivityTimeline({ entityType, entityId, className, entityName }
                                 >
                                   {/* Image preview - clickable for lightbox */}
                                   <img
-                                    src={`data:${img.type};base64,${img.data}`}
+                                    src={attachmentUrl(img) ?? undefined}
                                     alt={img.filename}
                                     className="w-full h-24 object-cover hover:opacity-80 transition-opacity cursor-pointer"
                                     onClick={() => {
@@ -379,7 +387,7 @@ export function ActivityTimeline({ entityType, entityId, className, entityName }
             <div className="flex-1 flex items-center justify-center overflow-hidden bg-black/40 relative group">
               {/* Image - right click to save */}
               <img
-                src={`data:${lightbox.images[lightbox.imageIndex].type};base64,${lightbox.images[lightbox.imageIndex].data}`}
+                src={attachmentUrl(lightbox.images[lightbox.imageIndex]) ?? undefined}
                 alt={lightbox.images[lightbox.imageIndex].filename}
                 className="max-w-full max-h-full object-contain cursor-context-menu"
                 onContextMenu={(e) => {
