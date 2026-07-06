@@ -582,6 +582,100 @@ function JobDetail({
     u({ staff_list: (job.staff_list || []).map((s) => s.staff_id === staffId ? { ...s, fee_thb: fee ?? undefined } : s) })
   }
 
+  function toggleStaffPaid(staffId: string) {
+    u({ staff_list: (job.staff_list || []).map((s) => s.staff_id === staffId ? { ...s, paid: !s.paid } : s) })
+  }
+
+  // Payment progress summary for the staff section header
+  function staffPaySummary(list: typeof job.staff_list) {
+    const staff = list || []
+    const paidCount = staff.filter((s) => s.paid).length
+    const total = staff.reduce((sum, s) => sum + (s.fee_thb || 0), 0)
+    return { count: staff.length, paidCount, total }
+  }
+
+  // Staff payment block — non-collapsible, shared by desktop + mobile so they
+  // never drift. Each row shows the fee input and a paid/unpaid toggle pill;
+  // paid rows tint green. Header shows payment progress + total.
+  function renderStaffSection() {
+    const list = job.staff_list || []
+    const { count, paidCount, total } = staffPaySummary(list)
+    return (
+      <div className="rounded-xl border border-rose-200 overflow-hidden mt-1">
+        <div className="bg-rose-50 px-4 py-2.5 flex items-center gap-2">
+          <div className="w-5 h-5 rounded-md bg-rose-100 flex items-center justify-center shrink-0">
+            <Users className="w-3 h-3 text-rose-600" />
+          </div>
+          <span className="text-[12px] font-bold text-rose-800 tracking-wide flex-1">จ่ายเงินน้องออกงาน</span>
+          {count > 0 && (
+            <span className="text-[11px] font-medium text-rose-700/80">
+              จ่ายแล้ว {paidCount}/{count} · ฿{total.toLocaleString()}
+            </span>
+          )}
+        </div>
+        <div className="bg-white px-4 py-3 space-y-2">
+          {list.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic">No staff assigned yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {list.map((s) => (
+                <li
+                  key={s.staff_id}
+                  className={`flex items-start justify-between p-3 rounded-lg border ${s.paid ? 'border-emerald-200 bg-emerald-50/50' : 'border-border/60 bg-muted/20'}`}
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{s.name} <span className="text-muted-foreground">({s.nickname})</span></p>
+                    <p className="text-xs text-muted-foreground">{s.phone}</p>
+                    <p className="text-xs text-muted-foreground">{s.bank_name} · {s.bank_account_number} · {s.bank_account_name}</p>
+                    {s.bank_branch && <p className="text-xs text-muted-foreground">สาขา: {s.bank_branch}</p>}
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      {/* ค่าจ้าง — per-job fee in THB (commits on blur) */}
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-xs font-medium text-rose-700">ค่าจ้าง</label>
+                        <span className="text-xs text-muted-foreground">฿</span>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={0}
+                          defaultValue={s.fee_thb ?? ''}
+                          placeholder="0"
+                          onBlur={(e) => {
+                            const raw = e.target.value.trim()
+                            const next = raw === '' ? null : Math.max(0, Math.round(parseFloat(raw) || 0))
+                            const cur = s.fee_thb ?? null
+                            if (next !== cur) updateStaffFee(s.staff_id, next)
+                          }}
+                          className="h-7 w-28 rounded-md border border-border bg-background px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200"
+                        />
+                      </div>
+                      {/* Paid/unpaid toggle pill */}
+                      <button
+                        type="button"
+                        onClick={() => toggleStaffPaid(s.staff_id)}
+                        className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-medium transition-colors ${s.paid
+                          ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                          : 'border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100'}`}
+                        title={s.paid ? 'คลิกเพื่อเปลี่ยนเป็นยังไม่จ่าย' : 'คลิกเพื่อทำเครื่องหมายจ่ายแล้ว'}
+                      >
+                        {s.paid ? <><Check className="w-3 h-3" /> จ่ายแล้ว</> : <>ยังไม่จ่าย</>}
+                      </button>
+                    </div>
+                  </div>
+                  <button onClick={() => removeStaff(s.staff_id)} className="text-muted-foreground hover:text-red-500 transition-colors ml-2 shrink-0">
+                    <X className="w-4 h-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Button size="sm" variant="outline" className="w-full h-8 text-xs mt-1 border-rose-200 text-rose-700 hover:bg-rose-50" onClick={() => setStaffSheetOpen(true)}>
+            + Add Staff
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   function removeStaff(staffId: string) {
     u({ staff_list: (job.staff_list || []).filter((s) => s.staff_id !== staffId) })
   }
@@ -724,63 +818,8 @@ function JobDetail({
                   <FieldRow label="Team Meeting Time" value={job.team_meeting_time || ''} placeholder="e.g. 15.00" onSave={(v) => u({ team_meeting_time: v })} />
                   <FieldRow label="Onsite Notes" value={job.onsite_notes || ''} placeholder="หมายเหตุหน้างาน (parking, loading, etc.)" multiline onSave={(v) => u({ onsite_notes: v })} />
 
-                  {/* Staff sub-section */}
-                  <div className="rounded-xl border border-rose-200 overflow-hidden mt-1">
-                    <button
-                      type="button"
-                      onClick={() => toggleSection('Staff')}
-                      className="w-full bg-rose-50 px-4 py-2.5 flex items-center gap-2 hover:bg-rose-100/60 transition-colors text-left"
-                    >
-                      <div className="w-5 h-5 rounded-md bg-rose-100 flex items-center justify-center shrink-0">
-                        <Users className="w-3 h-3 text-rose-600" />
-                      </div>
-                      <span className="text-[12px] font-bold text-rose-800 tracking-wide flex-1">จ่ายเงินน้องออกงาน</span>
-                      <ChevronDown className={`w-3.5 h-3.5 text-rose-400 transition-transform duration-200 ${openSections.Staff ? 'rotate-0' : '-rotate-90'}`} />
-                    </button>
-                    {openSections.Staff && <div className="bg-white px-4 py-3 space-y-2">
-                      {(job.staff_list || []).length === 0 ? (
-                        <p className="text-xs text-muted-foreground italic">No staff assigned yet.</p>
-                      ) : (
-                        <ul className="space-y-2">
-                          {(job.staff_list || []).map((s) => (
-                            <li key={s.staff_id} className="flex items-start justify-between p-3 rounded-lg border border-border/60 bg-muted/20">
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium">{s.name} <span className="text-muted-foreground">({s.nickname})</span></p>
-                                <p className="text-xs text-muted-foreground">{s.phone}</p>
-                                <p className="text-xs text-muted-foreground">{s.bank_name} · {s.bank_account_number} · {s.bank_account_name}</p>
-                                {s.bank_branch && <p className="text-xs text-muted-foreground">สาขา: {s.bank_branch}</p>}
-                                {/* ค่าจ้าง — per-job fee in THB (commits on blur) */}
-                                <div className="flex items-center gap-1.5 mt-2">
-                                  <label className="text-xs font-medium text-rose-700">ค่าจ้าง</label>
-                                  <span className="text-xs text-muted-foreground">฿</span>
-                                  <input
-                                    type="number"
-                                    inputMode="numeric"
-                                    min={0}
-                                    defaultValue={s.fee_thb ?? ''}
-                                    placeholder="0"
-                                    onBlur={(e) => {
-                                      const raw = e.target.value.trim()
-                                      const next = raw === '' ? null : Math.max(0, Math.round(parseFloat(raw) || 0))
-                                      const cur = s.fee_thb ?? null
-                                      if (next !== cur) updateStaffFee(s.staff_id, next)
-                                    }}
-                                    className="h-7 w-28 rounded-md border border-border bg-background px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200"
-                                  />
-                                </div>
-                              </div>
-                              <button onClick={() => removeStaff(s.staff_id)} className="text-muted-foreground hover:text-red-500 transition-colors ml-2 shrink-0">
-                                <X className="w-4 h-4" />
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      <Button size="sm" variant="outline" className="w-full h-8 text-xs mt-1 border-rose-200 text-rose-700 hover:bg-rose-50" onClick={() => setStaffSheetOpen(true)}>
-                        + Add Staff
-                      </Button>
-                    </div>}
-                  </div>
+                  {/* Staff payment section (non-collapsible) */}
+                  {renderStaffSection()}
                 </div>}
               </div>
 
@@ -986,63 +1025,8 @@ function JobDetail({
                         <FieldRow label="Team Meeting Time" value={job.team_meeting_time || ''} placeholder="e.g. 15.00" onSave={(v) => u({ team_meeting_time: v })} />
                         <FieldRow label="Onsite Notes" value={job.onsite_notes || ''} placeholder="หมายเหตุหน้างาน (parking, loading, etc.)" multiline onSave={(v) => u({ onsite_notes: v })} />
 
-                        {/* Staff sub-section */}
-                        <div className="rounded-xl border border-rose-200 overflow-hidden mt-1">
-                          <button
-                            type="button"
-                            onClick={() => toggleSection('Staff')}
-                            className="w-full bg-rose-50 px-4 py-2.5 flex items-center gap-2 hover:bg-rose-100/60 transition-colors text-left"
-                          >
-                            <div className="w-5 h-5 rounded-md bg-rose-100 flex items-center justify-center shrink-0">
-                              <Users className="w-3 h-3 text-rose-600" />
-                            </div>
-                            <span className="text-[12px] font-bold text-rose-800 tracking-wide flex-1">จ่ายเงินน้องออกงาน</span>
-                            <ChevronDown className={`w-3.5 h-3.5 text-rose-400 transition-transform duration-200 ${openSections.Staff ? 'rotate-0' : '-rotate-90'}`} />
-                          </button>
-                          {openSections.Staff && <div className="bg-white px-4 py-3 space-y-2">
-                            {(job.staff_list || []).length === 0 ? (
-                              <p className="text-xs text-muted-foreground italic">No staff assigned yet.</p>
-                            ) : (
-                              <ul className="space-y-2">
-                                {(job.staff_list || []).map((s) => (
-                                  <li key={s.staff_id} className="flex items-start justify-between p-3 rounded-lg border border-border/60 bg-muted/20">
-                                    <div className="min-w-0">
-                                      <p className="text-sm font-medium">{s.name} <span className="text-muted-foreground">({s.nickname})</span></p>
-                                      <p className="text-xs text-muted-foreground">{s.phone}</p>
-                                      <p className="text-xs text-muted-foreground">{s.bank_name} · {s.bank_account_number} · {s.bank_account_name}</p>
-                                      {s.bank_branch && <p className="text-xs text-muted-foreground">สาขา: {s.bank_branch}</p>}
-                                      {/* ค่าจ้าง — per-job fee in THB (commits on blur) */}
-                                      <div className="flex items-center gap-1.5 mt-2">
-                                        <label className="text-xs font-medium text-rose-700">ค่าจ้าง</label>
-                                        <span className="text-xs text-muted-foreground">฿</span>
-                                        <input
-                                          type="number"
-                                          inputMode="numeric"
-                                          min={0}
-                                          defaultValue={s.fee_thb ?? ''}
-                                          placeholder="0"
-                                          onBlur={(e) => {
-                                            const raw = e.target.value.trim()
-                                            const next = raw === '' ? null : Math.max(0, Math.round(parseFloat(raw) || 0))
-                                            const cur = s.fee_thb ?? null
-                                            if (next !== cur) updateStaffFee(s.staff_id, next)
-                                          }}
-                                          className="h-7 w-28 rounded-md border border-border bg-background px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200"
-                                        />
-                                      </div>
-                                    </div>
-                                    <button onClick={() => removeStaff(s.staff_id)} className="text-muted-foreground hover:text-red-500 transition-colors ml-2 shrink-0">
-                                      <X className="w-4 h-4" />
-                                    </button>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                            <Button size="sm" variant="outline" className="w-full h-8 text-xs mt-1 border-rose-200 text-rose-700 hover:bg-rose-50" onClick={() => setStaffSheetOpen(true)}>
-                              + Add Staff
-                            </Button>
-                          </div>}
-                        </div>
+                        {/* Staff payment section (non-collapsible) */}
+                        {renderStaffSection()}
                       </div>}
                     </div>
 
