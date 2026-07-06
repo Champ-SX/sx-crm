@@ -232,9 +232,9 @@ function JobCard({
         )}
 
         {/* Value + owner */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-1">
-          <span className="text-[12px] font-bold text-slate-800">{formatCurrency(job.estimated_value)}</span>
-          <span className="text-[10px] font-medium text-slate-400 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded-full shrink-0">{job.owner}</span>
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-1 min-w-0">
+          <span className="text-[12px] font-bold text-slate-800 shrink-0">{formatCurrency(job.estimated_value)}</span>
+          <span className="text-[10px] font-medium text-slate-400 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded-full truncate min-w-0" title={job.owner || ''}>{job.owner}</span>
         </div>
       </div>
 
@@ -411,7 +411,7 @@ function KanbanColumn({
 
       {/* Cards */}
       <SortableContext items={sortedJobs.map(j => j.job_id)} strategy={verticalListSortingStrategy}>
-        <div className="flex-1 px-2.5 pb-3 pt-2 space-y-2 min-h-[80px] sm:overflow-y-auto sm:min-h-0">
+        <div className="flex-1 px-2.5 pb-3 pt-2 space-y-2 min-h-[80px] sm:overflow-y-auto sm:overflow-x-hidden sm:min-h-0">
           {sortedJobs.map((job) => (
             <JobCard
               key={job.job_id}
