@@ -36,7 +36,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator'
 import {
   Calendar, User,
-  Pencil, Check, X, ChevronDown, ChevronUp,
+  Pencil, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
   ClipboardList, Truck, CreditCard,
   Users, Banknote, ArrowUpDown, GripVertical,
   Trash2,
@@ -316,7 +316,7 @@ function KanbanColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col w-[82vw] min-w-[82vw] max-w-[82vw] sm:w-auto sm:min-w-[240px] sm:max-w-[240px] rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/20' : ''} ${isDragging ? 'opacity-50' : ''} ${cfg.colBg} shadow-sm cursor-grab active:cursor-grabbing`}
+      className={`flex flex-col w-[82vw] min-w-[82vw] max-w-[82vw] sm:w-auto sm:min-w-[240px] sm:max-w-[240px] sm:max-h-full sm:min-h-0 rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/20' : ''} ${isDragging ? 'opacity-50' : ''} ${cfg.colBg} shadow-sm cursor-grab active:cursor-grabbing`}
       {...attributes}
       {...listeners}
     >
@@ -411,7 +411,7 @@ function KanbanColumn({
 
       {/* Cards */}
       <SortableContext items={sortedJobs.map(j => j.job_id)} strategy={verticalListSortingStrategy}>
-        <div className="flex-1 px-2.5 pb-3 pt-2 space-y-2 min-h-[80px]">
+        <div className="flex-1 px-2.5 pb-3 pt-2 space-y-2 min-h-[80px] sm:overflow-y-auto sm:min-h-0">
           {sortedJobs.map((job) => (
             <JobCard
               key={job.job_id}
@@ -548,6 +548,87 @@ function StaffSheet({ jobId, onClose }: { jobId: string; onClose: () => void }) 
   )
 }
 
+// ── Edit Staff dialog ─────────────────────────────────────────────────────────
+// Edits a staff member's identity fields. Caller persists to both the job's
+// staff_list snapshot and the master registry (see saveStaffEdit).
+type StaffIdentity = Omit<StaffMember, 'staff_id' | 'fee_thb' | 'paid'>
+function EditStaffDialog({
+  staff,
+  onSave,
+  onClose,
+}: {
+  staff: StaffMember
+  onSave: (fields: StaffIdentity) => void
+  onClose: () => void
+}) {
+  const [form, setForm] = useState<StaffIdentity>({
+    name: staff.name,
+    nickname: staff.nickname,
+    phone: staff.phone,
+    bank_name: staff.bank_name,
+    bank_account_number: staff.bank_account_number,
+    bank_account_name: staff.bank_account_name,
+    bank_branch: staff.bank_branch,
+  })
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.name.trim()) return
+    onSave(form)
+  }
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="w-[480px] max-w-[90vw] sm:max-w-[480px] top-[6vh] translate-y-0 p-0 gap-0 max-h-[88vh] flex flex-col">
+        <div className="px-6 pt-6 pb-4 border-b shrink-0">
+          <DialogTitle className="text-[15px] font-semibold text-slate-800">Edit Staff</DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+            อัปเดตข้อมูลทั้งงานนี้และในทะเบียนพนักงาน (updates this job and the registry)
+          </DialogDescription>
+        </div>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-3 overflow-y-auto flex-1">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Name *</Label>
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="h-8 text-sm" required />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Nickname</Label>
+              <Input value={form.nickname} onChange={(e) => setForm({ ...form, nickname: e.target.value })} className="h-8 text-sm" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Phone</Label>
+            <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="h-8 text-sm" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Bank Name</Label>
+              <Input value={form.bank_name} onChange={(e) => setForm({ ...form, bank_name: e.target.value })} className="h-8 text-sm" placeholder="SCB / KBANK" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Bank Branch</Label>
+              <Input value={form.bank_branch} onChange={(e) => setForm({ ...form, bank_branch: e.target.value })} className="h-8 text-sm" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Account Number</Label>
+            <Input value={form.bank_account_number} onChange={(e) => setForm({ ...form, bank_account_number: e.target.value })} className="h-8 text-sm" />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Account Name</Label>
+            <Input value={form.bank_account_name} onChange={(e) => setForm({ ...form, bank_account_name: e.target.value })} className="h-8 text-sm" />
+          </div>
+          <DialogFooter className="pt-2">
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit">Save changes</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // ── Job detail drawer ─────────────────────────────────────────────────────────
 function JobDetail({
   jobId,
@@ -558,10 +639,11 @@ function JobDetail({
   onClose: () => void
   onDelete?: (jobId: string) => void
 }) {
-  const { wonJobs, updateWonJob, moveWonJobStage, customers, updateCustomer } = useCRMStore()
+  const { wonJobs, updateWonJob, moveWonJobStage, customers, updateCustomer, updateStaff } = useCRMStore()
   const jobMaybe = wonJobs.find((j) => j.job_id === jobId)
   const [stageOpen, setStageOpen] = useState(false)
   const [staffSheetOpen, setStaffSheetOpen] = useState(false)
+  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null)
   const [openSections, setOpenSections] = useState({ A: true, B: true, Staff: false, C: false, OpStage: false, Activity: false, History: false })
   function toggleSection(key: keyof typeof openSections) {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }))
@@ -584,6 +666,14 @@ function JobDetail({
 
   function toggleStaffPaid(staffId: string) {
     u({ staff_list: (job.staff_list || []).map((s) => s.staff_id === staffId ? { ...s, paid: !s.paid } : s) })
+  }
+
+  // Edit a staff member's identity: update this job's snapshot (keep fee/paid)
+  // AND the master registry so future jobs pick up the correction.
+  function saveStaffEdit(staffId: string, fields: Omit<StaffMember, 'staff_id' | 'fee_thb' | 'paid'>) {
+    u({ staff_list: (job.staff_list || []).map((s) => s.staff_id === staffId ? { ...s, ...fields } : s) })
+    void updateStaff(staffId, fields)
+    setEditingStaff(null)
   }
 
   // Payment progress summary for the staff section header
@@ -661,9 +751,14 @@ function JobDetail({
                       </button>
                     </div>
                   </div>
-                  <button onClick={() => removeStaff(s.staff_id)} className="text-muted-foreground hover:text-red-500 transition-colors ml-2 shrink-0">
-                    <X className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1 ml-2 shrink-0">
+                    <button onClick={() => setEditingStaff(s)} className="text-muted-foreground hover:text-foreground transition-colors p-0.5" title="แก้ไขข้อมูล / Edit staff">
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => removeStaff(s.staff_id)} className="text-muted-foreground hover:text-red-500 transition-colors p-0.5" title="ลบออกจากงานนี้ / Remove from job">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -1181,6 +1276,13 @@ function JobDetail({
       </Dialog>
 
       {staffSheetOpen && <StaffSheet jobId={job.job_id} onClose={() => setStaffSheetOpen(false)} />}
+      {editingStaff && (
+        <EditStaffDialog
+          staff={editingStaff}
+          onSave={(fields) => saveStaffEdit(editingStaff.staff_id, fields)}
+          onClose={() => setEditingStaff(null)}
+        />
+      )}
     </>
   )
 }
@@ -1204,6 +1306,20 @@ export default function WonReadyOpPage() {
   const [showAddStageDialog, setShowAddStageDialog] = useState(false)
   const [newStageName, setNewStageName] = useState('')
   const [newStageColor, setNewStageColor] = useState('blue')
+
+  // Horizontal board scrolling: ref + a paging helper for the ‹ › buttons, and a
+  // Shift+wheel handler so a vertical wheel scrolls the board sideways.
+  const boardRef = useRef<HTMLDivElement>(null)
+  const COLUMN_STEP = 256 // ~240px column + 16px gap
+  function scrollBoard(dir: -1 | 1) {
+    boardRef.current?.scrollBy({ left: dir * COLUMN_STEP, behavior: 'smooth' })
+  }
+  function handleBoardWheel(e: React.WheelEvent) {
+    // Trackpad horizontal (deltaX) is native; make Shift+wheel scroll sideways too.
+    if (e.shiftKey && e.deltaY !== 0 && boardRef.current) {
+      boardRef.current.scrollLeft += e.deltaY
+    }
+  }
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -1363,7 +1479,7 @@ export default function WonReadyOpPage() {
   if (!isHydrated) return null
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-[100dvh]">
       {/* Top bar */}
       <div className="bg-white border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -1372,6 +1488,25 @@ export default function WonReadyOpPage() {
             <h1 className="text-[15px] sm:text-[17px] font-semibold text-slate-800 tracking-tight">Won &amp; Ready for OP</h1>
             <p className="text-[11px] sm:text-[12px] text-slate-400 mt-0.5 hidden sm:block">{activeCount} active jobs · {formatCurrency(totalValue)} in pipeline</p>
           </div>
+        </div>
+        {/* Scroll the board sideways one stage at a time (desktop) */}
+        <div className="hidden sm:flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => scrollBoard(-1)}
+            className="w-8 h-8 rounded-lg border border-border bg-white text-slate-500 hover:bg-muted hover:text-foreground flex items-center justify-center transition-colors"
+            aria-label="Scroll stages left"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollBoard(1)}
+            className="w-8 h-8 rounded-lg border border-border bg-white text-slate-500 hover:bg-muted hover:text-foreground flex items-center justify-center transition-colors"
+            aria-label="Scroll stages right"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
@@ -1382,9 +1517,9 @@ export default function WonReadyOpPage() {
         onDragEnd={onDragEnd}
       >
         {/* Horizontal stage board on all sizes: swipe between stages, cards stack vertically within each */}
-        <div className="flex-1 overflow-x-auto overflow-y-auto sm:overflow-y-hidden bg-background">
+        <div ref={boardRef} onWheel={handleBoardWheel} className="flex-1 overflow-x-auto overflow-y-auto sm:overflow-y-hidden bg-background">
           <SortableContext items={sortedStages} strategy={horizontalListSortingStrategy}>
-            <div className="flex flex-row gap-4 p-4 sm:p-6 h-full min-w-max items-start min-h-max">
+            <div className="flex flex-row gap-4 p-4 sm:p-6 h-full min-w-max items-start min-h-max sm:min-h-0">
               {sortedStages.map((stage) => (
                 <KanbanColumn
                   key={stage}

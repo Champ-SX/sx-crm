@@ -555,4 +555,17 @@ export const staffQueries = {
     if (error) throw error
     return data as StaffMember
   },
+
+  async update(id: string, updates: Partial<StaffMember>) {
+    // Strip per-job fields (fee_thb, paid) and the PK — those aren't registry columns
+    const { fee_thb: _f, paid: _p, staff_id: _id, ...identity } = updates as StaffMember
+    const { data, error } = await supabase
+      .from('staff_members')
+      .update(identity)
+      .eq('staff_id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data as StaffMember
+  },
 }

@@ -153,6 +153,7 @@ interface CRMStore {
 
   // Staff
   addStaff: (s: StaffMember) => Promise<void>
+  updateStaff: (id: string, updates: Partial<StaffMember>) => Promise<void>
 
   // Tasks
   addTask: (task: Task) => Promise<void>
@@ -1006,6 +1007,19 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
         await db.staffQueries.create(s_member)
       } catch (error) {
         set({ error: error instanceof Error ? error.message : 'Failed to create staff member' })
+      }
+    }
+  },
+
+  // Update a registry staff member's identity (name/phone/bank). Per-job fee/paid
+  // live on the job's staff_list, not here — those are stripped by the query.
+  updateStaff: async (id, updates) => {
+    set((s) => ({ staff: s.staff.map((m) => (m.staff_id === id ? { ...m, ...updates } : m)) }))
+    if (USE_SUPABASE) {
+      try {
+        await db.staffQueries.update(id, updates)
+      } catch (error) {
+        set({ error: error instanceof Error ? error.message : 'Failed to update staff member' })
       }
     }
   },
