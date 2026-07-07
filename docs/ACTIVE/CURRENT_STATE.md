@@ -276,12 +276,38 @@ A `staffQueries.delete` may need adding.
 
 ---
 
+## ⭐ Phase 3.2 — Customer Insights field (Planned)
+
+**Goal:** A multi-line "Customer Insights ⭐" textbox (like the existing `notes`)
+that lives on the **customer** and is shown/editable on that customer's **Lead**
+and **Won** cards too — one shared insight that follows the customer everywhere.
+
+### Why it's straightforward
+Lead and Won detail drawers already resolve the linked customer (`linkedCustomer`
+via `customer_id`) and can write to it (`updateCustomer`). So it's a single field
+on the customer surfaced in three places — not copied per record.
+
+### Scope
+- **Data:** add `customer_insights TEXT` to `customers` (migration + `Customer` type; mirrors `notes`). 1-line prod migration: `ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS customer_insights TEXT;`
+- **Customer card:** editable textbox "Customer Insights ⭐" (reuse the notes/inline-edit pattern).
+- **Lead + Won cards:** show the linked customer's insights, edit inline → writes back via `updateCustomer` (single source of truth, so edits reflect everywhere instantly).
+
+### Decisions locked
+- Shared, not per-record — all leads/jobs for a customer share one insights text (the "keep along" intent).
+- Unlinked Lead/Won (no `customer_id`) → hide the field or show a "link a customer" hint.
+- Visually distinct from record-level notes (⭐ label) so "this deal's notes" vs "this customer's insight" don't get confused.
+
+**Risk:** Low — one nullable column + a reused textbox in 3 drawers.
+
+---
+
 ## 🚨 Known Issues
 
 ### Medium Priority
 - [ ] Email notifications not sent — deferred to Phase 2.4b (blocked on non-Wix DNS domain)
 - [ ] Mobile @mention autocomplete — mobile composer uses plain `<input>`, not `MentionTextarea`
 - [ ] `activity_id` column name — verify Supabase `activities` table uses `activity_id` not `id` before delete is exercised in prod
+- [x] **Activity log timestamp shifts +7h after refresh** — FIXED via option (b) (normalize on read). Added `parseDbDate()` in `lib/utils.ts`: appends `Z` to zone-less date-time strings so DB timestamps parse as UTC (idempotent — `Z`/offset strings and date-only values pass through untouched). Replaced every `new Date(<db timestamp>)` display/sort site with `parseDbDate(...)`: `activity-timeline.tsx`, `notification-bell.tsx`, `operation-/sales-/admin-dashboard.tsx`, `customers/page.tsx`, `leads-opportunities/page.tsx`. **Root cause (kept for record):** `created_at`/`updated_at` columns are `TIMESTAMP` (timezone-naive) in `lib/supabase/schema.sql`, not `TIMESTAMPTZ`. Client writes `new Date().toISOString()` (UTC, `Z`-suffixed); Postgres drops the zone; PostgREST returns it without a `Z`; `new Date()` then parsed the zone-less string as local (UTC+7). Note: the DB columns remain naive — option (a) (`TIMESTAMPTZ` migration) is still the cleaner long-term fix if writes ever bypass the client.
 
 ### Resolved (Phase 2.4)
 - [x] Notifications now persist to Supabase (survive reload)
