@@ -73,12 +73,23 @@ export const companyQueries = {
 // ===== CUSTOMERS (legacy) =====
 export const customerQueries = {
   async getAll() {
-    const { data, error } = await supabase
-      .from('customers')
-      .select('*')
-      .order('company_name')
-    if (error) throw error
-    return (data || []) as Customer[]
+    // PostgREST caps a single response at 1000 rows, so page through with
+    // .range() until a short page comes back — otherwise customers beyond the
+    // first 1000 (there are 2000+) never load and newly-added ones vanish.
+    const PAGE = 1000
+    const all: Customer[] = []
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .order('company_name')
+        .range(from, from + PAGE - 1)
+      if (error) throw error
+      const rows = (data || []) as Customer[]
+      all.push(...rows)
+      if (rows.length < PAGE) break
+    }
+    return all
   },
 
   async getById(id: string) {
