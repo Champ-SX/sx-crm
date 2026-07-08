@@ -579,4 +579,12 @@ export const staffQueries = {
     if (error) throw error
     return data as StaffMember
   },
+
+  async delete(id: string) {
+    const { error } = await supabase
+      .from('staff_members')
+      .delete()
+      .eq('staff_id', id)
+    if (error) throw error
+  },
 }

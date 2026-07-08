@@ -17,6 +17,7 @@ import { SortableContext, verticalListSortingStrategy, horizontalListSortingStra
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useCRMStore } from '@/store/crm-store'
+import { useAuth } from '@/components/auth-provider'
 import { OwnerSelectItems } from '@/components/shared/owner-select-items'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
@@ -447,7 +448,9 @@ function KanbanColumn({
 
 // ── Staff Sheet ───────────────────────────────────────────────────────────────
 function StaffSheet({ jobId, onClose }: { jobId: string; onClose: () => void }) {
-  const { staff: allStaff, addStaff, updateWonJob, wonJobs } = useCRMStore()
+  const { staff: allStaff, addStaff, updateWonJob, wonJobs, deleteStaff } = useCRMStore()
+  const { role } = useAuth()
+  const isAdmin = role === 'admin'
   const jobMaybe = wonJobs.find((j) => j.job_id === jobId)
   const [search, setSearch] = useState('')
   const [newForm, setNewForm] = useState({
@@ -506,9 +509,26 @@ function StaffSheet({ jobId, onClose }: { jobId: string; onClose: () => void }) 
                       <p className="text-sm font-medium">{s.name} <span className="text-muted-foreground">({s.nickname})</span></p>
                       <p className="text-xs text-muted-foreground">{s.phone} · {s.bank_name}</p>
                     </div>
-                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleAddFromRegistry(s)}>
-                      Add
-                    </Button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleAddFromRegistry(s)}>
+                        Add
+                      </Button>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`Delete ${s.name} from the staff registry? Existing jobs keep their record; they just won't appear in this list.`)) {
+                              void deleteStaff(s.staff_id)
+                            }
+                          }}
+                          className="p-1.5 text-muted-foreground/70 hover:text-destructive transition-colors"
+                          title="Delete from registry (admin)"
+                          aria-label={`Delete ${s.name} from registry`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>

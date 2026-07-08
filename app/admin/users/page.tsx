@@ -6,6 +6,7 @@ import { useAuth } from '@/components/auth-provider'
 import { useCRMStore } from '@/store/crm-store'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
+import { Trash2 } from 'lucide-react'
 
 interface User {
   id: string
@@ -87,6 +88,30 @@ export default function AdminUsersPage() {
     }
   }
 
+  // Delete a user (admin-only). Guards: can't delete yourself or the last admin.
+  const adminCount = users.filter((u) => u.role === 'admin').length
+  const deleteUser = async (u: User) => {
+    if (u.id === currentUser?.id) return
+    if (u.role === 'admin' && adminCount <= 1) {
+      alert('Cannot delete the last admin.')
+      return
+    }
+    if (!window.confirm(`Delete ${u.name || u.email}? They'll be removed from the app (leads/jobs keep their owner name).`)) return
+    setUpdatingUser(u.id)
+    try {
+      if (isSupabaseConfigured) {
+        const { error } = await supabase.from('users').delete().eq('id', u.id)
+        if (error) throw error
+      }
+      setUsers((prev) => prev.filter((x) => x.id !== u.id))
+    } catch (error) {
+      console.error('Failed to delete user:', error)
+      alert('Failed to delete user.')
+    } finally {
+      setUpdatingUser(null)
+    }
+  }
+
   if (loading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -161,7 +186,7 @@ export default function AdminUsersPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center flex-wrap">
                       {['admin', 'operation', 'sales', 'user'].map((role) => (
                         <Button
                           key={role}
@@ -174,6 +199,18 @@ export default function AdminUsersPage() {
                           {role}
                         </Button>
                       ))}
+                      {u.id !== currentUser?.id && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => deleteUser(u)}
+                          disabled={updatingUser === u.id || (u.role === 'admin' && adminCount <= 1)}
+                          title={u.role === 'admin' && adminCount <= 1 ? 'Cannot delete the last admin' : 'Delete user'}
+                          className="text-xs gap-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Delete
+                        </Button>
+                      )}
                     </div>
                   </td>
                 </tr>

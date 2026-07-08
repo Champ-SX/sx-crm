@@ -154,6 +154,7 @@ interface CRMStore {
   // Staff
   addStaff: (s: StaffMember) => Promise<void>
   updateStaff: (id: string, updates: Partial<StaffMember>) => Promise<void>
+  deleteStaff: (id: string) => Promise<void>
 
   // Tasks
   addTask: (task: Task) => Promise<void>
@@ -1020,6 +1021,20 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
         await db.staffQueries.update(id, updates)
       } catch (error) {
         set({ error: error instanceof Error ? error.message : 'Failed to update staff member' })
+      }
+    }
+  },
+
+  // Delete a staff member from the registry. Per-job staff_list snapshots on
+  // existing won jobs are left intact — this only removes them from the pickable list.
+  deleteStaff: async (id) => {
+    const prev = get().staff
+    set({ staff: prev.filter((m) => m.staff_id !== id) })
+    if (USE_SUPABASE) {
+      try {
+        await db.staffQueries.delete(id)
+      } catch (error) {
+        set({ staff: prev, error: error instanceof Error ? error.message : 'Failed to delete staff member' })
       }
     }
   },
