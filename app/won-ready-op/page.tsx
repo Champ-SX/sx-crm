@@ -195,6 +195,12 @@ function JobCard({
   const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined
   const isBeingDragged = isDragging || isSortableDragging
 
+  // Staff-payment summary for the card's bottom tab (so payers spot pending tasks)
+  const staff = job.staff_list || []
+  const paidStaff = staff.filter((s) => s.paid).length
+  const staffFeeTotal = staff.reduce((sum, s) => sum + (s.fee_thb || 0), 0)
+  const allPaid = staff.length > 0 && paidStaff === staff.length
+
   return (
     <div
       ref={setNodeRef}
@@ -236,6 +242,14 @@ function JobCard({
           <span className="text-[12px] font-bold text-slate-800 shrink-0">{formatCurrency(job.estimated_value)}</span>
           <span className="text-[10px] font-medium text-slate-400 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded-full truncate min-w-0" title={job.owner || ''}>{job.owner}</span>
         </div>
+
+        {/* Staff-payment tab — red while pending, green when fully paid */}
+        {staff.length > 0 && (
+          <div className={`-mx-3 -mb-3 mt-2 px-3 py-1.5 rounded-b-xl border-t flex items-center gap-1.5 ${allPaid ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+            {allPaid ? <Check className="w-3 h-3 shrink-0" /> : <CreditCard className="w-3 h-3 shrink-0" />}
+            <span className="text-[10px] font-semibold">จ่ายแล้ว {paidStaff}/{staff.length} · ฿{staffFeeTotal.toLocaleString()}</span>
+          </div>
+        )}
       </div>
 
     </div>
@@ -882,6 +896,14 @@ function JobDetail({
             {/* ── LEFT: Sections A + B + C + OP Stage (scrollable) ── */}
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5 sm:border-r border-border/60">
 
+              {/* Customer Insights — shared from the linked customer */}
+              {linkedCustomer && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4">
+                  <p className="field-label mb-2 text-amber-700">Customer Insights ⭐</p>
+                  <InlineEdit value={linkedCustomer.customer_insights ?? ''} placeholder="Insight about this customer (shared across their Leads & Won jobs)…" multiline onSave={(v) => uc?.({ customer_insights: v })} />
+                </div>
+              )}
+
               {/* Section A: รายละเอียดงาน */}
               <div className="rounded-xl border border-border overflow-hidden">
                 <SectionHeader letter="A" title="รายละเอียดงาน" icon={ClipboardList} open={openSections.A} onToggle={() => toggleSection('A')} />
@@ -1089,6 +1111,13 @@ function JobDetail({
           {/* ── Mobile: Trello-style single-scroll card with sticky comment bar ── */}
           <MobileCardView entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} owner={job.owner || ''} entityName={job.event_display_name || job.product_name || `#${job.job_number}`}>
                   <div className="px-6 py-5 space-y-5">
+                    {/* Customer Insights — shared from the linked customer */}
+                    {linkedCustomer && (
+                      <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4">
+                        <p className="field-label mb-2 text-amber-700">Customer Insights ⭐</p>
+                        <InlineEdit value={linkedCustomer.customer_insights ?? ''} placeholder="Insight about this customer (shared across their Leads & Won jobs)…" multiline onSave={(v) => uc?.({ customer_insights: v })} />
+                      </div>
+                    )}
                     {/* Section A: รายละเอียดงาน */}
                     <div className="rounded-xl border border-border overflow-hidden">
                       <SectionHeader letter="A" title="รายละเอียดงาน" icon={ClipboardList} open={openSections.A} onToggle={() => toggleSection('A')} />

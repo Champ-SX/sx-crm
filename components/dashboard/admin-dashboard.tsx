@@ -1,9 +1,13 @@
 'use client'
 
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useCRMStore } from '@/store/crm-store'
 import { format } from 'date-fns'
+import { parseDbDate } from '@/lib/utils'
+import { jobDisplayTitle } from '@/lib/jobs'
 import {
-  Users, FileText, Trophy, TrendingUp, BarChart3, Activity, User,
+  Users, FileText, Trophy, TrendingUp, BarChart3, Activity, User, ChevronLeft, ChevronRight, CalendarDays,
 } from 'lucide-react'
 import { StatCard, SectionHeader, fmtBaht } from './shared'
 
@@ -13,6 +17,7 @@ import { StatCard, SectionHeader, fmtBaht } from './shared'
  * and a global activity log.
  */
 export function AdminDashboard() {
+  const router = useRouter()
   const { customers, leadOpportunities, wonJobs, activities } = useCRMStore()
 
   const today = new Date()
@@ -41,6 +46,23 @@ export function AdminDashboard() {
       .reduce((s, j) => s + (j.estimated_value ?? 0), 0)
     return { owner, open, won, lost, winRate, revenue }
   }).sort((a, b) => b.revenue - a.revenue)
+
+  // ── Monthly won summary (by won date = created_at) ──
+  const [monthOffset, setMonthOffset] = useState(0)
+  const monthDate = new Date(today.getFullYear(), today.getMonth() - monthOffset, 1)
+  const monthKey = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, '0')}`
+  const monthLabel = format(monthDate, 'MMMM yyyy')
+  const monthJobs = wonJobs.filter((j) => (j.created_at ?? '').slice(0, 7) === monthKey)
+  const monthCount = monthJobs.length
+  const monthRevenue = monthJobs.reduce((s, j) => s + (j.estimated_value ?? 0), 0)
+  const monthRanking = [...owners]
+    .map((owner) => {
+      const jobs = monthJobs.filter((j) => j.owner === owner)
+      return { owner, deals: jobs.length, revenue: jobs.reduce((s, j) => s + (j.estimated_value ?? 0), 0) }
+    })
+    .filter((r) => r.deals > 0)
+    .sort((a, b) => b.revenue - a.revenue)
+  const monthJobsSorted = [...monthJobs].sort((a, b) => (b.estimated_value ?? 0) - (a.estimated_value ?? 0))
 
   // Global activity log
   const recentActivity = [...activities]
@@ -99,6 +121,128 @@ export function AdminDashboard() {
           iconColor="text-teal-500"
           valueColor="text-teal-600"
         />
+      </div>
+
+      {/* ── Monthly won summary ── */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="w-4 h-4 text-slate-400" />
+            <h2 className="text-[15px] font-semibold text-slate-800">Monthly Won Summary</h2>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setMonthOffset((o) => o + 1)}
+              className="w-7 h-7 rounded-lg border border-border bg-white text-slate-500 hover:bg-muted flex items-center justify-center transition-colors"
+              aria-label="Previous month"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="min-w-[130px] text-center text-[13px] font-medium text-slate-700">{monthLabel}</span>
+            <button
+              onClick={() => setMonthOffset((o) => Math.max(0, o - 1))}
+              disabled={monthOffset === 0}
+              className="w-7 h-7 rounded-lg border border-border bg-white text-slate-500 hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label="Next month"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+          {/* Month metrics */}
+          <div className="space-y-4">
+            <div className="bg-white border border-border rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Trophy className="w-4 h-4 text-emerald-500" />
+                <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Won this month</p>
+              </div>
+              <p className="text-2xl font-bold text-emerald-600">{monthCount}</p>
+            </div>
+            <div className="bg-white border border-border rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp className="w-4 h-4 text-teal-500" />
+                <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Revenue this month</p>
+              </div>
+              <p className="text-2xl font-bold text-teal-600">{fmtBaht(monthRevenue)}</p>
+            </div>
+          </div>
+
+          {/* Owner ranking (2/3) */}
+          <div className="lg:col-span-2">
+            <div className="bg-white border border-border rounded-xl overflow-hidden h-full">
+              {monthRanking.length === 0 ? (
+                <div className="px-5 py-10 text-center">
+                  <Trophy className="w-7 h-7 text-slate-200 mx-auto mb-2" />
+                  <p className="text-[12px] text-slate-400">No won jobs in {monthLabel}.</p>
+                </div>
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border/60 bg-slate-50/60">
+                      <th className="px-5 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">#</th>
+                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Owner</th>
+                      <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Deals</th>
+                      <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40">
+                    {monthRanking.map((row, i) => (
+                      <tr key={row.owner} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-5 py-3 text-[12px] font-semibold text-slate-400">{i + 1}</td>
+                        <td className="px-3 py-3 text-[12px] font-semibold text-slate-700">{row.owner}</td>
+                        <td className="px-3 py-3 text-center text-[12px] font-medium text-emerald-600">{row.deals}</td>
+                        <td className="px-4 py-3 text-right text-[12px] font-semibold text-teal-600">{fmtBaht(row.revenue)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Won jobs list for the month */}
+        {monthJobsSorted.length > 0 && (
+          <div className="mt-4 bg-white border border-border rounded-xl overflow-hidden">
+            <div className="px-5 py-2.5 border-b border-border/60 bg-slate-50/60 flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Won jobs · {monthLabel}</span>
+              <span className="text-[11px] font-semibold text-teal-600">{monthCount} · {fmtBaht(monthRevenue)}</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[560px]">
+                <thead>
+                  <tr className="border-b border-border/60">
+                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Job</th>
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Customer</th>
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Owner</th>
+                    <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Value</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40">
+                  {monthJobsSorted.map((j) => (
+                    <tr
+                      key={j.job_id}
+                      onClick={() => router.push('/won-ready-op')}
+                      className="hover:bg-slate-50/50 transition-colors cursor-pointer"
+                    >
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono font-semibold text-slate-400">#{j.job_number}</span>
+                          <span className="text-[12px] font-medium text-slate-700 truncate max-w-[240px]">{jobDisplayTitle(j)}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-[12px] text-slate-600 truncate max-w-[160px]">{j.customer_name || '—'}</td>
+                      <td className="px-3 py-3 text-[12px] text-slate-600">{j.owner || '—'}</td>
+                      <td className="px-4 py-3 text-right text-[12px] font-semibold text-teal-600">{fmtBaht(j.estimated_value ?? 0)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Team performance matrix + Activity log ── */}
@@ -162,7 +306,7 @@ export function AdminDashboard() {
                     <div className="flex items-center gap-1.5 mt-1">
                       <User className="w-2.5 h-2.5 text-slate-400" />
                       <span className="text-[10px] text-slate-400">
-                        {act.created_by} · {format(new Date(act.created_at), 'MMM d')}
+                        {act.created_by} · {format(parseDbDate(act.created_at), 'MMM d')}
                       </span>
                     </div>
                   </li>

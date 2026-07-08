@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCRMStore } from '@/store/crm-store'
+import { parseDbDate } from '@/lib/utils'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
@@ -589,7 +590,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
             {/* Meta */}
             <div>
               <p className="field-label">Created</p>
-              <p className="text-[13px] text-foreground">{new Date(customer.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+              <p className="text-[13px] text-foreground">{parseDbDate(customer.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
             </div>
 
             <Separator />
@@ -598,6 +599,12 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
             <div>
               <p className="field-label mb-2">Notes</p>
               <InlineEdit value={customer.notes} placeholder="Click to add notes…" multiline onSave={(v) => updateCustomer(customer.customer_id, { notes: v })} />
+            </div>
+
+            {/* Customer Insights — shared, shows on Lead + Won cards too */}
+            <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-3">
+              <p className="field-label mb-2 text-amber-700">Customer Insights ⭐</p>
+              <InlineEdit value={customer.customer_insights ?? ''} placeholder="Add an insight that follows this customer across Leads & Won jobs…" multiline onSave={(v) => updateCustomer(customer.customer_id, { customer_insights: v })} />
             </div>
 
             <Separator />
@@ -843,7 +850,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                   {/* Meta */}
                   <div>
                     <p className="field-label">Created</p>
-                    <p className="text-[13px] text-foreground">{new Date(customer.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                    <p className="text-[13px] text-foreground">{parseDbDate(customer.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                   </div>
 
                   <Separator />
@@ -852,6 +859,12 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                   <div>
                     <p className="field-label mb-2">Notes</p>
                     <InlineEdit value={customer.notes} placeholder="Click to add notes…" multiline onSave={(v) => updateCustomer(customer.customer_id, { notes: v })} />
+                  </div>
+
+                  {/* Customer Insights — shared, shows on Lead + Won cards too */}
+                  <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-3">
+                    <p className="field-label mb-2 text-amber-700">Customer Insights ⭐</p>
+                    <InlineEdit value={customer.customer_insights ?? ''} placeholder="Add an insight that follows this customer across Leads & Won jobs…" multiline onSave={(v) => updateCustomer(customer.customer_id, { customer_insights: v })} />
                   </div>
 
                   <Separator />

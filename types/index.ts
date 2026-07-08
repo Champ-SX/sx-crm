@@ -64,6 +64,7 @@ export interface Customer {
   social?: string | null    // Excel col F
   customer_type: CustomerType // Excel col G
   notes: string             // Excel col H
+  customer_insights?: string | null // ⭐ shared customer-level insight, surfaced on Lead + Won cards
   // Billing / Company Account (written once, auto-fills Section C on new jobs)
   tax_id?: string | null
   company_address?: string | null

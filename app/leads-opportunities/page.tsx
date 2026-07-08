@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCRMStore } from '@/store/crm-store'
+import { parseDbDate } from '@/lib/utils'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
@@ -600,6 +601,14 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                 </button>
               )}
 
+              {/* Customer Insights — shared from the linked customer */}
+              {linkedCustomer && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-3">
+                  <p className="field-label mb-2 text-amber-700">Customer Insights ⭐</p>
+                  <InlineEdit value={linkedCustomer.customer_insights ?? ''} placeholder="Insight about this customer (shared across their Leads & Won jobs)…" multiline onSave={(v) => updateCustomer(linkedCustomer.customer_id, { customer_insights: v })} />
+                </div>
+              )}
+
               <Separator />
 
               {/* Event details */}
@@ -658,8 +667,8 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
 
               {/* Meta */}
               <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">
-                <span>Created {new Date(item.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                <span>Updated {new Date(item.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                <span>Created {parseDbDate(item.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                <span>Updated {parseDbDate(item.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
               </div>
 
               {/* Company Account (from customer record) */}
@@ -850,6 +859,11 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                             )}
                           </div>
                         </button>
+                        {/* Customer Insights — shared from the linked customer */}
+                        <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-3">
+                          <p className="field-label mb-2 text-amber-700">Customer Insights ⭐</p>
+                          <InlineEdit value={linkedCustomer.customer_insights ?? ''} placeholder="Insight about this customer (shared across their Leads & Won jobs)…" multiline onSave={(v) => updateCustomer(linkedCustomer.customer_id, { customer_insights: v })} />
+                        </div>
                       </>
                     )}
 
