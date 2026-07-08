@@ -301,6 +301,29 @@ on the customer surfaced in three places — not copied per record.
 
 ---
 
+## 📈 Phase 3.3 — Dashboard: Monthly Won-Job Summary (Planned)
+
+**Goal:** A month-scoped won-jobs summary on the dashboard: how many won this
+month, revenue this month, and an owner sales ranking (leaderboard).
+
+### Why it's low-risk
+`wonJobs` already carry `owner`, `estimated_value`, and dates — this is pure
+client-side aggregation + a new UI section. No DB/migration.
+
+### Scope
+- New "This Month" section on the **Admin dashboard** (`components/dashboard/admin-dashboard.tsx`), alongside the existing all-time revenue + per-owner matrix.
+- Metrics: won-jobs count, revenue (sum of `estimated_value`), owner ranking (deals + revenue, sorted by revenue).
+- (Later, optional) Sales dashboard shows the signed-in owner's own rank.
+
+### Decisions to lock
+1. "Monthly" = won date (`created_at`, when marked Won) vs `event_date` — recommend **won date** for a sales summary (revenue closed that month); could be a toggle.
+2. Rank by revenue, count, or both — recommend show both, sort by revenue.
+3. Month navigation — current-month only vs **‹ prev / next ›** pager — recommend the pager to review history.
+
+**Risk:** Low — client-side aggregation over existing data; self-contained section.
+
+---
+
 ## 🚨 Known Issues
 
 ### Medium Priority
