@@ -603,8 +603,8 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
 
               {/* Customer Insights — shared from the linked customer */}
               {linkedCustomer && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-3">
-                  <p className="field-label mb-2 text-amber-700">Customer Insights ⭐</p>
+                <div className="rounded-lg border border-amber-200 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/10 p-3">
+                  <p className="field-label mb-2 text-amber-700 dark:text-amber-300">Customer Insights ⭐</p>
                   <InlineEdit value={linkedCustomer.customer_insights ?? ''} placeholder="Insight about this customer (shared across their Leads & Won jobs)…" multiline onSave={(v) => updateCustomer(linkedCustomer.customer_id, { customer_insights: v })} />
                 </div>
               )}
@@ -860,8 +860,8 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                           </div>
                         </button>
                         {/* Customer Insights — shared from the linked customer */}
-                        <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-3">
-                          <p className="field-label mb-2 text-amber-700">Customer Insights ⭐</p>
+                        <div className="rounded-lg border border-amber-200 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/10 p-3">
+                          <p className="field-label mb-2 text-amber-700 dark:text-amber-300">Customer Insights ⭐</p>
                           <InlineEdit value={linkedCustomer.customer_insights ?? ''} placeholder="Insight about this customer (shared across their Leads & Won jobs)…" multiline onSave={(v) => updateCustomer(linkedCustomer.customer_id, { customer_insights: v })} />
                         </div>
                       </>

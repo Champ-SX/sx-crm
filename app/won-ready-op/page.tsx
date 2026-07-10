@@ -246,7 +246,7 @@ function JobCard({
 
         {/* Staff-payment tab — red while pending, green when fully paid */}
         {staff.length > 0 && (
-          <div className={`-mx-3 -mb-3 mt-2 px-3 py-1.5 rounded-b-xl border-t flex items-center gap-1.5 ${allPaid ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+          <div className={`-mx-3 -mb-3 mt-2 px-3 py-1.5 rounded-b-xl border-t flex items-center gap-1.5 ${allPaid ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/15 dark:border-emerald-500/30 dark:text-emerald-300' : 'bg-red-50 border-red-200 text-red-700 dark:bg-red-500/15 dark:border-red-500/30 dark:text-red-300'}`}>
             {allPaid ? <Check className="w-3 h-3 shrink-0" /> : <CreditCard className="w-3 h-3 shrink-0" />}
             <span className="text-[10px] font-semibold">จ่ายแล้ว {paidStaff}/{staff.length} · ฿{staffFeeTotal.toLocaleString()}</span>
           </div>
@@ -331,13 +331,13 @@ function KanbanColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col w-[82vw] min-w-[82vw] max-w-[82vw] sm:w-auto sm:min-w-[240px] sm:max-w-[240px] sm:max-h-full sm:min-h-0 rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/20' : ''} ${isDragging ? 'opacity-50' : ''} ${cfg.colBg} shadow-sm cursor-grab active:cursor-grabbing`}
+      className={`flex flex-col w-[82vw] min-w-[82vw] max-w-[82vw] sm:w-auto sm:min-w-[240px] sm:max-w-[240px] sm:max-h-full sm:min-h-0 rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/20' : ''} ${isDragging ? 'opacity-50' : ''} ${cfg.colBg} dark:!bg-card/40 shadow-sm cursor-grab active:cursor-grabbing`}
       {...attributes}
       {...listeners}
     >
       {/* Column header */}
       <div
-        className={`px-3.5 pt-3.5 pb-2.5 rounded-t-xl ${cfg.headerBg} select-none`}
+        className={`px-3.5 pt-3.5 pb-2.5 rounded-t-xl ${cfg.headerBg} dark:!bg-muted/50 select-none`}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -411,7 +411,7 @@ function KanbanColumn({
                 </button>
                 <button
                   onClick={() => { setSortMenuOpen(false); onDeleteStage?.(stage) }}
-                  className="block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-red-50 text-red-600 last:rounded-b-md"
+                  className="block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-red-50 dark:hover:bg-red-500/10 text-red-600 dark:text-red-400 last:rounded-b-md"
                 >
                   Delete Stage
                 </button>
@@ -726,13 +726,13 @@ function JobDetail({
     const { count, paidCount, total } = staffPaySummary(list)
     return (
       <div className="rounded-xl border border-rose-200 overflow-hidden mt-1">
-        <div className="bg-rose-50 px-4 py-2.5 flex items-center gap-2">
+        <div className="bg-rose-50 dark:bg-rose-500/10 px-4 py-2.5 flex items-center gap-2">
           <div className="w-5 h-5 rounded-md bg-rose-100 flex items-center justify-center shrink-0">
             <Users className="w-3 h-3 text-rose-600" />
           </div>
-          <span className="text-[12px] font-bold text-rose-800 tracking-wide flex-1">จ่ายเงินน้องออกงาน</span>
+          <span className="text-[12px] font-bold text-rose-800 dark:text-rose-300 tracking-wide flex-1">จ่ายเงินน้องออกงาน</span>
           {count > 0 && (
-            <span className="text-[11px] font-medium text-rose-700/80">
+            <span className="text-[11px] font-medium text-rose-700/80 dark:text-rose-300/80">
               จ่ายแล้ว {paidCount}/{count} · ฿{total.toLocaleString()}
             </span>
           )}
@@ -745,7 +745,7 @@ function JobDetail({
               {list.map((s) => (
                 <li
                   key={s.staff_id}
-                  className={`flex items-start justify-between p-3 rounded-lg border ${s.paid ? 'border-emerald-200 bg-emerald-50/50' : 'border-border/60 bg-muted/20'}`}
+                  className={`flex items-start justify-between p-3 rounded-lg border ${s.paid ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-500/30 dark:bg-emerald-500/10' : 'border-border/60 bg-muted/20'}`}
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium">{s.name} <span className="text-muted-foreground">({s.nickname})</span></p>
@@ -755,7 +755,7 @@ function JobDetail({
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                       {/* ค่าจ้าง — per-job fee in THB (commits on blur) */}
                       <div className="flex items-center gap-1.5">
-                        <label className="text-xs font-medium text-rose-700">ค่าจ้าง</label>
+                        <label className="text-xs font-medium text-rose-700 dark:text-rose-300">ค่าจ้าง</label>
                         <span className="text-xs text-muted-foreground">฿</span>
                         <input
                           type="number"
@@ -778,7 +778,7 @@ function JobDetail({
                         onClick={() => toggleStaffPaid(s.staff_id)}
                         className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-medium transition-colors ${s.paid
                           ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                          : 'border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100'}`}
+                          : 'border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 dark:border-amber-500/40 dark:text-amber-300 dark:bg-amber-500/10 dark:hover:bg-amber-500/20'}`}
                         title={s.paid ? 'คลิกเพื่อเปลี่ยนเป็นยังไม่จ่าย' : 'คลิกเพื่อทำเครื่องหมายจ่ายแล้ว'}
                       >
                         {s.paid ? <><Check className="w-3 h-3" /> จ่ายแล้ว</> : <>ยังไม่จ่าย</>}
@@ -797,7 +797,7 @@ function JobDetail({
               ))}
             </ul>
           )}
-          <Button size="sm" variant="outline" className="w-full h-8 text-xs mt-1 border-rose-200 text-rose-700 hover:bg-rose-50" onClick={() => setStaffSheetOpen(true)}>
+          <Button size="sm" variant="outline" className="w-full h-8 text-xs mt-1 border-rose-200 text-rose-700 hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-300 dark:hover:bg-rose-500/10" onClick={() => setStaffSheetOpen(true)}>
             + Add Staff
           </Button>
         </div>
@@ -918,8 +918,8 @@ function JobDetail({
 
               {/* Customer Insights — shared from the linked customer */}
               {linkedCustomer && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4">
-                  <p className="field-label mb-2 text-amber-700">Customer Insights ⭐</p>
+                <div className="rounded-xl border border-amber-200 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/10 p-4">
+                  <p className="field-label mb-2 text-amber-700 dark:text-amber-300">Customer Insights ⭐</p>
                   <InlineEdit value={linkedCustomer.customer_insights ?? ''} placeholder="Insight about this customer (shared across their Leads & Won jobs)…" multiline onSave={(v) => uc?.({ customer_insights: v })} />
                 </div>
               )}
@@ -966,7 +966,7 @@ function JobDetail({
                 {openSections.C && <div className="bg-card px-4 py-4 space-y-4">
                   {/* Source badge */}
                   {linkedCustomer ? (
-                    <p className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-md leading-snug">
+                    <p className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/30 px-2.5 py-1.5 rounded-md leading-snug">
                       🔗 Linked to <strong>{linkedCustomer.company_name}</strong> — edits update the shared Customer record
                     </p>
                   ) : (
@@ -1076,12 +1076,12 @@ function JobDetail({
                 <button
                   type="button"
                   onClick={() => toggleSection('OpStage')}
-                  className="w-full bg-red-50 px-4 py-2.5 flex items-center gap-2 hover:bg-red-100/60 transition-colors text-left"
+                  className="w-full bg-red-50 dark:bg-red-500/10 px-4 py-2.5 flex items-center gap-2 hover:bg-red-100/60 dark:hover:bg-red-500/20 transition-colors text-left"
                 >
                   <div className="w-5 h-5 rounded-md bg-red-100 flex items-center justify-center shrink-0">
                     <div className={`w-2 h-2 rounded-full bg-red-600`} />
                   </div>
-                  <span className="text-[12px] font-bold text-red-800 tracking-wide flex-1">OP Stage</span>
+                  <span className="text-[12px] font-bold text-red-800 dark:text-red-300 tracking-wide flex-1">OP Stage</span>
                   <ChevronDown className={`w-3.5 h-3.5 text-red-400 transition-transform duration-200 ${openSections.OpStage ? 'rotate-0' : '-rotate-90'}`} />
                 </button>
                 {openSections.OpStage && <div className="bg-card px-4 py-3 space-y-2">
@@ -1133,8 +1133,8 @@ function JobDetail({
                   <div className="px-6 py-5 space-y-5">
                     {/* Customer Insights — shared from the linked customer */}
                     {linkedCustomer && (
-                      <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4">
-                        <p className="field-label mb-2 text-amber-700">Customer Insights ⭐</p>
+                      <div className="rounded-xl border border-amber-200 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/10 p-4">
+                        <p className="field-label mb-2 text-amber-700 dark:text-amber-300">Customer Insights ⭐</p>
                         <InlineEdit value={linkedCustomer.customer_insights ?? ''} placeholder="Insight about this customer (shared across their Leads & Won jobs)…" multiline onSave={(v) => uc?.({ customer_insights: v })} />
                       </div>
                     )}
@@ -1179,7 +1179,7 @@ function JobDetail({
                       <SectionHeader letter="C" title="Company Account" icon={CreditCard} open={openSections.C} onToggle={() => toggleSection('C')} />
                       {openSections.C && <div className="bg-card px-4 py-4 space-y-4">
                         {linkedCustomer ? (
-                          <p className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-md leading-snug">
+                          <p className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/30 px-2.5 py-1.5 rounded-md leading-snug">
                             🔗 Linked to <strong>{linkedCustomer.company_name}</strong> — edits update the shared Customer record
                           </p>
                         ) : (
@@ -1289,12 +1289,12 @@ function JobDetail({
                       <button
                         type="button"
                         onClick={() => toggleSection('OpStage')}
-                        className="w-full bg-red-50 px-4 py-2.5 flex items-center gap-2 hover:bg-red-100/60 transition-colors text-left"
+                        className="w-full bg-red-50 dark:bg-red-500/10 px-4 py-2.5 flex items-center gap-2 hover:bg-red-100/60 dark:hover:bg-red-500/20 transition-colors text-left"
                       >
                         <div className="w-5 h-5 rounded-md bg-red-100 flex items-center justify-center shrink-0">
                           <div className={`w-2 h-2 rounded-full bg-red-600`} />
                         </div>
-                        <span className="text-[12px] font-bold text-red-800 tracking-wide flex-1">OP Stage</span>
+                        <span className="text-[12px] font-bold text-red-800 dark:text-red-300 tracking-wide flex-1">OP Stage</span>
                         <ChevronDown className={`w-3.5 h-3.5 text-red-400 transition-transform duration-200 ${openSections.OpStage ? 'rotate-0' : '-rotate-90'}`} />
                       </button>
                       {openSections.OpStage && <div className="bg-card px-4 py-3 space-y-2">

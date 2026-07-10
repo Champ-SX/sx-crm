@@ -602,8 +602,8 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
             </div>
 
             {/* Customer Insights — shared, shows on Lead + Won cards too */}
-            <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-3">
-              <p className="field-label mb-2 text-amber-700">Customer Insights ⭐</p>
+            <div className="rounded-lg border border-amber-200 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/10 p-3">
+              <p className="field-label mb-2 text-amber-700 dark:text-amber-300">Customer Insights ⭐</p>
               <InlineEdit value={customer.customer_insights ?? ''} placeholder="Add an insight that follows this customer across Leads & Won jobs…" multiline onSave={(v) => updateCustomer(customer.customer_id, { customer_insights: v })} />
             </div>
 
@@ -862,8 +862,8 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                   </div>
 
                   {/* Customer Insights — shared, shows on Lead + Won cards too */}
-                  <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-3">
-                    <p className="field-label mb-2 text-amber-700">Customer Insights ⭐</p>
+                  <div className="rounded-lg border border-amber-200 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/10 p-3">
+                    <p className="field-label mb-2 text-amber-700 dark:text-amber-300">Customer Insights ⭐</p>
                     <InlineEdit value={customer.customer_insights ?? ''} placeholder="Add an insight that follows this customer across Leads & Won jobs…" multiline onSave={(v) => updateCustomer(customer.customer_id, { customer_insights: v })} />
                   </div>
 
