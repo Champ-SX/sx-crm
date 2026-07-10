@@ -128,22 +128,22 @@ export function AdminDashboard() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <CalendarDays className="w-4 h-4 text-slate-400" />
-            <h2 className="text-[15px] font-semibold text-slate-800">Monthly Won Summary</h2>
+            <CalendarDays className="w-4 h-4 text-muted-foreground" />
+            <h2 className="text-[15px] font-semibold text-foreground">Monthly Won Summary</h2>
           </div>
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setMonthOffset((o) => o + 1)}
-              className="w-7 h-7 rounded-lg border border-border bg-white text-slate-500 hover:bg-muted flex items-center justify-center transition-colors"
+              className="w-7 h-7 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted flex items-center justify-center transition-colors"
               aria-label="Previous month"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="min-w-[130px] text-center text-[13px] font-medium text-slate-700">{monthLabel}</span>
+            <span className="min-w-[130px] text-center text-[13px] font-medium text-foreground">{monthLabel}</span>
             <button
               onClick={() => setMonthOffset((o) => Math.max(0, o - 1))}
               disabled={monthOffset === 0}
-              className="w-7 h-7 rounded-lg border border-border bg-white text-slate-500 hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-7 h-7 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               aria-label="Next month"
             >
               <ChevronRight className="w-4 h-4" />
@@ -154,17 +154,17 @@ export function AdminDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           {/* Month metrics */}
           <div className="space-y-4">
-            <div className="bg-white border border-border rounded-xl p-4">
+            <div className="bg-card border border-border rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <Trophy className="w-4 h-4 text-emerald-500" />
-                <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Won this month</p>
+                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Won this month</p>
               </div>
               <p className="text-2xl font-bold text-emerald-600">{monthCount}</p>
             </div>
-            <div className="bg-white border border-border rounded-xl p-4">
+            <div className="bg-card border border-border rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <TrendingUp className="w-4 h-4 text-teal-500" />
-                <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Revenue this month</p>
+                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Revenue this month</p>
               </div>
               <p className="text-2xl font-bold text-teal-600">{fmtBaht(monthRevenue)}</p>
             </div>
@@ -172,27 +172,27 @@ export function AdminDashboard() {
 
           {/* Owner ranking (2/3) */}
           <div className="lg:col-span-2">
-            <div className="bg-white border border-border rounded-xl overflow-hidden h-full">
+            <div className="bg-card border border-border rounded-xl overflow-hidden h-full">
               {monthRanking.length === 0 ? (
                 <div className="px-5 py-10 text-center">
-                  <Trophy className="w-7 h-7 text-slate-200 mx-auto mb-2" />
-                  <p className="text-[12px] text-slate-400">No won jobs in {monthLabel}.</p>
+                  <Trophy className="w-7 h-7 text-muted-foreground/40 mx-auto mb-2" />
+                  <p className="text-[12px] text-muted-foreground">No won jobs in {monthLabel}.</p>
                 </div>
               ) : (
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-border/60 bg-slate-50/60">
-                      <th className="px-5 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">#</th>
-                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Owner</th>
-                      <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Deals</th>
-                      <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Revenue</th>
+                    <tr className="border-b border-border/60 bg-muted/50">
+                      <th className="px-5 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">#</th>
+                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Owner</th>
+                      <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Deals</th>
+                      <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Revenue</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/40">
                     {monthRanking.map((row, i) => (
-                      <tr key={row.owner} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-5 py-3 text-[12px] font-semibold text-slate-400">{i + 1}</td>
-                        <td className="px-3 py-3 text-[12px] font-semibold text-slate-700">
+                      <tr key={row.owner} className="hover:bg-muted/50 transition-colors">
+                        <td className="px-5 py-3 text-[12px] font-semibold text-muted-foreground">{i + 1}</td>
+                        <td className="px-3 py-3 text-[12px] font-semibold text-foreground">
                           <span className="inline-flex items-center gap-2"><UserAvatar name={row.owner} size={20} />{row.owner}</span>
                         </td>
                         <td className="px-3 py-3 text-center text-[12px] font-medium text-emerald-600">{row.deals}</td>
@@ -208,19 +208,19 @@ export function AdminDashboard() {
 
         {/* Won jobs list for the month */}
         {monthJobsSorted.length > 0 && (
-          <div className="mt-4 bg-white border border-border rounded-xl overflow-hidden">
-            <div className="px-5 py-2.5 border-b border-border/60 bg-slate-50/60 flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Won jobs · {monthLabel}</span>
+          <div className="mt-4 bg-card border border-border rounded-xl overflow-hidden">
+            <div className="px-5 py-2.5 border-b border-border/60 bg-muted/50 flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Won jobs · {monthLabel}</span>
               <span className="text-[11px] font-semibold text-teal-600">{monthCount} · {fmtBaht(monthRevenue)}</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px]">
                 <thead>
                   <tr className="border-b border-border/60">
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Job</th>
-                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Customer</th>
-                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Owner</th>
-                    <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Value</th>
+                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Job</th>
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Customer</th>
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Owner</th>
+                    <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Value</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/40">
@@ -228,16 +228,16 @@ export function AdminDashboard() {
                     <tr
                       key={j.job_id}
                       onClick={() => router.push('/won-ready-op')}
-                      className="hover:bg-slate-50/50 transition-colors cursor-pointer"
+                      className="hover:bg-muted/50 transition-colors cursor-pointer"
                     >
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-mono font-semibold text-slate-400">#{j.job_number}</span>
-                          <span className="text-[12px] font-medium text-slate-700 truncate max-w-[240px]">{jobDisplayTitle(j)}</span>
+                          <span className="text-[10px] font-mono font-semibold text-muted-foreground">#{j.job_number}</span>
+                          <span className="text-[12px] font-medium text-foreground truncate max-w-[240px]">{jobDisplayTitle(j)}</span>
                         </div>
                       </td>
-                      <td className="px-3 py-3 text-[12px] text-slate-600 truncate max-w-[160px]">{j.customer_name || '—'}</td>
-                      <td className="px-3 py-3 text-[12px] text-slate-600"><span className="inline-flex items-center gap-1.5">{j.owner ? <><UserAvatar name={j.owner} size={16} />{j.owner}</> : '—'}</span></td>
+                      <td className="px-3 py-3 text-[12px] text-foreground/80 truncate max-w-[160px]">{j.customer_name || '—'}</td>
+                      <td className="px-3 py-3 text-[12px] text-foreground/80"><span className="inline-flex items-center gap-1.5">{j.owner ? <><UserAvatar name={j.owner} size={16} />{j.owner}</> : '—'}</span></td>
                       <td className="px-4 py-3 text-right text-[12px] font-semibold text-teal-600">{fmtBaht(j.estimated_value ?? 0)}</td>
                     </tr>
                   ))}
@@ -253,31 +253,31 @@ export function AdminDashboard() {
         {/* Performance matrix (2/3) */}
         <div className="lg:col-span-2">
           <SectionHeader icon={BarChart3} title="Team Performance" sub="by owner" href="/admin/users" linkLabel="Manage users" />
-          <div className="bg-white border border-border rounded-xl overflow-hidden">
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
             {matrix.length === 0 ? (
               <div className="px-5 py-10 text-center">
-                <BarChart3 className="w-7 h-7 text-slate-200 mx-auto mb-2" />
-                <p className="text-[12px] text-slate-400">No owner data yet.</p>
+                <BarChart3 className="w-7 h-7 text-muted-foreground/40 mx-auto mb-2" />
+                <p className="text-[12px] text-muted-foreground">No owner data yet.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[480px]">
                   <thead>
-                    <tr className="border-b border-border/60 bg-slate-50/60">
-                      <th className="px-5 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Owner</th>
-                      <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Open</th>
-                      <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Won</th>
-                      <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Win %</th>
-                      <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Revenue</th>
+                    <tr className="border-b border-border/60 bg-muted/50">
+                      <th className="px-5 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Owner</th>
+                      <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Open</th>
+                      <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Won</th>
+                      <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Win %</th>
+                      <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Revenue</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/40">
                     {matrix.map((row) => (
-                      <tr key={row.owner} className="hover:bg-slate-50/50 transition-colors">
+                      <tr key={row.owner} className="hover:bg-muted/50 transition-colors">
                         <td className="px-5 py-3">
-                          <span className="inline-flex items-center gap-2 text-[12px] font-semibold text-slate-700"><UserAvatar name={row.owner} size={20} />{row.owner}</span>
+                          <span className="inline-flex items-center gap-2 text-[12px] font-semibold text-foreground"><UserAvatar name={row.owner} size={20} />{row.owner}</span>
                         </td>
-                        <td className="px-3 py-3 text-center text-[12px] text-slate-600">{row.open}</td>
+                        <td className="px-3 py-3 text-center text-[12px] text-foreground/80">{row.open}</td>
                         <td className="px-3 py-3 text-center text-[12px] font-medium text-emerald-600">{row.won}</td>
                         <td className="px-3 py-3 text-center">
                           <span className="text-[11px] font-semibold text-blue-600">{row.winRate > 0 ? `${row.winRate}%` : '—'}</span>
@@ -295,20 +295,20 @@ export function AdminDashboard() {
         {/* Activity log (1/3) */}
         <div>
           <SectionHeader icon={Activity} title="System Activity" />
-          <div className="bg-white border border-border rounded-xl overflow-hidden">
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
             {recentActivity.length === 0 ? (
               <div className="px-5 py-8 text-center">
-                <Activity className="w-7 h-7 text-slate-200 mx-auto mb-2" />
-                <p className="text-[12px] text-slate-400">No activity yet.</p>
+                <Activity className="w-7 h-7 text-muted-foreground/40 mx-auto mb-2" />
+                <p className="text-[12px] text-muted-foreground">No activity yet.</p>
               </div>
             ) : (
               <ul className="divide-y divide-border/60">
                 {recentActivity.map((act) => (
-                  <li key={act.activity_id} className="px-4 py-3 hover:bg-slate-50/50 transition-colors">
-                    <p className="text-[12px] font-medium text-slate-700 leading-snug line-clamp-1">{act.title}</p>
+                  <li key={act.activity_id} className="px-4 py-3 hover:bg-muted/50 transition-colors">
+                    <p className="text-[12px] font-medium text-foreground leading-snug line-clamp-1">{act.title}</p>
                     <div className="flex items-center gap-1.5 mt-1">
-                      <User className="w-2.5 h-2.5 text-slate-400" />
-                      <span className="text-[10px] text-slate-400">
+                      <User className="w-2.5 h-2.5 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">
                         {act.created_by} · {format(parseDbDate(act.created_at), 'MMM d')}
                       </span>
                     </div>

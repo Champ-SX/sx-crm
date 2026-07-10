@@ -182,7 +182,7 @@ export default function AdminUsersPage() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="inline-block px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold uppercase">
+                    <span className="inline-block px-3 py-1 rounded-full bg-muted text-foreground text-xs font-semibold uppercase">
                       {u.role}
                     </span>
                   </td>

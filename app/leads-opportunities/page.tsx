@@ -7,7 +7,6 @@ import { parseDbDate } from '@/lib/utils'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
-import { ThemeToggle } from '@/components/layout/theme-toggle'
 import { EmptyState } from '@/components/shared/empty-state'
 import { CreateQuotationModal } from '@/components/shared/create-quotation-modal'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
@@ -184,7 +183,7 @@ function LeadRow({
 }) {
   const cfg = statusConfig[item.status]
   return (
-    <tr className="border-b border-border/50 hover:bg-slate-50/70 cursor-pointer transition-colors group" onClick={onClick}>
+    <tr className="border-b border-border/50 hover:bg-muted/70 cursor-pointer transition-colors group" onClick={onClick}>
       {/* Checkbox */}
       <td className="px-3 py-3.5 text-center w-10" onClick={(e) => { e.stopPropagation(); onToggleSelect?.(); }}>
         <input
@@ -199,39 +198,39 @@ function LeadRow({
       </td>
       {/* Name + contact */}
       <td className="px-6 py-3.5 min-w-[220px]">
-        <p className="text-[13px] font-semibold text-slate-800 leading-tight">{item.name}</p>
+        <p className="text-[13px] font-semibold text-foreground leading-tight">{item.name}</p>
         {item.contact_person && (
-          <p className="text-[11px] text-slate-400 mt-0.5">{item.contact_person}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">{item.contact_person}</p>
         )}
       </td>
       {/* Company */}
       <td className="px-4 py-3.5">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 text-[10px] font-bold shrink-0">
+          <div className="w-6 h-6 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-[10px] font-bold shrink-0">
             {(item.customer_name || '?').charAt(0).toUpperCase()}
           </div>
-          <p className="text-[12px] text-slate-600">{item.customer_name || '—'}</p>
+          <p className="text-[12px] text-foreground/80">{item.customer_name || '—'}</p>
         </div>
       </td>
       {/* Service */}
       <td className="px-4 py-3.5">
-        <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">{item.service_type}</span>
+        <span className="text-[10px] font-semibold bg-muted text-foreground/80 px-2 py-0.5 rounded-md">{item.service_type}</span>
       </td>
       {/* Event date */}
       <td className="px-4 py-3.5">
-        <p className="text-[12px] text-slate-500">
-          {item.event_date ? format(new Date(item.event_date + 'T00:00:00'), 'dd MMM yyyy') : <span className="text-slate-300">—</span>}
+        <p className="text-[12px] text-muted-foreground">
+          {item.event_date ? format(new Date(item.event_date + 'T00:00:00'), 'dd MMM yyyy') : <span className="text-muted-foreground/50">—</span>}
         </p>
       </td>
       {/* Value */}
       <td className="px-4 py-3.5">
-        <p className="text-[13px] font-bold text-slate-800">
-          {item.estimated_value && item.estimated_value > 0 ? `฿ ${item.estimated_value.toLocaleString()}` : <span className="text-slate-300 font-normal">—</span>}
+        <p className="text-[13px] font-bold text-foreground">
+          {item.estimated_value && item.estimated_value > 0 ? `฿ ${item.estimated_value.toLocaleString()}` : <span className="text-muted-foreground/50 font-normal">—</span>}
         </p>
       </td>
       {/* Owner */}
       <td className="px-4 py-3.5">
-        <span className="text-[11px] text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full">{item.owner}</span>
+        <span className="text-[11px] text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-full">{item.owner}</span>
       </td>
       {/* Status */}
       <td className="px-4 py-3.5">
@@ -239,7 +238,7 @@ function LeadRow({
       </td>
       {/* Arrow */}
       <td className="px-4 py-3.5">
-        <ChevronRight className="w-3.5 h-3.5 text-slate-300 opacity-0 group-hover:opacity-100 group-hover:text-slate-500 transition-all" />
+        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 opacity-0 group-hover:opacity-100 group-hover:text-muted-foreground transition-all" />
       </td>
     </tr>
   )
@@ -260,7 +259,7 @@ function LeadCard({
   const cfg = statusConfig[item.status]
   return (
     <div
-      className="flex items-start gap-3 border-b border-border/50 px-4 py-3.5 active:bg-slate-50 transition-colors"
+      className="flex items-start gap-3 border-b border-border/50 px-4 py-3.5 active:bg-muted transition-colors"
       onClick={onClick}
     >
       <input
@@ -272,27 +271,27 @@ function LeadCard({
       />
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-[14px] font-semibold text-slate-800 leading-snug">{item.name}</p>
+          <p className="text-[14px] font-semibold text-foreground leading-snug">{item.name}</p>
           <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${cfg.class}`}>{cfg.label}</span>
         </div>
         {item.contact_person && (
-          <p className="text-[12px] text-slate-400 mt-0.5">{item.contact_person}</p>
+          <p className="text-[12px] text-muted-foreground mt-0.5">{item.contact_person}</p>
         )}
-        <div className="flex items-center gap-2 mt-1.5 text-[12px] text-slate-600">
-          <div className="w-5 h-5 rounded-md bg-slate-100 flex items-center justify-center text-slate-500 text-[9px] font-bold shrink-0">
+        <div className="flex items-center gap-2 mt-1.5 text-[12px] text-foreground/80">
+          <div className="w-5 h-5 rounded-md bg-muted flex items-center justify-center text-muted-foreground text-[9px] font-bold shrink-0">
             {(item.customer_name || '?').charAt(0).toUpperCase()}
           </div>
           <span className="truncate">{item.customer_name || '—'}</span>
         </div>
         <div className="flex items-center justify-between gap-2 mt-2">
-          <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">{item.service_type}</span>
-          <span className="text-[13px] font-bold text-slate-800">
-            {item.estimated_value && item.estimated_value > 0 ? `฿ ${item.estimated_value.toLocaleString()}` : <span className="text-slate-300 font-normal">—</span>}
+          <span className="text-[10px] font-semibold bg-muted text-foreground/80 px-2 py-0.5 rounded-md">{item.service_type}</span>
+          <span className="text-[13px] font-bold text-foreground">
+            {item.estimated_value && item.estimated_value > 0 ? `฿ ${item.estimated_value.toLocaleString()}` : <span className="text-muted-foreground/50 font-normal">—</span>}
           </span>
         </div>
-        <div className="flex items-center justify-between gap-2 mt-1.5 text-[11px] text-slate-400">
+        <div className="flex items-center justify-between gap-2 mt-1.5 text-[11px] text-muted-foreground">
           <span>{item.event_date ? format(new Date(item.event_date + 'T00:00:00'), 'dd MMM yyyy') : '—'}</span>
-          <span className="bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full text-slate-500">{item.owner}</span>
+          <span className="bg-muted border border-border px-2 py-0.5 rounded-full text-muted-foreground">{item.owner}</span>
         </div>
       </div>
     </div>
@@ -565,7 +564,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                 <button
                   type="button"
                   onClick={() => router.push(`/customers?selectedCustomerId=${linkedCustomer.customer_id}`)}
-                  className="w-full text-left hover:bg-slate-50 rounded-lg p-3 transition-colors"
+                  className="w-full text-left hover:bg-muted rounded-lg p-3 transition-colors"
                 >
                   <div>
                     <p className="text-[13px] font-semibold text-foreground">
@@ -603,8 +602,8 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
 
               {/* Customer Insights — shared from the linked customer */}
               {linkedCustomer && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-3">
-                  <p className="field-label mb-2 text-amber-700">Customer Insights ⭐</p>
+                <div className="rounded-lg border border-amber-200 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/10 p-3">
+                  <p className="field-label mb-2 text-amber-700 dark:text-amber-300">Customer Insights ⭐</p>
                   <InlineEdit value={linkedCustomer.customer_insights ?? ''} placeholder="Insight about this customer (shared across their Leads & Won jobs)…" multiline onSave={(v) => updateCustomer(linkedCustomer.customer_id, { customer_insights: v })} />
                 </div>
               )}
@@ -825,7 +824,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                         <button
                           type="button"
                           onClick={() => router.push(`/customers?selectedCustomerId=${linkedCustomer.customer_id}`)}
-                          className="w-full text-left hover:bg-slate-50 rounded-lg p-3 transition-colors"
+                          className="w-full text-left hover:bg-muted rounded-lg p-3 transition-colors"
                         >
                           <div>
                             <p className="text-[13px] font-semibold text-foreground">
@@ -860,8 +859,8 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                           </div>
                         </button>
                         {/* Customer Insights — shared from the linked customer */}
-                        <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-3">
-                          <p className="field-label mb-2 text-amber-700">Customer Insights ⭐</p>
+                        <div className="rounded-lg border border-amber-200 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/10 p-3">
+                          <p className="field-label mb-2 text-amber-700 dark:text-amber-300">Customer Insights ⭐</p>
                           <InlineEdit value={linkedCustomer.customer_insights ?? ''} placeholder="Insight about this customer (shared across their Leads & Won jobs)…" multiline onSave={(v) => updateCustomer(linkedCustomer.customer_id, { customer_insights: v })} />
                         </div>
                       </>
@@ -1108,7 +1107,6 @@ export default function LeadsOpportunitiesPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <ThemeToggle />
           <Button size="sm" className="gap-1.5 h-8 text-xs sm:text-sm font-semibold" onClick={() => setCreating(true)}>
             <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Add Lead / Opp</span><span className="sm:hidden">Add</span>
           </Button>
@@ -1199,14 +1197,14 @@ export default function LeadsOpportunitiesPage() {
           })}
         </div>
         <Select value={serviceFilter} onValueChange={(v) => setServiceFilter(v ?? 'all')}>
-          <SelectTrigger className="w-[140px] h-8 text-[12px] bg-slate-50 border-slate-200"><SelectValue placeholder="All services" /></SelectTrigger>
+          <SelectTrigger className="w-[140px] h-8 text-[12px] bg-muted border-border"><SelectValue placeholder="All services" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All services</SelectItem>
             {SERVICES.map((s) => <SelectItem key={s} value={s} className="text-[12px]">{s}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={ownerFilter} onValueChange={(v) => setOwnerFilter(v ?? 'all')}>
-          <SelectTrigger className="w-[120px] h-8 text-[12px] bg-slate-50 border-slate-200"><SelectValue placeholder="All owners" /></SelectTrigger>
+          <SelectTrigger className="w-[120px] h-8 text-[12px] bg-muted border-border"><SelectValue placeholder="All owners" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All owners</SelectItem>
             <OwnerSelectItems className="text-[12px]" />
@@ -1232,7 +1230,7 @@ export default function LeadsOpportunitiesPage() {
             </Button>
           </>
         )}
-        <p className="text-[11px] text-slate-400 ml-auto">{filtered.length} items</p>
+        <p className="text-[11px] text-muted-foreground ml-auto">{filtered.length} items</p>
       </div>
 
       {/* Table */}
@@ -1260,7 +1258,7 @@ export default function LeadsOpportunitiesPage() {
           {/* Desktop: table */}
           <table className="hidden sm:table w-full">
             <thead className="sticky top-0 z-10">
-              <tr className="border-b border-border/60 bg-slate-50/80 backdrop-blur-sm">
+              <tr className="border-b border-border/60 bg-muted/80 backdrop-blur-sm">
                 <th className="px-3 py-2.5 text-center w-10">
                   <input
                     type="checkbox"
@@ -1269,13 +1267,13 @@ export default function LeadsOpportunitiesPage() {
                     className="w-4 h-4 rounded cursor-pointer"
                   />
                 </th>
-                <th className="px-6 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider min-w-[220px]">Lead / Opportunity</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Company</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Service</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Event Date</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Value</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Owner</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[220px]">Lead / Opportunity</th>
+                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Company</th>
+                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Service</th>
+                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Event Date</th>
+                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Value</th>
+                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Owner</th>
+                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
                 <th className="px-4 py-2.5" />
               </tr>
             </thead>

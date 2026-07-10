@@ -41,7 +41,7 @@ function TaskCard({ task, today, onToggle }: { task: Task; today: string; onTogg
   const isDueToday = !isDone && task.due_date === today
 
   return (
-    <div className={`flex items-start gap-3 p-4 rounded-xl border bg-white transition-all hover:shadow-sm ${isDone ? 'opacity-40' : ''} ${isOverdue ? 'border-red-200 bg-red-50/20' : 'border-slate-200/80'}`}>
+    <div className={`flex items-start gap-3 p-4 rounded-xl border bg-card transition-all hover:shadow-sm ${isDone ? 'opacity-40' : ''} ${isOverdue ? 'border-red-200 bg-red-50/20' : 'border-border/80'}`}>
       <button onClick={onToggle} className="mt-0.5 shrink-0">
         {isDone ? (
           <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -107,24 +107,24 @@ function CreateTaskForm({ onClose }: { onClose: () => void }) {
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="w-[480px] max-w-[90vw] sm:max-w-[480px] top-[8vh] translate-y-0 p-0 gap-0">
         <div className="px-6 pt-6 pb-4 border-b">
-          <DialogTitle className="text-[15px] font-semibold text-slate-800">New Task</DialogTitle>
+          <DialogTitle className="text-[15px] font-semibold text-foreground">New Task</DialogTitle>
         </div>
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Task *</Label>
+            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Task *</Label>
             <Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="h-9 text-sm" placeholder="What needs to be done?" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Notes</Label>
+            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Notes</Label>
             <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="text-sm resize-none" rows={3} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Due Date</Label>
+              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Due Date</Label>
               <Input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} className="h-9 text-sm" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Priority</Label>
+              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Priority</Label>
               <Select value={form.priority} onValueChange={(v) => v && setForm({ ...form, priority: v as TaskPriority })}>
                 <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -136,7 +136,7 @@ function CreateTaskForm({ onClose }: { onClose: () => void }) {
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Assign to</Label>
+            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Assign to</Label>
             <Select value={form.owner} onValueChange={(v) => v && setForm({ ...form, owner: v })}>
               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -210,12 +210,12 @@ export default function TasksPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="bg-white border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex items-center justify-between">
+      <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <MobileMenuButton />
           <div>
-            <h1 className="text-[15px] sm:text-[17px] font-semibold text-slate-800 tracking-tight">Tasks</h1>
-            <p className="text-[11px] sm:text-[12px] text-slate-400 mt-0.5 hidden sm:block">{pendingCount} pending · {done.length} done</p>
+            <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight">Tasks</h1>
+            <p className="text-[11px] sm:text-[12px] text-muted-foreground mt-0.5 hidden sm:block">{pendingCount} pending · {done.length} done</p>
           </div>
         </div>
         <Button size="sm" className="gap-1.5 h-8 text-[12px] font-semibold" onClick={() => setCreating(true)}>
@@ -224,16 +224,16 @@ export default function TasksPage() {
       </div>
 
       {/* Filters */}
-      <div className="px-4 sm:px-6 lg:px-8 py-3 border-b bg-white flex items-center gap-3">
+      <div className="px-4 sm:px-6 lg:px-8 py-3 border-b bg-card flex items-center gap-3">
         <Select value={ownerFilter} onValueChange={(v) => setOwnerFilter(v ?? 'all')}>
-          <SelectTrigger className="w-[130px] h-8 text-[12px] bg-slate-50 border-slate-200"><SelectValue placeholder="All owners" /></SelectTrigger>
+          <SelectTrigger className="w-[130px] h-8 text-[12px] bg-muted border-border"><SelectValue placeholder="All owners" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All owners</SelectItem>
             <OwnerSelectItems className="text-[12px]" />
           </SelectContent>
         </Select>
         <Select value={priorityFilter} onValueChange={(v) => setPriorityFilter(v ?? 'all')}>
-          <SelectTrigger className="w-[130px] h-8 text-[12px] bg-slate-50 border-slate-200"><SelectValue placeholder="All priorities" /></SelectTrigger>
+          <SelectTrigger className="w-[130px] h-8 text-[12px] bg-muted border-border"><SelectValue placeholder="All priorities" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all" className="text-[12px]">All priorities</SelectItem>
             <SelectItem value="high" className="text-[12px]">High</SelectItem>

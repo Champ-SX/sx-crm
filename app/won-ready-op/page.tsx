@@ -47,7 +47,7 @@ import { format, parseISO } from 'date-fns'
 
 // ── Stage visual config ───────────────────────────────────────────────────────
 const stageConfig: Record<OPStage, { accent: string; dot: string; headerBg: string; colBg: string }> = {
-  WON_JOB_LIST:                   { accent: 'border-t-slate-400',   dot: 'bg-slate-400',   headerBg: 'bg-slate-50',      colBg: 'bg-slate-50/60' },
+  WON_JOB_LIST:                   { accent: 'border-t-slate-400',   dot: 'bg-slate-400',   headerBg: 'bg-muted',      colBg: 'bg-muted/60' },
   OP_PREPARING_AW_DONE:            { accent: 'border-t-blue-400',    dot: 'bg-blue-400',    headerBg: 'bg-blue-50/60',    colBg: 'bg-blue-50/30' },
   OP_READY_FOR_EVENT:              { accent: 'border-t-teal-500',    dot: 'bg-teal-500',    headerBg: 'bg-teal-50/60',    colBg: 'bg-teal-50/20' },
   OP_WAIT_STAFF_PAYMENT_DOC_TERR:  { accent: 'border-t-amber-400',   dot: 'bg-amber-400',   headerBg: 'bg-amber-50/60',   colBg: 'bg-amber-50/20' },
@@ -209,44 +209,44 @@ function JobCard({
       onClick={(e) => { e.stopPropagation(); onClick() }}
       {...attributes}
       {...listeners}
-      className={`bg-white rounded-xl border border-border/60 p-3 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-border transition-all select-none flex items-start gap-2 group ${isBeingDragged ? 'opacity-50 shadow-lg' : ''}`}
+      className={`bg-card rounded-xl border border-border/60 p-3 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-border transition-all select-none flex items-start gap-2 group ${isBeingDragged ? 'opacity-50 shadow-lg' : ''}`}
     >
       {/* Content */}
       <div className="flex-1 min-w-0">
         {/* Job number + product type */}
         <div className="flex items-center justify-between mb-2 gap-1">
-          <span className="text-[9px] font-mono font-semibold text-slate-400 tracking-wider">#{job.job_number}</span>
-          <span className="text-[9px] font-semibold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md shrink-0">{job.product_type || '—'}</span>
+          <span className="text-[9px] font-mono font-semibold text-muted-foreground tracking-wider">#{job.job_number}</span>
+          <span className="text-[9px] font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-md shrink-0">{job.product_type || '—'}</span>
         </div>
 
         {/* Title */}
-        <p className="text-[12px] font-semibold text-slate-800 leading-snug mb-2 line-clamp-2">
+        <p className="text-[12px] font-semibold text-foreground leading-snug mb-2 line-clamp-2">
           {jobDisplayTitle(job)}
         </p>
 
         {/* Customer */}
-        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mb-1.5">
-          <User className="w-3 h-3 shrink-0 text-slate-400" />
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-1.5">
+          <User className="w-3 h-3 shrink-0 text-muted-foreground" />
           <span className="truncate">{job.customer_name || '—'}</span>
         </div>
 
         {/* Date */}
         {job.event_date && (
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mb-2">
-            <Calendar className="w-3 h-3 shrink-0 text-slate-400" />
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-2">
+            <Calendar className="w-3 h-3 shrink-0 text-muted-foreground" />
             <span>{format(parseISO(job.event_date + 'T00:00:00'), 'dd MMM yyyy')}</span>
           </div>
         )}
 
         {/* Value + owner */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-1 min-w-0">
-          <span className="text-[12px] font-bold text-slate-800 shrink-0">{formatCurrency(job.estimated_value)}</span>
-          <span className="text-[10px] font-medium text-slate-400 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded-full truncate min-w-0" title={job.owner || ''}>{job.owner}</span>
+        <div className="flex items-center justify-between pt-2 border-t border-border gap-1 min-w-0">
+          <span className="text-[12px] font-bold text-foreground shrink-0">{formatCurrency(job.estimated_value)}</span>
+          <span className="text-[10px] font-medium text-muted-foreground bg-muted border border-border px-1.5 py-0.5 rounded-full truncate min-w-0" title={job.owner || ''}>{job.owner}</span>
         </div>
 
         {/* Staff-payment tab — red while pending, green when fully paid */}
         {staff.length > 0 && (
-          <div className={`-mx-3 -mb-3 mt-2 px-3 py-1.5 rounded-b-xl border-t flex items-center gap-1.5 ${allPaid ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+          <div className={`-mx-3 -mb-3 mt-2 px-3 py-1.5 rounded-b-xl border-t flex items-center gap-1.5 ${allPaid ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/15 dark:border-emerald-500/30 dark:text-emerald-300' : 'bg-red-50 border-red-200 text-red-700 dark:bg-red-500/15 dark:border-red-500/30 dark:text-red-300'}`}>
             {allPaid ? <Check className="w-3 h-3 shrink-0" /> : <CreditCard className="w-3 h-3 shrink-0" />}
             <span className="text-[10px] font-semibold">จ่ายแล้ว {paidStaff}/{staff.length} · ฿{staffFeeTotal.toLocaleString()}</span>
           </div>
@@ -286,8 +286,8 @@ function KanbanColumn({
     ? {
         accent: opStage.accentColor || 'border-t-slate-400',
         dot: opStage.dotColor || 'bg-slate-400',
-        headerBg: opStage.headerBg || 'bg-slate-50',
-        colBg: opStage.columnBg || 'bg-slate-50/60',
+        headerBg: opStage.headerBg || 'bg-muted',
+        colBg: opStage.columnBg || 'bg-muted/60',
       }
     : stageConfig[stage as OPStage] || {
         accent: `border-t-purple-500`,
@@ -331,25 +331,25 @@ function KanbanColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col w-[82vw] min-w-[82vw] max-w-[82vw] sm:w-auto sm:min-w-[240px] sm:max-w-[240px] sm:max-h-full sm:min-h-0 rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/20' : ''} ${isDragging ? 'opacity-50' : ''} ${cfg.colBg} shadow-sm cursor-grab active:cursor-grabbing`}
+      className={`flex flex-col w-[82vw] min-w-[82vw] max-w-[82vw] sm:w-auto sm:min-w-[240px] sm:max-w-[240px] sm:max-h-full sm:min-h-0 rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/20' : ''} ${isDragging ? 'opacity-50' : ''} ${cfg.colBg} dark:!bg-card/40 shadow-sm cursor-grab active:cursor-grabbing`}
       {...attributes}
       {...listeners}
     >
       {/* Column header */}
       <div
-        className={`px-3.5 pt-3.5 pb-2.5 rounded-t-xl ${cfg.headerBg} select-none`}
+        className={`px-3.5 pt-3.5 pb-2.5 rounded-t-xl ${cfg.headerBg} dark:!bg-muted/50 select-none`}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {/* Drag handle icon - visual indicator */}
             <div
-              className="flex-shrink-0 opacity-40 hover:opacity-100 transition-opacity p-1 -m-1 rounded hover:bg-slate-200/30 pointer-events-none"
+              className="flex-shrink-0 opacity-40 hover:opacity-100 transition-opacity p-1 -m-1 rounded hover:bg-muted/30 pointer-events-none"
               title="Drag to reorder stages"
             >
-              <GripVertical className="w-4 h-4 text-slate-500" />
+              <GripVertical className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
-            <p className="text-[11px] font-semibold text-slate-700 leading-tight">
+            <p className="text-[11px] font-semibold text-foreground leading-tight">
               {opStages.find((s) => s.id === stage)?.label || OP_STAGE_LABELS[stage as OPStage] || stage}
             </p>
           </div>
@@ -357,61 +357,61 @@ function KanbanColumn({
           <div className="relative">
             <button
               onClick={() => setSortMenuOpen(!sortMenuOpen)}
-              className="text-[10px] font-bold bg-white shadow-sm text-slate-500 w-6 h-6 rounded-full flex items-center justify-center shrink-0 border border-slate-100 hover:border-slate-300 hover:shadow-md transition-all cursor-pointer"
+              className="text-[10px] font-bold bg-card shadow-sm text-muted-foreground w-6 h-6 rounded-full flex items-center justify-center shrink-0 border border-border hover:border-border hover:shadow-md transition-all cursor-pointer"
               title="Click to sort"
             >
               {jobs.length}
             </button>
             {/* Dropdown menu */}
             {sortMenuOpen && (
-              <div className="absolute right-0 top-7 bg-white border border-slate-200 rounded-md shadow-lg z-10 min-w-[140px]">
+              <div className="absolute right-0 top-7 bg-card border border-border rounded-md shadow-lg z-10 min-w-[140px]">
                 {/* Sort section */}
-                <div className="text-[9px] font-bold text-slate-500 px-3 py-1.5 uppercase tracking-wider">Sort</div>
+                <div className="text-[9px] font-bold text-muted-foreground px-3 py-1.5 uppercase tracking-wider">Sort</div>
                 <button
                   onClick={() => { setSortBy('position'); setSortMenuOpen(false) }}
-                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-slate-100 ${sortBy === 'position' ? 'bg-slate-50 text-slate-700' : 'text-slate-600'}`}
+                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-muted ${sortBy === 'position' ? 'bg-muted text-foreground' : 'text-foreground/80'}`}
                 >
                   Order
                 </button>
                 <button
                   onClick={() => { setSortBy('date'); setSortMenuOpen(false) }}
-                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-slate-100 ${sortBy === 'date' ? 'bg-slate-50 text-slate-700' : 'text-slate-600'}`}
+                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-muted ${sortBy === 'date' ? 'bg-muted text-foreground' : 'text-foreground/80'}`}
                 >
                   Event Date
                 </button>
                 <button
                   onClick={() => { setSortBy('value'); setSortMenuOpen(false) }}
-                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-slate-100 ${sortBy === 'value' ? 'bg-slate-50 text-slate-700' : 'text-slate-600'}`}
+                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-muted ${sortBy === 'value' ? 'bg-muted text-foreground' : 'text-foreground/80'}`}
                 >
                   Value
                 </button>
                 <button
                   onClick={() => { setSortBy('name'); setSortMenuOpen(false) }}
-                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-slate-100 ${sortBy === 'name' ? 'bg-slate-50 text-slate-700' : 'text-slate-600'}`}
+                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-muted ${sortBy === 'name' ? 'bg-muted text-foreground' : 'text-foreground/80'}`}
                 >
                   Alphabetically
                 </button>
 
                 {/* Separator */}
-                <div className="h-px bg-slate-200 my-1" />
+                <div className="h-px bg-muted my-1" />
 
                 {/* Manage section */}
-                <div className="text-[9px] font-bold text-slate-500 px-3 py-1.5 uppercase tracking-wider">Manage</div>
+                <div className="text-[9px] font-bold text-muted-foreground px-3 py-1.5 uppercase tracking-wider">Manage</div>
                 <button
                   onClick={() => { setSortMenuOpen(false); onChangeColor?.(stage) }}
-                  className="block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-slate-100 text-slate-600"
+                  className="block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-muted text-foreground/80"
                 >
                   Change Color
                 </button>
                 <button
                   onClick={() => { setSortMenuOpen(false); onAddStage?.() }}
-                  className="block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-slate-100 text-slate-600"
+                  className="block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-muted text-foreground/80"
                 >
                   Add Stage
                 </button>
                 <button
                   onClick={() => { setSortMenuOpen(false); onDeleteStage?.(stage) }}
-                  className="block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-red-50 text-red-600 last:rounded-b-md"
+                  className="block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-red-50 dark:hover:bg-red-500/10 text-red-600 dark:text-red-400 last:rounded-b-md"
                 >
                   Delete Stage
                 </button>
@@ -420,7 +420,7 @@ function KanbanColumn({
           </div>
         </div>
         {jobs.length > 0 && (
-          <p className="text-[10px] font-medium text-slate-400 pl-4 mt-0.5">{formatCurrency(totalValue)}</p>
+          <p className="text-[10px] font-medium text-muted-foreground pl-4 mt-0.5">{formatCurrency(totalValue)}</p>
         )}
       </div>
 
@@ -436,8 +436,8 @@ function KanbanColumn({
             />
           ))}
           {jobs.length === 0 && (
-            <div className={`flex items-center justify-center rounded-xl border-2 border-dashed h-20 transition-colors ${isOver ? 'border-primary/40 bg-primary/5' : 'border-slate-200/60'}`}>
-              <p className="text-[10px] text-slate-400/60">Drop here</p>
+            <div className={`flex items-center justify-center rounded-xl border-2 border-dashed h-20 transition-colors ${isOver ? 'border-primary/40 bg-primary/5' : 'border-border/60'}`}>
+              <p className="text-[10px] text-muted-foreground/60">Drop here</p>
             </div>
           )}
         </div>
@@ -487,7 +487,7 @@ function StaffSheet({ jobId, onClose }: { jobId: string; onClose: () => void }) 
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="w-[480px] max-w-[90vw] sm:max-w-[480px] top-[6vh] translate-y-0 p-0 gap-0 max-h-[88vh] flex flex-col">
         <div className="px-6 pt-6 pb-4 border-b shrink-0">
-          <DialogTitle className="text-[15px] font-semibold text-slate-800">Add Staff</DialogTitle>
+          <DialogTitle className="text-[15px] font-semibold text-foreground">Add Staff</DialogTitle>
         </div>
         <div className="px-6 py-5 space-y-6 overflow-y-auto flex-1">
           {/* Add from registry */}
@@ -615,7 +615,7 @@ function EditStaffDialog({
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="w-[480px] max-w-[90vw] sm:max-w-[480px] top-[6vh] translate-y-0 p-0 gap-0 max-h-[88vh] flex flex-col">
         <div className="px-6 pt-6 pb-4 border-b shrink-0">
-          <DialogTitle className="text-[15px] font-semibold text-slate-800">Edit Staff</DialogTitle>
+          <DialogTitle className="text-[15px] font-semibold text-foreground">Edit Staff</DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground mt-0.5">
             อัปเดตข้อมูลทั้งงานนี้และในทะเบียนพนักงาน (updates this job and the registry)
           </DialogDescription>
@@ -726,18 +726,18 @@ function JobDetail({
     const { count, paidCount, total } = staffPaySummary(list)
     return (
       <div className="rounded-xl border border-rose-200 overflow-hidden mt-1">
-        <div className="bg-rose-50 px-4 py-2.5 flex items-center gap-2">
+        <div className="bg-rose-50 dark:bg-rose-500/10 px-4 py-2.5 flex items-center gap-2">
           <div className="w-5 h-5 rounded-md bg-rose-100 flex items-center justify-center shrink-0">
             <Users className="w-3 h-3 text-rose-600" />
           </div>
-          <span className="text-[12px] font-bold text-rose-800 tracking-wide flex-1">จ่ายเงินน้องออกงาน</span>
+          <span className="text-[12px] font-bold text-rose-800 dark:text-rose-300 tracking-wide flex-1">จ่ายเงินน้องออกงาน</span>
           {count > 0 && (
-            <span className="text-[11px] font-medium text-rose-700/80">
+            <span className="text-[11px] font-medium text-rose-700/80 dark:text-rose-300/80">
               จ่ายแล้ว {paidCount}/{count} · ฿{total.toLocaleString()}
             </span>
           )}
         </div>
-        <div className="bg-white px-4 py-3 space-y-2">
+        <div className="bg-card px-4 py-3 space-y-2">
           {list.length === 0 ? (
             <p className="text-xs text-muted-foreground italic">No staff assigned yet.</p>
           ) : (
@@ -745,7 +745,7 @@ function JobDetail({
               {list.map((s) => (
                 <li
                   key={s.staff_id}
-                  className={`flex items-start justify-between p-3 rounded-lg border ${s.paid ? 'border-emerald-200 bg-emerald-50/50' : 'border-border/60 bg-muted/20'}`}
+                  className={`flex items-start justify-between p-3 rounded-lg border ${s.paid ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-500/30 dark:bg-emerald-500/10' : 'border-border/60 bg-muted/20'}`}
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium">{s.name} <span className="text-muted-foreground">({s.nickname})</span></p>
@@ -755,7 +755,7 @@ function JobDetail({
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                       {/* ค่าจ้าง — per-job fee in THB (commits on blur) */}
                       <div className="flex items-center gap-1.5">
-                        <label className="text-xs font-medium text-rose-700">ค่าจ้าง</label>
+                        <label className="text-xs font-medium text-rose-700 dark:text-rose-300">ค่าจ้าง</label>
                         <span className="text-xs text-muted-foreground">฿</span>
                         <input
                           type="number"
@@ -778,7 +778,7 @@ function JobDetail({
                         onClick={() => toggleStaffPaid(s.staff_id)}
                         className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-medium transition-colors ${s.paid
                           ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                          : 'border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100'}`}
+                          : 'border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 dark:border-amber-500/40 dark:text-amber-300 dark:bg-amber-500/10 dark:hover:bg-amber-500/20'}`}
                         title={s.paid ? 'คลิกเพื่อเปลี่ยนเป็นยังไม่จ่าย' : 'คลิกเพื่อทำเครื่องหมายจ่ายแล้ว'}
                       >
                         {s.paid ? <><Check className="w-3 h-3" /> จ่ายแล้ว</> : <>ยังไม่จ่าย</>}
@@ -797,7 +797,7 @@ function JobDetail({
               ))}
             </ul>
           )}
-          <Button size="sm" variant="outline" className="w-full h-8 text-xs mt-1 border-rose-200 text-rose-700 hover:bg-rose-50" onClick={() => setStaffSheetOpen(true)}>
+          <Button size="sm" variant="outline" className="w-full h-8 text-xs mt-1 border-rose-200 text-rose-700 hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-300 dark:hover:bg-rose-500/10" onClick={() => setStaffSheetOpen(true)}>
             + Add Staff
           </Button>
         </div>
@@ -817,7 +817,7 @@ function JobDetail({
           {/* ── Header ── */}
           {/* Mobile compacts to 3 rows (chip+delete / title / inline value·meta·owner) so the
               A/B/C detail sections start higher; desktop keeps the value/owner/delete right column. */}
-          <div className="px-4 sm:px-7 pt-3 sm:pt-5 pb-2.5 sm:pb-4 border-b shrink-0 bg-white">
+          <div className="px-4 sm:px-7 pt-3 sm:pt-5 pb-2.5 sm:pb-4 border-b shrink-0 bg-card">
             <div className="flex flex-col sm:flex-row items-start justify-between gap-2 sm:gap-4">
               <div className="flex-1 min-w-0 w-full sm:w-auto">
                 <div className="flex items-center gap-2 mb-1">
@@ -918,8 +918,8 @@ function JobDetail({
 
               {/* Customer Insights — shared from the linked customer */}
               {linkedCustomer && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4">
-                  <p className="field-label mb-2 text-amber-700">Customer Insights ⭐</p>
+                <div className="rounded-xl border border-amber-200 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/10 p-4">
+                  <p className="field-label mb-2 text-amber-700 dark:text-amber-300">Customer Insights ⭐</p>
                   <InlineEdit value={linkedCustomer.customer_insights ?? ''} placeholder="Insight about this customer (shared across their Leads & Won jobs)…" multiline onSave={(v) => uc?.({ customer_insights: v })} />
                 </div>
               )}
@@ -927,7 +927,7 @@ function JobDetail({
               {/* Section A: รายละเอียดงาน */}
               <div className="rounded-xl border border-border overflow-hidden">
                 <SectionHeader letter="A" title="รายละเอียดงาน" icon={ClipboardList} open={openSections.A} onToggle={() => toggleSection('A')} />
-                {openSections.A && <div className="bg-white px-4 py-4 space-y-4">
+                {openSections.A && <div className="bg-card px-4 py-4 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <FieldRow label="Event Date" value={job.event_date || ''} placeholder="YYYY-MM-DD" dateInput onSave={(v) => u({ event_date: v })} />
                     <FieldRow label="Event Time" value={job.event_time || ''} placeholder="e.g. 17.00-23.00" onSave={(v) => u({ event_time: v })} />
@@ -945,7 +945,7 @@ function JobDetail({
               {/* Section B: ข้อมูลหน้างาน */}
               <div className="rounded-xl border border-border overflow-hidden">
                 <SectionHeader letter="B" title="ข้อมูลหน้างาน" icon={Truck} open={openSections.B} onToggle={() => toggleSection('B')} />
-                {openSections.B && <div className="bg-white px-4 py-4 space-y-4">
+                {openSections.B && <div className="bg-card px-4 py-4 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <FieldRow label="Onsite Contact" value={job.onsite_contact_name || ''} placeholder="ชื่อผู้ติดต่อหน้างาน" onSave={(v) => u({ onsite_contact_name: v })} />
                     <FieldRow label="Phone" value={job.onsite_contact_phone || ''} placeholder="08x-xxx-xxxx" onSave={(v) => u({ onsite_contact_phone: v })} />
@@ -963,14 +963,14 @@ function JobDetail({
               {/* Section C: Company Account */}
               <div className="rounded-xl border border-border overflow-hidden">
                 <SectionHeader letter="C" title="Company Account" icon={CreditCard} open={openSections.C} onToggle={() => toggleSection('C')} />
-                {openSections.C && <div className="bg-white px-4 py-4 space-y-4">
+                {openSections.C && <div className="bg-card px-4 py-4 space-y-4">
                   {/* Source badge */}
                   {linkedCustomer ? (
-                    <p className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-md leading-snug">
+                    <p className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/30 px-2.5 py-1.5 rounded-md leading-snug">
                       🔗 Linked to <strong>{linkedCustomer.company_name}</strong> — edits update the shared Customer record
                     </p>
                   ) : (
-                    <p className="text-[10px] text-slate-400 bg-slate-50 px-2.5 py-1.5 rounded-md">
+                    <p className="text-[10px] text-muted-foreground bg-muted px-2.5 py-1.5 rounded-md">
                       No linked customer — data stored on this job only
                     </p>
                   )}
@@ -1076,15 +1076,15 @@ function JobDetail({
                 <button
                   type="button"
                   onClick={() => toggleSection('OpStage')}
-                  className="w-full bg-red-50 px-4 py-2.5 flex items-center gap-2 hover:bg-red-100/60 transition-colors text-left"
+                  className="w-full bg-red-50 dark:bg-red-500/10 px-4 py-2.5 flex items-center gap-2 hover:bg-red-100/60 dark:hover:bg-red-500/20 transition-colors text-left"
                 >
                   <div className="w-5 h-5 rounded-md bg-red-100 flex items-center justify-center shrink-0">
                     <div className={`w-2 h-2 rounded-full bg-red-600`} />
                   </div>
-                  <span className="text-[12px] font-bold text-red-800 tracking-wide flex-1">OP Stage</span>
+                  <span className="text-[12px] font-bold text-red-800 dark:text-red-300 tracking-wide flex-1">OP Stage</span>
                   <ChevronDown className={`w-3.5 h-3.5 text-red-400 transition-transform duration-200 ${openSections.OpStage ? 'rotate-0' : '-rotate-90'}`} />
                 </button>
-                {openSections.OpStage && <div className="bg-white px-4 py-3 space-y-2">
+                {openSections.OpStage && <div className="bg-card px-4 py-3 space-y-2">
                   <div className="flex flex-col gap-1.5">
                     {OP_STAGES.map((s) => {
                       const isActive = job.op_stage === s
@@ -1095,7 +1095,7 @@ function JobDetail({
                           className={`w-full text-left text-[11px] font-semibold px-3 py-2 rounded-lg border transition-all ${
                             isActive
                               ? 'bg-primary text-white border-primary shadow-sm'
-                              : 'border-slate-200 text-slate-500 bg-white hover:bg-slate-50 hover:border-slate-300'
+                              : 'border-border text-muted-foreground bg-card hover:bg-muted hover:border-border'
                           }`}
                         >
                           {OP_STAGE_LABELS[s]}
@@ -1109,7 +1109,7 @@ function JobDetail({
             </div>
 
             {/* ── RIGHT: Activity + History (desktop only, fixed width, scrollable) ── */}
-            <div className="hidden sm:flex flex-col w-[320px] shrink-0 overflow-y-auto px-5 py-5 space-y-5 bg-slate-50/60">
+            <div className="hidden sm:flex flex-col w-[320px] shrink-0 overflow-y-auto px-5 py-5 space-y-5 bg-muted/60">
 
               {/* Log Activity */}
               <div>
@@ -1133,15 +1133,15 @@ function JobDetail({
                   <div className="px-6 py-5 space-y-5">
                     {/* Customer Insights — shared from the linked customer */}
                     {linkedCustomer && (
-                      <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4">
-                        <p className="field-label mb-2 text-amber-700">Customer Insights ⭐</p>
+                      <div className="rounded-xl border border-amber-200 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/10 p-4">
+                        <p className="field-label mb-2 text-amber-700 dark:text-amber-300">Customer Insights ⭐</p>
                         <InlineEdit value={linkedCustomer.customer_insights ?? ''} placeholder="Insight about this customer (shared across their Leads & Won jobs)…" multiline onSave={(v) => uc?.({ customer_insights: v })} />
                       </div>
                     )}
                     {/* Section A: รายละเอียดงาน */}
                     <div className="rounded-xl border border-border overflow-hidden">
                       <SectionHeader letter="A" title="รายละเอียดงาน" icon={ClipboardList} open={openSections.A} onToggle={() => toggleSection('A')} />
-                      {openSections.A && <div className="bg-white px-4 py-4 space-y-4">
+                      {openSections.A && <div className="bg-card px-4 py-4 space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <FieldRow label="Event Date" value={job.event_date || ''} placeholder="YYYY-MM-DD" dateInput onSave={(v) => u({ event_date: v })} />
                           <FieldRow label="Event Time" value={job.event_time || ''} placeholder="e.g. 17.00-23.00" onSave={(v) => u({ event_time: v })} />
@@ -1159,7 +1159,7 @@ function JobDetail({
                     {/* Section B: ข้อมูลหน้างาน */}
                     <div className="rounded-xl border border-border overflow-hidden">
                       <SectionHeader letter="B" title="ข้อมูลหน้างาน" icon={Truck} open={openSections.B} onToggle={() => toggleSection('B')} />
-                      {openSections.B && <div className="bg-white px-4 py-4 space-y-4">
+                      {openSections.B && <div className="bg-card px-4 py-4 space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <FieldRow label="Onsite Contact" value={job.onsite_contact_name || ''} placeholder="ชื่อผู้ติดต่อหน้างาน" onSave={(v) => u({ onsite_contact_name: v })} />
                           <FieldRow label="Phone" value={job.onsite_contact_phone || ''} placeholder="08x-xxx-xxxx" onSave={(v) => u({ onsite_contact_phone: v })} />
@@ -1177,13 +1177,13 @@ function JobDetail({
                     {/* Section C: Company Account & OP Stage */}
                     <div className="rounded-xl border border-border overflow-hidden">
                       <SectionHeader letter="C" title="Company Account" icon={CreditCard} open={openSections.C} onToggle={() => toggleSection('C')} />
-                      {openSections.C && <div className="bg-white px-4 py-4 space-y-4">
+                      {openSections.C && <div className="bg-card px-4 py-4 space-y-4">
                         {linkedCustomer ? (
-                          <p className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-md leading-snug">
+                          <p className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/30 px-2.5 py-1.5 rounded-md leading-snug">
                             🔗 Linked to <strong>{linkedCustomer.company_name}</strong> — edits update the shared Customer record
                           </p>
                         ) : (
-                          <p className="text-[10px] text-slate-400 bg-slate-50 px-2.5 py-1.5 rounded-md">
+                          <p className="text-[10px] text-muted-foreground bg-muted px-2.5 py-1.5 rounded-md">
                             No linked customer — data stored on this job only
                           </p>
                         )}
@@ -1289,15 +1289,15 @@ function JobDetail({
                       <button
                         type="button"
                         onClick={() => toggleSection('OpStage')}
-                        className="w-full bg-red-50 px-4 py-2.5 flex items-center gap-2 hover:bg-red-100/60 transition-colors text-left"
+                        className="w-full bg-red-50 dark:bg-red-500/10 px-4 py-2.5 flex items-center gap-2 hover:bg-red-100/60 dark:hover:bg-red-500/20 transition-colors text-left"
                       >
                         <div className="w-5 h-5 rounded-md bg-red-100 flex items-center justify-center shrink-0">
                           <div className={`w-2 h-2 rounded-full bg-red-600`} />
                         </div>
-                        <span className="text-[12px] font-bold text-red-800 tracking-wide flex-1">OP Stage</span>
+                        <span className="text-[12px] font-bold text-red-800 dark:text-red-300 tracking-wide flex-1">OP Stage</span>
                         <ChevronDown className={`w-3.5 h-3.5 text-red-400 transition-transform duration-200 ${openSections.OpStage ? 'rotate-0' : '-rotate-90'}`} />
                       </button>
-                      {openSections.OpStage && <div className="bg-white px-4 py-3 space-y-2">
+                      {openSections.OpStage && <div className="bg-card px-4 py-3 space-y-2">
                         <div className="flex flex-col gap-1.5">
                           {OP_STAGES.map((s) => {
                             const isActive = job.op_stage === s
@@ -1308,7 +1308,7 @@ function JobDetail({
                                 className={`w-full text-left text-[11px] font-semibold px-3 py-2 rounded-lg border transition-all ${
                                   isActive
                                     ? 'bg-primary text-white border-primary shadow-sm'
-                                    : 'border-slate-200 text-slate-500 bg-white hover:bg-slate-50 hover:border-slate-300'
+                                    : 'border-border text-muted-foreground bg-card hover:bg-muted hover:border-border'
                                 }`}
                               >
                                 {OP_STAGE_LABELS[s]}
@@ -1530,12 +1530,12 @@ export default function WonReadyOpPage() {
   return (
     <div className="flex flex-col h-[100dvh]">
       {/* Top bar */}
-      <div className="bg-white border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex items-center justify-between">
+      <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <MobileMenuButton />
           <div>
-            <h1 className="text-[15px] sm:text-[17px] font-semibold text-slate-800 tracking-tight">Won &amp; Ready for OP</h1>
-            <p className="text-[11px] sm:text-[12px] text-slate-400 mt-0.5 hidden sm:block">{activeCount} active jobs · {formatCurrency(totalValue)} in pipeline</p>
+            <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight">Won &amp; Ready for OP</h1>
+            <p className="text-[11px] sm:text-[12px] text-muted-foreground mt-0.5 hidden sm:block">{activeCount} active jobs · {formatCurrency(totalValue)} in pipeline</p>
           </div>
         </div>
         {/* Scroll the board sideways one stage at a time (desktop) */}
@@ -1543,7 +1543,7 @@ export default function WonReadyOpPage() {
           <button
             type="button"
             onClick={() => scrollBoard(-1)}
-            className="w-8 h-8 rounded-lg border border-border bg-white text-slate-500 hover:bg-muted hover:text-foreground flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-center transition-colors"
             aria-label="Scroll stages left"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -1551,7 +1551,7 @@ export default function WonReadyOpPage() {
           <button
             type="button"
             onClick={() => scrollBoard(1)}
-            className="w-8 h-8 rounded-lg border border-border bg-white text-slate-500 hover:bg-muted hover:text-foreground flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-center transition-colors"
             aria-label="Scroll stages right"
           >
             <ChevronRight className="w-4 h-4" />
@@ -1588,7 +1588,7 @@ export default function WonReadyOpPage() {
 
         <DragOverlay>
           {activeJob && (
-            <div className="bg-white rounded-lg border border-primary/30 shadow-xl p-3 w-[230px] opacity-95">
+            <div className="bg-card rounded-lg border border-primary/30 shadow-xl p-3 w-[230px] opacity-95">
               <p className="text-[10px] font-mono text-muted-foreground/60 mb-1">#{activeJob.job_number}</p>
               <p className="text-sm font-semibold text-foreground leading-snug">{jobDisplayTitle(activeJob)}</p>
               <p className="text-xs text-muted-foreground mt-1">{activeJob.customer_name}</p>
@@ -1719,7 +1719,7 @@ export default function WonReadyOpPage() {
           <div className="space-y-4 py-4">
             {/* Stage Name Input */}
             <div>
-              <Label className="text-xs font-semibold text-slate-700">Stage Name</Label>
+              <Label className="text-xs font-semibold text-foreground">Stage Name</Label>
               <Input
                 placeholder="e.g. Custom Stage"
                 value={newStageName}
@@ -1730,7 +1730,7 @@ export default function WonReadyOpPage() {
 
             {/* Color Picker */}
             <div>
-              <Label className="text-xs font-semibold text-slate-700">Color</Label>
+              <Label className="text-xs font-semibold text-foreground">Color</Label>
               <div className="grid grid-cols-4 gap-3 mt-3">
                 {[
                   { name: 'slate', bg: 'bg-slate-400', label: 'Slate' },
@@ -1769,7 +1769,7 @@ export default function WonReadyOpPage() {
                 if (newStageName.trim()) {
                   const stageId = `custom_${Date.now()}`
                   const colorMappings: Record<string, { accent: string; dot: string; headerBg: string; colBg: string }> = {
-                    slate: { accent: 'border-t-slate-400', dot: 'bg-slate-400', headerBg: 'bg-slate-50', colBg: 'bg-slate-50/60' },
+                    slate: { accent: 'border-t-slate-400', dot: 'bg-slate-400', headerBg: 'bg-muted', colBg: 'bg-muted/60' },
                     blue: { accent: 'border-t-blue-400', dot: 'bg-blue-400', headerBg: 'bg-blue-50/60', colBg: 'bg-blue-50/30' },
                     teal: { accent: 'border-t-teal-500', dot: 'bg-teal-500', headerBg: 'bg-teal-50/60', colBg: 'bg-teal-50/20' },
                     green: { accent: 'border-t-green-500', dot: 'bg-green-500', headerBg: 'bg-green-50/60', colBg: 'bg-green-50/20' },

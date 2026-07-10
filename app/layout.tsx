@@ -8,6 +8,10 @@ import { DataInitializer } from '@/components/data-initializer'
 import { AuthProvider } from '@/components/auth-provider'
 import { AuthGuard } from '@/components/auth-guard'
 import { RealtimeSync } from '@/components/layout/realtime-sync'
+import { ThemeProvider } from '@/components/layout/theme-provider'
+
+// Applies the saved/system theme before first paint to avoid a light flash.
+const themeInitScript = `(function(){try{var t=localStorage.getItem('theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.classList.add('dark');}catch(e){}})();`
 
 const inter = Inter({ variable: '--font-sans', subsets: ['latin'], display: 'swap' })
 
@@ -21,7 +25,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="min-h-full flex font-sans">
+        <ThemeProvider>
         <AuthProvider>
           <AuthGuard>
             <TooltipProvider>
@@ -39,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </TooltipProvider>
           </AuthGuard>
         </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

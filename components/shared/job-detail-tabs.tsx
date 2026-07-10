@@ -23,7 +23,7 @@ export function JobDetailTabs({ children }: JobDetailTabsProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Tab Bar - Fixed at top */}
-      <div className="sticky top-0 z-20 bg-white border-b border-slate-200 dark:bg-slate-900 dark:border-slate-700">
+      <div className="sticky top-0 z-20 bg-card border-b border-border dark:bg-slate-900 dark:border-slate-700">
         <div className="flex">
           {tabs.map((tab) => (
             <button
@@ -34,7 +34,7 @@ export function JobDetailTabs({ children }: JobDetailTabsProps) {
                 'border-b-[3px] relative',
                 activeTab === tab.id
                   ? 'text-blue-600 border-b-blue-600 dark:text-blue-400 dark:border-b-blue-400'
-                  : 'text-slate-600 border-b-transparent hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+                  : 'text-foreground/80 border-b-transparent hover:text-foreground dark:text-muted-foreground dark:hover:text-muted-foreground/50'
               )}
             >
               {tab.label}

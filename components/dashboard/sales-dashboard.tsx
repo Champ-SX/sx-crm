@@ -62,8 +62,8 @@ export function SalesDashboard({ userName }: { userName: string }) {
       <div className="flex items-center gap-2.5">
         <UserAvatar name={userName} size={32} />
         <div>
-          <p className="text-[15px] font-semibold text-slate-800 leading-tight">{userName}</p>
-          <p className="text-[11px] text-slate-400">Your sales dashboard</p>
+          <p className="text-[15px] font-semibold text-foreground leading-tight">{userName}</p>
+          <p className="text-[11px] text-muted-foreground">Your sales dashboard</p>
         </div>
       </div>
 
@@ -116,12 +116,12 @@ export function SalesDashboard({ userName }: { userName: string }) {
         {/* Target progress (2/3) */}
         <div className="lg:col-span-2">
           <SectionHeader icon={Target} title="Monthly Target" sub={`${fmtBaht(myRevenueThisMonth)} of ${fmtBaht(MONTHLY_TARGET)}`} />
-          <div className="bg-white border border-border rounded-xl p-5">
+          <div className="bg-card border border-border rounded-xl p-5">
             <div className="flex items-end justify-between mb-2">
-              <p className="text-3xl font-bold text-slate-800">{targetPct}%</p>
-              <p className="text-[12px] text-slate-400">{format(today, 'MMMM yyyy')}</p>
+              <p className="text-3xl font-bold text-foreground">{targetPct}%</p>
+              <p className="text-[12px] text-muted-foreground">{format(today, 'MMMM yyyy')}</p>
             </div>
-            <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-3 bg-muted rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all ${targetPct >= 100 ? 'bg-emerald-500' : 'bg-teal-400'}`}
                 style={{ width: `${targetPct}%` }}
@@ -129,16 +129,16 @@ export function SalesDashboard({ userName }: { userName: string }) {
             </div>
             <div className="mt-5 pt-4 border-t border-border/60 grid grid-cols-3 gap-4">
               <div className="text-center">
-                <p className="text-lg font-bold text-slate-800">{myActiveLeads.length}</p>
-                <p className="text-[11px] text-slate-400">Active Leads</p>
+                <p className="text-lg font-bold text-foreground">{myActiveLeads.length}</p>
+                <p className="text-[11px] text-muted-foreground">Active Leads</p>
               </div>
               <div className="text-center">
                 <p className="text-lg font-bold text-emerald-600">{myWon.length}</p>
-                <p className="text-[11px] text-slate-400">Won</p>
+                <p className="text-[11px] text-muted-foreground">Won</p>
               </div>
               <div className="text-center">
                 <p className="text-lg font-bold text-teal-600">{fmtBaht(myPipelineValue)}</p>
-                <p className="text-[11px] text-slate-400">Pipeline Value</p>
+                <p className="text-[11px] text-muted-foreground">Pipeline Value</p>
               </div>
             </div>
           </div>
@@ -147,24 +147,24 @@ export function SalesDashboard({ userName }: { userName: string }) {
         {/* My recent activity (1/3) */}
         <div>
           <SectionHeader icon={TrendingUp} title="My Recent Activity" />
-          <div className="bg-white border border-border rounded-xl overflow-hidden">
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
             {myActivity.length === 0 ? (
               <div className="px-5 py-8 text-center">
-                <TrendingUp className="w-7 h-7 text-slate-200 mx-auto mb-2" />
-                <p className="text-[12px] text-slate-400">No activity logged yet.</p>
-                <p className="text-[11px] text-slate-300 mt-1">Your notes and calls will appear here.</p>
+                <TrendingUp className="w-7 h-7 text-muted-foreground/40 mx-auto mb-2" />
+                <p className="text-[12px] text-muted-foreground">No activity logged yet.</p>
+                <p className="text-[11px] text-muted-foreground/50 mt-1">Your notes and calls will appear here.</p>
               </div>
             ) : (
               <ul className="divide-y divide-border/60">
                 {myActivity.map((act) => (
-                  <li key={act.activity_id} className="px-4 py-3 hover:bg-slate-50/50 transition-colors">
-                    <p className="text-[12px] font-medium text-slate-700 leading-snug">{act.title}</p>
+                  <li key={act.activity_id} className="px-4 py-3 hover:bg-muted/50 transition-colors">
+                    <p className="text-[12px] font-medium text-foreground leading-snug">{act.title}</p>
                     {act.description && (
-                      <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{act.description}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{act.description}</p>
                     )}
                     <div className="flex items-center gap-1.5 mt-1">
-                      <User className="w-2.5 h-2.5 text-slate-400" />
-                      <span className="text-[10px] text-slate-400">{format(parseDbDate(act.created_at), 'MMM d')}</span>
+                      <User className="w-2.5 h-2.5 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">{format(parseDbDate(act.created_at), 'MMM d')}</span>
                     </div>
                   </li>
                 ))}
