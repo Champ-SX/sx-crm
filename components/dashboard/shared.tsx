@@ -34,16 +34,16 @@ export function StatCard({
 }) {
   return (
     <Link href={href} className="block group">
-      <div className="bg-white border border-border rounded-xl p-5 hover:shadow-md hover:border-border/80 transition-all">
+      <div className="bg-card border border-border rounded-xl p-5 hover:shadow-md hover:border-border/80 transition-all">
         <div className="flex items-start justify-between mb-4">
           <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${iconBg}`}>
             <Icon className={`w-4 h-4 ${iconColor}`} />
           </div>
-          <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all" />
+          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-muted-foreground group-hover:translate-x-0.5 transition-all" />
         </div>
-        <p className={`text-2xl font-bold leading-none mb-1 ${valueColor ?? 'text-slate-800'}`}>{value}</p>
-        <p className="text-[11px] font-medium text-slate-500 leading-none mb-1">{label}</p>
-        {sub && <p className="text-[11px] text-slate-400 leading-snug mt-1">{sub}</p>}
+        <p className={`text-2xl font-bold leading-none mb-1 ${valueColor ?? 'text-foreground'}`}>{value}</p>
+        <p className="text-[11px] font-medium text-muted-foreground leading-none mb-1">{label}</p>
+        {sub && <p className="text-[11px] text-muted-foreground/80 leading-snug mt-1">{sub}</p>}
       </div>
     </Link>
   )
@@ -59,9 +59,9 @@ export function SectionHeader({ icon: Icon, title, sub, href, linkLabel }: {
 }) {
   return (
     <div className="flex items-center gap-2 mb-3">
-      <Icon className="w-4 h-4 text-slate-400" />
-      <h2 className="text-[13px] font-semibold text-slate-700">{title}</h2>
-      {sub && <span className="text-[11px] text-slate-400">{sub}</span>}
+      <Icon className="w-4 h-4 text-muted-foreground" />
+      <h2 className="text-[13px] font-semibold text-foreground">{title}</h2>
+      {sub && <span className="text-[11px] text-muted-foreground">{sub}</span>}
       {href && (
         <Link href={href} className="ml-auto text-[11px] font-medium text-primary hover:underline flex items-center gap-0.5">
           {linkLabel ?? 'View all'} <ArrowRight className="w-3 h-3" />
