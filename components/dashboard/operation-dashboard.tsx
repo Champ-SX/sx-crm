@@ -3,10 +3,12 @@
 import { useCRMStore } from '@/store/crm-store'
 import { OP_STAGES } from '@/types'
 import { format, addDays } from 'date-fns'
+import { parseDbDate } from '@/lib/utils'
 import {
   Kanban, Activity, Users, AlertTriangle, CalendarDays, MapPin,
 } from 'lucide-react'
 import { StatCard, SectionHeader, StatusDot, stageConfig, fmtBaht } from './shared'
+import { UserAvatar } from '@/components/shared/user-avatar'
 
 /**
  * Operation Dashboard — pipeline health and team workload view.
@@ -23,7 +25,7 @@ export function OperationDashboard() {
   const activeOPJobs = wonJobs.filter((j) => j.op_stage !== 'OP_DONE_PAYMENT')
   const donePaymentThisMonth = wonJobs.filter((j) => {
     if (j.op_stage !== 'OP_DONE_PAYMENT') return false
-    const d = new Date(j.updated_at || j.created_at)
+    const d = parseDbDate(j.updated_at || j.created_at)
     return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()
   })
 
@@ -184,7 +186,7 @@ export function OperationDashboard() {
                 const pct = maxWorkload > 0 ? Math.round((count / maxWorkload) * 100) : 0
                 return (
                   <div key={owner} className="flex items-center gap-3">
-                    <span className="text-[12px] text-slate-600 w-32 shrink-0 truncate">{owner}</span>
+                    <span className="text-[12px] text-slate-600 w-32 shrink-0 truncate inline-flex items-center gap-1.5"><UserAvatar name={owner} size={18} />{owner}</span>
                     <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div className="h-full rounded-full bg-blue-400 transition-all" style={{ width: `${pct}%` }} />
                     </div>

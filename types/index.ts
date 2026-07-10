@@ -89,6 +89,7 @@ export interface TeamMember {
   name: string
   email: string
   role: string // 'admin' | 'operation' | 'sales' | 'user'
+  avatar_url?: string | null // Google profile picture, captured on login
 }
 
 export type LeadOpStatus = 'open' | 'negotiating' | 'won' | 'lost'

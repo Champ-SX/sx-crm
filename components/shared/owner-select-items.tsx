@@ -2,6 +2,7 @@
 
 import { SelectItem } from '@/components/ui/select'
 import { useCRMStore } from '@/store/crm-store'
+import { UserAvatar } from '@/components/shared/user-avatar'
 
 /**
  * Renders <SelectItem>s for every team member (signed-in user), sourced from the
@@ -18,7 +19,10 @@ export function OwnerSelectItems({ className }: { className?: string }) {
         const name = m.name || m.email
         return (
           <SelectItem key={m.id} value={name} className={className}>
-            {name}
+            <span className="inline-flex items-center gap-1.5">
+              <UserAvatar name={name} size={18} />
+              {name}
+            </span>
           </SelectItem>
         )
       })}

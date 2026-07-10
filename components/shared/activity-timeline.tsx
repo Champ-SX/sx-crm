@@ -5,6 +5,7 @@ import { useCRMStore } from '@/store/crm-store'
 import type { Activity, ActivityAttachment } from '@/types'
 import { LinkifyText } from './linkify-text'
 import { attachmentUrl } from '@/lib/supabase/storage'
+import { UserAvatar } from '@/components/shared/user-avatar'
 import {
   Phone,
   Mail,
@@ -21,7 +22,7 @@ import {
   ChevronRight,
   X as XIcon,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, parseDbDate } from '@/lib/utils'
 import { format, formatDistanceToNow } from 'date-fns'
 import { useAuth } from '@/components/auth-provider'
 import { MentionTextarea } from '@/components/shared/mention-textarea'
@@ -149,7 +150,7 @@ export function ActivityTimeline({ entityType, entityId, className, entityName }
 
       return (isMatchingType && isMatchingId) || isAlternateType
     })
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .sort((a, b) => parseDbDate(b.created_at).getTime() - parseDbDate(a.created_at).getTime())
 
   if (activities.length === 0) {
     return (
@@ -182,12 +183,13 @@ export function ActivityTimeline({ entityType, entityId, className, entityName }
             <div className={cn('pb-4 flex-1 min-w-0', isLast ? 'pb-0' : '')}>
               {/* Sub-text header: actor · category · time */}
               <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground mb-1">
+                <UserAvatar name={activity.created_by} size={16} />
                 <span className="font-semibold text-foreground/80">{activity.created_by}</span>
                 <span>·</span>
                 <span>{activity.title}</span>
                 <span>·</span>
-                <span title={format(new Date(activity.created_at), 'MMM d, yyyy h:mm a')}>
-                  {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
+                <span title={format(parseDbDate(activity.created_at), 'MMM d, yyyy h:mm a')}>
+                  {formatDistanceToNow(parseDbDate(activity.created_at), { addSuffix: true })}
                 </span>
               </div>
 

@@ -55,6 +55,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // See PushPermissionBanner in sidebar for the explicit opt-in step.
           void registerServiceWorker()
 
+          // Google profile picture (kept fresh on each login)
+          const avatarUrl = session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
+
           // Fetch user role from database
           try {
             const { data, error } = await supabase
@@ -65,12 +68,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (error) throw error
             setRole(data?.role || 'operation')
+            // Refresh name + avatar so teammates see the current Google photo
+            void supabase.from('users').update({
+              name: session.user.user_metadata?.full_name,
+              avatar_url: avatarUrl,
+            }).eq('id', session.user.id)
           } catch {
             // User record doesn't exist yet — create it with default role
             const { error: insertError } = await supabase.from('users').insert({
               id: session.user.id,
               email: session.user.email,
               name: session.user.user_metadata?.full_name,
+              avatar_url: avatarUrl,
               role: 'operation',
             })
             if (insertError && !insertError.message.includes('duplicate')) {

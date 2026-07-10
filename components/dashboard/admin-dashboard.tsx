@@ -6,6 +6,7 @@ import { useCRMStore } from '@/store/crm-store'
 import { format } from 'date-fns'
 import { parseDbDate } from '@/lib/utils'
 import { jobDisplayTitle } from '@/lib/jobs'
+import { UserAvatar } from '@/components/shared/user-avatar'
 import {
   Users, FileText, Trophy, TrendingUp, BarChart3, Activity, User, ChevronLeft, ChevronRight, CalendarDays,
 } from 'lucide-react'
@@ -191,7 +192,9 @@ export function AdminDashboard() {
                     {monthRanking.map((row, i) => (
                       <tr key={row.owner} className="hover:bg-slate-50/50 transition-colors">
                         <td className="px-5 py-3 text-[12px] font-semibold text-slate-400">{i + 1}</td>
-                        <td className="px-3 py-3 text-[12px] font-semibold text-slate-700">{row.owner}</td>
+                        <td className="px-3 py-3 text-[12px] font-semibold text-slate-700">
+                          <span className="inline-flex items-center gap-2"><UserAvatar name={row.owner} size={20} />{row.owner}</span>
+                        </td>
                         <td className="px-3 py-3 text-center text-[12px] font-medium text-emerald-600">{row.deals}</td>
                         <td className="px-4 py-3 text-right text-[12px] font-semibold text-teal-600">{fmtBaht(row.revenue)}</td>
                       </tr>
@@ -234,7 +237,7 @@ export function AdminDashboard() {
                         </div>
                       </td>
                       <td className="px-3 py-3 text-[12px] text-slate-600 truncate max-w-[160px]">{j.customer_name || '—'}</td>
-                      <td className="px-3 py-3 text-[12px] text-slate-600">{j.owner || '—'}</td>
+                      <td className="px-3 py-3 text-[12px] text-slate-600"><span className="inline-flex items-center gap-1.5">{j.owner ? <><UserAvatar name={j.owner} size={16} />{j.owner}</> : '—'}</span></td>
                       <td className="px-4 py-3 text-right text-[12px] font-semibold text-teal-600">{fmtBaht(j.estimated_value ?? 0)}</td>
                     </tr>
                   ))}
@@ -272,7 +275,7 @@ export function AdminDashboard() {
                     {matrix.map((row) => (
                       <tr key={row.owner} className="hover:bg-slate-50/50 transition-colors">
                         <td className="px-5 py-3">
-                          <span className="text-[12px] font-semibold text-slate-700">{row.owner}</span>
+                          <span className="inline-flex items-center gap-2 text-[12px] font-semibold text-slate-700"><UserAvatar name={row.owner} size={20} />{row.owner}</span>
                         </td>
                         <td className="px-3 py-3 text-center text-[12px] text-slate-600">{row.open}</td>
                         <td className="px-3 py-3 text-center text-[12px] font-medium text-emerald-600">{row.won}</td>

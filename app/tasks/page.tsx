@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { Task, TaskPriority, TaskStatus } from '@/types'
 import { EmptyState } from '@/components/shared/empty-state'
 import { OwnerSelectItems } from '@/components/shared/owner-select-items'
+import { UserAvatar } from '@/components/shared/user-avatar'
 import {
   Plus,
   CheckSquare,
@@ -60,8 +61,8 @@ function TaskCard({ task, today, onToggle }: { task: Task; today: string; onTogg
             {isOverdue ? 'Overdue · ' : isDueToday ? 'Today · ' : ''}
             {format(new Date(task.due_date + 'T00:00:00'), 'MMM d')}
           </div>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <User className="w-3 h-3" />{task.owner}
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <UserAvatar name={task.owner} size={16} />{task.owner}
           </div>
           {task.linked_entity_name && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">

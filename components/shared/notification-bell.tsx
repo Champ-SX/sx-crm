@@ -6,7 +6,9 @@ import { Bell } from 'lucide-react'
 import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
 import { formatDistanceToNow } from 'date-fns'
+import { parseDbDate } from '@/lib/utils'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { UserAvatar } from '@/components/shared/user-avatar'
 
 // Where a notification's record lives (its list page).
 const ENTITY_ROUTE: Record<string, string> = {
@@ -93,14 +95,15 @@ export function NotificationBell() {
                     >
                       <div className="flex items-start gap-2">
                         {!n.read && <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />}
-                        <div className={`flex-1 min-w-0 ${n.read ? 'pl-3.5' : ''}`}>
+                        <UserAvatar name={n.actor} size={22} className="mt-0.5" />
+                        <div className={`flex-1 min-w-0`}>
                           <p className="text-[12px] text-foreground leading-snug">
                             <span className="font-semibold">{n.actor}</span> mentioned you
                             {n.entity_name ? <> in <span className="font-medium">{n.entity_name}</span></> : null}
                           </p>
                           <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">{n.message}</p>
                           <p className="text-[10px] text-muted-foreground/70 mt-0.5">
-                            {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                            {formatDistanceToNow(parseDbDate(n.created_at), { addSuffix: true })}
                           </p>
                         </div>
                       </div>

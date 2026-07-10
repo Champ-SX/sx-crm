@@ -7,6 +7,7 @@ import { useCRMStore } from '@/store/crm-store'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { Trash2 } from 'lucide-react'
+import { UserAvatar } from '@/components/shared/user-avatar'
 
 interface User {
   id: string
@@ -170,7 +171,7 @@ export default function AdminUsersPage() {
               {users.map((u) => (
                 <tr key={u.id} className="hover:bg-muted/50 transition-colors">
                   <td className="px-4 py-3">
-                    <div className="font-medium">{u.name || '—'}</div>
+                    <div className="font-medium flex items-center gap-2"><UserAvatar name={u.name || u.email} size={24} />{u.name || '—'}</div>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {u.email}

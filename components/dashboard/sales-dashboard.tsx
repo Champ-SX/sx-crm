@@ -2,10 +2,12 @@
 
 import { useCRMStore } from '@/store/crm-store'
 import { format } from 'date-fns'
+import { parseDbDate } from '@/lib/utils'
 import {
   FileText, Trophy, TrendingUp, Target, User, Percent,
 } from 'lucide-react'
 import { StatCard, SectionHeader, fmtBaht } from './shared'
+import { UserAvatar } from '@/components/shared/user-avatar'
 
 // Monthly revenue goal used for the target-progress bar.
 // There is no per-user target field in the data model yet, so this is a
@@ -41,7 +43,7 @@ export function SalesDashboard({ userName }: { userName: string }) {
   // Revenue this month (from my won jobs created this month)
   const myRevenueThisMonth = myJobs
     .filter((j) => {
-      const d = new Date(j.created_at)
+      const d = parseDbDate(j.created_at)
       return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()
     })
     .reduce((s, j) => s + (j.estimated_value ?? 0), 0)
@@ -56,6 +58,15 @@ export function SalesDashboard({ userName }: { userName: string }) {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8 max-w-[1400px] w-full">
+      {/* Signed-in user */}
+      <div className="flex items-center gap-2.5">
+        <UserAvatar name={userName} size={32} />
+        <div>
+          <p className="text-[15px] font-semibold text-slate-800 leading-tight">{userName}</p>
+          <p className="text-[11px] text-slate-400">Your sales dashboard</p>
+        </div>
+      </div>
+
       {/* ── Stat cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
@@ -153,7 +164,7 @@ export function SalesDashboard({ userName }: { userName: string }) {
                     )}
                     <div className="flex items-center gap-1.5 mt-1">
                       <User className="w-2.5 h-2.5 text-slate-400" />
-                      <span className="text-[10px] text-slate-400">{format(new Date(act.created_at), 'MMM d')}</span>
+                      <span className="text-[10px] text-slate-400">{format(parseDbDate(act.created_at), 'MMM d')}</span>
                     </div>
                   </li>
                 ))}

@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react'
 import { useCRMStore } from '@/store/crm-store'
+import { UserAvatar } from '@/components/shared/user-avatar'
 
 /**
  * LinkifyText Component
@@ -83,8 +84,9 @@ export function LinkifyText({ text }: { text: string }) {
       out.push(
         <span
           key={i}
-          className="bg-primary/10 text-primary font-medium rounded px-1.5 py-0.5 whitespace-nowrap"
+          className="bg-primary/10 text-primary font-medium rounded px-1.5 py-0.5 whitespace-nowrap inline-flex items-center gap-1 align-middle"
         >
+          <UserAvatar name={content.replace(/^@/, '')} size={14} />
           {content}
         </span>
       )

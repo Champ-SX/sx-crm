@@ -21,7 +21,7 @@ export const userQueries = {
   async getAll() {
     const { data, error } = await supabase
       .from('users')
-      .select('id, name, email, role')
+      .select('id, name, email, role, avatar_url')
       .order('name')
     if (error) throw error
     return (data || []) as TeamMember[]
