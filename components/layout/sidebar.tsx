@@ -10,12 +10,14 @@ import {
   CheckSquare,
   Settings,
   Zap,
-  Upload,
+  Moon,
+  Sun,
   X,
   LogOut,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCRMStore } from '@/store/crm-store'
+import { useTheme } from '@/components/layout/theme-provider'
 import { useMobileNav } from '@/components/layout/mobile-nav-context'
 import { useAuth } from '@/components/auth-provider'
 import { NotificationBell } from '@/components/shared/notification-bell'
@@ -31,7 +33,6 @@ const navItems = [
 ]
 
 const bottomItems = [
-  { href: '/import',   label: 'Import',   icon: Upload },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
@@ -102,6 +103,24 @@ function UserProfile() {
 }
 
 // ── Shared nav content ────────────────────────────────────────────────────────
+
+function ThemeToggleRow() {
+  const { theme, toggleTheme } = useTheme()
+  const isDark = theme === 'dark'
+  const Icon = isDark ? Sun : Moon
+
+  return (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all group text-muted-foreground hover:text-foreground hover:bg-muted"
+      title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+    >
+      <Icon className="w-[15px] h-[15px] shrink-0 text-muted-foreground group-hover:text-foreground/80 transition-colors" />
+      <span className="leading-none">{isDark ? 'Light mode' : 'Dark mode'}</span>
+    </button>
+  )
+}
 
 function NavContent({ onNavClick }: { onNavClick?: () => void }) {
   const pathname = usePathname()
@@ -194,6 +213,9 @@ function NavContent({ onNavClick }: { onNavClick?: () => void }) {
         {bottomItems.map((item) => (
           <NavLink key={item.href} {...item} />
         ))}
+
+        {/* Theme toggle — global action */}
+        <ThemeToggleRow />
 
         {/* User Profile */}
         <UserProfile />

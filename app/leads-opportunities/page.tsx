@@ -7,7 +7,6 @@ import { parseDbDate } from '@/lib/utils'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
-import { ThemeToggle } from '@/components/layout/theme-toggle'
 import { EmptyState } from '@/components/shared/empty-state'
 import { CreateQuotationModal } from '@/components/shared/create-quotation-modal'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
@@ -1108,7 +1107,6 @@ export default function LeadsOpportunitiesPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <ThemeToggle />
           <Button size="sm" className="gap-1.5 h-8 text-xs sm:text-sm font-semibold" onClick={() => setCreating(true)}>
             <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Add Lead / Opp</span><span className="sm:hidden">Add</span>
           </Button>
