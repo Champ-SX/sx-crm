@@ -215,14 +215,14 @@ export function ActivityTimeline({ entityType, entityId, className, entityName }
                         {/* Image previews */}
                         {images.length > 0 && (
                           <div className="space-y-2">
-                            <p className="text-[11px] font-medium text-slate-600">
+                            <p className="text-[11px] font-medium text-foreground/80">
                               {images.length} image{images.length !== 1 ? 's' : ''}
                             </p>
                             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                               {images.map((img, imgIdx) => (
                                 <div
                                   key={imgIdx}
-                                  className="relative group rounded-lg overflow-hidden bg-slate-100 border border-slate-200 hover:border-blue-400 transition-colors cursor-pointer"
+                                  className="relative group rounded-lg overflow-hidden bg-muted border border-border hover:border-blue-400 transition-colors cursor-pointer"
                                 >
                                   {/* Image preview - clickable for lightbox */}
                                   <img
@@ -263,15 +263,15 @@ export function ActivityTimeline({ entityType, entityId, className, entityName }
                           <div className="space-y-1">
                             {activity.attachments!.map((att, attIdx) => (
                               !isImageFile(att.type) && (
-                                <div key={attIdx} className="flex items-center justify-between bg-slate-50 rounded p-2.5 text-[11px] border border-slate-200 hover:bg-slate-100 transition-colors group">
+                                <div key={attIdx} className="flex items-center justify-between bg-muted rounded p-2.5 text-[11px] border border-border hover:bg-muted transition-colors group">
                                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    <FileIcon className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                                    <span className="truncate text-slate-700 font-medium">{att.filename}</span>
-                                    <span className="text-slate-500 flex-shrink-0">({formatFileSize(att.size)})</span>
+                                    <FileIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                    <span className="truncate text-foreground font-medium">{att.filename}</span>
+                                    <span className="text-muted-foreground flex-shrink-0">({formatFileSize(att.size)})</span>
                                   </div>
                                   <button
                                     onClick={() => removeActivityAttachment(activity.activity_id, attIdx)}
-                                    className="flex-shrink-0 ml-2 text-slate-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                                    className="flex-shrink-0 ml-2 text-muted-foreground hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
                                     title="Delete file"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -407,7 +407,7 @@ export function ActivityTimeline({ entityType, entityId, className, entityName }
                       imageIndex: lightbox.imageIndex - 1,
                     })
                   }
-                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-white transition-colors opacity-0 group-hover:opacity-100"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 bg-card/20 hover:bg-card/30 backdrop-blur-sm rounded-lg text-white transition-colors opacity-0 group-hover:opacity-100"
                   title="Previous image (←)"
                 >
                   <ChevronLeft className="w-6 h-6" />
@@ -423,7 +423,7 @@ export function ActivityTimeline({ entityType, entityId, className, entityName }
                       imageIndex: lightbox.imageIndex + 1,
                     })
                   }
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-white transition-colors opacity-0 group-hover:opacity-100"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 bg-card/20 hover:bg-card/30 backdrop-blur-sm rounded-lg text-white transition-colors opacity-0 group-hover:opacity-100"
                   title="Next image (→)"
                 >
                   <ChevronRight className="w-6 h-6" />
@@ -439,10 +439,10 @@ export function ActivityTimeline({ entityType, entityId, className, entityName }
             {/* Footer - Filename and Info */}
             <div className="bg-slate-800/80 backdrop-blur-sm border-t border-slate-700 px-6 py-4 flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-200 truncate">
+                <p className="text-sm font-medium text-muted-foreground/40 truncate">
                   {lightbox.images[lightbox.imageIndex].filename}
                 </p>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Right-click to save image
                 </p>
               </div>

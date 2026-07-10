@@ -507,10 +507,10 @@ export default function ImportPage() {
               <p className="text-2xl font-bold text-green-600">{preview.contacts.length}</p>
               <p className="text-xs text-green-500">Contact Persons</p>
             </div>
-            <div className="bg-slate-50 rounded-xl p-4 text-center">
-              <AlertCircle className="w-5 h-5 text-slate-400 mx-auto mb-1" />
-              <p className="text-2xl font-bold text-slate-500">{preview.skipped}</p>
-              <p className="text-xs text-slate-400">Skipped (empty)</p>
+            <div className="bg-muted rounded-xl p-4 text-center">
+              <AlertCircle className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
+              <p className="text-2xl font-bold text-muted-foreground">{preview.skipped}</p>
+              <p className="text-xs text-muted-foreground">Skipped (empty)</p>
             </div>
           </div>
 

@@ -79,7 +79,7 @@ function CompanyCombobox({
         />
       </div>
       {open && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-border rounded-lg shadow-lg overflow-hidden">
+        <div className="absolute z-50 mt-1 w-full bg-card border border-border rounded-lg shadow-lg overflow-hidden">
           {suggestions.length > 0 ? (
             <>
               <p className="px-3 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider border-b bg-muted/30">
@@ -253,7 +253,7 @@ export function AddLeadOpForm({
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="w-[520px] max-w-[90vw] sm:max-w-[520px] top-[5vh] translate-y-0 p-0 gap-0 max-h-[88vh] flex flex-col">
         <div className="px-6 pt-6 pb-4 border-b shrink-0">
-          <DialogTitle className="text-[15px] font-semibold text-slate-800">New Lead / Opportunity</DialogTitle>
+          <DialogTitle className="text-[15px] font-semibold text-foreground">New Lead / Opportunity</DialogTitle>
         </div>
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 overflow-y-auto flex-1">
           {/* Lead name */}
@@ -294,7 +294,7 @@ export function AddLeadOpForm({
                   <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
                 </button>
                 {contactDropdownOpen && (
-                  <div className="absolute z-50 mt-1 w-full bg-white border border-border rounded-lg shadow-lg overflow-hidden">
+                  <div className="absolute z-50 mt-1 w-full bg-card border border-border rounded-lg shadow-lg overflow-hidden">
                     {matchingContacts.length > 0 && (
                       <>
                         <p className="px-3 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider border-b bg-muted/30">

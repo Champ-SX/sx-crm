@@ -43,10 +43,10 @@ function UserProfile() {
   if (loading) {
     return (
       <div className="flex items-center gap-2.5 px-3 py-2.5 mt-1 rounded-lg">
-        <div className="w-7 h-7 rounded-full bg-slate-200 animate-pulse" />
+        <div className="w-7 h-7 rounded-full bg-muted animate-pulse" />
         <div className="flex-1 min-w-0">
-          <div className="h-4 bg-slate-200 rounded animate-pulse mb-1" />
-          <div className="h-3 bg-slate-200 rounded w-2/3 animate-pulse" />
+          <div className="h-4 bg-muted rounded animate-pulse mb-1" />
+          <div className="h-3 bg-muted rounded w-2/3 animate-pulse" />
         </div>
       </div>
     )
@@ -66,7 +66,7 @@ function UserProfile() {
 
   return (
     <div className="mt-3 space-y-2">
-      <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-slate-50 cursor-default transition-colors">
+      <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-muted cursor-default transition-colors">
         {user.user_metadata?.avatar_url ? (
           <img
             src={user.user_metadata.avatar_url}
@@ -79,10 +79,10 @@ function UserProfile() {
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <p className="text-slate-700 text-[13px] font-medium leading-tight truncate">
+          <p className="text-foreground text-[13px] font-medium leading-tight truncate">
             {user.user_metadata?.full_name || user.email}
           </p>
-          <p className="text-slate-400 text-[10px] leading-tight uppercase tracking-wide">
+          <p className="text-muted-foreground text-[10px] leading-tight uppercase tracking-wide">
             {role}
           </p>
         </div>
@@ -92,7 +92,7 @@ function UserProfile() {
         onClick={signOut}
         variant="ghost"
         size="sm"
-        className="w-full justify-start gap-2 text-slate-500 hover:text-slate-700 h-8 px-3"
+        className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground h-8 px-3"
       >
         <LogOut className="w-3.5 h-3.5" />
         <span className="text-[13px]">Sign out</span>
@@ -138,20 +138,20 @@ function NavContent({ onNavClick }: { onNavClick?: () => void }) {
           'flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all group',
           isActive
             ? 'bg-[var(--sidebar-accent)] text-[var(--sidebar-accent-foreground)]'
-            : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
         )}
       >
         <div className="flex items-center gap-2.5">
           <Icon className={cn(
             'w-[15px] h-[15px] shrink-0 transition-colors',
-            isActive ? 'text-[var(--sidebar-primary)]' : 'text-slate-400 group-hover:text-slate-600'
+            isActive ? 'text-[var(--sidebar-primary)]' : 'text-muted-foreground group-hover:text-foreground/80'
           )} />
           <span className="leading-none">{label}</span>
         </div>
         {badge != null && badge > 0 && (
           <span className={cn(
             'text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1.5 leading-none',
-            isActive ? 'bg-[var(--sidebar-primary)] text-white' : 'bg-slate-100 text-slate-500'
+            isActive ? 'bg-[var(--sidebar-primary)] text-white' : 'bg-muted text-muted-foreground'
           )}>
             {badge}
           </span>
@@ -169,8 +169,8 @@ function NavContent({ onNavClick }: { onNavClick?: () => void }) {
             <Zap className="w-4 h-4 text-white" />
           </div>
           <div>
-            <p className="text-slate-800 font-bold text-[14px] leading-tight tracking-tight">SX CRM</p>
-            <p className="text-slate-400 text-[10px] leading-tight">by SIXSHEET</p>
+            <p className="text-foreground font-bold text-[14px] leading-tight tracking-tight">SX CRM</p>
+            <p className="text-muted-foreground text-[10px] leading-tight">by SIXSHEET</p>
           </div>
           <div className="ml-auto">
             <NotificationBell />
@@ -180,7 +180,7 @@ function NavContent({ onNavClick }: { onNavClick?: () => void }) {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest px-3 mb-1">Menu</p>
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest px-3 mb-1">Menu</p>
         {navItems.map((item) => (
           <NavLink key={item.href} {...item} />
         ))}
@@ -210,7 +210,7 @@ export function Sidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex flex-col w-[228px] min-h-screen bg-white border-r border-[var(--sidebar-border)] shrink-0">
+      <aside className="hidden lg:flex flex-col w-[228px] min-h-screen bg-card border-r border-[var(--sidebar-border)] shrink-0">
         <NavContent />
       </aside>
 
@@ -224,13 +224,13 @@ export function Sidebar() {
 
       {/* Mobile drawer */}
       <aside className={cn(
-        'fixed top-0 left-0 z-50 h-full w-[228px] bg-white border-r border-[var(--sidebar-border)] flex flex-col transition-transform duration-200 lg:hidden',
+        'fixed top-0 left-0 z-50 h-full w-[228px] bg-card border-r border-[var(--sidebar-border)] flex flex-col transition-transform duration-200 lg:hidden',
         open ? 'translate-x-0' : '-translate-x-full'
       )}>
         {/* Close button */}
         <button
           onClick={() => setOpen(false)}
-          className="absolute top-3 right-3 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+          className="absolute top-3 right-3 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         >
           <X className="w-4 h-4" />
         </button>

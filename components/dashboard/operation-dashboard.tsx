@@ -112,7 +112,7 @@ export function OperationDashboard() {
         {/* Pipeline health (2/3) */}
         <div className="lg:col-span-2">
           <SectionHeader icon={Kanban} title="Pipeline Health by Stage" href="/won-ready-op" linkLabel="View board" />
-          <div className="bg-white border border-border rounded-xl p-5">
+          <div className="bg-card border border-border rounded-xl p-5">
             <div className="space-y-3">
               {stageCounts.map(({ stage, label, dot, badge, count }) => {
                 const pct = wonJobs.length > 0 ? Math.round((count / wonJobs.length) * 100) : 0
@@ -120,9 +120,9 @@ export function OperationDashboard() {
                   <div key={stage} className="flex items-center gap-3">
                     <div className="flex items-center gap-2 w-40 shrink-0">
                       <StatusDot color={dot} />
-                      <span className="text-[12px] text-slate-600 truncate">{label}</span>
+                      <span className="text-[12px] text-foreground/80 truncate">{label}</span>
                     </div>
-                    <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                       <div className={`h-full rounded-full transition-all ${dot}`} style={{ width: `${pct}%` }} />
                     </div>
                     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full w-10 text-center shrink-0 ${badge}`}>{count}</span>
@@ -132,18 +132,18 @@ export function OperationDashboard() {
             </div>
             <div className="mt-5 pt-4 border-t border-border/60 grid grid-cols-3 gap-4">
               <div className="text-center">
-                <p className="text-lg font-bold text-slate-800">{wonJobs.length}</p>
-                <p className="text-[11px] text-slate-400">Total Jobs</p>
+                <p className="text-lg font-bold text-foreground">{wonJobs.length}</p>
+                <p className="text-[11px] text-muted-foreground">Total Jobs</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-bold text-slate-800">{activeOPJobs.length}</p>
-                <p className="text-[11px] text-slate-400">Active OP</p>
+                <p className="text-lg font-bold text-foreground">{activeOPJobs.length}</p>
+                <p className="text-[11px] text-muted-foreground">Active OP</p>
               </div>
               <div className="text-center">
                 <p className="text-lg font-bold text-teal-600">
                   {fmtBaht(wonJobs.reduce((s, j) => s + (j.estimated_value ?? 0), 0))}
                 </p>
-                <p className="text-[11px] text-slate-400">Total Value</p>
+                <p className="text-[11px] text-muted-foreground">Total Value</p>
               </div>
             </div>
           </div>
@@ -152,12 +152,12 @@ export function OperationDashboard() {
         {/* Bottleneck alerts (1/3) */}
         <div>
           <SectionHeader icon={AlertTriangle} title="Bottleneck Alerts" />
-          <div className="bg-white border border-border rounded-xl overflow-hidden">
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
             <ul className="divide-y divide-border/60">
               {bottlenecks.map((b) => (
                 <li key={b.label} className="px-4 py-3 flex items-center gap-3">
                   <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${b.dot}`} />
-                  <span className="text-[12px] text-slate-600 flex-1">{b.label}</span>
+                  <span className="text-[12px] text-foreground/80 flex-1">{b.label}</span>
                   <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${b.bg} ${b.color}`}>{b.count}</span>
                 </li>
               ))}
@@ -174,11 +174,11 @@ export function OperationDashboard() {
       {/* ── Team workload distribution ── */}
       <div>
         <SectionHeader icon={Users} title="Team Workload" sub="active OP jobs per owner" />
-        <div className="bg-white border border-border rounded-xl p-5">
+        <div className="bg-card border border-border rounded-xl p-5">
           {workload.length === 0 ? (
             <div className="py-8 text-center">
-              <Users className="w-7 h-7 text-slate-200 mx-auto mb-2" />
-              <p className="text-[12px] text-slate-400">No active jobs assigned.</p>
+              <Users className="w-7 h-7 text-muted-foreground/40 mx-auto mb-2" />
+              <p className="text-[12px] text-muted-foreground">No active jobs assigned.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -186,11 +186,11 @@ export function OperationDashboard() {
                 const pct = maxWorkload > 0 ? Math.round((count / maxWorkload) * 100) : 0
                 return (
                   <div key={owner} className="flex items-center gap-3">
-                    <span className="text-[12px] text-slate-600 w-32 shrink-0 truncate inline-flex items-center gap-1.5"><UserAvatar name={owner} size={18} />{owner}</span>
-                    <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <span className="text-[12px] text-foreground/80 w-32 shrink-0 truncate inline-flex items-center gap-1.5"><UserAvatar name={owner} size={18} />{owner}</span>
+                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                       <div className="h-full rounded-full bg-blue-400 transition-all" style={{ width: `${pct}%` }} />
                     </div>
-                    <span className="text-[11px] font-semibold text-slate-600 w-8 text-right shrink-0">{count}</span>
+                    <span className="text-[11px] font-semibold text-foreground/80 w-8 text-right shrink-0">{count}</span>
                   </div>
                 )
               })}

@@ -32,12 +32,12 @@ function LoginPageContent() {
       <div className="w-full max-w-md">
         {/* Logo + Title */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">SX CRM</h1>
-          <p className="text-slate-600">SIXSHEET Sales Operating System</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">SX CRM</h1>
+          <p className="text-foreground/80">SIXSHEET Sales Operating System</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-white rounded-lg shadow-lg p-8 space-y-6">
+        <div className="bg-card rounded-lg shadow-lg p-8 space-y-6">
           {/* Error Message */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">
@@ -56,14 +56,14 @@ function LoginPageContent() {
           </Button>
 
           {/* Info Text */}
-          <p className="text-center text-sm text-slate-600">
+          <p className="text-center text-sm text-foreground/80">
             Sign in with your Google account to access SX CRM.
             An admin will assign your role.
           </p>
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-6 text-xs text-slate-500">
+        <div className="text-center mt-6 text-xs text-muted-foreground">
           <p>© 2026 SIXSHEET. All rights reserved.</p>
         </div>
       </div>

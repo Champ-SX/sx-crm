@@ -8,7 +8,7 @@ export function MobileMenuButton() {
   return (
     <button
       onClick={() => setOpen(true)}
-      className="lg:hidden p-1.5 -ml-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+      className="lg:hidden p-1.5 -ml-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
       aria-label="Open menu"
     >
       <Menu className="w-5 h-5" />

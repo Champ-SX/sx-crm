@@ -47,15 +47,15 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col h-full overflow-y-auto bg-background">
       {/* Top bar */}
-      <div className="bg-white border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0">
+      <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <MobileMenuButton />
             <div>
-              <h1 className="text-[15px] sm:text-[17px] font-semibold text-slate-800 tracking-tight">
+              <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight">
                 {view} Dashboard
               </h1>
-              <p className="text-[11px] sm:text-[12px] text-slate-400 mt-0.5 hidden sm:block">
+              <p className="text-[11px] sm:text-[12px] text-muted-foreground mt-0.5 hidden sm:block">
                 {format(today, 'EEEE, MMMM d, yyyy')}
               </p>
             </div>
@@ -66,7 +66,7 @@ export default function DashboardPage() {
               <select
                 value={view}
                 onChange={(e) => setView(e.target.value as DashboardView)}
-                className="text-[11px] font-medium text-slate-600 bg-white border border-border rounded-lg px-3 py-2 cursor-pointer hover:border-border/80 transition-colors"
+                className="text-[11px] font-medium text-foreground/80 bg-card border border-border rounded-lg px-3 py-2 cursor-pointer hover:border-border/80 transition-colors"
                 aria-label="Preview dashboard view"
               >
                 <option value="Admin">Admin View</option>

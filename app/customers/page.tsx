@@ -196,7 +196,7 @@ const typeColors: Record<string, string> = {
   agency:     'bg-violet-50 text-violet-600 border-violet-100',
   venue:      'bg-teal-50 text-teal-600 border-teal-100',
   organizer:  'bg-amber-50 text-amber-700 border-amber-100',
-  individual: 'bg-slate-50 text-slate-600 border-slate-200',
+  individual: 'bg-muted text-foreground/80 border-border',
   partner:    'bg-emerald-50 text-emerald-600 border-emerald-100',
 }
 
@@ -204,22 +204,22 @@ const typeColors: Record<string, string> = {
 function CustomerRow({
   customer, onClick, onNewLead,
 }: { customer: Customer; onClick: () => void; onNewLead: () => void }) {
-  const colorClass = typeColors[customer.customer_type] ?? 'bg-slate-50 text-slate-600 border-slate-200'
+  const colorClass = typeColors[customer.customer_type] ?? 'bg-muted text-foreground/80 border-border'
   return (
     <tr
-      className="border-b border-border/50 hover:bg-slate-50/70 cursor-pointer transition-colors group"
+      className="border-b border-border/50 hover:bg-muted/70 cursor-pointer transition-colors group"
       onClick={onClick}
     >
       {/* Company */}
       <td className="px-6 py-3.5">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 text-[10px] font-bold shrink-0">
+          <div className="w-6 h-6 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-[10px] font-bold shrink-0">
             {customer.company_name.charAt(0).toUpperCase()}
           </div>
           <div>
-            <p className="text-[13px] font-semibold text-slate-800 leading-tight">{customer.company_name}</p>
+            <p className="text-[13px] font-semibold text-foreground leading-tight">{customer.company_name}</p>
             {customer.contact_person && (
-              <p className="text-[11px] text-slate-400 leading-tight mt-0.5">{customer.contact_person}</p>
+              <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">{customer.contact_person}</p>
             )}
           </div>
         </div>
@@ -270,24 +270,24 @@ function CustomerRow({
 function CustomerCard({
   customer, onClick, onNewLead,
 }: { customer: Customer; onClick: () => void; onNewLead: () => void }) {
-  const colorClass = typeColors[customer.customer_type] ?? 'bg-slate-50 text-slate-600 border-slate-200'
+  const colorClass = typeColors[customer.customer_type] ?? 'bg-muted text-foreground/80 border-border'
   return (
     <div
-      className="flex items-start gap-3 border-b border-border/50 px-4 py-3.5 active:bg-slate-50 transition-colors"
+      className="flex items-start gap-3 border-b border-border/50 px-4 py-3.5 active:bg-muted transition-colors"
       onClick={onClick}
     >
-      <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 text-[11px] font-bold shrink-0 mt-0.5">
+      <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-[11px] font-bold shrink-0 mt-0.5">
         {customer.company_name.charAt(0).toUpperCase()}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-[14px] font-semibold text-slate-800 leading-snug">{customer.company_name}</p>
+          <p className="text-[14px] font-semibold text-foreground leading-snug">{customer.company_name}</p>
           <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize ${colorClass}`}>
             {customer.customer_type}
           </span>
         </div>
         {customer.contact_person && (
-          <p className="text-[12px] text-slate-400 mt-0.5">{customer.contact_person}</p>
+          <p className="text-[12px] text-muted-foreground mt-0.5">{customer.contact_person}</p>
         )}
         <div className="mt-2 space-y-1">
           {customer.phone && (
