@@ -37,7 +37,14 @@ export function NotificationBell() {
   function handleClick(n: (typeof mine)[number]) {
     markNotificationRead(n.id)
     setOpen(false)
-    router.push(ENTITY_ROUTE[n.entity_type] ?? '/dashboard')
+    const route = ENTITY_ROUTE[n.entity_type]
+    if (!route) {
+      router.push('/dashboard')
+      return
+    }
+    // Deep-link: open the exact record via ?open=<id>. The target page reads
+    // this on mount, opens the detail drawer, and strips the param.
+    router.push(n.entity_id ? `${route}?open=${encodeURIComponent(n.entity_id)}` : route)
   }
 
   return (

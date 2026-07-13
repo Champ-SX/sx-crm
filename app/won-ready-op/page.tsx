@@ -8,8 +8,11 @@ import {
   TouchSensor,
   useSensor,
   useSensors,
-  closestCorners,
+  pointerWithin,
+  rectIntersection,
+  type CollisionDetection,
   type DragStartEvent,
+  type DragOverEvent,
   type DragEndEvent,
 } from '@dnd-kit/core'
 import { useDroppable, useDraggable } from '@dnd-kit/core'
@@ -20,6 +23,7 @@ import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
 import { OwnerSelectItems } from '@/components/shared/owner-select-items'
 import { useHydrated } from '@/hooks/use-hydrated'
+import { useOpenDeepLink } from '@/hooks/use-open-deep-link'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { OP_STAGES, OP_STAGE_LABELS } from '@/types'
@@ -334,9 +338,7 @@ function KanbanColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col shrink-0 snap-center w-[86vw] min-w-[86vw] h-full min-h-0 sm:w-auto sm:min-w-[240px] sm:max-w-[240px] sm:h-auto sm:max-h-full sm:snap-align-none rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/20' : ''} ${isDragging ? 'opacity-50' : ''} ${cfg.colBg} dark:!bg-card/40 shadow-sm ${isMobile ? '' : 'cursor-grab active:cursor-grabbing'}`}
-      {...(isMobile ? {} : attributes)}
-      {...(isMobile ? {} : listeners)}
+      className={`flex flex-col shrink-0 snap-center w-[86vw] min-w-[86vw] h-full min-h-0 sm:w-auto sm:min-w-[240px] sm:max-w-[240px] sm:h-auto sm:max-h-full sm:snap-align-none rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/40' : ''} ${isDragging ? 'opacity-50' : ''} ${cfg.colBg} dark:!bg-card/40 shadow-sm`}
     >
       {/* Column header */}
       <div
@@ -344,14 +346,19 @@ function KanbanColumn({
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {/* Drag handle icon — visual indicator (desktop only; mobile pages via swipe) */}
+            {/* Dedicated stage-drag handle (desktop only; mobile pages via swipe).
+                Only this grip carries the sortable listeners, so dragging a
+                card never accidentally grabs the column. */}
             {!isMobile && (
-              <div
-                className="flex-shrink-0 opacity-40 hover:opacity-100 transition-opacity p-1 -m-1 rounded hover:bg-muted/30 pointer-events-none"
+              <button
+                type="button"
+                className="flex-shrink-0 opacity-40 hover:opacity-100 transition-opacity p-1 -m-1 rounded hover:bg-muted/30 cursor-grab active:cursor-grabbing touch-none"
                 title="Drag to reorder stages"
+                {...attributes}
+                {...listeners}
               >
                 <GripVertical className="w-4 h-4 text-muted-foreground" />
-              </div>
+              </button>
             )}
             <div className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
             <p className="text-[11px] font-semibold text-foreground leading-tight">
@@ -1353,7 +1360,16 @@ export default function WonReadyOpPage() {
   const reorderStages = useCRMStore((s) => s.reorderStages)
   const reorderWonJobWithinStage = useCRMStore((s) => s.reorderWonJobWithinStage)
   const [activeId, setActiveId] = useState<string | null>(null)
+  // While dragging a card, the stage its ghost is currently hovering over — used
+  // to re-parent the card live (Trello-style) so you see where it will land.
+  const [dragOverStage, setDragOverStage] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  // Open a specific card from a notification deep-link (?open=<job_id>).
+  useOpenDeepLink(
+    isHydrated && wonJobs.length > 0,
+    (id) => wonJobs.some((j) => j.job_id === id),
+    setSelectedId,
+  )
   const [stageToDelete, setStageToDelete] = useState<string | null>(null)
   const [stageToColorize, setStageToColorize] = useState<string | null>(null)
   const [jobToDelete, setJobToDelete] = useState<string | null>(null)
@@ -1431,88 +1447,88 @@ export default function WonReadyOpPage() {
 
   const activeJob = activeId ? wonJobs.find((j) => j.job_id === activeId) : null
 
+  // Resolve the stage a drop target belongs to (target may be a stage or a card).
+  function stageOf(overId: string): OPStage | null {
+    if (sortedStages.includes(overId as OPStage)) return overId as OPStage
+    const job = wonJobs.find((j) => j.job_id === overId)
+    return job ? (job.op_stage as OPStage) : null
+  }
+
+  // A card's stage during a drag reflects the hovered column (live re-parent).
+  function effectiveStage(job: WonJob): string {
+    if (activeId === job.job_id && dragOverStage) return dragOverStage
+    return job.op_stage
+  }
+
+  // Prefer the droppable under the pointer; fall back to rectangle overlap so
+  // empty columns and edges still accept the card. Far more predictable than
+  // corner-distance for a wide kanban.
+  const collisionDetection: CollisionDetection = (args) => {
+    const hits = pointerWithin(args)
+    return hits.length ? hits : rectIntersection(args)
+  }
+
   function onDragStart({ active }: DragStartEvent) {
-    console.log('[onDragStart] Drag started:', { activeId: active.id, activeData: active.data, sortedStages: JSON.stringify(sortedStages) })
-    setActiveId(active.id as string)
+    const id = active.id as string
+    setActiveId(id)
+    const job = wonJobs.find((j) => j.job_id === id)
+    setDragOverStage(job ? (job.op_stage as string) : null)
+  }
+
+  function onDragOver({ active, over }: DragOverEvent) {
+    if (!over) return
+    // Only live-reparent cards, not stage reordering.
+    if (sortedStages.includes(active.id as OPStage)) return
+    const target = stageOf(over.id as string)
+    if (target) setDragOverStage(target)
   }
   function onDragEnd({ active, over }: DragEndEvent) {
-    console.log('[onDragEnd] Drag ended:', {
-      activeId: active.id,
-      activeData: active.data,
-      overId: over?.id,
-      overData: over?.data,
-      sortedStages: JSON.stringify(sortedStages)
-    })
+    const draggedId = active.id as string
+    const overId = over?.id as string | undefined
+    // Snapshot the live-hovered stage before clearing drag state.
+    const hoveredStage = dragOverStage
     setActiveId(null)
-    if (!over) {
-      console.log('[onDragEnd] No over element, returning')
-      return
-    }
+    setDragOverStage(null)
+    if (!overId) return
 
-    const activeId = active.id as string
-    const overId = over.id as string
-
-    // Check if dragging a stage (stage reordering) - check against sortedStages instead of just OP_STAGES
-    const isActiveStage = sortedStages.includes(activeId as OPStage)
-    const isOverStage = sortedStages.includes(overId as OPStage)
-
-    console.log('[onDragEnd] Stage check:', { activeId, overId, isActiveStage, isOverStage, sortedStagesArray: JSON.stringify(sortedStages) })
-
-    if (isActiveStage && isOverStage) {
-      // Reorder stages - use sortedStages to get current order, then reorder and save
-      const fromIndex = sortedStages.indexOf(activeId as OPStage)
+    // Stage reordering (via the grip handle).
+    if (sortedStages.includes(draggedId as OPStage)) {
+      if (!sortedStages.includes(overId as OPStage)) return
+      const fromIndex = sortedStages.indexOf(draggedId as OPStage)
       const toIndex = sortedStages.indexOf(overId as OPStage)
-      console.log('[onDragEnd] Stage reordering detected:', { fromIndex, toIndex })
       if (fromIndex !== toIndex) {
         const newOrder = [...sortedStages]
         newOrder.splice(fromIndex, 1)
-        newOrder.splice(toIndex, 0, activeId as OPStage)
-        console.log('[onDragEnd] Reordering stages:', { fromIndex, toIndex, newOrder })
+        newOrder.splice(toIndex, 0, draggedId as OPStage)
         void reorderStages(newOrder)
       }
       return
     }
 
-    // Otherwise, handle job card dragging
-    const activeJob = wonJobs.find((j) => j.job_id === activeId)
+    // Card dragging.
+    const activeJob = wonJobs.find((j) => j.job_id === draggedId)
     if (!activeJob) return
 
-    // Determine target stage - could be direct drop on stage or parent of job card
-    let targetStage: OPStage | null = null
-    let targetJob = null
+    // Target stage = where the ghost was hovering (live), falling back to the
+    // resolved drop target.
+    const targetStage = (hoveredStage as OPStage | null) ?? stageOf(overId)
+    if (!targetStage) return
 
-    // Check if dropped directly on a stage (built-in or custom)
-    // Use sortedStages which includes both built-in and custom stages
-    if (sortedStages.includes(overId as OPStage)) {
-      // Direct drop on stage header (works for built-in and custom stages)
-      targetStage = overId as OPStage
-      console.log('[onDragEnd] Dropped on stage:', targetStage)
-    } else {
-      // Check if dropped on a job card - if so, map to parent stage
-      targetJob = wonJobs.find((j) => j.job_id === overId)
-      if (targetJob) {
-        targetStage = targetJob.op_stage
-        console.log('[onDragEnd] Dropped on job, parent stage:', targetStage)
-      }
-    }
-
-    if (!targetStage) {
-      console.log('[onDragEnd] No valid target stage found')
+    // Different stage → move.
+    if (activeJob.op_stage !== targetStage) {
+      void moveWonJobStage(draggedId, targetStage)
       return
     }
 
-    // If dropping on different stage, move the card
-    if (activeJob.op_stage !== targetStage) {
-      void moveWonJobStage(activeId, targetStage)
-    }
-    // If dropping within same stage on a job card, reorder
-    else if (targetJob && targetJob.op_stage === activeJob.op_stage) {
+    // Same stage, dropped on another card → reorder within the stage.
+    const targetJob = wonJobs.find((j) => j.job_id === overId)
+    if (targetJob && targetJob.op_stage === activeJob.op_stage) {
       const stageJobs = wonJobs
         .filter((j) => j.op_stage === activeJob.op_stage)
         .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
       const newPosition = stageJobs.findIndex((j) => j.job_id === overId)
       if (newPosition >= 0) {
-        void reorderWonJobWithinStage(activeId, newPosition, activeJob.op_stage)
+        void reorderWonJobWithinStage(draggedId, newPosition, activeJob.op_stage)
       }
     }
   }
@@ -1563,7 +1579,6 @@ export default function WonReadyOpPage() {
       return (stageA?.order ?? 0) - (stageB?.order ?? 0)
     })
 
-    console.log('[sortedStages]', { builtInStageIds, customStageIds, result, opStages })
     return result
   }, [opStages])
 
@@ -1604,8 +1619,10 @@ export default function WonReadyOpPage() {
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={collisionDetection}
+        autoScroll={{ threshold: { x: 0.18, y: 0.25 } }}
         onDragStart={onDragStart}
+        onDragOver={onDragOver}
         onDragEnd={onDragEnd}
       >
         {/* Horizontal stage board. Mobile: one stage per page, snap-paginated, each
@@ -1623,7 +1640,7 @@ export default function WonReadyOpPage() {
                 <KanbanColumn
                   key={stage}
                   stage={stage}
-                  jobs={wonJobs.filter((j) => j.op_stage === stage)}
+                  jobs={wonJobs.filter((j) => effectiveStage(j) === stage)}
                   onCardClick={(job) => setSelectedId(job.job_id)}
                   activeId={activeId}
                   onDeleteStage={handleDeleteStage}
