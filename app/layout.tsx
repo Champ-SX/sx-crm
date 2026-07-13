@@ -20,6 +20,14 @@ export const metadata: Metadata = {
   description: 'SIXSHEET Sales Operating System',
   manifest: '/manifest.json',
   appleWebApp: { capable: true, statusBarStyle: 'default', title: 'SX CRM' },
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon-32x32.png', type: 'image/png', sizes: '32x32' },
+      { url: '/favicon-16x16.png', type: 'image/png', sizes: '16x16' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
