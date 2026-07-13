@@ -32,7 +32,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${inter.variable} h-full antialiased`}
+      // themeInitScript adds the `dark` class before hydration to avoid a
+      // light-mode flash; the server can't know the visitor's theme, so the
+      // <html> className legitimately differs on first paint. Suppress the
+      // (benign) hydration warning for this element only.
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
