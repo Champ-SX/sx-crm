@@ -20,6 +20,7 @@ import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
 import { OwnerSelectItems } from '@/components/shared/owner-select-items'
 import { useHydrated } from '@/hooks/use-hydrated'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { OP_STAGES, OP_STAGE_LABELS } from '@/types'
 import type { WonJob, OPStage, StaffMember } from '@/types'
@@ -267,6 +268,7 @@ function KanbanColumn({
   onChangeColor,
   onAddStage,
   opStages,
+  isMobile = false,
 }: {
   stage: string
   jobs: WonJob[]
@@ -276,6 +278,7 @@ function KanbanColumn({
   onChangeColor?: (stage: string) => void
   onAddStage?: () => void
   opStages: any[]
+  isMobile?: boolean
 }) {
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({ id: stage })
   const { setNodeRef: setSortableRef, isDragging, attributes, listeners, transform } = useSortable({ id: stage })
@@ -331,9 +334,9 @@ function KanbanColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col w-[82vw] min-w-[82vw] max-w-[82vw] sm:w-auto sm:min-w-[240px] sm:max-w-[240px] sm:max-h-full sm:min-h-0 rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/20' : ''} ${isDragging ? 'opacity-50' : ''} ${cfg.colBg} dark:!bg-card/40 shadow-sm cursor-grab active:cursor-grabbing`}
-      {...attributes}
-      {...listeners}
+      className={`flex flex-col shrink-0 snap-center w-[86vw] min-w-[86vw] h-full min-h-0 sm:w-auto sm:min-w-[240px] sm:max-w-[240px] sm:h-auto sm:max-h-full sm:snap-align-none rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/20' : ''} ${isDragging ? 'opacity-50' : ''} ${cfg.colBg} dark:!bg-card/40 shadow-sm ${isMobile ? '' : 'cursor-grab active:cursor-grabbing'}`}
+      {...(isMobile ? {} : attributes)}
+      {...(isMobile ? {} : listeners)}
     >
       {/* Column header */}
       <div
@@ -341,13 +344,15 @@ function KanbanColumn({
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {/* Drag handle icon - visual indicator */}
-            <div
-              className="flex-shrink-0 opacity-40 hover:opacity-100 transition-opacity p-1 -m-1 rounded hover:bg-muted/30 pointer-events-none"
-              title="Drag to reorder stages"
-            >
-              <GripVertical className="w-4 h-4 text-muted-foreground" />
-            </div>
+            {/* Drag handle icon — visual indicator (desktop only; mobile pages via swipe) */}
+            {!isMobile && (
+              <div
+                className="flex-shrink-0 opacity-40 hover:opacity-100 transition-opacity p-1 -m-1 rounded hover:bg-muted/30 pointer-events-none"
+                title="Drag to reorder stages"
+              >
+                <GripVertical className="w-4 h-4 text-muted-foreground" />
+              </div>
+            )}
             <div className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
             <p className="text-[11px] font-semibold text-foreground leading-tight">
               {opStages.find((s) => s.id === stage)?.label || OP_STAGE_LABELS[stage as OPStage] || stage}
@@ -426,7 +431,7 @@ function KanbanColumn({
 
       {/* Cards */}
       <SortableContext items={sortedJobs.map(j => j.job_id)} strategy={verticalListSortingStrategy}>
-        <div className="flex-1 px-2.5 pb-3 pt-2 space-y-2 min-h-[80px] sm:overflow-y-auto sm:overflow-x-hidden sm:min-h-0">
+        <div className="flex-1 px-2.5 pb-3 pt-2 space-y-2 overflow-y-auto overflow-x-hidden min-h-0">
           {sortedJobs.map((job) => (
             <JobCard
               key={job.job_id}
@@ -1359,6 +1364,7 @@ export default function WonReadyOpPage() {
   // Horizontal board scrolling: ref + a paging helper for the ‹ › buttons, and a
   // Shift+wheel handler so a vertical wheel scrolls the board sideways.
   const boardRef = useRef<HTMLDivElement>(null)
+  const isMobile = useIsMobile()
   const COLUMN_STEP = 256 // ~240px column + 16px gap
   function scrollBoard(dir: -1 | 1) {
     boardRef.current?.scrollBy({ left: dir * COLUMN_STEP, behavior: 'smooth' })
@@ -1368,6 +1374,43 @@ export default function WonReadyOpPage() {
     if (e.shiftKey && e.deltaY !== 0 && boardRef.current) {
       boardRef.current.scrollLeft += e.deltaY
     }
+  }
+
+  // ── Mobile pagination: one stage column per page, swipe/tap to page ───────────
+  const [activePage, setActivePage] = useState(0)
+  // The column DOM elements live inside the flex row (boardRef → row → columns).
+  function columnEls(): HTMLElement[] {
+    const row = boardRef.current?.firstElementChild as HTMLElement | null
+    return row ? (Array.from(row.children) as HTMLElement[]) : []
+  }
+  // Track which column is centered in the viewport as the user swipes.
+  function handleBoardScroll() {
+    const el = boardRef.current
+    if (!el) return
+    const contRect = el.getBoundingClientRect()
+    const contCenter = contRect.left + contRect.width / 2
+    let best = 0
+    let bestDist = Infinity
+    columnEls().forEach((child, i) => {
+      const r = child.getBoundingClientRect()
+      const c = r.left + r.width / 2
+      const d = Math.abs(c - contCenter)
+      if (d < bestDist) { bestDist = d; best = i }
+    })
+    setActivePage((prev) => (prev === best ? prev : best))
+  }
+  function scrollToPage(i: number) {
+    const el = boardRef.current
+    const cols = columnEls()
+    const clamped = Math.max(0, Math.min(i, cols.length - 1))
+    const col = cols[clamped]
+    if (!el || !col) return
+    // Center the target column in the viewport (matches CSS snap-center).
+    const left = col.offsetLeft - (el.clientWidth - col.offsetWidth) / 2
+    // NOTE: `scroll-snap-type: x mandatory` cancels programmatic *smooth* scrolls
+    // in Chromium, so button/dot jumps use an instant scroll. Native swipes still
+    // animate + snap smoothly on their own.
+    el.scrollTo({ left, behavior: 'instant' as ScrollBehavior })
   }
 
   const sensors = useSensors(
@@ -1565,10 +1608,17 @@ export default function WonReadyOpPage() {
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
       >
-        {/* Horizontal stage board on all sizes: swipe between stages, cards stack vertically within each */}
-        <div ref={boardRef} onWheel={handleBoardWheel} className="flex-1 overflow-x-auto overflow-y-auto sm:overflow-y-hidden bg-background">
+        {/* Horizontal stage board. Mobile: one stage per page, snap-paginated, each
+            column fills the screen and its cards scroll vertically inside it.
+            Desktop: free horizontal scroll of fixed-width columns. */}
+        <div
+          ref={boardRef}
+          onWheel={handleBoardWheel}
+          onScroll={handleBoardScroll}
+          className="flex-1 overflow-x-auto overflow-y-hidden snap-x snap-mandatory sm:snap-none bg-background"
+        >
           <SortableContext items={sortedStages} strategy={horizontalListSortingStrategy}>
-            <div className="flex flex-row gap-4 p-4 sm:p-6 h-full min-w-max items-start min-h-max sm:min-h-0">
+            <div className="flex flex-row gap-4 p-4 sm:p-6 h-full min-w-max items-stretch sm:items-start sm:min-h-0">
               {sortedStages.map((stage) => (
                 <KanbanColumn
                   key={stage}
@@ -1580,11 +1630,47 @@ export default function WonReadyOpPage() {
                   onChangeColor={handleChangeColor}
                   onAddStage={() => setShowAddStageDialog(true)}
                   opStages={opStages}
+                  isMobile={isMobile}
                 />
               ))}
             </div>
           </SortableContext>
         </div>
+
+        {/* Mobile pager — dots + arrows, one page per stage */}
+        {sortedStages.length > 0 && (
+          <div className="sm:hidden shrink-0 flex items-center justify-center gap-3 py-2.5 border-t border-border bg-card">
+            <button
+              type="button"
+              onClick={() => scrollToPage(activePage - 1)}
+              disabled={activePage === 0}
+              className="w-8 h-8 rounded-lg border border-border bg-card text-muted-foreground disabled:opacity-30 flex items-center justify-center transition-colors"
+              aria-label="Previous stage"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <div className="flex items-center gap-1.5">
+              {sortedStages.map((stage, i) => (
+                <button
+                  key={stage}
+                  type="button"
+                  onClick={() => scrollToPage(i)}
+                  aria-label={`Go to stage ${i + 1}`}
+                  className={`h-1.5 rounded-full transition-all ${i === activePage ? 'w-5 bg-primary' : 'w-1.5 bg-muted-foreground/40'}`}
+                />
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => scrollToPage(activePage + 1)}
+              disabled={activePage === sortedStages.length - 1}
+              className="w-8 h-8 rounded-lg border border-border bg-card text-muted-foreground disabled:opacity-30 flex items-center justify-center transition-colors"
+              aria-label="Next stage"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         <DragOverlay>
           {activeJob && (

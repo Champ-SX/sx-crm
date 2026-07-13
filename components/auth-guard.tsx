@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/components/auth-provider'
 import { isSupabaseConfigured } from '@/lib/supabase/client'
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 
 /**
  * AuthGuard Component
@@ -39,12 +40,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   if (loading && !isPublicRoute) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center">
-            <div className="w-8 h-8 rounded-lg border-2 border-muted-foreground/20 border-t-blue-500 animate-spin" />
-          </div>
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
+        <LoadingAnimation />
       </div>
     )
   }
