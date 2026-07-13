@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useCRMStore } from '@/store/crm-store'
+import { useAuth } from '@/components/auth-provider'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { PageHeader } from '@/components/shared/page-header'
@@ -84,12 +85,15 @@ function TaskCard({ task, today, onToggle }: { task: Task; today: string; onTogg
 
 function CreateTaskForm({ onClose }: { onClose: () => void }) {
   const { addTask } = useCRMStore()
+  const { user } = useAuth()
+  // Default owner to the signed-in user; still editable via the Select.
+  const defaultOwner = user?.user_metadata?.full_name ?? user?.email ?? ''
   const [form, setForm] = useState({
     title: '',
     description: '',
     due_date: new Date().toISOString().split('T')[0],
     priority: 'medium' as TaskPriority,
-    owner: 'Vitta',
+    owner: defaultOwner,
   })
 
   function handleSubmit(e: React.FormEvent) {

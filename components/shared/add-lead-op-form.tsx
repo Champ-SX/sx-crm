@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useCRMStore } from '@/store/crm-store'
+import { useAuth } from '@/components/auth-provider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -125,6 +126,9 @@ export function AddLeadOpForm({
   initialContactPerson = '',
 }: AddLeadOpFormProps) {
   const { addLeadOpportunity, addCustomer, customers } = useCRMStore()
+  const { user } = useAuth()
+  // Default owner to the signed-in user; still editable via the Select below.
+  const defaultOwner = user?.user_metadata?.full_name ?? user?.email ?? ''
 
   const existingCompanyNames = Array.from(new Set(customers.map((c) => c.company_name)))
 
@@ -149,7 +153,7 @@ export function AddLeadOpForm({
     event_date: '',
     venue: '',
     estimated_value: '',
-    owner: 'Vitta',
+    owner: defaultOwner,
     notes: '',
   })
 
