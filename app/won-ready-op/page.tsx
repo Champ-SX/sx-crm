@@ -192,14 +192,20 @@ function JobCard({
   job,
   onClick,
   isDragging,
+  isMobile = false,
 }: {
   job: WonJob
   onClick: () => void
   isDragging?: boolean
+  isMobile?: boolean
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging: isSortableDragging } = useSortable({ id: job.job_id })
   const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined
   const isBeingDragged = isDragging || isSortableDragging
+  // Cards are draggable on desktop only. On mobile the board is a pager; tap a
+  // card to open it and change its stage via the detail drawer. Withholding the
+  // listeners here means no drag can start on touch (was crashing the page).
+  const dragProps = isMobile ? {} : { ...attributes, ...listeners }
 
   // Staff-payment summary for the card's bottom tab (so payers spot pending tasks)
   const staff = job.staff_list || []
@@ -212,9 +218,8 @@ function JobCard({
       ref={setNodeRef}
       style={style}
       onClick={(e) => { e.stopPropagation(); onClick() }}
-      {...attributes}
-      {...listeners}
-      className={`bg-card rounded-xl border border-border/60 p-3 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-border transition-all select-none flex items-start gap-2 group ${isBeingDragged ? 'opacity-50 shadow-lg' : ''}`}
+      {...dragProps}
+      className={`bg-card rounded-xl border border-border/60 p-3 ${isMobile ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'} hover:shadow-md hover:border-border transition-all select-none flex items-start gap-2 group ${isBeingDragged ? 'opacity-50 shadow-lg' : ''}`}
     >
       {/* Content */}
       <div className="flex-1 min-w-0">
@@ -445,6 +450,7 @@ function KanbanColumn({
               job={job}
               onClick={() => onCardClick(job)}
               isDragging={activeId === job.job_id}
+              isMobile={isMobile}
             />
           ))}
           {jobs.length === 0 && (
@@ -1429,20 +1435,12 @@ export default function WonReadyOpPage() {
     el.scrollTo({ left, behavior: 'instant' as ScrollBehavior })
   }
 
+  // Drag is a DESKTOP-only interaction (see JobCard/KanbanColumn: no drag
+  // listeners are attached on mobile, so nothing can start a drag there — the
+  // mobile board is a swipe pager and stage changes go through the card detail).
   const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: {
-        distance: 5, // Reduced for easier dragging
-      }
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        // Press-and-hold to drag; a quick swipe scrolls the board instead.
-        // Higher delay disambiguates horizontal stage-swipe from stage-reorder drag on mobile.
-        delay: 220,
-        tolerance: 8,
-      }
-    })
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 8 } }),
   )
 
   const activeJob = activeId ? wonJobs.find((j) => j.job_id === activeId) : null
