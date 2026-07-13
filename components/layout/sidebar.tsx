@@ -9,7 +9,6 @@ import {
   Kanban,
   CheckSquare,
   Settings,
-  Zap,
   Moon,
   Sun,
   X,
@@ -184,9 +183,13 @@ function NavContent({ onNavClick }: { onNavClick?: () => void }) {
       {/* Logo */}
       <div className="px-5 pt-4 pb-3 border-b border-[var(--sidebar-border)] shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[var(--sidebar-primary)] flex items-center justify-center shrink-0 shadow-sm">
-            <Zap className="w-4 h-4 text-white" />
-          </div>
+          {/* SIXSHEET logo mark — black art, inverted in dark mode */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt="SX CRM"
+            className="w-8 h-8 shrink-0 object-contain dark:invert"
+          />
           <div>
             <p className="text-foreground font-bold text-[14px] leading-tight tracking-tight">SX CRM</p>
             <p className="text-muted-foreground text-[10px] leading-tight">by SIXSHEET</p>
