@@ -12,7 +12,6 @@ import {
   rectIntersection,
   type CollisionDetection,
   type DragStartEvent,
-  type DragOverEvent,
   type DragEndEvent,
 } from '@dnd-kit/core'
 import { useDroppable, useDraggable } from '@dnd-kit/core'
@@ -1366,9 +1365,6 @@ export default function WonReadyOpPage() {
   const reorderStages = useCRMStore((s) => s.reorderStages)
   const reorderWonJobWithinStage = useCRMStore((s) => s.reorderWonJobWithinStage)
   const [activeId, setActiveId] = useState<string | null>(null)
-  // While dragging a card, the stage its ghost is currently hovering over — used
-  // to re-parent the card live (Trello-style) so you see where it will land.
-  const [dragOverStage, setDragOverStage] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   // Open a specific card from a notification deep-link (?open=<job_id>).
   useOpenDeepLink(
@@ -1452,41 +1448,24 @@ export default function WonReadyOpPage() {
     return job ? (job.op_stage as OPStage) : null
   }
 
-  // A card's stage during a drag reflects the hovered column (live re-parent).
-  function effectiveStage(job: WonJob): string {
-    if (activeId === job.job_id && dragOverStage) return dragOverStage
-    return job.op_stage
-  }
-
   // Prefer the droppable under the pointer; fall back to rectangle overlap so
   // empty columns and edges still accept the card. Far more predictable than
-  // corner-distance for a wide kanban.
+  // corner-distance for a wide kanban. (We intentionally do NOT live re-parent
+  // the card during drag — doing so shifts layout under the cursor and causes
+  // an onDragOver→setState→re-render feedback loop. The card moves on drop.)
   const collisionDetection: CollisionDetection = (args) => {
     const hits = pointerWithin(args)
     return hits.length ? hits : rectIntersection(args)
   }
 
   function onDragStart({ active }: DragStartEvent) {
-    const id = active.id as string
-    setActiveId(id)
-    const job = wonJobs.find((j) => j.job_id === id)
-    setDragOverStage(job ? (job.op_stage as string) : null)
+    setActiveId(active.id as string)
   }
 
-  function onDragOver({ active, over }: DragOverEvent) {
-    if (!over) return
-    // Only live-reparent cards, not stage reordering.
-    if (sortedStages.includes(active.id as OPStage)) return
-    const target = stageOf(over.id as string)
-    if (target) setDragOverStage(target)
-  }
   function onDragEnd({ active, over }: DragEndEvent) {
     const draggedId = active.id as string
     const overId = over?.id as string | undefined
-    // Snapshot the live-hovered stage before clearing drag state.
-    const hoveredStage = dragOverStage
     setActiveId(null)
-    setDragOverStage(null)
     if (!overId) return
 
     // Stage reordering (via the grip handle).
@@ -1507,9 +1486,8 @@ export default function WonReadyOpPage() {
     const activeJob = wonJobs.find((j) => j.job_id === draggedId)
     if (!activeJob) return
 
-    // Target stage = where the ghost was hovering (live), falling back to the
-    // resolved drop target.
-    const targetStage = (hoveredStage as OPStage | null) ?? stageOf(overId)
+    // Resolve the target stage from the drop position (stage or a card in it).
+    const targetStage = stageOf(overId)
     if (!targetStage) return
 
     // Different stage → move.
@@ -1620,7 +1598,6 @@ export default function WonReadyOpPage() {
         collisionDetection={collisionDetection}
         autoScroll={{ threshold: { x: 0.18, y: 0.25 } }}
         onDragStart={onDragStart}
-        onDragOver={onDragOver}
         onDragEnd={onDragEnd}
       >
         {/* Horizontal stage board. Mobile: one stage per page, snap-paginated, each
@@ -1638,7 +1615,7 @@ export default function WonReadyOpPage() {
                 <KanbanColumn
                   key={stage}
                   stage={stage}
-                  jobs={wonJobs.filter((j) => effectiveStage(j) === stage)}
+                  jobs={wonJobs.filter((j) => j.op_stage === stage)}
                   onCardClick={(job) => setSelectedId(job.job_id)}
                   activeId={activeId}
                   onDeleteStage={handleDeleteStage}
