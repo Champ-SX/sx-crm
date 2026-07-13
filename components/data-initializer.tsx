@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 
 /**
  * DataInitializer Component
@@ -102,9 +103,7 @@ function LoadingOverlay() {
       {/* Loading content */}
       <div className="relative z-10 text-center">
         <div className="mb-6">
-          <div className="inline-flex items-center justify-center">
-            <div className="w-12 h-12 rounded-lg border-2 border-muted-foreground/20 border-t-blue-500 animate-spin" />
-          </div>
+          <LoadingAnimation size={120} label="" />
         </div>
 
         <h2 className="text-2xl font-semibold text-foreground mb-2">Loading CRM Data</h2>
