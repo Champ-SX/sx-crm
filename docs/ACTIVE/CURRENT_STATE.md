@@ -412,6 +412,41 @@ and clearing the param. No DB change.
 
 ---
 
+## 🙋 Phase 3.6 — Default Owner = Signed-in User (Backlog)
+
+**Goal:** When creating a new record, the **Owner** field should default to the
+**currently signed-in user** (editable — they can pick someone else before/after
+saving). Today it's hardcoded to a fixed name.
+
+### Current behavior
+- New Lead/Opp form hardcodes `owner: 'Vitta'` (`components/shared/add-lead-op-form.tsx:152`).
+- New Task form hardcodes `owner: 'Vitta'` (`app/tasks/page.tsx:92`).
+- The signed-in name is readily available via `useAuth()` →
+  `user?.user_metadata?.full_name ?? user?.email` (pattern already used in
+  `add-activity-form`, `mobile-card-view`).
+
+### Scope
+- Initialize the owner in each create form to the signed-in user's name instead
+  of the hardcoded string; keep the existing owner `<Select>` so it stays
+  changeable. Applies to **New Lead/Opp** and **New Task**.
+- **Won jobs** inherit `owner` from the lead on `markAsWon`, so fixing the lead
+  default covers them automatically — no separate change.
+- **Customers** also carry `owner`; if/where a customer is created without an
+  owner picker, default it the same way (verify during build).
+- Edge cases: fall back to `email` when `full_name` is missing; if the signed-in
+  name isn't in the team `owner` options, still show it (it's a free string
+  field, not FK-constrained).
+
+### Decisions to lock
+1. Match on **name string** (current model — `owner` is a display name, not a
+   user id). Keep as-is; don't refactor to id.
+2. Default only affects **new** records; never rewrite existing owners.
+
+**Risk:** Low — a couple of form-init changes using auth context already wired
+elsewhere. No DB/schema change.
+
+---
+
 ## 🚨 Known Issues
 
 ### Medium Priority
