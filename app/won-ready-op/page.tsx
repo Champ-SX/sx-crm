@@ -20,6 +20,7 @@ import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
 import { OwnerSelectItems } from '@/components/shared/owner-select-items'
 import { useHydrated } from '@/hooks/use-hydrated'
+import { useOpenDeepLink } from '@/hooks/use-open-deep-link'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { OP_STAGES, OP_STAGE_LABELS } from '@/types'
@@ -1354,6 +1355,12 @@ export default function WonReadyOpPage() {
   const reorderWonJobWithinStage = useCRMStore((s) => s.reorderWonJobWithinStage)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  // Open a specific card from a notification deep-link (?open=<job_id>).
+  useOpenDeepLink(
+    isHydrated && wonJobs.length > 0,
+    (id) => wonJobs.some((j) => j.job_id === id),
+    setSelectedId,
+  )
   const [stageToDelete, setStageToDelete] = useState<string | null>(null)
   const [stageToColorize, setStageToColorize] = useState<string | null>(null)
   const [jobToDelete, setJobToDelete] = useState<string | null>(null)

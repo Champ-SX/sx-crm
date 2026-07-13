@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useCRMStore } from '@/store/crm-store'
 import { parseDbDate } from '@/lib/utils'
 import { useHydrated } from '@/hooks/use-hydrated'
+import { useOpenDeepLink } from '@/hooks/use-open-deep-link'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { PageHeader } from '@/components/shared/page-header'
@@ -1017,6 +1018,12 @@ export default function CustomersPage() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  // Open a specific customer from a notification deep-link (?open=<customer_id>).
+  useOpenDeepLink(
+    isHydrated && customers.length > 0,
+    (id) => customers.some((c) => c.customer_id === id),
+    setSelectedId,
+  )
   const [creating, setCreating] = useState(false)
   const [newLeadCustomer, setNewLeadCustomer] = useState<Customer | null>(null)
   const [currentPage, setCurrentPage] = useState(1)

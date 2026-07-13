@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useCRMStore } from '@/store/crm-store'
 import { parseDbDate } from '@/lib/utils'
 import { useHydrated } from '@/hooks/use-hydrated'
+import { useOpenDeepLink } from '@/hooks/use-open-deep-link'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { EmptyState } from '@/components/shared/empty-state'
@@ -1022,6 +1023,12 @@ export default function LeadsOpportunitiesPage() {
   const [serviceFilter, setServiceFilter] = useState<string>('all')
   const [ownerFilter, setOwnerFilter] = useState<string>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  // Open a specific lead from a notification deep-link (?open=<lead_op_id>).
+  useOpenDeepLink(
+    isHydrated && leadOpportunities.length > 0,
+    (id) => leadOpportunities.some((l) => l.lead_op_id === id),
+    setSelectedId,
+  )
   const [selectedForDuplicate, setSelectedForDuplicate] = useState<Set<string>>(new Set())
   const [creating, setCreating] = useState(false)
 
