@@ -372,6 +372,46 @@ clean no-op.
 
 ---
 
+## 🔔 Phase 3.5 — Notification Deep-Link to Card (Backlog)
+
+**Goal:** Clicking/tapping a notification in the bell should open the **exact
+card** it refers to, not just land on the list page. Today it navigates to the
+entity's list route and leaves the user to find the item themselves.
+
+### Current behavior (`components/shared/notification-bell.tsx`)
+`handleClick` marks read + `router.push(ENTITY_ROUTE[n.entity_type])` — routes
+to the list page only. The notification already carries **`entity_id`** and
+**`entity_type`** (`'customer' | 'lead_opportunity' | 'won_job'`), so the target
+is known; it's just not used to open the detail.
+
+### Why it's not trivial
+The three entity pages open detail via local React state (`setSelectedId`), not
+the URL — there's no deep-link support yet. So navigating can't currently tell a
+page "open this record."
+
+### Scope
+- **Bell:** push `${ENTITY_ROUTE[type]}?open=${entity_id}` instead of the bare route.
+- **Each page** (`won-ready-op`, `leads-opportunities`, `customers`): on mount,
+  read `useSearchParams().get('open')` → `setSelectedId(id)`; map the id field
+  per type (`won_job`→`job_id`, `lead_opportunity`→`lead_op_id`,
+  `customer`→`customer_id`). Then `router.replace` to strip the param so a
+  refresh or closing the drawer doesn't re-open it.
+- **Timing:** apply after data has hydrated/loaded (the record may not be in the
+  store on first paint); guard for a not-found id (stale/deleted entity → no-op,
+  land on the list).
+- On the Won board, opening the card is enough — no need to also page to its
+  stage (detail is a full drawer).
+
+### Decisions to lock
+1. Deep-link via **query param** (`?open=`) — simplest, shareable, no router
+   schema change. (Alternative: path segment `/won-ready-op/[id]` — bigger refactor, skip.)
+2. Strip the param after opening (recommended) vs keep it — recommend strip.
+
+**Risk:** Low–Med — self-contained; main care is the load-timing/not-found guard
+and clearing the param. No DB change.
+
+---
+
 ## 🚨 Known Issues
 
 ### Medium Priority
