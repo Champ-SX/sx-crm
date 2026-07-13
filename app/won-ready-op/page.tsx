@@ -334,7 +334,7 @@ function KanbanColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col shrink-0 snap-center w-[calc(100vw-2rem)] min-w-[calc(100vw-2rem)] h-full min-h-0 sm:w-auto sm:min-w-[240px] sm:max-w-[240px] sm:h-auto sm:max-h-full sm:snap-align-none rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/20' : ''} ${isDragging ? 'opacity-50' : ''} ${cfg.colBg} dark:!bg-card/40 shadow-sm ${isMobile ? '' : 'cursor-grab active:cursor-grabbing'}`}
+      className={`flex flex-col shrink-0 snap-center w-[86vw] min-w-[86vw] h-full min-h-0 sm:w-auto sm:min-w-[240px] sm:max-w-[240px] sm:h-auto sm:max-h-full sm:snap-align-none rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/20' : ''} ${isDragging ? 'opacity-50' : ''} ${cfg.colBg} dark:!bg-card/40 shadow-sm ${isMobile ? '' : 'cursor-grab active:cursor-grabbing'}`}
       {...(isMobile ? {} : attributes)}
       {...(isMobile ? {} : listeners)}
     >
