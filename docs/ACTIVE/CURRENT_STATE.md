@@ -324,6 +324,54 @@ client-side aggregation + a new UI section. No DB/migration.
 
 ---
 
+## 🖱️ Phase 3.4 — Won Board: Cross-Stage Drag UX (Backlog)
+
+**Goal:** Make dragging a card between stages on the Won board feel solid and
+predictable (Trello-quality) on desktop. Today it's struggly — the card only
+moves on drop, targeting is imprecise, and off-screen stages are hard to reach.
+Mobile already sidesteps this via the paginated board + the card-detail "OP
+Stage" picker (Phase 2.6), so this is **desktop-focused**.
+
+### Diagnosis (current friction in `app/won-ready-op/page.tsx`)
+- **No `onDragOver`** — only `onDragEnd`. The card never re-parents into the
+  hovered stage during the drag; you drag a floating ghost with no "it'll land
+  here" feedback.
+- **`closestCorners` collision** — erratic across columns of differing heights;
+  the drop target doesn't track the cursor.
+- **Whole column is the stage-drag handle** — the column wrapper carries the
+  drag listeners (`cursor-grab` everywhere) while the grip icon is
+  `pointer-events-none` (backwards), so card-drag vs stage-drag compete.
+- **Off-screen stages** — 5 fixed-width columns; far stages need edge
+  auto-scroll that isn't tuned.
+- Handlers are full of `console.log` noise to remove.
+
+### Scope (the "1–4 bundle", in priority order)
+1. **Add `onDragOver`** — optimistically re-parent the dragged card into the
+   hovered stage live (commit on `onDragEnd`); gives real-time landing preview
+   + a natural drop-placeholder gap. *(Biggest win.)*
+2. **Switch collision detection** to `pointerWithin` with a `rectIntersection`
+   fallback (so empty columns still accept drops) — drop follows the cursor.
+3. **Dedicated stage-drag handle** — move the sortable listeners off the column
+   wrapper onto just the grip icon in the header; keep the whole card draggable
+   (now unambiguous). Drop the blanket `cursor-grab`.
+4. **Tune horizontal auto-scroll** (`DndContext autoScroll` threshold/accel) so
+   dragging near a board edge reveals off-screen stages.
+5. (Falls out of #1) Clear drop-placeholder gap where the card will land.
+6. Remove `console.log` spam from the drag handlers.
+
+### Decisions locked
+- Keep the **whole card** as the drag handle (no per-card grip) — safe once #3
+  removes the column-drag conflict.
+- Desktop only; mobile keeps the Phase 2.6 pager + detail-picker flow.
+
+**Risk:** Medium — the `onDragOver` optimistic re-parent + collision swap are
+the fiddly parts (state during drag, don't double-commit). No DB/schema change;
+purely interaction. Test: reorder within a stage, move across stages (incl.
+off-screen), stage reorder via the grip, and that a dropped-nowhere drag is a
+clean no-op.
+
+---
+
 ## 🚨 Known Issues
 
 ### Medium Priority
