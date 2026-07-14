@@ -774,6 +774,32 @@ function JobDueDateEditor({ job, onUpdate }: { job: WonJob; onUpdate: (u: Partia
   )
 }
 
+// ── Compact OP-stage picker for the detail header (desktop + mobile) ──────────
+function JobStagePill({ job }: { job: WonJob }) {
+  const moveWonJobStage = useCRMStore((s) => s.moveWonJobStage)
+  return (
+    <div className="inline-flex items-center gap-1.5">
+      <span className="text-[11px] font-medium text-muted-foreground shrink-0">OP Stage:</span>
+      <Select value={job.op_stage} onValueChange={(v) => v && moveWonJobStage(job.job_id, v as OPStage)}>
+        <SelectTrigger className="h-6 w-auto max-w-[220px] gap-1.5 rounded-full border border-border bg-muted/50 px-2.5 text-[11px] font-semibold text-foreground focus:ring-0">
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${stageConfig[job.op_stage as OPStage]?.dot || 'bg-slate-400'}`} />
+          <span className="truncate">{OP_STAGE_LABELS[job.op_stage as OPStage] || job.op_stage}</span>
+        </SelectTrigger>
+        <SelectContent>
+          {OP_STAGES.map((s) => (
+            <SelectItem key={s} value={s} className="text-xs">
+              <span className="inline-flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${stageConfig[s]?.dot || 'bg-slate-400'}`} />
+                {OP_STAGE_LABELS[s]}
+              </span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
 // ── Job detail drawer ─────────────────────────────────────────────────────────
 function JobDetail({
   jobId,
@@ -981,25 +1007,10 @@ function JobDetail({
                     </SelectContent>
                   </Select>
                 </div>
-                {/* Mobile: compact stage pill — one-tap stage change, replaces the
-                    buried OP Stage section. Dot color reflects the current stage. */}
+                {/* Mobile: compact OP-stage picker under the owner (replaces the
+                    buried collapsible section). */}
                 <div className="sm:hidden mt-2">
-                  <Select value={job.op_stage} onValueChange={(v) => v && moveWonJobStage(job.job_id, v as OPStage)}>
-                    <SelectTrigger className="h-6 w-auto max-w-[220px] gap-1.5 rounded-full border border-border bg-muted/50 px-2.5 text-[11px] font-semibold text-foreground focus:ring-0">
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${stageConfig[job.op_stage as OPStage]?.dot || 'bg-slate-400'}`} />
-                      <span className="truncate">{OP_STAGE_LABELS[job.op_stage as OPStage] || job.op_stage}</span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {OP_STAGES.map((s) => (
-                        <SelectItem key={s} value={s} className="text-xs">
-                          <span className="inline-flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${stageConfig[s]?.dot || 'bg-slate-400'}`} />
-                            {OP_STAGE_LABELS[s]}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <JobStagePill job={job} />
                 </div>
               </div>
               {/* Desktop right column */}
@@ -1026,6 +1037,8 @@ function JobDetail({
                     <OwnerSelectItems />
                   </SelectContent>
                 </Select>
+                {/* OP-stage picker under the owner (matches mobile) */}
+                <JobStagePill job={job} />
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
@@ -1202,40 +1215,7 @@ function JobDetail({
                 </div>}
               </div>
 
-              {/* OP Stage - Collapsible section (moved to left panel for mobile) */}
-              <div className="rounded-xl border border-red-200 overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => toggleSection('OpStage')}
-                  className="w-full bg-red-50 dark:bg-red-500/10 px-4 py-2.5 flex items-center gap-2 hover:bg-red-100/60 dark:hover:bg-red-500/20 transition-colors text-left"
-                >
-                  <div className="w-5 h-5 rounded-md bg-red-100 flex items-center justify-center shrink-0">
-                    <div className={`w-2 h-2 rounded-full bg-red-600`} />
-                  </div>
-                  <span className="text-[12px] font-bold text-red-800 dark:text-red-300 tracking-wide flex-1">OP Stage</span>
-                  <ChevronDown className={`w-3.5 h-3.5 text-red-400 transition-transform duration-200 ${openSections.OpStage ? 'rotate-0' : '-rotate-90'}`} />
-                </button>
-                {openSections.OpStage && <div className="bg-card px-4 py-3 space-y-2">
-                  <div className="flex flex-col gap-1.5">
-                    {OP_STAGES.map((s) => {
-                      const isActive = job.op_stage === s
-                      return (
-                        <button
-                          key={s}
-                          onClick={() => moveWonJobStage(job.job_id, s)}
-                          className={`w-full text-left text-[11px] font-semibold px-3 py-2 rounded-lg border transition-all ${
-                            isActive
-                              ? 'bg-primary text-white border-primary shadow-sm'
-                              : 'border-border text-muted-foreground bg-card hover:bg-muted hover:border-border'
-                          }`}
-                        >
-                          {OP_STAGE_LABELS[s]}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>}
-              </div>
+              {/* OP Stage picker moved to the header (under owner, matches mobile). */}
 
               {/* Due date + reminder */}
               <JobDueDateEditor job={job} onUpdate={u} />
