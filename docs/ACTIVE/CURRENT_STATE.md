@@ -58,10 +58,8 @@
 - iOS-compatible: permission requested via user-gesture button in sidebar banner
 - "Send test notification" self-test button (verified working end-to-end)
 
-**Deferred → Phase 2.4b (Email):** Resend email blocked on DNS — `sixsheet.co`
-is on Wix (no subdomain MX support) and `sixsheet.me` is reserved for API/payments.
-Resolve later with a non-Wix DNS domain (e.g. `crm.sixsheet.me`). Web Push covers
-the mobile-alert need in the meantime, so email is low priority.
+Email notifications (formerly "Phase 2.4b") are **dropped** — Web Push covers
+the mobile-alert need, so email delivery is not planned.
 
 ---
 
@@ -450,7 +448,6 @@ elsewhere. No DB/schema change.
 ## 🚨 Known Issues
 
 ### Medium Priority
-- [ ] Email notifications not sent — deferred to Phase 2.4b (blocked on non-Wix DNS domain)
 - [ ] Mobile @mention autocomplete — mobile composer uses plain `<input>`, not `MentionTextarea`
 - [ ] `activity_id` column name — verify Supabase `activities` table uses `activity_id` not `id` before delete is exercised in prod
 - [x] **Activity log timestamp shifts +7h after refresh** — FIXED via option (b) (normalize on read). Added `parseDbDate()` in `lib/utils.ts`: appends `Z` to zone-less date-time strings so DB timestamps parse as UTC (idempotent — `Z`/offset strings and date-only values pass through untouched). Replaced every `new Date(<db timestamp>)` display/sort site with `parseDbDate(...)`: `activity-timeline.tsx`, `notification-bell.tsx`, `operation-/sales-/admin-dashboard.tsx`, `customers/page.tsx`, `leads-opportunities/page.tsx`. **Root cause (kept for record):** `created_at`/`updated_at` columns are `TIMESTAMP` (timezone-naive) in `lib/supabase/schema.sql`, not `TIMESTAMPTZ`. Client writes `new Date().toISOString()` (UTC, `Z`-suffixed); Postgres drops the zone; PostgREST returns it without a `Z`; `new Date()` then parsed the zone-less string as local (UTC+7). Note: the DB columns remain naive — option (a) (`TIMESTAMPTZ` migration) is still the cleaner long-term fix if writes ever bypass the client.
@@ -502,5 +499,5 @@ elsewhere. No DB/schema change.
 
 ---
 
-**Last Updated:** June 13, 2026  
-**Next Phase:** 2.4 — Real notifications (Resend email + Web Push PWA)
+**Last Updated:** July 14, 2026  
+**Next Phase:** 2.7 — Won card due date + scheduled push (pending scheduler decision)
