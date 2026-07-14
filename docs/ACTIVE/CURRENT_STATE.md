@@ -1,11 +1,11 @@
-# 📊 Current State - SX-CRM June 17, 2026
+# 📊 Current State - SX-CRM July 14, 2026
 
 ## 🎯 Project Status
 
 **Production URL:** https://sx-crm.vercel.app  
 **Build Status:** ✅ Passing  
-**Last Update:** June 17, 2026  
-**Current Phase:** Phase 2.5 (UI/UX Refresh) Complete ✅
+**Last Update:** July 14, 2026  
+**Current Phase:** Phases 2.6–3.6 + 2.7 shipped ✅ — see backlog for what's left
 
 ### Deployment History
 - **v1.0.0** (June 2, 2026) — Phase 1 Complete ✅
@@ -14,6 +14,22 @@
 - **v2.1.1** (June 13, 2026) — Fix: activity log author uses signed-in user ✅
 - **v2.4** (June 16, 2026) — Web Push PWA + persisted notifications + cross-device sync ✅
 - **v2.5** (June 17, 2026) — UI/UX Design System Refresh ✅
+- **v2.6–3.3** (July 2026) — Won mobile pager, attachments→Storage, dark theme, admin delete users/staff, Customer Insights, dashboard monthly summary ✅
+- **v3.4–3.6** (July 14, 2026) — Won cross-stage drag rework, notification deep-link, default owner = signed-in user ✅
+- **v2.7** (July 14, 2026) — Won card due date + scheduled push (pg_cron) ✅
+- **+ polish** (July 14, 2026) — SIXSHEET logo/favicon, branded Lottie loader, Noto Sans Thai font ✅
+
+---
+
+## 🗂️ Remaining Backlog (nothing in-flight)
+
+All numbered phases through 2.7 / 3.6 are shipped. What's left:
+
+1. **Mobile @mention autocomplete** — mobile comment box uses a plain `<input>`, not `MentionTextarea`. (Low)
+2. **Permanent user lockout ("3.0-B")** — `is_active`/blocklist so a deleted user can't sign back in. (Med)
+3. **Server-side customer search/pagination** — client-side today; matters as data grows. (Med)
+
+Email notifications were **dropped** (Web Push covers it). Full per-phase detail is in the sections below (all now marked ✅ Complete).
 
 ---
 
@@ -135,7 +151,7 @@ the mobile-alert need, so email delivery is not planned.
 
 ---
 
-## 📋 Phase 2.6 — Won Board Mobile Parity (Planned)
+## 📋 Phase 2.6 — Won Board Mobile Parity ✅ (Complete — Jul 2026)
 
 **Goal:** Make the Won & Ready for OP board behave the same on mobile as on
 desktop — **stages arranged horizontally** (swipe left/right between stages),
@@ -164,7 +180,7 @@ list instead of a Trello-style horizontal board.
 
 ---
 
-## ⏰ Phase 2.7 — Won Card Due Date + Scheduled Push (Planned)
+## ⏰ Phase 2.7 — Won Card Due Date + Scheduled Push ✅ (Complete — Jul 14, 2026)
 
 **Goal:** Add a Due date (date **+ time**) to Won cards. When the due datetime
 arrives, send a push notification (and in-app notification) to the users
@@ -191,7 +207,7 @@ involved with that card.
 
 ---
 
-## 🗄️ Phase 2.8 — Move Attachments to Supabase Storage (Planned)
+## 🗄️ Phase 2.8 — Move Attachments to Supabase Storage ✅ (Complete — Jul 2026)
 
 **Goal:** Stop storing file attachments as base64 inside `activities.attachments`
 (JSONB) and move the bytes to a Supabase **Storage** bucket, keeping only a
@@ -221,7 +237,7 @@ files download on demand as binary, only when opened.
 
 ---
 
-## 🌗 Phase 2.9 — Dark Theme (Planned)
+## 🌗 Phase 2.9 — Dark Theme ✅ (Complete — Jul 2026)
 
 **Goal:** A working, complete dark mode across every screen.
 
@@ -240,7 +256,7 @@ toggling dark today leaves large parts of the UI broken or unreadable.
 
 ---
 
-## 👤 Phase 3.0 — Admin: Manage + Delete Users (Planned)
+## 👤 Phase 3.0 — Admin: Manage + Delete Users ✅ (Complete — Jul 2026)
 
 **Goal:** Let an admin remove a user, not just change their role.
 
@@ -256,7 +272,7 @@ toggling dark today leaves large parts of the UI broken or unreadable.
 
 ---
 
-## 🧹 Phase 3.1 — Admin: Delete Staff from Registry (Planned)
+## 🧹 Phase 3.1 — Admin: Delete Staff from Registry ✅ (Complete — Jul 2026)
 
 **Goal:** Let an admin delete a staff member (จ่ายเงินน้องออกงาน) from the registry.
 
@@ -274,7 +290,7 @@ A `staffQueries.delete` may need adding.
 
 ---
 
-## ⭐ Phase 3.2 — Customer Insights field (Planned)
+## ⭐ Phase 3.2 — Customer Insights field ✅ (Complete — Jul 2026)
 
 **Goal:** A multi-line "Customer Insights ⭐" textbox (like the existing `notes`)
 that lives on the **customer** and is shown/editable on that customer's **Lead**
@@ -299,7 +315,7 @@ on the customer surfaced in three places — not copied per record.
 
 ---
 
-## 📈 Phase 3.3 — Dashboard: Monthly Won-Job Summary (Planned)
+## 📈 Phase 3.3 — Dashboard: Monthly Won-Job Summary ✅ (Complete — Jul 2026)
 
 **Goal:** A month-scoped won-jobs summary on the dashboard: how many won this
 month, revenue this month, and an owner sales ranking (leaderboard).
@@ -322,7 +338,7 @@ client-side aggregation + a new UI section. No DB/migration.
 
 ---
 
-## 🖱️ Phase 3.4 — Won Board: Cross-Stage Drag UX (Backlog)
+## 🖱️ Phase 3.4 — Won Board: Cross-Stage Drag UX ✅ (Complete — Jul 14, 2026)
 
 **Goal:** Make dragging a card between stages on the Won board feel solid and
 predictable (Trello-quality) on desktop. Today it's struggly — the card only
@@ -370,7 +386,7 @@ clean no-op.
 
 ---
 
-## 🔔 Phase 3.5 — Notification Deep-Link to Card (Backlog)
+## 🔔 Phase 3.5 — Notification Deep-Link to Card ✅ (Complete — Jul 14, 2026)
 
 **Goal:** Clicking/tapping a notification in the bell should open the **exact
 card** it refers to, not just land on the list page. Today it navigates to the
@@ -410,7 +426,7 @@ and clearing the param. No DB change.
 
 ---
 
-## 🙋 Phase 3.6 — Default Owner = Signed-in User (Backlog)
+## 🙋 Phase 3.6 — Default Owner = Signed-in User ✅ (Complete — Jul 14, 2026)
 
 **Goal:** When creating a new record, the **Owner** field should default to the
 **currently signed-in user** (editable — they can pick someone else before/after
@@ -449,6 +465,8 @@ elsewhere. No DB/schema change.
 
 ### Medium Priority
 - [ ] Mobile @mention autocomplete — mobile composer uses plain `<input>`, not `MentionTextarea`
+- [ ] Permanent user lockout ("3.0-B") — add `is_active`/blocklist so a removed user can't sign back in
+- [ ] Server-side customer search/pagination — current pagination is client-side (fine now; matters as data grows)
 - [ ] `activity_id` column name — verify Supabase `activities` table uses `activity_id` not `id` before delete is exercised in prod
 - [x] **Activity log timestamp shifts +7h after refresh** — FIXED via option (b) (normalize on read). Added `parseDbDate()` in `lib/utils.ts`: appends `Z` to zone-less date-time strings so DB timestamps parse as UTC (idempotent — `Z`/offset strings and date-only values pass through untouched). Replaced every `new Date(<db timestamp>)` display/sort site with `parseDbDate(...)`: `activity-timeline.tsx`, `notification-bell.tsx`, `operation-/sales-/admin-dashboard.tsx`, `customers/page.tsx`, `leads-opportunities/page.tsx`. **Root cause (kept for record):** `created_at`/`updated_at` columns are `TIMESTAMP` (timezone-naive) in `lib/supabase/schema.sql`, not `TIMESTAMPTZ`. Client writes `new Date().toISOString()` (UTC, `Z`-suffixed); Postgres drops the zone; PostgREST returns it without a `Z`; `new Date()` then parsed the zone-less string as local (UTC+7). Note: the DB columns remain naive — option (a) (`TIMESTAMPTZ` migration) is still the cleaner long-term fix if writes ever bypass the client.
 
