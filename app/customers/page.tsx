@@ -1021,6 +1021,7 @@ export default function CustomersPage() {
   // Open a specific customer from a notification deep-link (?open=<customer_id>).
   useOpenDeepLink(
     isHydrated && customers.length > 0,
+    'customer',
     (id) => customers.some((c) => c.customer_id === id),
     setSelectedId,
   )

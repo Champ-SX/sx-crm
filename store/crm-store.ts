@@ -177,6 +177,13 @@ interface CRMStore {
   }) => void
   markNotificationRead: (id: string) => void
   markAllNotificationsRead: () => void
+
+  // Deep-link signal: the notification bell requests a record be opened; the
+  // relevant entity page watches this and opens the detail, then clears it.
+  // A reactive store value fires on every click (unlike a one-shot URL param).
+  pendingOpen: { entityType: 'customer' | 'lead_opportunity' | 'won_job'; entityId: string } | null
+  requestOpenEntity: (entityType: 'customer' | 'lead_opportunity' | 'won_job', entityId: string) => void
+  clearPendingOpen: () => void
 }
 
 export const useCRMStore = create<CRMStore>()((set, get) => ({
@@ -1224,5 +1231,9 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       })()
     }
   },
+
+  pendingOpen: null,
+  requestOpenEntity: (entityType, entityId) => set({ pendingOpen: { entityType, entityId } }),
+  clearPendingOpen: () => set({ pendingOpen: null }),
 }));
 

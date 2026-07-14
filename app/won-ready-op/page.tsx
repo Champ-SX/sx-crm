@@ -1355,6 +1355,7 @@ export default function WonReadyOpPage() {
   // Open a specific card from a notification deep-link (?open=<job_id>).
   useOpenDeepLink(
     isHydrated && wonJobs.length > 0,
+    'won_job',
     (id) => wonJobs.some((j) => j.job_id === id),
     setSelectedId,
   )

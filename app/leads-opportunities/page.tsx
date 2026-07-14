@@ -1026,6 +1026,7 @@ export default function LeadsOpportunitiesPage() {
   // Open a specific lead from a notification deep-link (?open=<lead_op_id>).
   useOpenDeepLink(
     isHydrated && leadOpportunities.length > 0,
+    'lead_opportunity',
     (id) => leadOpportunities.some((l) => l.lead_op_id === id),
     setSelectedId,
   )

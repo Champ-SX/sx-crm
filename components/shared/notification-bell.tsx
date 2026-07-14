@@ -23,6 +23,7 @@ export function NotificationBell() {
   const notifications = useCRMStore((s) => s.notifications)
   const markNotificationRead = useCRMStore((s) => s.markNotificationRead)
   const markAllNotificationsRead = useCRMStore((s) => s.markAllNotificationsRead)
+  const requestOpenEntity = useCRMStore((s) => s.requestOpenEntity)
   const [open, setOpen] = useState(false)
 
   // Only notifications addressed to the current user (by team id, name, or email).
@@ -42,9 +43,11 @@ export function NotificationBell() {
       router.push('/dashboard')
       return
     }
-    // Deep-link: open the exact record via ?open=<id>. The target page reads
-    // this on mount, opens the detail drawer, and strips the param.
-    router.push(n.entity_id ? `${route}?open=${encodeURIComponent(n.entity_id)}` : route)
+    // Signal the target page to open this exact record. A reactive store value
+    // (not a one-shot URL param) fires every click, even when already on the
+    // page. Navigate to the page too — the page's watcher opens the drawer.
+    if (n.entity_id) requestOpenEntity(n.entity_type as 'customer' | 'lead_opportunity' | 'won_job', n.entity_id)
+    router.push(route)
   }
 
   return (
