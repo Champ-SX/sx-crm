@@ -236,6 +236,12 @@ export interface WonJob {
   position: number // Position within stage for vertical ordering (0 = first)
   owner: string | null
 
+  // ── Due date + scheduled push (Phase 2.7) ──
+  due_at?: string | null            // ISO datetime (UTC) when the job is due
+  due_lead_minutes?: number | null  // minutes before due_at to notify (0 = at due time)
+  assignee_ids?: string[] | null    // users.id[] to notify in addition to the owner
+  due_notified_at?: string | null   // set once the due notification has fired (dedup)
+
   // ── Relations ──
   // New relational FKs (Phase 1+)
   company_id?: string           // FK → Company

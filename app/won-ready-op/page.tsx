@@ -680,6 +680,100 @@ function EditStaffDialog({
   )
 }
 
+// ── Due date + reminder editor (Phase 2.7) ───────────────────────────────────
+const DUE_LEAD_OPTIONS = [
+  { v: 0, l: 'At due time' },
+  { v: 30, l: '30 min before' },
+  { v: 60, l: '1 hour before' },
+  { v: 180, l: '3 hours before' },
+  { v: 1440, l: '1 day before' },
+  { v: 2880, l: '2 days before' },
+]
+
+// ISO(UTC) → value for <input type="datetime-local"> in the viewer's local time.
+function isoToLocalInput(iso?: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function JobDueDateEditor({ job, onUpdate }: { job: WonJob; onUpdate: (u: Partial<WonJob>) => void }) {
+  const teamMembers = useCRMStore((s) => s.teamMembers)
+  const assignees = job.assignee_ids ?? []
+  const lead = job.due_lead_minutes ?? 0
+
+  function setDue(localValue: string) {
+    // Changing the due time re-arms the notification (clear the dedup stamp).
+    onUpdate({ due_at: localValue ? new Date(localValue).toISOString() : null, due_notified_at: null })
+  }
+  function toggleAssignee(id: string) {
+    const next = assignees.includes(id) ? assignees.filter((x) => x !== id) : [...assignees, id]
+    onUpdate({ assignee_ids: next })
+  }
+
+  return (
+    <div className="rounded-xl border border-indigo-200 dark:border-indigo-500/30 overflow-hidden">
+      <div className="bg-indigo-50 dark:bg-indigo-500/10 px-4 py-2.5 flex items-center gap-2">
+        <div className="w-5 h-5 rounded-md bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center shrink-0">
+          <Calendar className="w-3 h-3 text-indigo-600 dark:text-indigo-300" />
+        </div>
+        <span className="text-[12px] font-bold text-indigo-800 dark:text-indigo-300 tracking-wide flex-1">Due date &amp; reminder</span>
+      </div>
+      <div className="bg-card px-4 py-3 space-y-3">
+        <div className="space-y-1">
+          <label className="field-label">Due date &amp; time</label>
+          <input
+            type="datetime-local"
+            value={isoToLocalInput(job.due_at)}
+            onChange={(e) => setDue(e.target.value)}
+            className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="field-label">Remind</label>
+          <Select value={String(lead)} onValueChange={(v) => v && onUpdate({ due_lead_minutes: Number(v) })}>
+            <SelectTrigger className="h-8 text-xs">
+              <span className="truncate">{DUE_LEAD_OPTIONS.find((o) => o.v === lead)?.l ?? 'At due time'}</span>
+            </SelectTrigger>
+            <SelectContent>
+              {DUE_LEAD_OPTIONS.map((o) => (
+                <SelectItem key={o.v} value={String(o.v)} className="text-xs">{o.l}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <label className="field-label">Notify (owner is always notified)</label>
+          <div className="flex flex-wrap gap-1.5">
+            {teamMembers.map((m) => {
+              const on = assignees.includes(m.id)
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => toggleAssignee(m.id)}
+                  className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-medium border transition-colors ${
+                    on
+                      ? 'bg-indigo-600 text-white border-indigo-600'
+                      : 'border-border text-muted-foreground bg-card hover:bg-muted'
+                  }`}
+                >
+                  {on && <Check className="w-3 h-3" />}{m.name || m.email}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        {!job.due_at && (
+          <p className="text-[11px] text-muted-foreground/70">Set a due date to schedule a reminder push.</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Job detail drawer ─────────────────────────────────────────────────────────
 function JobDetail({
   jobId,
@@ -1143,6 +1237,9 @@ function JobDetail({
                 </div>}
               </div>
 
+              {/* Due date + reminder */}
+              <JobDueDateEditor job={job} onUpdate={u} />
+
             </div>
 
             {/* ── RIGHT: Activity + History (desktop only, fixed width, scrollable) ── */}
@@ -1321,6 +1418,9 @@ function JobDetail({
                       </div>}
                     </div>
                     {/* OP Stage picker moved to the header pill (one-tap, always visible). */}
+
+                    {/* Due date + reminder */}
+                    <JobDueDateEditor job={job} onUpdate={u} />
                   </div>
           </MobileCardView>
 
