@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { DetailHeader } from '@/components/shared/detail-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import type { Customer, CustomerType } from '@/types'
@@ -450,44 +451,27 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
   return (
     <>
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="!w-[95vw] sm:!w-[95vw] md:!w-[900px] lg:!w-[1000px] !max-w-none sm:!max-w-none !max-h-[96dvh] sm:!max-h-[88vh] !top-[2vh] sm:!top-[4vh] !translate-y-0 !p-0 !gap-0 !overflow-hidden !flex !flex-col">
+      <DialogContent showCloseButton={false} className="!w-[95vw] sm:!w-[95vw] md:!w-[900px] lg:!w-[1000px] !max-w-none sm:!max-w-none !max-h-[96dvh] sm:!max-h-[88vh] !top-[2vh] sm:!top-[4vh] !translate-y-0 !p-0 !gap-0 !overflow-hidden !flex !flex-col">
 
-        {/* Header */}
-        <div className="px-4 sm:px-7 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b shrink-0">
-          <div className="flex flex-col sm:flex-row items-start gap-3">
-            {/* Avatar */}
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-base shrink-0">
-              {customer.company_name.charAt(0).toUpperCase()}
-            </div>
+        {/* ── Header (unified DetailHeader) ── */}
+        <DialogTitle className="sr-only">{customer.company_name}</DialogTitle>
+        <DetailHeader
+          onClose={onClose}
+          title={customer.company_name}
+          subtitle={customer.contact_person || undefined}
+          actions={[
+            { label: 'Delete customer', icon: <Trash2 className="w-4 h-4" />, onClick: handleDeleteCustomer, danger: true },
+          ]}
+          meta={[
+            { label: 'Type', node: <StatusBadge status={customer.customer_type} /> },
+          ]}
+        />
 
-            {/* Names section */}
-            <div className="flex-1 min-w-0">
-              <DialogTitle className="text-[15px] font-semibold text-foreground leading-tight break-words">{customer.company_name}</DialogTitle>
-              {customer.contact_person && <p className="text-[12px] text-muted-foreground mt-1 break-words">{customer.contact_person}</p>}
-
-              {/* Buttons on mobile - below names */}
-              <div className="flex items-center gap-2 mt-3 sm:hidden flex-wrap">
-                <StatusBadge status={customer.customer_type} />
-                <Button size="sm" variant="outline" className="gap-1 h-8 text-xs border-primary/30 text-primary hover:bg-primary/5" onClick={() => setCreatingLead(true)}>
-                  <Plus className="w-3 h-3" /> New Lead
-                </Button>
-                <Button size="sm" variant="outline" className="gap-1 h-8 text-xs border-red-200/60 text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-950/20" onClick={handleDeleteCustomer}>
-                  <Trash2 className="w-3 h-3" /> Delete
-                </Button>
-              </div>
-            </div>
-
-            {/* Buttons on desktop - inline */}
-            <div className="hidden sm:flex items-center gap-2 shrink-0">
-              <StatusBadge status={customer.customer_type} />
-              <Button size="sm" variant="outline" className="gap-1 h-8 text-xs border-primary/30 text-primary hover:bg-primary/5" onClick={() => setCreatingLead(true)}>
-                <Plus className="w-3 h-3" /> New Lead
-              </Button>
-              <Button size="sm" variant="outline" className="gap-1 h-8 text-xs border-red-200/60 text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-950/20" onClick={handleDeleteCustomer}>
-                <Trash2 className="w-3 h-3" /> Delete
-              </Button>
-            </div>
-          </div>
+        {/* Primary customer action */}
+        <div className="flex items-center gap-2 px-4 sm:px-7 py-2.5 border-b shrink-0">
+          <Button size="sm" variant="outline" className="gap-1 h-8 text-xs border-primary/30 text-primary hover:bg-primary/5" onClick={() => setCreatingLead(true)}>
+            <Plus className="w-3 h-3" /> New Lead
+          </Button>
         </div>
 
         {/* Two-column body (desktop only) */}
