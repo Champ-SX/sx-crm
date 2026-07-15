@@ -704,6 +704,7 @@ function JobDueDateEditor({ job, onUpdate }: { job: WonJob; onUpdate: (u: Partia
   const teamMembers = useCRMStore((s) => s.teamMembers)
   const assignees = job.assignee_ids ?? []
   const lead = job.due_lead_minutes ?? 0
+  const [open, setOpen] = useState(!!job.due_at)
 
   function setDue(localValue: string) {
     // Changing the due time re-arms the notification (clear the dedup stamp).
@@ -716,13 +717,23 @@ function JobDueDateEditor({ job, onUpdate }: { job: WonJob; onUpdate: (u: Partia
 
   return (
     <div className="rounded-xl border border-indigo-200 dark:border-indigo-500/30 overflow-hidden">
-      <div className="bg-indigo-50 dark:bg-indigo-500/10 px-4 py-2.5 flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full bg-indigo-50 dark:bg-indigo-500/10 px-4 py-2.5 flex items-center gap-2 hover:bg-indigo-100/60 dark:hover:bg-indigo-500/20 transition-colors text-left"
+      >
         <div className="w-5 h-5 rounded-md bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center shrink-0">
           <Calendar className="w-3 h-3 text-indigo-600 dark:text-indigo-300" />
         </div>
         <span className="text-[12px] font-bold text-indigo-800 dark:text-indigo-300 tracking-wide flex-1">Due date &amp; reminder</span>
-      </div>
-      <div className="bg-card px-4 py-3 space-y-3">
+        {job.due_at && !open && (
+          <span className="text-[12px] font-medium text-indigo-700/80 dark:text-indigo-300/80">
+            {new Date(job.due_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+          </span>
+        )}
+        <ChevronDown className={`w-3.5 h-3.5 text-indigo-400 transition-transform duration-200 ${open ? 'rotate-0' : '-rotate-90'}`} />
+      </button>
+      {open && <div className="bg-card px-4 py-3 space-y-3">
         <div className="space-y-1">
           <label className="field-label">Due date &amp; time</label>
           <input
@@ -770,7 +781,7 @@ function JobDueDateEditor({ job, onUpdate }: { job: WonJob; onUpdate: (u: Partia
         {!job.due_at && (
           <p className="text-[12px] text-muted-foreground/70">Set a due date to schedule a reminder push.</p>
         )}
-      </div>
+      </div>}
     </div>
   )
 }
