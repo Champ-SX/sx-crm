@@ -28,6 +28,8 @@ All numbered phases through 2.7 / 3.6 are shipped. What's left:
 1. **Mobile @mention autocomplete** — mobile comment box uses a plain `<input>`, not `MentionTextarea`. (Low)
 2. **Permanent user lockout ("3.0-B")** — `is_active`/blocklist so a deleted user can't sign back in. (Med)
 3. **Server-side customer search/pagination** — client-side today; matters as data grows. (Med)
+4. **Unified detail header (UX pass)** — shared `<DetailHeader>` + `<DetailActionsMenu>` across Customers/Leads/Won: top action row (X / title / ⋯ / +), labeled metadata row (owner · OP stage · value, spread & aligned), Delete moved into a ⋯ overflow (consistent everywhere), close-X no longer overlaps content. Mobile: sticky top bar + overflow sheet. *Layout only.* (Med)
+5. **Card actions (new features)** — the ⋯/＋ menu items that are net-new logic, not layout: **Duplicate card**, **Copy link** (deep-link URL), **Share link**, **Archive card** (needs an archived state/field). Depends on #4's menu shell. (Med)
 
 Email notifications were **dropped** (Web Push covers it). Full per-phase detail is in the sections below (all now marked ✅ Complete).
 
