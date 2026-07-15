@@ -201,13 +201,13 @@ function LeadRow({
       <td className="px-6 py-3.5 min-w-[220px]">
         <p className="text-[13px] font-semibold text-foreground leading-tight">{item.name}</p>
         {item.contact_person && (
-          <p className="text-[11px] text-muted-foreground mt-0.5">{item.contact_person}</p>
+          <p className="text-[12px] text-muted-foreground mt-0.5">{item.contact_person}</p>
         )}
       </td>
       {/* Company */}
       <td className="px-4 py-3.5">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-[10px] font-bold shrink-0">
+          <div className="w-6 h-6 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-[12px] font-bold shrink-0">
             {(item.customer_name || '?').charAt(0).toUpperCase()}
           </div>
           <p className="text-[12px] text-foreground/80">{item.customer_name || '—'}</p>
@@ -215,7 +215,7 @@ function LeadRow({
       </td>
       {/* Service */}
       <td className="px-4 py-3.5">
-        <span className="text-[10px] font-semibold bg-muted text-foreground/80 px-2 py-0.5 rounded-md">{item.service_type}</span>
+        <span className="text-[12px] font-semibold bg-muted text-foreground/80 px-2 py-0.5 rounded-md">{item.service_type}</span>
       </td>
       {/* Event date */}
       <td className="px-4 py-3.5">
@@ -231,11 +231,11 @@ function LeadRow({
       </td>
       {/* Owner */}
       <td className="px-4 py-3.5">
-        <span className="text-[11px] text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-full">{item.owner}</span>
+        <span className="text-[12px] text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-full">{item.owner}</span>
       </td>
       {/* Status */}
       <td className="px-4 py-3.5">
-        <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${cfg.class}`}>{cfg.label}</span>
+        <span className={`text-[12px] font-semibold px-2.5 py-0.5 rounded-full border ${cfg.class}`}>{cfg.label}</span>
       </td>
       {/* Arrow */}
       <td className="px-4 py-3.5">
@@ -273,24 +273,24 @@ function LeadCard({
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <p className="text-[14px] font-semibold text-foreground leading-snug">{item.name}</p>
-          <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${cfg.class}`}>{cfg.label}</span>
+          <span className={`shrink-0 text-[12px] font-semibold px-2 py-0.5 rounded-full border ${cfg.class}`}>{cfg.label}</span>
         </div>
         {item.contact_person && (
           <p className="text-[12px] text-muted-foreground mt-0.5">{item.contact_person}</p>
         )}
         <div className="flex items-center gap-2 mt-1.5 text-[12px] text-foreground/80">
-          <div className="w-5 h-5 rounded-md bg-muted flex items-center justify-center text-muted-foreground text-[9px] font-bold shrink-0">
+          <div className="w-5 h-5 rounded-md bg-muted flex items-center justify-center text-muted-foreground text-[12px] font-bold shrink-0">
             {(item.customer_name || '?').charAt(0).toUpperCase()}
           </div>
           <span className="truncate">{item.customer_name || '—'}</span>
         </div>
         <div className="flex items-center justify-between gap-2 mt-2">
-          <span className="text-[10px] font-semibold bg-muted text-foreground/80 px-2 py-0.5 rounded-md">{item.service_type}</span>
+          <span className="text-[12px] font-semibold bg-muted text-foreground/80 px-2 py-0.5 rounded-md">{item.service_type}</span>
           <span className="text-[13px] font-bold text-foreground">
             {item.estimated_value && item.estimated_value > 0 ? `฿ ${item.estimated_value.toLocaleString()}` : <span className="text-muted-foreground/50 font-normal">—</span>}
           </span>
         </div>
-        <div className="flex items-center justify-between gap-2 mt-1.5 text-[11px] text-muted-foreground">
+        <div className="flex items-center justify-between gap-2 mt-1.5 text-[12px] text-muted-foreground">
           <span>{item.event_date ? format(new Date(item.event_date + 'T00:00:00'), 'dd MMM yyyy') : '—'}</span>
           <span className="bg-muted border border-border px-2 py-0.5 rounded-full text-muted-foreground">{item.owner}</span>
         </div>
@@ -572,7 +572,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                       {linkedCustomer.company_name}
                     </p>
                     {linkedCustomer.contact_person && (
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{linkedCustomer.contact_person}</p>
+                      <p className="text-[12px] text-muted-foreground mt-0.5">{linkedCustomer.contact_person}</p>
                     )}
                   </div>
 
@@ -685,12 +685,12 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                         <CreditCard className="w-3 h-3 text-amber-600" />
                       </div>
                       <span className="text-[12px] font-bold text-amber-800 tracking-wide flex-1">Company Account</span>
-                      <span className="text-[10px] text-amber-500/70 mr-1">{linkedCustomer.company_name}</span>
+                      <span className="text-[12px] text-amber-500/70 mr-1">{linkedCustomer.company_name}</span>
                       <ChevronDown className={`w-3.5 h-3.5 text-amber-400 transition-transform duration-200 ${openAccount ? 'rotate-0' : '-rotate-90'}`} />
                     </button>
                     {openAccount && (
                       <div className="bg-background px-4 py-4 space-y-4">
-                        <p className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded-md">Changes here are saved to the Customer record and shared across all jobs.</p>
+                        <p className="text-[12px] text-amber-600 bg-amber-50 px-2 py-1 rounded-md">Changes here are saved to the Customer record and shared across all jobs.</p>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <p className="field-label">Tax ID</p>
@@ -832,7 +832,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                               {linkedCustomer.company_name}
                             </p>
                             {linkedCustomer.contact_person && (
-                              <p className="text-[11px] text-muted-foreground mt-0.5">{linkedCustomer.contact_person}</p>
+                              <p className="text-[12px] text-muted-foreground mt-0.5">{linkedCustomer.contact_person}</p>
                             )}
                           </div>
 
@@ -907,7 +907,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                           </button>
                           {openAccount && (
                             <div className="bg-background px-4 py-4 space-y-4">
-                              <p className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded-md">Changes here are saved to the Customer record and shared across all jobs.</p>
+                              <p className="text-[12px] text-amber-600 bg-amber-50 px-2 py-1 rounded-md">Changes here are saved to the Customer record and shared across all jobs.</p>
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
                                   <p className="field-label">Tax ID</p>
@@ -1195,7 +1195,7 @@ export default function LeadsOpportunitiesPage() {
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all capitalize ${
+                className={`px-3 py-1 rounded-md text-[12px] font-semibold transition-all capitalize ${
                   statusFilter === s ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -1238,7 +1238,7 @@ export default function LeadsOpportunitiesPage() {
             </Button>
           </>
         )}
-        <p className="text-[11px] text-muted-foreground ml-auto">{filtered.length} items</p>
+        <p className="text-[12px] text-muted-foreground ml-auto">{filtered.length} items</p>
       </div>
 
       {/* Table */}
@@ -1275,13 +1275,13 @@ export default function LeadsOpportunitiesPage() {
                     className="w-4 h-4 rounded cursor-pointer"
                   />
                 </th>
-                <th className="px-6 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[220px]">Lead / Opportunity</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Company</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Service</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Event Date</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Value</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Owner</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                <th className="px-6 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[220px]">Lead / Opportunity</th>
+                <th className="px-4 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Company</th>
+                <th className="px-4 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Service</th>
+                <th className="px-4 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Event Date</th>
+                <th className="px-4 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Value</th>
+                <th className="px-4 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Owner</th>
+                <th className="px-4 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
                 <th className="px-4 py-2.5" />
               </tr>
             </thead>

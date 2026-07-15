@@ -241,12 +241,12 @@ export function AddActivityForm({ entityType, entityId, owner, entityName }: Add
         >
           <Paperclip className="w-3.5 h-3.5" /> Upload file
         </Button>
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-[12px] text-muted-foreground">
           or drop files here • max 5MB • images &amp; documents
         </p>
       </div>
 
-      <p className="text-[10px] text-muted-foreground">⌘ + Enter to save</p>
+      <p className="text-[12px] text-muted-foreground">⌘ + Enter to save</p>
     </form>
   )
 }

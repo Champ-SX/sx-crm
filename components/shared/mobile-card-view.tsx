@@ -155,16 +155,16 @@ export function MobileCardView({
             </span>
           </div>
         )}
-        <p className="px-3 pt-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+        <p className="px-3 pt-2 text-[12px] font-semibold text-muted-foreground uppercase tracking-widest">
           Log activity
         </p>
         {error && (
-          <p className="px-3 pt-1 text-[11px] text-red-500">{error}</p>
+          <p className="px-3 pt-1 text-[12px] text-red-500">{error}</p>
         )}
         {attachments.length > 0 && (
           <div className="flex flex-wrap gap-1.5 px-3 pt-2">
             {attachments.map((a, i) => (
-              <span key={i} className="inline-flex items-center gap-1 bg-muted text-foreground text-[11px] rounded-full pl-2.5 pr-1 py-0.5">
+              <span key={i} className="inline-flex items-center gap-1 bg-muted text-foreground text-[12px] rounded-full pl-2.5 pr-1 py-0.5">
                 <span className="truncate max-w-[120px]">{a.filename}</span>
                 <button
                   type="button"
@@ -184,7 +184,7 @@ export function MobileCardView({
         )}
         <div className="flex items-center gap-2 px-3 py-2.5">
           {/* User avatar */}
-          <div className="w-7 h-7 shrink-0 rounded-full bg-amber-500 text-white text-[11px] font-semibold flex items-center justify-center">
+          <div className="w-7 h-7 shrink-0 rounded-full bg-amber-500 text-white text-[12px] font-semibold flex items-center justify-center">
             {initials}
           </div>
 

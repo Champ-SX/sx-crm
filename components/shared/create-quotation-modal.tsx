@@ -246,10 +246,10 @@ export function CreateQuotationModal({ lead, open, onClose, customerPhone = '', 
               <div className="space-y-2">
                 {/* Header */}
                 <div className="grid grid-cols-12 gap-2 px-1">
-                  <p className="col-span-5 text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Description</p>
-                  <p className="col-span-2 text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Unit</p>
-                  <p className="col-span-1 text-[10px] text-muted-foreground font-medium uppercase tracking-wider text-center">Qty</p>
-                  <p className="col-span-3 text-[10px] text-muted-foreground font-medium uppercase tracking-wider text-right">Unit Price</p>
+                  <p className="col-span-5 text-[12px] text-muted-foreground font-medium uppercase tracking-wider">Description</p>
+                  <p className="col-span-2 text-[12px] text-muted-foreground font-medium uppercase tracking-wider">Unit</p>
+                  <p className="col-span-1 text-[12px] text-muted-foreground font-medium uppercase tracking-wider text-center">Qty</p>
+                  <p className="col-span-3 text-[12px] text-muted-foreground font-medium uppercase tracking-wider text-right">Unit Price</p>
                   <p className="col-span-1" />
                 </div>
 

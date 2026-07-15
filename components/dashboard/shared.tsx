@@ -42,8 +42,8 @@ export function StatCard({
           <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-muted-foreground group-hover:translate-x-0.5 transition-all" />
         </div>
         <p className={`text-2xl font-bold leading-none mb-1 ${valueColor ?? 'text-foreground'}`}>{value}</p>
-        <p className="text-[11px] font-medium text-muted-foreground leading-none mb-1">{label}</p>
-        {sub && <p className="text-[11px] text-muted-foreground/80 leading-snug mt-1">{sub}</p>}
+        <p className="text-[12px] font-medium text-muted-foreground leading-none mb-1">{label}</p>
+        {sub && <p className="text-[12px] text-muted-foreground/80 leading-snug mt-1">{sub}</p>}
       </div>
     </Link>
   )
@@ -61,9 +61,9 @@ export function SectionHeader({ icon: Icon, title, sub, href, linkLabel }: {
     <div className="flex items-center gap-2 mb-3">
       <Icon className="w-4 h-4 text-muted-foreground" />
       <h2 className="text-[13px] font-semibold text-foreground">{title}</h2>
-      {sub && <span className="text-[11px] text-muted-foreground">{sub}</span>}
+      {sub && <span className="text-[12px] text-muted-foreground">{sub}</span>}
       {href && (
-        <Link href={href} className="ml-auto text-[11px] font-medium text-primary hover:underline flex items-center gap-0.5">
+        <Link href={href} className="ml-auto text-[12px] font-medium text-primary hover:underline flex items-center gap-0.5">
           {linkLabel ?? 'View all'} <ArrowRight className="w-3 h-3" />
         </Link>
       )}

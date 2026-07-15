@@ -55,7 +55,7 @@ export default function DashboardPage() {
               <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight">
                 {view} Dashboard
               </h1>
-              <p className="text-[11px] sm:text-[12px] text-muted-foreground mt-0.5 hidden sm:block">
+              <p className="text-[12px] sm:text-[12px] text-muted-foreground mt-0.5 hidden sm:block">
                 {format(today, 'EEEE, MMMM d, yyyy')}
               </p>
             </div>
@@ -66,7 +66,7 @@ export default function DashboardPage() {
               <select
                 value={view}
                 onChange={(e) => setView(e.target.value as DashboardView)}
-                className="text-[11px] font-medium text-foreground/80 bg-card border border-border rounded-lg px-3 py-2 cursor-pointer hover:border-border/80 transition-colors"
+                className="text-[12px] font-medium text-foreground/80 bg-card border border-border rounded-lg px-3 py-2 cursor-pointer hover:border-border/80 transition-colors"
                 aria-label="Preview dashboard view"
               >
                 <option value="Admin">Admin View</option>
@@ -76,7 +76,7 @@ export default function DashboardPage() {
             )}
             <Link
               href="/leads-opportunities"
-              className="inline-flex items-center gap-1.5 bg-primary text-white text-[11px] sm:text-[12px] font-semibold px-2.5 sm:px-3.5 py-2 rounded-lg hover:bg-primary/90 transition-colors shrink-0"
+              className="inline-flex items-center gap-1.5 bg-primary text-white text-[12px] sm:text-[12px] font-semibold px-2.5 sm:px-3.5 py-2 rounded-lg hover:bg-primary/90 transition-colors shrink-0"
             >
               <FileText className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">New Lead / Opp</span>

@@ -125,7 +125,7 @@ export function OperationDashboard() {
                     <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                       <div className={`h-full rounded-full transition-all ${dot}`} style={{ width: `${pct}%` }} />
                     </div>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full w-10 text-center shrink-0 ${badge}`}>{count}</span>
+                    <span className={`text-[12px] font-semibold px-2 py-0.5 rounded-full w-10 text-center shrink-0 ${badge}`}>{count}</span>
                   </div>
                 )
               })}
@@ -133,17 +133,17 @@ export function OperationDashboard() {
             <div className="mt-5 pt-4 border-t border-border/60 grid grid-cols-3 gap-4">
               <div className="text-center">
                 <p className="text-lg font-bold text-foreground">{wonJobs.length}</p>
-                <p className="text-[11px] text-muted-foreground">Total Jobs</p>
+                <p className="text-[12px] text-muted-foreground">Total Jobs</p>
               </div>
               <div className="text-center">
                 <p className="text-lg font-bold text-foreground">{activeOPJobs.length}</p>
-                <p className="text-[11px] text-muted-foreground">Active OP</p>
+                <p className="text-[12px] text-muted-foreground">Active OP</p>
               </div>
               <div className="text-center">
                 <p className="text-lg font-bold text-teal-600">
                   {fmtBaht(wonJobs.reduce((s, j) => s + (j.estimated_value ?? 0), 0))}
                 </p>
-                <p className="text-[11px] text-muted-foreground">Total Value</p>
+                <p className="text-[12px] text-muted-foreground">Total Value</p>
               </div>
             </div>
           </div>
@@ -158,7 +158,7 @@ export function OperationDashboard() {
                 <li key={b.label} className="px-4 py-3 flex items-center gap-3">
                   <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${b.dot}`} />
                   <span className="text-[12px] text-foreground/80 flex-1">{b.label}</span>
-                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${b.bg} ${b.color}`}>{b.count}</span>
+                  <span className={`text-[12px] font-semibold px-2 py-0.5 rounded-full ${b.bg} ${b.color}`}>{b.count}</span>
                 </li>
               ))}
             </ul>
@@ -190,7 +190,7 @@ export function OperationDashboard() {
                     <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                       <div className="h-full rounded-full bg-blue-400 transition-all" style={{ width: `${pct}%` }} />
                     </div>
-                    <span className="text-[11px] font-semibold text-foreground/80 w-8 text-right shrink-0">{count}</span>
+                    <span className="text-[12px] font-semibold text-foreground/80 w-8 text-right shrink-0">{count}</span>
                   </div>
                 )
               })}

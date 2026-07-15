@@ -61,7 +61,7 @@ export function NotificationBell() {
           >
             <Bell className="w-4 h-4 text-[var(--sidebar-foreground)]" />
             {unread > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[12px] font-bold flex items-center justify-center">
                 {unread > 9 ? '9+' : unread}
               </span>
             )}
@@ -80,7 +80,7 @@ export function NotificationBell() {
             <button
               type="button"
               onClick={() => markAllNotificationsRead()}
-              className="text-[11px] font-medium text-primary hover:underline"
+              className="text-[12px] font-medium text-primary hover:underline"
             >
               Mark all read
             </button>
@@ -92,7 +92,7 @@ export function NotificationBell() {
               <div className="px-4 py-8 text-center">
                 <Bell className="w-7 h-7 text-muted-foreground/30 mx-auto mb-2" />
                 <p className="text-[12px] text-muted-foreground">No notifications yet.</p>
-                <p className="text-[11px] text-muted-foreground/70 mt-1">You&apos;ll be notified when someone @mentions you.</p>
+                <p className="text-[12px] text-muted-foreground/70 mt-1">You&apos;ll be notified when someone @mentions you.</p>
               </div>
             ) : (
               <ul className="divide-y divide-border/60">
@@ -111,8 +111,8 @@ export function NotificationBell() {
                             <span className="font-semibold">{n.actor}</span> mentioned you
                             {n.entity_name ? <> in <span className="font-medium">{n.entity_name}</span></> : null}
                           </p>
-                          <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">{n.message}</p>
-                          <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                          <p className="text-[12px] text-muted-foreground line-clamp-2 mt-0.5">{n.message}</p>
+                          <p className="text-[12px] text-muted-foreground/70 mt-0.5">
                             {formatDistanceToNow(parseDbDate(n.created_at), { addSuffix: true })}
                           </p>
                         </div>

@@ -110,11 +110,11 @@ export function MentionTextarea({
                   i === activeIdx ? 'bg-primary/10' : 'hover:bg-muted'
                 )}
               >
-                <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-[11px] font-semibold flex items-center justify-center shrink-0">
+                <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-[12px] font-semibold flex items-center justify-center shrink-0">
                   {display[0]?.toUpperCase()}
                 </span>
                 <span className="font-medium">{display}</span>
-                <span className="text-[11px] text-muted-foreground capitalize ml-auto">{m.role}</span>
+                <span className="text-[12px] text-muted-foreground capitalize ml-auto">{m.role}</span>
               </button>
             )
           })}

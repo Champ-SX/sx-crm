@@ -157,14 +157,14 @@ export function AdminDashboard() {
             <div className="bg-card border border-border rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <Trophy className="w-4 h-4 text-emerald-500" />
-                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Won this month</p>
+                <p className="text-[12px] font-medium text-muted-foreground uppercase tracking-wider">Won this month</p>
               </div>
               <p className="text-2xl font-bold text-emerald-600">{monthCount}</p>
             </div>
             <div className="bg-card border border-border rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <TrendingUp className="w-4 h-4 text-teal-500" />
-                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Revenue this month</p>
+                <p className="text-[12px] font-medium text-muted-foreground uppercase tracking-wider">Revenue this month</p>
               </div>
               <p className="text-2xl font-bold text-teal-600">{fmtBaht(monthRevenue)}</p>
             </div>
@@ -182,10 +182,10 @@ export function AdminDashboard() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-border/60 bg-muted/50">
-                      <th className="px-5 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">#</th>
-                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Owner</th>
-                      <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Deals</th>
-                      <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Revenue</th>
+                      <th className="px-5 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">#</th>
+                      <th className="px-3 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Owner</th>
+                      <th className="px-3 py-2.5 text-center text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Deals</th>
+                      <th className="px-4 py-2.5 text-right text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Revenue</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/40">
@@ -210,17 +210,17 @@ export function AdminDashboard() {
         {monthJobsSorted.length > 0 && (
           <div className="mt-4 bg-card border border-border rounded-xl overflow-hidden">
             <div className="px-5 py-2.5 border-b border-border/60 bg-muted/50 flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Won jobs · {monthLabel}</span>
-              <span className="text-[11px] font-semibold text-teal-600">{monthCount} · {fmtBaht(monthRevenue)}</span>
+              <span className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Won jobs · {monthLabel}</span>
+              <span className="text-[12px] font-semibold text-teal-600">{monthCount} · {fmtBaht(monthRevenue)}</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px]">
                 <thead>
                   <tr className="border-b border-border/60">
-                    <th className="px-5 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Job</th>
-                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Customer</th>
-                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Owner</th>
-                    <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Value</th>
+                    <th className="px-5 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Job</th>
+                    <th className="px-3 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Customer</th>
+                    <th className="px-3 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Owner</th>
+                    <th className="px-4 py-2.5 text-right text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Value</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/40">
@@ -232,7 +232,7 @@ export function AdminDashboard() {
                     >
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-mono font-semibold text-muted-foreground">#{j.job_number}</span>
+                          <span className="text-[12px] font-mono font-semibold text-muted-foreground">#{j.job_number}</span>
                           <span className="text-[12px] font-medium text-foreground truncate max-w-[240px]">{jobDisplayTitle(j)}</span>
                         </div>
                       </td>
@@ -264,11 +264,11 @@ export function AdminDashboard() {
                 <table className="w-full min-w-[480px]">
                   <thead>
                     <tr className="border-b border-border/60 bg-muted/50">
-                      <th className="px-5 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Owner</th>
-                      <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Open</th>
-                      <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Won</th>
-                      <th className="px-3 py-2.5 text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Win %</th>
-                      <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Revenue</th>
+                      <th className="px-5 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Owner</th>
+                      <th className="px-3 py-2.5 text-center text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Open</th>
+                      <th className="px-3 py-2.5 text-center text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Won</th>
+                      <th className="px-3 py-2.5 text-center text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Win %</th>
+                      <th className="px-4 py-2.5 text-right text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Revenue</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/40">
@@ -280,7 +280,7 @@ export function AdminDashboard() {
                         <td className="px-3 py-3 text-center text-[12px] text-foreground/80">{row.open}</td>
                         <td className="px-3 py-3 text-center text-[12px] font-medium text-emerald-600">{row.won}</td>
                         <td className="px-3 py-3 text-center">
-                          <span className="text-[11px] font-semibold text-blue-600">{row.winRate > 0 ? `${row.winRate}%` : '—'}</span>
+                          <span className="text-[12px] font-semibold text-blue-600">{row.winRate > 0 ? `${row.winRate}%` : '—'}</span>
                         </td>
                         <td className="px-4 py-3 text-right text-[12px] font-semibold text-teal-600">{fmtBaht(row.revenue)}</td>
                       </tr>
@@ -308,7 +308,7 @@ export function AdminDashboard() {
                     <p className="text-[12px] font-medium text-foreground leading-snug line-clamp-1">{act.title}</p>
                     <div className="flex items-center gap-1.5 mt-1">
                       <User className="w-2.5 h-2.5 text-muted-foreground" />
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-[12px] text-muted-foreground">
                         {act.created_by} · {format(parseDbDate(act.created_at), 'MMM d')}
                       </span>
                     </div>

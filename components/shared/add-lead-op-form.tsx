@@ -83,7 +83,7 @@ function CompanyCombobox({
         <div className="absolute z-50 mt-1 w-full bg-card border border-border rounded-lg shadow-lg overflow-hidden">
           {suggestions.length > 0 ? (
             <>
-              <p className="px-3 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider border-b bg-muted/30">
+              <p className="px-3 py-1.5 text-[12px] text-muted-foreground uppercase tracking-wider border-b bg-muted/30">
                 Existing companies
               </p>
               <ul className="max-h-48 overflow-y-auto">
@@ -93,7 +93,7 @@ function CompanyCombobox({
                     onMouseDown={() => select(name)}
                     className="flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
                   >
-                    <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold shrink-0">
+                    <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[12px] font-bold shrink-0">
                       {name.charAt(0)}
                     </div>
                     {name}
@@ -301,7 +301,7 @@ export function AddLeadOpForm({
                   <div className="absolute z-50 mt-1 w-full bg-card border border-border rounded-lg shadow-lg overflow-hidden">
                     {matchingContacts.length > 0 && (
                       <>
-                        <p className="px-3 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider border-b bg-muted/30">
+                        <p className="px-3 py-1.5 text-[12px] text-muted-foreground uppercase tracking-wider border-b bg-muted/30">
                           Existing contacts
                         </p>
                         <ul className="max-h-40 overflow-y-auto">

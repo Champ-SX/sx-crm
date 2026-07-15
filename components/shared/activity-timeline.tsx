@@ -182,7 +182,7 @@ export function ActivityTimeline({ entityType, entityId, className, entityName }
             {/* Content */}
             <div className={cn('pb-4 flex-1 min-w-0', isLast ? 'pb-0' : '')}>
               {/* Sub-text header: actor · category · time */}
-              <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground mb-1">
+              <div className="flex items-center gap-1.5 flex-wrap text-[12px] text-muted-foreground mb-1">
                 <UserAvatar name={activity.created_by} size={16} />
                 <span className="font-semibold text-foreground/80">{activity.created_by}</span>
                 <span>·</span>
@@ -215,7 +215,7 @@ export function ActivityTimeline({ entityType, entityId, className, entityName }
                         {/* Image previews */}
                         {images.length > 0 && (
                           <div className="space-y-2">
-                            <p className="text-[11px] font-medium text-foreground/80">
+                            <p className="text-[12px] font-medium text-foreground/80">
                               {images.length} image{images.length !== 1 ? 's' : ''}
                             </p>
                             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -249,7 +249,7 @@ export function ActivityTimeline({ entityType, entityId, className, entityName }
                                   </div>
 
                                   {/* Filename tooltip on hover */}
-                                  <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[10px] px-1.5 py-0.5 truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[12px] px-1.5 py-0.5 truncate opacity-0 group-hover:opacity-100 transition-opacity">
                                     {img.filename}
                                   </div>
                                 </div>
@@ -263,7 +263,7 @@ export function ActivityTimeline({ entityType, entityId, className, entityName }
                           <div className="space-y-1">
                             {activity.attachments!.map((att, attIdx) => (
                               !isImageFile(att.type) && (
-                                <div key={attIdx} className="flex items-center justify-between bg-muted rounded p-2.5 text-[11px] border border-border hover:bg-muted transition-colors group">
+                                <div key={attIdx} className="flex items-center justify-between bg-muted rounded p-2.5 text-[12px] border border-border hover:bg-muted transition-colors group">
                                   <div className="flex items-center gap-2 flex-1 min-w-0">
                                     <FileIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                                     <span className="truncate text-foreground font-medium">{att.filename}</span>

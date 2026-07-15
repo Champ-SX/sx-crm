@@ -75,7 +75,7 @@ function TaskCard({ task, today, onToggle }: { task: Task; today: string; onTogg
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
-        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${priorityConfig[task.priority].class}`}>
+        <Badge variant="outline" className={`text-[12px] px-1.5 py-0 ${priorityConfig[task.priority].class}`}>
           {priorityConfig[task.priority].label}
         </Badge>
       </div>
@@ -115,20 +115,20 @@ function CreateTaskForm({ onClose }: { onClose: () => void }) {
         </div>
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Task *</Label>
+            <Label className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Task *</Label>
             <Input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="h-9 text-sm" placeholder="What needs to be done?" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Notes</Label>
+            <Label className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Notes</Label>
             <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="text-sm resize-none" rows={3} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Due Date</Label>
+              <Label className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Due Date</Label>
               <Input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} className="h-9 text-sm" />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Priority</Label>
+              <Label className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Priority</Label>
               <Select value={form.priority} onValueChange={(v) => v && setForm({ ...form, priority: v as TaskPriority })}>
                 <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -140,7 +140,7 @@ function CreateTaskForm({ onClose }: { onClose: () => void }) {
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Assign to</Label>
+            <Label className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Assign to</Label>
             <Select value={form.owner} onValueChange={(v) => v && setForm({ ...form, owner: v })}>
               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -194,7 +194,7 @@ export default function TasksPage() {
       <div>
         <div className={`flex items-center gap-2 mb-3 ${accent ?? ''}`}>
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</h3>
-          <span className="text-[11px] font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{items.length}</span>
+          <span className="text-[12px] font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{items.length}</span>
         </div>
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground py-2">{emptyMsg}</p>
@@ -219,7 +219,7 @@ export default function TasksPage() {
           <MobileMenuButton />
           <div>
             <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight">Tasks</h1>
-            <p className="text-[11px] sm:text-[12px] text-muted-foreground mt-0.5 hidden sm:block">{pendingCount} pending · {done.length} done</p>
+            <p className="text-[12px] sm:text-[12px] text-muted-foreground mt-0.5 hidden sm:block">{pendingCount} pending · {done.length} done</p>
           </div>
         </div>
         <Button size="sm" className="gap-1.5 h-8 text-[12px] font-semibold" onClick={() => setCreating(true)}>
@@ -252,7 +252,7 @@ export default function TasksPage() {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-red-500">Overdue</h3>
-              <span className="text-[11px] font-semibold bg-red-50 text-red-500 px-1.5 py-0.5 rounded-full">{overdue.length}</span>
+              <span className="text-[12px] font-semibold bg-red-50 text-red-500 px-1.5 py-0.5 rounded-full">{overdue.length}</span>
             </div>
             <div className="space-y-2">
               {overdue.map((task) => (
@@ -265,7 +265,7 @@ export default function TasksPage() {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-amber-600">Due Today</h3>
-              <span className="text-[11px] font-semibold bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-full">{dueToday.length}</span>
+              <span className="text-[12px] font-semibold bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-full">{dueToday.length}</span>
             </div>
             <div className="space-y-2">
               {dueToday.map((task) => (
@@ -278,7 +278,7 @@ export default function TasksPage() {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Upcoming</h3>
-              <span className="text-[11px] font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{upcoming.length}</span>
+              <span className="text-[12px] font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{upcoming.length}</span>
             </div>
             <div className="space-y-2">
               {upcoming.map((task) => (
@@ -291,7 +291,7 @@ export default function TasksPage() {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Done</h3>
-              <span className="text-[11px] font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{done.length}</span>
+              <span className="text-[12px] font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{done.length}</span>
             </div>
             <div className="space-y-2">
               {done.map((task) => (
