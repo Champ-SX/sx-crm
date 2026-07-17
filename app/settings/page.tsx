@@ -72,7 +72,7 @@ export default function SettingsPage() {
               {role === 'admin' && (
                 <Link
                   href="/admin/users"
-                  className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+                  className="inline-flex items-center gap-1 text-[12px] font-medium text-primary hover:underline"
                 >
                   <ShieldCheck className="w-3.5 h-3.5" /> Manage roles
                 </Link>
@@ -97,11 +97,11 @@ export default function SettingsPage() {
                         <div>
                           <p className="text-sm font-medium leading-tight">{display}</p>
                           {m.email && m.name && (
-                            <p className="text-[11px] text-muted-foreground leading-tight">{m.email}</p>
+                            <p className="text-[12px] text-muted-foreground leading-tight">{m.email}</p>
                           )}
                         </div>
                       </div>
-                      <Badge variant="outline" className="text-[10px] capitalize">
+                      <Badge variant="outline" className="text-[12px] capitalize">
                         {m.role}
                       </Badge>
                     </div>
@@ -145,7 +145,7 @@ export default function SettingsPage() {
               ].map(({ label, status }) => (
                 <div key={label} className="flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">{label}</p>
-                  <Badge variant="outline" className="text-[10px] bg-zinc-50">{status}</Badge>
+                  <Badge variant="outline" className="text-[12px] bg-zinc-50">{status}</Badge>
                 </div>
               ))}
             </div>

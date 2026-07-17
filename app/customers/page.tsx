@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { DetailHeader } from '@/components/shared/detail-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import type { Customer, CustomerType } from '@/types'
@@ -110,7 +111,7 @@ function CompanyCombobox({
         <div className="absolute z-50 mt-1 w-full bg-background border border-border rounded-lg shadow-lg overflow-hidden">
           {suggestions.length > 0 ? (
             <>
-              <p className="px-3 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider border-b bg-muted/30">
+              <p className="px-3 py-1.5 text-[12px] text-muted-foreground uppercase tracking-wider border-b bg-muted/30">
                 Existing companies
               </p>
               <ul className="max-h-48 overflow-y-auto">
@@ -120,7 +121,7 @@ function CompanyCombobox({
                     onMouseDown={() => select(name)}
                     className="flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
                   >
-                    <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold shrink-0">
+                    <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[12px] font-bold shrink-0">
                       {name.charAt(0)}
                     </div>
                     {name}
@@ -213,20 +214,20 @@ function CustomerRow({
       {/* Company */}
       <td className="px-6 py-3.5">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-[10px] font-bold shrink-0">
+          <div className="w-6 h-6 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-[12px] font-bold shrink-0">
             {customer.company_name.charAt(0).toUpperCase()}
           </div>
           <div>
             <p className="text-[13px] font-semibold text-foreground leading-tight">{customer.company_name}</p>
             {customer.contact_person && (
-              <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">{customer.contact_person}</p>
+              <p className="text-[12px] text-muted-foreground leading-tight mt-0.5">{customer.contact_person}</p>
             )}
           </div>
         </div>
       </td>
       {/* Type */}
       <td className="px-4 py-3.5">
-        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize ${colorClass}`}>
+        <span className={`text-[12px] font-semibold px-2 py-0.5 rounded-full border capitalize ${colorClass}`}>
           {customer.customer_type}
         </span>
       </td>
@@ -255,7 +256,7 @@ function CustomerRow({
         <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={(e) => { e.stopPropagation(); onNewLead() }}
-            className="flex items-center gap-1 text-[11px] font-medium text-primary bg-primary/8 hover:bg-primary/15 px-2 py-1 rounded-md transition-colors"
+            className="flex items-center gap-1 text-[12px] font-medium text-primary bg-primary/8 hover:bg-primary/15 px-2 py-1 rounded-md transition-colors"
           >
             <Plus className="w-3 h-3" /> New Lead
           </button>
@@ -276,13 +277,13 @@ function CustomerCard({
       className="flex items-start gap-3 border-b border-border/50 px-4 py-3.5 active:bg-muted transition-colors"
       onClick={onClick}
     >
-      <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-[11px] font-bold shrink-0 mt-0.5">
+      <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-[12px] font-bold shrink-0 mt-0.5">
         {customer.company_name.charAt(0).toUpperCase()}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <p className="text-[14px] font-semibold text-foreground leading-snug">{customer.company_name}</p>
-          <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border capitalize ${colorClass}`}>
+          <span className={`shrink-0 text-[12px] font-semibold px-2 py-0.5 rounded-full border capitalize ${colorClass}`}>
             {customer.customer_type}
           </span>
         </div>
@@ -308,7 +309,7 @@ function CustomerCard({
         </div>
         <button
           onClick={(e) => { e.stopPropagation(); onNewLead() }}
-          className="mt-2.5 flex items-center gap-1 text-[11px] font-medium text-primary bg-primary/8 hover:bg-primary/15 px-2.5 py-1 rounded-md transition-colors"
+          className="mt-2.5 flex items-center gap-1 text-[12px] font-medium text-primary bg-primary/8 hover:bg-primary/15 px-2.5 py-1 rounded-md transition-colors"
         >
           <Plus className="w-3 h-3" /> New Lead
         </button>
@@ -450,44 +451,27 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
   return (
     <>
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="!w-[95vw] sm:!w-[95vw] md:!w-[900px] lg:!w-[1000px] !max-w-none sm:!max-w-none !max-h-[96dvh] sm:!max-h-[88vh] !top-[2vh] sm:!top-[4vh] !translate-y-0 !p-0 !gap-0 !overflow-hidden !flex !flex-col">
+      <DialogContent showCloseButton={false} className="!w-[95vw] sm:!w-[95vw] md:!w-[900px] lg:!w-[1000px] !max-w-none sm:!max-w-none !max-h-[96dvh] sm:!max-h-[88vh] !top-[2vh] sm:!top-[4vh] !translate-y-0 !p-0 !gap-0 !overflow-hidden !flex !flex-col">
 
-        {/* Header */}
-        <div className="px-4 sm:px-7 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b shrink-0">
-          <div className="flex flex-col sm:flex-row items-start gap-3">
-            {/* Avatar */}
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-base shrink-0">
-              {customer.company_name.charAt(0).toUpperCase()}
-            </div>
+        {/* ── Header (unified DetailHeader) ── */}
+        <DialogTitle className="sr-only">{customer.company_name}</DialogTitle>
+        <DetailHeader
+          onClose={onClose}
+          title={customer.company_name}
+          subtitle={customer.contact_person || undefined}
+          actions={[
+            { label: 'Delete customer', icon: <Trash2 className="w-4 h-4" />, onClick: handleDeleteCustomer, danger: true },
+          ]}
+          meta={[
+            { label: 'Type', node: <StatusBadge status={customer.customer_type} /> },
+          ]}
+        />
 
-            {/* Names section */}
-            <div className="flex-1 min-w-0">
-              <DialogTitle className="text-[15px] font-semibold text-foreground leading-tight break-words">{customer.company_name}</DialogTitle>
-              {customer.contact_person && <p className="text-[12px] text-muted-foreground mt-1 break-words">{customer.contact_person}</p>}
-
-              {/* Buttons on mobile - below names */}
-              <div className="flex items-center gap-2 mt-3 sm:hidden flex-wrap">
-                <StatusBadge status={customer.customer_type} />
-                <Button size="sm" variant="outline" className="gap-1 h-8 text-xs border-primary/30 text-primary hover:bg-primary/5" onClick={() => setCreatingLead(true)}>
-                  <Plus className="w-3 h-3" /> New Lead
-                </Button>
-                <Button size="sm" variant="outline" className="gap-1 h-8 text-xs border-red-200/60 text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-950/20" onClick={handleDeleteCustomer}>
-                  <Trash2 className="w-3 h-3" /> Delete
-                </Button>
-              </div>
-            </div>
-
-            {/* Buttons on desktop - inline */}
-            <div className="hidden sm:flex items-center gap-2 shrink-0">
-              <StatusBadge status={customer.customer_type} />
-              <Button size="sm" variant="outline" className="gap-1 h-8 text-xs border-primary/30 text-primary hover:bg-primary/5" onClick={() => setCreatingLead(true)}>
-                <Plus className="w-3 h-3" /> New Lead
-              </Button>
-              <Button size="sm" variant="outline" className="gap-1 h-8 text-xs border-red-200/60 text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-950/20" onClick={handleDeleteCustomer}>
-                <Trash2 className="w-3 h-3" /> Delete
-              </Button>
-            </div>
-          </div>
+        {/* Primary customer action */}
+        <div className="flex items-center gap-2 px-4 sm:px-7 py-2.5 border-b shrink-0">
+          <Button size="sm" variant="outline" className="gap-1 h-8 text-xs border-primary/30 text-primary hover:bg-primary/5" onClick={() => setCreatingLead(true)}>
+            <Plus className="w-3 h-3" /> New Lead
+          </Button>
         </div>
 
         {/* Two-column body (desktop only) */}
@@ -690,11 +674,11 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                       <div key={l.lead_op_id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/60">
                         <div>
                           <p className="text-[13px] font-semibold text-foreground">{l.name}</p>
-                          <p className="text-[11px] text-muted-foreground">{l.service_type}</p>
+                          <p className="text-[12px] text-muted-foreground">{l.service_type}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-[13px] font-bold text-foreground">฿{(l.estimated_value || 0).toLocaleString()}</p>
-                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${l.status === 'won' ? 'bg-emerald-50 text-emerald-600' : l.status === 'lost' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-600'}`}>
+                          <span className={`text-[12px] font-semibold px-1.5 py-0.5 rounded-full ${l.status === 'won' ? 'bg-emerald-50 text-emerald-600' : l.status === 'lost' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-600'}`}>
                             {l.status}
                           </span>
                         </div>
@@ -718,12 +702,12 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                           <Briefcase className="w-4 h-4 text-muted-foreground/60 shrink-0" />
                           <div>
                             <p className="text-[13px] font-semibold text-foreground">{j.event_display_name || `Job #${j.job_number}`}</p>
-                            <p className="text-[11px] text-muted-foreground">{j.event_date?.replace(/-/g, '.') || '—'}</p>
+                            <p className="text-[12px] text-muted-foreground">{j.event_date?.replace(/-/g, '.') || '—'}</p>
                           </div>
                         </div>
                         <div className="text-right shrink-0 ml-2">
                           <p className="text-[13px] font-bold text-foreground">{formatCurrency(j.estimated_value || 0)}</p>
-                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
+                          <span className="text-[12px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
                             {j.op_stage.replace(/_/g, ' ').toLowerCase()}
                           </span>
                         </div>
@@ -950,11 +934,11 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                             <div key={l.lead_op_id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/60">
                               <div>
                                 <p className="text-[13px] font-semibold text-foreground">{l.name}</p>
-                                <p className="text-[11px] text-muted-foreground">{l.service_type}</p>
+                                <p className="text-[12px] text-muted-foreground">{l.service_type}</p>
                               </div>
                               <div className="text-right">
                                 <p className="text-[13px] font-bold text-foreground">฿{(l.estimated_value || 0).toLocaleString()}</p>
-                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${l.status === 'won' ? 'bg-emerald-50 text-emerald-600' : l.status === 'lost' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-600'}`}>
+                                <span className={`text-[12px] font-semibold px-1.5 py-0.5 rounded-full ${l.status === 'won' ? 'bg-emerald-50 text-emerald-600' : l.status === 'lost' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-600'}`}>
                                   {l.status}
                                 </span>
                               </div>
@@ -978,12 +962,12 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                                 <Briefcase className="w-4 h-4 text-muted-foreground/60 shrink-0" />
                                 <div>
                                   <p className="text-[13px] font-semibold text-foreground">{j.event_display_name || `Job #${j.job_number}`}</p>
-                                  <p className="text-[11px] text-muted-foreground">{j.event_date?.replace(/-/g, '.') || '—'}</p>
+                                  <p className="text-[12px] text-muted-foreground">{j.event_date?.replace(/-/g, '.') || '—'}</p>
                                 </div>
                               </div>
                               <div className="text-right shrink-0 ml-2">
                                 <p className="text-[13px] font-bold text-foreground">{formatCurrency(j.estimated_value || 0)}</p>
-                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
+                                <span className="text-[12px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
                                   {j.op_stage.replace(/_/g, ' ').toLowerCase()}
                                 </span>
                               </div>
@@ -1096,7 +1080,7 @@ export default function CustomersPage() {
             ))}
           </SelectContent>
         </Select>
-        <p className="text-[11px] text-muted-foreground ml-auto">{filtered.length} of {customers.length}</p>
+        <p className="text-[12px] text-muted-foreground ml-auto">{filtered.length} of {customers.length}</p>
       </div>
 
       {/* Table */}
@@ -1123,11 +1107,11 @@ export default function CustomersPage() {
             <table className="hidden sm:table w-full">
               <thead className="sticky top-0 z-10">
                 <tr className="border-b border-border/60 bg-muted/50 backdrop-blur-sm">
-                  <th className="px-5 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Company</th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Type</th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Phone</th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Email</th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">LINE ID</th>
+                  <th className="px-5 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Company</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Type</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Phone</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Email</th>
+                  <th className="px-4 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">LINE ID</th>
                   <th className="px-4 py-2.5" />
                 </tr>
               </thead>

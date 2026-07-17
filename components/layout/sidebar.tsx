@@ -82,7 +82,7 @@ function UserProfile() {
           <p className="text-foreground text-[13px] font-medium leading-tight truncate">
             {user.user_metadata?.full_name || user.email}
           </p>
-          <p className="text-muted-foreground text-[10px] leading-tight uppercase tracking-wide">
+          <p className="text-muted-foreground text-[12px] leading-tight uppercase tracking-wide">
             {role}
           </p>
         </div>
@@ -168,7 +168,7 @@ function NavContent({ onNavClick }: { onNavClick?: () => void }) {
         </div>
         {badge != null && badge > 0 && (
           <span className={cn(
-            'text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1.5 leading-none',
+            'text-[12px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1.5 leading-none',
             isActive ? 'bg-[var(--sidebar-primary)] text-white' : 'bg-muted text-muted-foreground'
           )}>
             {badge}
@@ -192,7 +192,7 @@ function NavContent({ onNavClick }: { onNavClick?: () => void }) {
           />
           <div>
             <p className="text-foreground font-bold text-[14px] leading-tight tracking-tight">SX CRM</p>
-            <p className="text-muted-foreground text-[10px] leading-tight">by SIXSHEET</p>
+            <p className="text-muted-foreground text-[12px] leading-tight">by SIXSHEET</p>
           </div>
           <div className="ml-auto">
             <NotificationBell />
@@ -202,7 +202,7 @@ function NavContent({ onNavClick }: { onNavClick?: () => void }) {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest px-3 mb-1">Menu</p>
+        <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-widest px-3 mb-1">Menu</p>
         {navItems.map((item) => (
           <NavLink key={item.href} {...item} />
         ))}

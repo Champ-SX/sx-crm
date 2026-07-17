@@ -144,15 +144,21 @@
    over ad-hoc text-[..]/font-* combinations.
    ───────────────────────────────────────────────────────────────────────────── */
 @layer components {
-  /* Type scale ------------------------------------------------------------ */
+  /* Type scale (min 12px floor — nothing below reads well, esp. on mobile) --
+     7 roles: page → section → card-title → body → secondary → label → caption.
+     Prefer these over ad-hoc text-[..]/font-* combinations. */
+  .t-page       { @apply text-[20px] font-semibold text-foreground leading-tight tracking-tight; }
+  .t-section    { @apply text-base font-semibold text-foreground leading-snug; }        /* 16 */
+  .t-body       { @apply text-sm text-foreground leading-normal; }                       /* 14 */
+  .t-secondary  { @apply text-[13px] text-muted-foreground leading-normal; }
   .text-title    { @apply text-[15px] sm:text-base font-semibold text-foreground leading-snug; }
-  .text-subtitle { @apply text-[11px] font-mono text-muted-foreground/70 leading-relaxed break-all; }
-  .text-caption  { @apply text-[10px] text-muted-foreground/70; }
+  .text-subtitle { @apply text-[12px] font-mono text-muted-foreground/70 leading-relaxed break-all; }
+  .text-caption  { @apply text-[12px] text-muted-foreground/70; }
 
   /* Field hierarchy ------------------------------------------------------- */
   /* Label: small, muted, uppercase — recedes so the value stands out. */
   .field-label {
-    @apply block text-[11px] font-medium uppercase tracking-wide text-muted-foreground mb-0.5;
+    @apply block text-[12px] font-medium uppercase tracking-wide text-muted-foreground mb-0.5;
   }
   /* Value: the information that matters — prominent and dark. */
   .field-value {

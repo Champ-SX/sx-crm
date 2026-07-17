@@ -15,6 +15,7 @@ import { AddActivityForm } from '@/components/shared/add-activity-form'
 import { LinkifyText } from '@/components/shared/linkify-text'
 import { MobileCardView } from '@/components/shared/mobile-card-view'
 import { OwnerSelectItems } from '@/components/shared/owner-select-items'
+import { DetailHeader } from '@/components/shared/detail-header'
 import { AddLeadOpForm } from '@/components/shared/add-lead-op-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -201,13 +202,13 @@ function LeadRow({
       <td className="px-6 py-3.5 min-w-[220px]">
         <p className="text-[13px] font-semibold text-foreground leading-tight">{item.name}</p>
         {item.contact_person && (
-          <p className="text-[11px] text-muted-foreground mt-0.5">{item.contact_person}</p>
+          <p className="text-[12px] text-muted-foreground mt-0.5">{item.contact_person}</p>
         )}
       </td>
       {/* Company */}
       <td className="px-4 py-3.5">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-[10px] font-bold shrink-0">
+          <div className="w-6 h-6 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-[12px] font-bold shrink-0">
             {(item.customer_name || '?').charAt(0).toUpperCase()}
           </div>
           <p className="text-[12px] text-foreground/80">{item.customer_name || '—'}</p>
@@ -215,7 +216,7 @@ function LeadRow({
       </td>
       {/* Service */}
       <td className="px-4 py-3.5">
-        <span className="text-[10px] font-semibold bg-muted text-foreground/80 px-2 py-0.5 rounded-md">{item.service_type}</span>
+        <span className="text-[12px] font-semibold bg-muted text-foreground/80 px-2 py-0.5 rounded-md">{item.service_type}</span>
       </td>
       {/* Event date */}
       <td className="px-4 py-3.5">
@@ -231,11 +232,11 @@ function LeadRow({
       </td>
       {/* Owner */}
       <td className="px-4 py-3.5">
-        <span className="text-[11px] text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-full">{item.owner}</span>
+        <span className="text-[12px] text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-full">{item.owner}</span>
       </td>
       {/* Status */}
       <td className="px-4 py-3.5">
-        <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${cfg.class}`}>{cfg.label}</span>
+        <span className={`text-[12px] font-semibold px-2.5 py-0.5 rounded-full border ${cfg.class}`}>{cfg.label}</span>
       </td>
       {/* Arrow */}
       <td className="px-4 py-3.5">
@@ -273,24 +274,24 @@ function LeadCard({
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <p className="text-[14px] font-semibold text-foreground leading-snug">{item.name}</p>
-          <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${cfg.class}`}>{cfg.label}</span>
+          <span className={`shrink-0 text-[12px] font-semibold px-2 py-0.5 rounded-full border ${cfg.class}`}>{cfg.label}</span>
         </div>
         {item.contact_person && (
           <p className="text-[12px] text-muted-foreground mt-0.5">{item.contact_person}</p>
         )}
         <div className="flex items-center gap-2 mt-1.5 text-[12px] text-foreground/80">
-          <div className="w-5 h-5 rounded-md bg-muted flex items-center justify-center text-muted-foreground text-[9px] font-bold shrink-0">
+          <div className="w-5 h-5 rounded-md bg-muted flex items-center justify-center text-muted-foreground text-[12px] font-bold shrink-0">
             {(item.customer_name || '?').charAt(0).toUpperCase()}
           </div>
           <span className="truncate">{item.customer_name || '—'}</span>
         </div>
         <div className="flex items-center justify-between gap-2 mt-2">
-          <span className="text-[10px] font-semibold bg-muted text-foreground/80 px-2 py-0.5 rounded-md">{item.service_type}</span>
+          <span className="text-[12px] font-semibold bg-muted text-foreground/80 px-2 py-0.5 rounded-md">{item.service_type}</span>
           <span className="text-[13px] font-bold text-foreground">
             {item.estimated_value && item.estimated_value > 0 ? `฿ ${item.estimated_value.toLocaleString()}` : <span className="text-muted-foreground/50 font-normal">—</span>}
           </span>
         </div>
-        <div className="flex items-center justify-between gap-2 mt-1.5 text-[11px] text-muted-foreground">
+        <div className="flex items-center justify-between gap-2 mt-1.5 text-[12px] text-muted-foreground">
           <span>{item.event_date ? format(new Date(item.event_date + 'T00:00:00'), 'dd MMM yyyy') : '—'}</span>
           <span className="bg-muted border border-border px-2 py-0.5 rounded-full text-muted-foreground">{item.owner}</span>
         </div>
@@ -397,111 +398,67 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
   return (
     <>
       <Dialog open onOpenChange={onClose}>
-        <DialogContent className="!fixed !top-0 !left-0 !-translate-x-0 !-translate-y-0 !w-screen !h-[100dvh] !max-w-none !grid-cols-1 !p-0 !gap-0 sm:!w-[85vw] sm:!h-auto sm:!top-1/2 sm:!left-1/2 sm:!-translate-x-1/2 sm:!-translate-y-1/2 md:!w-[82vw] !overflow-hidden !max-h-[100dvh] sm:!max-h-[88vh] !flex !flex-col !rounded-none sm:!rounded-lg">
+        <DialogContent showCloseButton={false} className="!fixed !top-0 !left-0 !-translate-x-0 !-translate-y-0 !w-screen !h-[100dvh] !max-w-none !grid-cols-1 !p-0 !gap-0 sm:!w-[85vw] sm:!h-auto sm:!top-1/2 sm:!left-1/2 sm:!-translate-x-1/2 sm:!-translate-y-1/2 md:!w-[82vw] !overflow-hidden !max-h-[100dvh] sm:!max-h-[88vh] !flex !flex-col !rounded-none sm:!rounded-lg">
 
-          {/* ── Header ── */}
-          <div className="px-4 sm:px-7 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b shrink-0">
-            <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4">
-              {/* Lead name and metadata */}
-              <div className="flex-1 min-w-0 w-full sm:w-auto">
-                <InlineEdit
-                  value={item.name}
-                  placeholder="Lead title"
-                  onSave={(v) => updateLeadOpportunity(item.lead_op_id, { name: v })}
-                />
-                <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  {isEditing ? (
-                    <Select value={editData?.status || 'open'} onValueChange={(v) => handleFieldChange('status', v as LeadOpStatus)}>
-                      <SelectTrigger className="h-6 text-xs border-0 px-0 focus:ring-0 w-auto font-medium gap-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="open">Open</SelectItem>
-                        <SelectItem value="negotiating">Negotiating</SelectItem>
-                        <SelectItem value="won">Won</SelectItem>
-                        <SelectItem value="lost">Lost</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <StatusPill status={item.status} onSelect={handleStatusSelect} />
-                  )}
-                  {isEditing ? (
-                    <Input
-                      value={editData?.service_type || ''}
-                      onChange={(e) => handleFieldChange('service_type', e.target.value)}
-                      className="h-6 text-xs w-32"
-                      placeholder="Service type"
+          {/* ── Header (unified DetailHeader) ── */}
+          <DialogTitle className="sr-only">{item.name}</DialogTitle>
+          <DetailHeader
+            onClose={onClose}
+            title={
+              <InlineEdit
+                value={item.name}
+                placeholder="Lead title"
+                onSave={(v) => updateLeadOpportunity(item.lead_op_id, { name: v })}
+              />
+            }
+            subtitle={item.service_type || undefined}
+            actions={[
+              { label: 'Delete lead', icon: <Trash2 className="w-4 h-4" />, onClick: handleDelete, danger: true },
+            ]}
+            meta={[
+              { label: 'Status', node: <StatusPill status={item.status} onSelect={handleStatusSelect} /> },
+              {
+                label: 'Value',
+                node: (
+                  <span className="font-semibold">
+                    <InlineEdit
+                      value={item.estimated_value && item.estimated_value > 0 ? item.estimated_value.toString() : ''}
+                      placeholder="0"
+                      formatDisplay={(v) => `฿ ${(parseFloat(v) || 0).toLocaleString()}`}
+                      onSave={(v) => updateLeadOpportunity(item.lead_op_id, { estimated_value: parseFloat(v) || 0 })}
                     />
-                  ) : (
-                    <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">{item.service_type}</span>
-                  )}
-                </div>
+                  </span>
+                ),
+              },
+              {
+                label: 'Owner',
+                node: (
+                  <Select value={item.owner} onValueChange={(v) => v && updateLeadOpportunity(item.lead_op_id, { owner: v })}>
+                    <SelectTrigger className="h-6 text-sm border-0 px-0 focus:ring-0 w-auto gap-1 text-foreground">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent><OwnerSelectItems /></SelectContent>
+                  </Select>
+                ),
+              },
+            ]}
+          />
 
-                {/* Action buttons on mobile - below name and status */}
-                <div className="flex items-center gap-3 mt-3 sm:hidden flex-wrap">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 px-3 gap-2 border-primary/30 text-primary hover:bg-primary/5 text-xs font-medium"
-                    onClick={() => setQuotationOpen(true)}
-                  >
-                    <Send className="w-4 h-4" /> Create Quotation
-                  </Button>
-                  {(item.status === 'open' || item.status === 'negotiating') && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="success"
-                        className="h-8 px-3 gap-2 text-xs"
-                        onClick={() => setConfirmWon(true)}
-                      >
-                        <Trophy className="w-4 h-4" /> Won
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="h-8 px-3 gap-2 text-xs"
-                        onClick={() => setConfirmLost(true)}
-                      >
-                        <XCircle className="w-4 h-4" /> Lost
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Action buttons on desktop - inline */}
-              <div className="hidden sm:flex items-center gap-3 shrink-0 flex-wrap justify-end">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-10 px-4 gap-2 border-primary/30 text-primary hover:bg-primary/5 text-xs sm:text-sm min-w-[44px] font-medium"
-                  onClick={() => setQuotationOpen(true)}
-                >
-                  <Send className="w-4 h-4" /> <span className="hidden md:inline">Create Quotation</span>
+          {/* Primary lead actions */}
+          <div className="flex items-center gap-2 px-4 sm:px-7 py-2.5 border-b shrink-0 flex-wrap">
+            <Button size="sm" variant="outline" className="h-8 px-3 gap-2 border-primary/30 text-primary hover:bg-primary/5 text-xs font-medium" onClick={() => setQuotationOpen(true)}>
+              <Send className="w-4 h-4" /> Create Quotation
+            </Button>
+            {(item.status === 'open' || item.status === 'negotiating') && (
+              <>
+                <Button size="sm" variant="success" className="h-8 px-3 gap-2 text-xs" onClick={() => setConfirmWon(true)}>
+                  <Trophy className="w-4 h-4" /> Won
                 </Button>
-                {(item.status === 'open' || item.status === 'negotiating') && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="success"
-                      className="h-10 px-4 gap-2 text-xs sm:text-sm min-w-[44px]"
-                      onClick={() => setConfirmWon(true)}
-                    >
-                      <Trophy className="w-4 h-4" /> <span className="hidden sm:inline">Won</span>
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="h-10 px-4 gap-2 text-xs sm:text-sm min-w-[44px]"
-                      onClick={() => setConfirmLost(true)}
-                    >
-                      <XCircle className="w-4 h-4" /> <span className="hidden sm:inline">Lost</span>
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
+                <Button size="sm" variant="destructive" className="h-8 px-3 gap-2 text-xs" onClick={() => setConfirmLost(true)}>
+                  <XCircle className="w-4 h-4" /> Lost
+                </Button>
+              </>
+            )}
           </div>
 
           {/* ── Body: two columns (desktop only) ── */}
@@ -538,26 +495,8 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                     <p className="field-value">{item.contact_person || '—'}</p>
                   )}
                 </div>
-                <div>
-                  <p className="field-label">Estimated Value</p>
-                  <InlineEdit
-                    value={item.estimated_value && item.estimated_value > 0 ? item.estimated_value.toString() : ''}
-                    placeholder="0"
-                    formatDisplay={(v) => `฿ ${(parseFloat(v) || 0).toLocaleString()}`}
-                    onSave={(v) => updateLeadOpportunity(item.lead_op_id, { estimated_value: parseFloat(v) || 0 })}
-                  />
-                </div>
-                <div>
-                  <p className="field-label">Owner</p>
-                  <Select value={item.owner} onValueChange={(v) => v && updateLeadOpportunity(item.lead_op_id, { owner: v })}>
-                    <SelectTrigger className="h-7 text-sm border-0 px-0 focus:ring-0 w-auto gap-1 font-medium">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <OwnerSelectItems />
-                    </SelectContent>
-                  </Select>
-                </div>
+                
+                
               </div>
 
               {/* Contact Details */}
@@ -572,7 +511,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                       {linkedCustomer.company_name}
                     </p>
                     {linkedCustomer.contact_person && (
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{linkedCustomer.contact_person}</p>
+                      <p className="text-[12px] text-muted-foreground mt-0.5">{linkedCustomer.contact_person}</p>
                     )}
                   </div>
 
@@ -685,12 +624,12 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                         <CreditCard className="w-3 h-3 text-amber-600" />
                       </div>
                       <span className="text-[12px] font-bold text-amber-800 tracking-wide flex-1">Company Account</span>
-                      <span className="text-[10px] text-amber-500/70 mr-1">{linkedCustomer.company_name}</span>
+                      <span className="text-[12px] text-amber-500/70 mr-1">{linkedCustomer.company_name}</span>
                       <ChevronDown className={`w-3.5 h-3.5 text-amber-400 transition-transform duration-200 ${openAccount ? 'rotate-0' : '-rotate-90'}`} />
                     </button>
                     {openAccount && (
                       <div className="bg-background px-4 py-4 space-y-4">
-                        <p className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded-md">Changes here are saved to the Customer record and shared across all jobs.</p>
+                        <p className="text-[12px] text-amber-600 bg-amber-50 px-2 py-1 rounded-md">Changes here are saved to the Customer record and shared across all jobs.</p>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <p className="field-label">Tax ID</p>
@@ -796,26 +735,8 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                           <p className="field-value">{item.contact_person || '—'}</p>
                         )}
                       </div>
-                      <div>
-                        <p className="field-label">Estimated Value</p>
-                        <InlineEdit
-                          value={item.estimated_value && item.estimated_value > 0 ? item.estimated_value.toString() : ''}
-                          placeholder="0"
-                          formatDisplay={(v) => `฿ ${(parseFloat(v) || 0).toLocaleString()}`}
-                          onSave={(v) => updateLeadOpportunity(item.lead_op_id, { estimated_value: parseFloat(v) || 0 })}
-                        />
-                      </div>
-                      <div>
-                        <p className="field-label">Owner</p>
-                        <Select value={item.owner} onValueChange={(v) => v && updateLeadOpportunity(item.lead_op_id, { owner: v })}>
-                          <SelectTrigger className="h-7 text-sm border-0 px-0 focus:ring-0 w-auto gap-1 font-medium">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <OwnerSelectItems />
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      
+                      
                     </div>
 
                     {/* Contact Details */}
@@ -832,7 +753,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                               {linkedCustomer.company_name}
                             </p>
                             {linkedCustomer.contact_person && (
-                              <p className="text-[11px] text-muted-foreground mt-0.5">{linkedCustomer.contact_person}</p>
+                              <p className="text-[12px] text-muted-foreground mt-0.5">{linkedCustomer.contact_person}</p>
                             )}
                           </div>
 
@@ -907,7 +828,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                           </button>
                           {openAccount && (
                             <div className="bg-background px-4 py-4 space-y-4">
-                              <p className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded-md">Changes here are saved to the Customer record and shared across all jobs.</p>
+                              <p className="text-[12px] text-amber-600 bg-amber-50 px-2 py-1 rounded-md">Changes here are saved to the Customer record and shared across all jobs.</p>
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
                                   <p className="field-label">Tax ID</p>
@@ -1195,7 +1116,7 @@ export default function LeadsOpportunitiesPage() {
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all capitalize ${
+                className={`px-3 py-1 rounded-md text-[12px] font-semibold transition-all capitalize ${
                   statusFilter === s ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -1238,7 +1159,7 @@ export default function LeadsOpportunitiesPage() {
             </Button>
           </>
         )}
-        <p className="text-[11px] text-muted-foreground ml-auto">{filtered.length} items</p>
+        <p className="text-[12px] text-muted-foreground ml-auto">{filtered.length} items</p>
       </div>
 
       {/* Table */}
@@ -1275,13 +1196,13 @@ export default function LeadsOpportunitiesPage() {
                     className="w-4 h-4 rounded cursor-pointer"
                   />
                 </th>
-                <th className="px-6 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[220px]">Lead / Opportunity</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Company</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Service</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Event Date</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Value</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Owner</th>
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                <th className="px-6 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider min-w-[220px]">Lead / Opportunity</th>
+                <th className="px-4 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Company</th>
+                <th className="px-4 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Service</th>
+                <th className="px-4 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Event Date</th>
+                <th className="px-4 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Value</th>
+                <th className="px-4 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Owner</th>
+                <th className="px-4 py-2.5 text-left text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
                 <th className="px-4 py-2.5" />
               </tr>
             </thead>

@@ -74,7 +74,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
   return (
     <Badge
       variant="outline"
-      className={cn('text-[11px] font-medium px-2 py-0.5 capitalize border', classes, className)}
+      className={cn('text-[12px] font-medium px-2 py-0.5 capitalize border', classes, className)}
     >
       {label}
     </Badge>

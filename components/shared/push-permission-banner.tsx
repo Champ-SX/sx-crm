@@ -71,7 +71,7 @@ export function PushPermissionBanner() {
           type="button"
           onClick={handleTest}
           disabled={testState === 'sending'}
-          className="mt-1.5 text-[11px] font-medium text-green-700 dark:text-green-400 underline disabled:opacity-60"
+          className="mt-1.5 text-[12px] font-medium text-green-700 dark:text-green-400 underline disabled:opacity-60"
         >
           {testState === 'sending' ? 'Sending…'
             : testState === 'sent' ? 'Test sent — check your device'

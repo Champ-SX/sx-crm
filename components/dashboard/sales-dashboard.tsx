@@ -63,7 +63,7 @@ export function SalesDashboard({ userName }: { userName: string }) {
         <UserAvatar name={userName} size={32} />
         <div>
           <p className="text-[15px] font-semibold text-foreground leading-tight">{userName}</p>
-          <p className="text-[11px] text-muted-foreground">Your sales dashboard</p>
+          <p className="text-[12px] text-muted-foreground">Your sales dashboard</p>
         </div>
       </div>
 
@@ -130,15 +130,15 @@ export function SalesDashboard({ userName }: { userName: string }) {
             <div className="mt-5 pt-4 border-t border-border/60 grid grid-cols-3 gap-4">
               <div className="text-center">
                 <p className="text-lg font-bold text-foreground">{myActiveLeads.length}</p>
-                <p className="text-[11px] text-muted-foreground">Active Leads</p>
+                <p className="text-[12px] text-muted-foreground">Active Leads</p>
               </div>
               <div className="text-center">
                 <p className="text-lg font-bold text-emerald-600">{myWon.length}</p>
-                <p className="text-[11px] text-muted-foreground">Won</p>
+                <p className="text-[12px] text-muted-foreground">Won</p>
               </div>
               <div className="text-center">
                 <p className="text-lg font-bold text-teal-600">{fmtBaht(myPipelineValue)}</p>
-                <p className="text-[11px] text-muted-foreground">Pipeline Value</p>
+                <p className="text-[12px] text-muted-foreground">Pipeline Value</p>
               </div>
             </div>
           </div>
@@ -152,7 +152,7 @@ export function SalesDashboard({ userName }: { userName: string }) {
               <div className="px-5 py-8 text-center">
                 <TrendingUp className="w-7 h-7 text-muted-foreground/40 mx-auto mb-2" />
                 <p className="text-[12px] text-muted-foreground">No activity logged yet.</p>
-                <p className="text-[11px] text-muted-foreground/50 mt-1">Your notes and calls will appear here.</p>
+                <p className="text-[12px] text-muted-foreground/50 mt-1">Your notes and calls will appear here.</p>
               </div>
             ) : (
               <ul className="divide-y divide-border/60">
@@ -160,11 +160,11 @@ export function SalesDashboard({ userName }: { userName: string }) {
                   <li key={act.activity_id} className="px-4 py-3 hover:bg-muted/50 transition-colors">
                     <p className="text-[12px] font-medium text-foreground leading-snug">{act.title}</p>
                     {act.description && (
-                      <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{act.description}</p>
+                      <p className="text-[12px] text-muted-foreground mt-0.5 line-clamp-1">{act.description}</p>
                     )}
                     <div className="flex items-center gap-1.5 mt-1">
                       <User className="w-2.5 h-2.5 text-muted-foreground" />
-                      <span className="text-[10px] text-muted-foreground">{format(parseDbDate(act.created_at), 'MMM d')}</span>
+                      <span className="text-[12px] text-muted-foreground">{format(parseDbDate(act.created_at), 'MMM d')}</span>
                     </div>
                   </li>
                 ))}

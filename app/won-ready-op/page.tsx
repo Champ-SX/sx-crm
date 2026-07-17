@@ -32,6 +32,7 @@ import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
 import { LinkifyText } from '@/components/shared/linkify-text'
 import { MobileCardView } from '@/components/shared/mobile-card-view'
+import { DetailHeader } from '@/components/shared/detail-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -224,8 +225,8 @@ function JobCard({
       <div className="flex-1 min-w-0">
         {/* Job number + product type */}
         <div className="flex items-center justify-between mb-2 gap-1">
-          <span className="text-[9px] font-mono font-semibold text-muted-foreground tracking-wider">#{job.job_number}</span>
-          <span className="text-[9px] font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-md shrink-0">{job.product_type || '—'}</span>
+          <span className="text-[12px] font-mono font-semibold text-muted-foreground tracking-wider">#{job.job_number}</span>
+          <span className="text-[12px] font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-md shrink-0">{job.product_type || '—'}</span>
         </div>
 
         {/* Title */}
@@ -234,14 +235,14 @@ function JobCard({
         </p>
 
         {/* Customer */}
-        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-1.5">
+        <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground mb-1.5">
           <User className="w-3 h-3 shrink-0 text-muted-foreground" />
           <span className="truncate">{job.customer_name || '—'}</span>
         </div>
 
         {/* Date */}
         {job.event_date && (
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-2">
+          <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground mb-2">
             <Calendar className="w-3 h-3 shrink-0 text-muted-foreground" />
             <span>{format(parseISO(job.event_date + 'T00:00:00'), 'dd MMM yyyy')}</span>
           </div>
@@ -250,14 +251,14 @@ function JobCard({
         {/* Value + owner */}
         <div className="flex items-center justify-between pt-2 border-t border-border gap-1 min-w-0">
           <span className="text-[12px] font-bold text-foreground shrink-0">{formatCurrency(job.estimated_value)}</span>
-          <span className="text-[10px] font-medium text-muted-foreground bg-muted border border-border px-1.5 py-0.5 rounded-full truncate min-w-0" title={job.owner || ''}>{job.owner}</span>
+          <span className="text-[12px] font-medium text-muted-foreground bg-muted border border-border px-1.5 py-0.5 rounded-full truncate min-w-0" title={job.owner || ''}>{job.owner}</span>
         </div>
 
         {/* Staff-payment tab — red while pending, green when fully paid */}
         {staff.length > 0 && (
           <div className={`-mx-3 -mb-3 mt-2 px-3 py-1.5 rounded-b-xl border-t flex items-center gap-1.5 ${allPaid ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/15 dark:border-emerald-500/30 dark:text-emerald-300' : 'bg-red-50 border-red-200 text-red-700 dark:bg-red-500/15 dark:border-red-500/30 dark:text-red-300'}`}>
             {allPaid ? <Check className="w-3 h-3 shrink-0" /> : <CreditCard className="w-3 h-3 shrink-0" />}
-            <span className="text-[10px] font-semibold">จ่ายแล้ว {paidStaff}/{staff.length} · ฿{staffFeeTotal.toLocaleString()}</span>
+            <span className="text-[12px] font-semibold">จ่ายแล้ว {paidStaff}/{staff.length} · ฿{staffFeeTotal.toLocaleString()}</span>
           </div>
         )}
       </div>
@@ -365,7 +366,7 @@ function KanbanColumn({
               </button>
             )}
             <div className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
-            <p className="text-[11px] font-semibold text-foreground leading-tight">
+            <p className="text-[12px] font-semibold text-foreground leading-tight">
               {opStages.find((s) => s.id === stage)?.label || OP_STAGE_LABELS[stage as OPStage] || stage}
             </p>
           </div>
@@ -373,7 +374,7 @@ function KanbanColumn({
           <div className="relative">
             <button
               onClick={() => setSortMenuOpen(!sortMenuOpen)}
-              className="text-[10px] font-bold bg-card shadow-sm text-muted-foreground w-6 h-6 rounded-full flex items-center justify-center shrink-0 border border-border hover:border-border hover:shadow-md transition-all cursor-pointer"
+              className="text-[12px] font-bold bg-card shadow-sm text-muted-foreground w-6 h-6 rounded-full flex items-center justify-center shrink-0 border border-border hover:border-border hover:shadow-md transition-all cursor-pointer"
               title="Click to sort"
             >
               {jobs.length}
@@ -382,28 +383,28 @@ function KanbanColumn({
             {sortMenuOpen && (
               <div className="absolute right-0 top-7 bg-card border border-border rounded-md shadow-lg z-10 min-w-[140px]">
                 {/* Sort section */}
-                <div className="text-[9px] font-bold text-muted-foreground px-3 py-1.5 uppercase tracking-wider">Sort</div>
+                <div className="text-[12px] font-bold text-muted-foreground px-3 py-1.5 uppercase tracking-wider">Sort</div>
                 <button
                   onClick={() => { setSortBy('position'); setSortMenuOpen(false) }}
-                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-muted ${sortBy === 'position' ? 'bg-muted text-foreground' : 'text-foreground/80'}`}
+                  className={`block w-full text-left px-3 py-2 text-[12px] font-medium hover:bg-muted ${sortBy === 'position' ? 'bg-muted text-foreground' : 'text-foreground/80'}`}
                 >
                   Order
                 </button>
                 <button
                   onClick={() => { setSortBy('date'); setSortMenuOpen(false) }}
-                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-muted ${sortBy === 'date' ? 'bg-muted text-foreground' : 'text-foreground/80'}`}
+                  className={`block w-full text-left px-3 py-2 text-[12px] font-medium hover:bg-muted ${sortBy === 'date' ? 'bg-muted text-foreground' : 'text-foreground/80'}`}
                 >
                   Event Date
                 </button>
                 <button
                   onClick={() => { setSortBy('value'); setSortMenuOpen(false) }}
-                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-muted ${sortBy === 'value' ? 'bg-muted text-foreground' : 'text-foreground/80'}`}
+                  className={`block w-full text-left px-3 py-2 text-[12px] font-medium hover:bg-muted ${sortBy === 'value' ? 'bg-muted text-foreground' : 'text-foreground/80'}`}
                 >
                   Value
                 </button>
                 <button
                   onClick={() => { setSortBy('name'); setSortMenuOpen(false) }}
-                  className={`block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-muted ${sortBy === 'name' ? 'bg-muted text-foreground' : 'text-foreground/80'}`}
+                  className={`block w-full text-left px-3 py-2 text-[12px] font-medium hover:bg-muted ${sortBy === 'name' ? 'bg-muted text-foreground' : 'text-foreground/80'}`}
                 >
                   Alphabetically
                 </button>
@@ -412,22 +413,22 @@ function KanbanColumn({
                 <div className="h-px bg-muted my-1" />
 
                 {/* Manage section */}
-                <div className="text-[9px] font-bold text-muted-foreground px-3 py-1.5 uppercase tracking-wider">Manage</div>
+                <div className="text-[12px] font-bold text-muted-foreground px-3 py-1.5 uppercase tracking-wider">Manage</div>
                 <button
                   onClick={() => { setSortMenuOpen(false); onChangeColor?.(stage) }}
-                  className="block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-muted text-foreground/80"
+                  className="block w-full text-left px-3 py-2 text-[12px] font-medium hover:bg-muted text-foreground/80"
                 >
                   Change Color
                 </button>
                 <button
                   onClick={() => { setSortMenuOpen(false); onAddStage?.() }}
-                  className="block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-muted text-foreground/80"
+                  className="block w-full text-left px-3 py-2 text-[12px] font-medium hover:bg-muted text-foreground/80"
                 >
                   Add Stage
                 </button>
                 <button
                   onClick={() => { setSortMenuOpen(false); onDeleteStage?.(stage) }}
-                  className="block w-full text-left px-3 py-2 text-[10px] font-medium hover:bg-red-50 dark:hover:bg-red-500/10 text-red-600 dark:text-red-400 last:rounded-b-md"
+                  className="block w-full text-left px-3 py-2 text-[12px] font-medium hover:bg-red-50 dark:hover:bg-red-500/10 text-red-600 dark:text-red-400 last:rounded-b-md"
                 >
                   Delete Stage
                 </button>
@@ -436,7 +437,7 @@ function KanbanColumn({
           </div>
         </div>
         {jobs.length > 0 && (
-          <p className="text-[10px] font-medium text-muted-foreground pl-4 mt-0.5">{formatCurrency(totalValue)}</p>
+          <p className="text-[12px] font-medium text-muted-foreground pl-4 mt-0.5">{formatCurrency(totalValue)}</p>
         )}
       </div>
 
@@ -454,7 +455,7 @@ function KanbanColumn({
           ))}
           {jobs.length === 0 && (
             <div className={`flex items-center justify-center rounded-xl border-2 border-dashed h-20 transition-colors ${isOver ? 'border-primary/40 bg-primary/5' : 'border-border/60'}`}>
-              <p className="text-[10px] text-muted-foreground/60">Drop here</p>
+              <p className="text-[12px] text-muted-foreground/60">Drop here</p>
             </div>
           )}
         </div>
@@ -703,6 +704,7 @@ function JobDueDateEditor({ job, onUpdate }: { job: WonJob; onUpdate: (u: Partia
   const teamMembers = useCRMStore((s) => s.teamMembers)
   const assignees = job.assignee_ids ?? []
   const lead = job.due_lead_minutes ?? 0
+  const [open, setOpen] = useState(!!job.due_at)
 
   function setDue(localValue: string) {
     // Changing the due time re-arms the notification (clear the dedup stamp).
@@ -715,13 +717,23 @@ function JobDueDateEditor({ job, onUpdate }: { job: WonJob; onUpdate: (u: Partia
 
   return (
     <div className="rounded-xl border border-indigo-200 dark:border-indigo-500/30 overflow-hidden">
-      <div className="bg-indigo-50 dark:bg-indigo-500/10 px-4 py-2.5 flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full bg-indigo-50 dark:bg-indigo-500/10 px-4 py-2.5 flex items-center gap-2 hover:bg-indigo-100/60 dark:hover:bg-indigo-500/20 transition-colors text-left"
+      >
         <div className="w-5 h-5 rounded-md bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center shrink-0">
           <Calendar className="w-3 h-3 text-indigo-600 dark:text-indigo-300" />
         </div>
         <span className="text-[12px] font-bold text-indigo-800 dark:text-indigo-300 tracking-wide flex-1">Due date &amp; reminder</span>
-      </div>
-      <div className="bg-card px-4 py-3 space-y-3">
+        {job.due_at && !open && (
+          <span className="text-[12px] font-medium text-indigo-700/80 dark:text-indigo-300/80">
+            {new Date(job.due_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+          </span>
+        )}
+        <ChevronDown className={`w-3.5 h-3.5 text-indigo-400 transition-transform duration-200 ${open ? 'rotate-0' : '-rotate-90'}`} />
+      </button>
+      {open && <div className="bg-card px-4 py-3 space-y-3">
         <div className="space-y-1">
           <label className="field-label">Due date &amp; time</label>
           <input
@@ -754,7 +766,7 @@ function JobDueDateEditor({ job, onUpdate }: { job: WonJob; onUpdate: (u: Partia
                   key={m.id}
                   type="button"
                   onClick={() => toggleAssignee(m.id)}
-                  className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-medium border transition-colors ${
+                  className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[12px] font-medium border transition-colors ${
                     on
                       ? 'bg-indigo-600 text-white border-indigo-600'
                       : 'border-border text-muted-foreground bg-card hover:bg-muted'
@@ -767,21 +779,20 @@ function JobDueDateEditor({ job, onUpdate }: { job: WonJob; onUpdate: (u: Partia
           </div>
         </div>
         {!job.due_at && (
-          <p className="text-[11px] text-muted-foreground/70">Set a due date to schedule a reminder push.</p>
+          <p className="text-[12px] text-muted-foreground/70">Set a due date to schedule a reminder push.</p>
         )}
-      </div>
+      </div>}
     </div>
   )
 }
 
-// ── Compact OP-stage picker for the detail header (desktop + mobile) ──────────
+// ── Compact OP-stage picker (bare pill; header meta cell provides the label) ──
 function JobStagePill({ job }: { job: WonJob }) {
   const moveWonJobStage = useCRMStore((s) => s.moveWonJobStage)
   return (
-    <div className="inline-flex items-center gap-1.5">
-      <span className="text-[11px] font-medium text-muted-foreground shrink-0">OP Stage:</span>
+    <div className="inline-flex items-center">
       <Select value={job.op_stage} onValueChange={(v) => v && moveWonJobStage(job.job_id, v as OPStage)}>
-        <SelectTrigger className="h-6 w-auto max-w-[220px] gap-1.5 rounded-full border border-border bg-muted/50 px-2.5 text-[11px] font-semibold text-foreground focus:ring-0">
+        <SelectTrigger className="h-6 w-auto max-w-[200px] gap-1.5 rounded-full border border-border bg-muted/50 px-2.5 text-[12px] font-semibold text-foreground focus:ring-0">
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${stageConfig[job.op_stage as OPStage]?.dot || 'bg-slate-400'}`} />
           <span className="truncate">{OP_STAGE_LABELS[job.op_stage as OPStage] || job.op_stage}</span>
         </SelectTrigger>
@@ -869,7 +880,7 @@ function JobDetail({
           </div>
           <span className="text-[12px] font-bold text-rose-800 dark:text-rose-300 tracking-wide flex-1">จ่ายเงินน้องออกงาน</span>
           {count > 0 && (
-            <span className="text-[11px] font-medium text-rose-700/80 dark:text-rose-300/80">
+            <span className="text-[12px] font-medium text-rose-700/80 dark:text-rose-300/80">
               จ่ายแล้ว {paidCount}/{count} · ฿{total.toLocaleString()}
             </span>
           )}
@@ -949,41 +960,42 @@ function JobDetail({
   return (
     <>
       <Dialog open onOpenChange={onClose}>
-        <DialogContent className="w-[88vw] max-w-[88vw] sm:max-w-[88vw] top-[4vh] translate-y-0 p-0 gap-0 overflow-hidden max-h-[88dvh] flex flex-col">
+        <DialogContent showCloseButton={false} className="w-[88vw] max-w-[88vw] sm:max-w-[88vw] top-[4vh] translate-y-0 p-0 gap-0 overflow-hidden max-h-[88dvh] flex flex-col">
 
-          {/* ── Header ── */}
-          {/* Mobile compacts to 3 rows (chip+delete / title / inline value·meta·owner) so the
-              A/B/C detail sections start higher; desktop keeps the value/owner/delete right column. */}
-          <div className="px-4 sm:px-7 pt-3 sm:pt-5 pb-2.5 sm:pb-4 border-b shrink-0 bg-card">
-            <div className="flex flex-col sm:flex-row items-start justify-between gap-2 sm:gap-4">
-              <div className="flex-1 min-w-0 w-full sm:w-auto">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] font-mono font-semibold bg-muted text-muted-foreground px-2 py-0.5 rounded-md">#{job.job_number}</span>
-                  {job.event_date && <span className="text-caption">{job.event_date.replace(/-/g, '.')}</span>}
-                  {/* Mobile-only delete (desktop has it in the right column) */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onDelete?.(job.job_id) }}
-                    className="sm:hidden ml-auto mr-9 p-1 text-muted-foreground/70 hover:text-destructive transition-colors"
-                    title="Delete card"
-                    aria-label="Delete card"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-                <DialogTitle className="text-title mb-1.5 sm:mb-2">
-                  <InlineEdit
-                    value={jobDisplayTitle(job)}
-                    onSave={(v) => u({ event_display_name: v })}
-                    placeholder="Enter event name…"
-                  />
-                </DialogTitle>
-                {/* Desktop subtitle */}
-                <p className="hidden sm:block text-subtitle mt-0.5">
-                  {formatJobMeta(job)}
-                </p>
-                {/* Mobile inline meta: value · type/cat · owner */}
-                <div className="sm:hidden flex items-center gap-1.5 flex-wrap text-foreground">
-                  <span className="text-base font-bold">
+          {/* ── Header (unified DetailHeader) ── */}
+          <DialogTitle className="sr-only">{jobDisplayTitle(job)}</DialogTitle>
+          <DetailHeader
+            idChip={job.job_number}
+            dateLabel={job.event_date ? job.event_date.replace(/-/g, '.') : undefined}
+            onClose={onClose}
+            title={
+              <InlineEdit
+                value={jobDisplayTitle(job)}
+                onSave={(v) => u({ event_display_name: v })}
+                placeholder="Enter event name…"
+              />
+            }
+            subtitle={formatJobMeta(job) || undefined}
+            actions={[
+              { label: 'Delete card', icon: <Trash2 className="w-4 h-4" />, onClick: () => onDelete?.(job.job_id), danger: true },
+            ]}
+            meta={[
+              {
+                label: 'Owner',
+                node: (
+                  <Select value={job.owner} onValueChange={(v) => v && u({ owner: v })}>
+                    <SelectTrigger className="h-6 text-sm border-0 px-0 focus:ring-0 w-auto gap-1 text-foreground">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent><OwnerSelectItems /></SelectContent>
+                  </Select>
+                ),
+              },
+              { label: 'OP Stage', node: <JobStagePill job={job} /> },
+              {
+                label: 'Value',
+                node: (
+                  <span className="font-semibold">
                     <InlineEdit
                       value={job.estimated_value ? job.estimated_value.toString() : ''}
                       onSave={(v) => u({ estimated_value: parseFloat(v) || 0 })}
@@ -991,67 +1003,20 @@ function JobDetail({
                       formatDisplay={(v) => `฿ ${(parseFloat(v) || 0).toLocaleString()}`}
                     />
                   </span>
-                  {formatJobMeta(job) && (
-                    <>
-                      <span className="text-muted-foreground/40">·</span>
-                      <span className="text-xs text-muted-foreground">{formatJobMeta(job)}</span>
-                    </>
-                  )}
-                  <span className="text-muted-foreground/40">·</span>
-                  <Select value={job.owner} onValueChange={(v) => v && u({ owner: v })}>
-                    <SelectTrigger className="h-5 text-xs border-0 px-0 focus:ring-0 w-auto gap-0.5 text-muted-foreground">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <OwnerSelectItems />
-                    </SelectContent>
-                  </Select>
-                </div>
-                {/* Mobile: compact OP-stage picker under the owner (replaces the
-                    buried collapsible section). */}
-                <div className="sm:hidden mt-2">
-                  <JobStagePill job={job} />
-                </div>
-              </div>
-              {/* Desktop right column */}
-              <div className="hidden sm:flex flex-col items-end shrink-0 gap-1">
-                <div className="text-right">
-                  <Label className="field-label">Value</Label>
-                  <div className="text-base font-bold text-foreground">
-                    <InlineEdit
-                      value={job.estimated_value ? job.estimated_value.toString() : ''}
-                      onSave={(v) => {
-                        const num = parseFloat(v) || 0
-                        u({ estimated_value: num })
-                      }}
-                      placeholder="0"
-                      formatDisplay={(v) => `฿ ${(parseFloat(v) || 0).toLocaleString()}`}
-                    />
-                  </div>
-                </div>
-                <Select value={job.owner} onValueChange={(v) => v && u({ owner: v })}>
-                  <SelectTrigger className="h-6 text-xs border-0 px-0 focus:ring-0 w-auto gap-1 text-muted-foreground justify-end">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <OwnerSelectItems />
-                  </SelectContent>
-                </Select>
-                {/* OP-stage picker under the owner (matches mobile) */}
-                <JobStagePill job={job} />
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onDelete?.(job.job_id)
-                  }}
-                  className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground/70 hover:text-destructive transition-colors"
-                  title="Delete card"
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> Delete
-                </button>
-              </div>
-            </div>
-          </div>
+                ),
+              },
+              {
+                label: 'Due',
+                node: (
+                  <span className={job.due_at ? '' : 'text-muted-foreground/60'}>
+                    {job.due_at
+                      ? new Date(job.due_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+                      : '—'}
+                  </span>
+                ),
+              },
+            ]}
+          />
 
           {/* ── Body: Responsive layout ── */}
           {/* Desktop only: Two-panel layout */}
@@ -1110,11 +1075,11 @@ function JobDetail({
                 {openSections.C && <div className="bg-card px-4 py-4 space-y-4">
                   {/* Source badge */}
                   {linkedCustomer ? (
-                    <p className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/30 px-2.5 py-1.5 rounded-md leading-snug">
+                    <p className="text-[12px] text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/30 px-2.5 py-1.5 rounded-md leading-snug">
                       🔗 Linked to <strong>{linkedCustomer.company_name}</strong> — edits update the shared Customer record
                     </p>
                   ) : (
-                    <p className="text-[10px] text-muted-foreground bg-muted px-2.5 py-1.5 rounded-md">
+                    <p className="text-[12px] text-muted-foreground bg-muted px-2.5 py-1.5 rounded-md">
                       No linked customer — data stored on this job only
                     </p>
                   )}
@@ -1293,11 +1258,11 @@ function JobDetail({
                       <SectionHeader letter="C" title="Company Account" icon={CreditCard} open={openSections.C} onToggle={() => toggleSection('C')} />
                       {openSections.C && <div className="bg-card px-4 py-4 space-y-4">
                         {linkedCustomer ? (
-                          <p className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/30 px-2.5 py-1.5 rounded-md leading-snug">
+                          <p className="text-[12px] text-emerald-700 bg-emerald-50 border border-emerald-200 dark:text-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/30 px-2.5 py-1.5 rounded-md leading-snug">
                             🔗 Linked to <strong>{linkedCustomer.company_name}</strong> — edits update the shared Customer record
                           </p>
                         ) : (
-                          <p className="text-[10px] text-muted-foreground bg-muted px-2.5 py-1.5 rounded-md">
+                          <p className="text-[12px] text-muted-foreground bg-muted px-2.5 py-1.5 rounded-md">
                             No linked customer — data stored on this job only
                           </p>
                         )}
@@ -1636,7 +1601,7 @@ export default function WonReadyOpPage() {
           <MobileMenuButton />
           <div>
             <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight">Won &amp; Ready for OP</h1>
-            <p className="text-[11px] sm:text-[12px] text-muted-foreground mt-0.5 hidden sm:block">{activeCount} active jobs · {formatCurrency(totalValue)} in pipeline</p>
+            <p className="text-[12px] sm:text-[12px] text-muted-foreground mt-0.5 hidden sm:block">{activeCount} active jobs · {formatCurrency(totalValue)} in pipeline</p>
           </div>
         </div>
         {/* Scroll the board sideways one stage at a time (desktop) */}
@@ -1734,7 +1699,7 @@ export default function WonReadyOpPage() {
         <DragOverlay>
           {activeJob && (
             <div className="bg-card rounded-lg border border-primary/30 shadow-xl p-3 w-[230px] opacity-95">
-              <p className="text-[10px] font-mono text-muted-foreground/60 mb-1">#{activeJob.job_number}</p>
+              <p className="text-[12px] font-mono text-muted-foreground/60 mb-1">#{activeJob.job_number}</p>
               <p className="text-sm font-semibold text-foreground leading-snug">{jobDisplayTitle(activeJob)}</p>
               <p className="text-xs text-muted-foreground mt-1">{activeJob.customer_name}</p>
             </div>
