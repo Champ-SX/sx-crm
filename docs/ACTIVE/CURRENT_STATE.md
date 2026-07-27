@@ -25,22 +25,7 @@
 
 All numbered phases through 2.7 / 3.6 are shipped. What's left:
 
-0. **Multiple boards (brands) — CAP\*TURES + Andy & Fine** — biggest planned feature.
-   Introduce a first-class `board` (brand/business-unit) dimension.
-   **Decided:** full-pipeline scope (Leads, Won jobs, OP stages, Dashboard are
-   per-board; **customers shared**). Sidebar-header board switcher, one active
-   board, remembered per user.
-   **Data:** new `boards` table (name, slug, color, sort_order; seed CAP\*TURES +
-   Andy & Fine); add `board_id` FK to `lead_opportunities`, `won_jobs`, `op_stages`;
-   migrate existing rows → CAP\*TURES; each board gets its own default OP-stage set.
-   **State/UX:** `activeBoardId` in store (persist per user); switcher by the SX CRM
-   logo; Leads/Won/Dashboard queries filter by active board; create flows stamp
-   board_id; `markAsWon` carries the lead's board onto the job.
-   **Phase 1:** model + migration + board_id + store + switcher + scoped views +
-   per-board OP stages. **Phase 2:** board management UI (add/rename/reorder/color/
-   delete) + optional "All boards" roll-up.
-   **Risk:** Med-High — touches the data model, migration, the OP-stage system, and
-   every list/dashboard query (customers-shared avoids a full multi-tenant rebuild).
+0. **Multiple boards (CAP\*TURES + Andy & Fine)** — biggest planned feature; full spec in **Phase 4.0** below. (Med-High)
 1. **Mobile @mention autocomplete** — mobile comment box uses a plain `<input>`, not `MentionTextarea`. (Low)
 2. **Permanent user lockout ("3.0-B")** — `is_active`/blocklist so a deleted user can't sign back in. (Med)
 3. **Server-side customer search/pagination** — client-side today; matters as data grows. (Med)
@@ -476,6 +461,58 @@ saving). Today it's hardcoded to a fixed name.
 
 **Risk:** Low — a couple of form-init changes using auth context already wired
 elsewhere. No DB/schema change.
+
+---
+
+## 🗂️ Phase 4.0 — Multiple Boards (Brands): CAP\*TURES + Andy & Fine (Planned)
+
+**Goal:** Turn the single shared pipeline into multiple **boards** (business
+units / brands). Today it's effectively one CAP\*TURES board; add **Andy & Fine**
+as a second, with room for more. Biggest planned feature.
+
+### Decided (with stakeholder)
+- **Scope = full pipeline per board:** Leads, Won jobs, OP stages, and Dashboard
+  are each scoped to a board. **Customers are shared** across boards (one company
+  can buy from both brands).
+- **Switcher:** a board selector in the sidebar header (by the SX CRM logo). One
+  active board at a time; remembered per user.
+
+### Data model
+- New **`boards`** table: `board_id, name, slug, color, sort_order, created_at`.
+  Seed **CAP\*TURES** + **Andy & Fine**.
+- Add **`board_id`** (FK → boards) to **`lead_opportunities`**, **`won_jobs`**, and
+  **`op_stages`** (dynamic OP stages — each board owns its pipeline). `customers`
+  unchanged.
+- **Migration:** create + seed `boards`; add `board_id` columns; backfill all
+  existing leads / won_jobs / op_stages to the **CAP\*TURES** board; each new board
+  gets its own default OP-stage set.
+
+### State / UX
+- `activeBoardId` in the Zustand store, persisted per user (localStorage). Board
+  list loaded from `boards`.
+- Board switcher component in the sidebar header. Picking a board filters nav,
+  Leads, the Won board (jobs **and** its OP stages), and the Dashboard.
+- Create flows stamp `board_id = activeBoardId`; `markAsWon` carries the lead's
+  board onto the new job.
+
+### Scoped views
+Leads list · Won board (jobs + OP stages) · Dashboard aggregates → all filter by
+`activeBoardId`. Customers stay global.
+
+### Phasing
+- **Phase 1:** boards table + migration + `board_id` everywhere · store
+  (`activeBoardId` + board list) · sidebar switcher · scope Leads / Won / Dashboard ·
+  per-board OP stages. *(Per-board OP stages are the trickiest — today they're global.)*
+- **Phase 2:** board management UI (add / rename / reorder / color / delete) + an
+  optional **"All boards"** roll-up view.
+
+### Suggested build flow (matches prior features)
+Mock the switcher → approve → Phase 1 as vertical slices (data + migration →
+switcher + store → scope Leads → scope Won → scope Dashboard), verifying each.
+Supabase migration handed off for the user to run (same as 2.7).
+
+**Risk:** 🟠 Med-High — touches the data model, a migration, the OP-stage system,
+and every list/dashboard query. Customers-shared avoids a full multi-tenant rebuild.
 
 ---
 
