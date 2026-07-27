@@ -25,6 +25,22 @@
 
 All numbered phases through 2.7 / 3.6 are shipped. What's left:
 
+0. **Multiple boards (brands) — CAP\*TURES + Andy & Fine** — biggest planned feature.
+   Introduce a first-class `board` (brand/business-unit) dimension.
+   **Decided:** full-pipeline scope (Leads, Won jobs, OP stages, Dashboard are
+   per-board; **customers shared**). Sidebar-header board switcher, one active
+   board, remembered per user.
+   **Data:** new `boards` table (name, slug, color, sort_order; seed CAP\*TURES +
+   Andy & Fine); add `board_id` FK to `lead_opportunities`, `won_jobs`, `op_stages`;
+   migrate existing rows → CAP\*TURES; each board gets its own default OP-stage set.
+   **State/UX:** `activeBoardId` in store (persist per user); switcher by the SX CRM
+   logo; Leads/Won/Dashboard queries filter by active board; create flows stamp
+   board_id; `markAsWon` carries the lead's board onto the job.
+   **Phase 1:** model + migration + board_id + store + switcher + scoped views +
+   per-board OP stages. **Phase 2:** board management UI (add/rename/reorder/color/
+   delete) + optional "All boards" roll-up.
+   **Risk:** Med-High — touches the data model, migration, the OP-stage system, and
+   every list/dashboard query (customers-shared avoids a full multi-tenant rebuild).
 1. **Mobile @mention autocomplete** — mobile comment box uses a plain `<input>`, not `MentionTextarea`. (Low)
 2. **Permanent user lockout ("3.0-B")** — `is_active`/blocklist so a deleted user can't sign back in. (Med)
 3. **Server-side customer search/pagination** — client-side today; matters as data grows. (Med)
