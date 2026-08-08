@@ -58,33 +58,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Google profile picture (kept fresh on each login)
           const avatarUrl = session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null
 
-          // Fetch user role from database
+          // Sync the users row by EMAIL (not id) so a teammate who was
+          // pre-provisioned by an admin (before ever logging in) links to their
+          // existing row instead of creating a duplicate. Keeps that row's id so
+          // any prior references stay valid.
           try {
-            const { data, error } = await supabase
+            const fullName = session.user.user_metadata?.full_name
+            const { data: existing } = await supabase
               .from('users')
-              .select('role')
-              .eq('id', session.user.id)
-              .single()
+              .select('id, role')
+              .eq('email', session.user.email)
+              .maybeSingle()
 
-            if (error) throw error
-            setRole(data?.role || 'operation')
-            // Refresh name + avatar so teammates see the current Google photo
-            void supabase.from('users').update({
-              name: session.user.user_metadata?.full_name,
-              avatar_url: avatarUrl,
-            }).eq('id', session.user.id)
-          } catch {
-            // User record doesn't exist yet — create it with default role
-            const { error: insertError } = await supabase.from('users').insert({
-              id: session.user.id,
-              email: session.user.email,
-              name: session.user.user_metadata?.full_name,
-              avatar_url: avatarUrl,
-              role: 'operation',
-            })
-            if (insertError && !insertError.message.includes('duplicate')) {
-              console.error('[AuthProvider] Error creating user:', insertError)
+            if (existing) {
+              setRole(existing.role || 'operation')
+              void supabase.from('users')
+                .update({ name: fullName, avatar_url: avatarUrl })
+                .eq('email', session.user.email)
+            } else {
+              const { error: insertError } = await supabase.from('users').insert({
+                id: session.user.id,
+                email: session.user.email,
+                name: fullName,
+                avatar_url: avatarUrl,
+                role: 'operation',
+              })
+              if (insertError && !insertError.message.includes('duplicate')) {
+                console.error('[AuthProvider] Error creating user:', insertError)
+              }
+              setRole('operation')
             }
+          } catch (err) {
+            console.error('[AuthProvider] user sync failed:', err)
             setRole('operation')
           }
         }

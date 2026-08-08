@@ -21,9 +21,36 @@ export default function AdminUsersPage() {
   const router = useRouter()
   const { user: currentUser, role: currentRole, loading } = useAuth()
   const teamMembers = useCRMStore((s) => s.teamMembers)
+  const addTeamMember = useCRMStore((s) => s.addTeamMember)
+  const refreshTeamMembers = useCRMStore((s) => s.refreshTeamMembers)
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [updatingUser, setUpdatingUser] = useState<string | null>(null)
+  // Add-team-member form
+  const [addName, setAddName] = useState('')
+  const [addEmail, setAddEmail] = useState('')
+  const [addRole, setAddRole] = useState('operation')
+  const [adding, setAdding] = useState(false)
+
+  async function handleAddMember(e: React.FormEvent) {
+    e.preventDefault()
+    const name = addName.trim()
+    const email = addEmail.trim().toLowerCase()
+    if (!name || !email) return
+    if (users.some((u) => u.email?.toLowerCase() === email)) {
+      alert('A team member with that email already exists.')
+      return
+    }
+    setAdding(true)
+    try {
+      await addTeamMember({ name, email, role: addRole })
+      await refreshTeamMembers()
+      setUsers((prev) => [...prev, { id: `pending-${email}`, name, email, role: addRole, created_at: '' }])
+      setAddName(''); setAddEmail(''); setAddRole('operation')
+    } finally {
+      setAdding(false)
+    }
+  }
 
   // Check if user is admin
   useEffect(() => {
@@ -144,6 +171,34 @@ export default function AdminUsersPage() {
         <h1 className="text-2xl font-bold">User Management</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Manage user roles and permissions
+        </p>
+      </div>
+
+      {/* Add team member — pre-provision so they're mentionable/assignable before login */}
+      <div className="px-6 pt-6">
+        <form onSubmit={handleAddMember} className="bg-card border border-border rounded-lg p-4 flex flex-col sm:flex-row sm:items-end gap-3">
+          <div className="flex-1 min-w-0">
+            <label className="field-label">Name</label>
+            <input value={addName} onChange={(e) => setAddName(e.target.value)} placeholder="e.g. Nart SIXSHEET" className="h-9 w-full rounded-md border border-border bg-background px-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <label className="field-label">Email</label>
+            <input type="email" value={addEmail} onChange={(e) => setAddEmail(e.target.value)} placeholder="name@sixsheet.me" className="h-9 w-full rounded-md border border-border bg-background px-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30" />
+          </div>
+          <div className="sm:w-40">
+            <label className="field-label">Role</label>
+            <select value={addRole} onChange={(e) => setAddRole(e.target.value)} className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30">
+              <option value="admin">admin</option>
+              <option value="operation">operation</option>
+              <option value="sales">sales</option>
+            </select>
+          </div>
+          <Button type="submit" size="sm" className="h-9 shrink-0" disabled={adding || !addName.trim() || !addEmail.trim()}>
+            {adding ? 'Adding…' : 'Add member'}
+          </Button>
+        </form>
+        <p className="text-[12px] text-muted-foreground mt-2">
+          Adds them to the team roster now — mentionable and assignable before they log in. Their Google account links to this row (by email) on first sign-in.
         </p>
       </div>
 

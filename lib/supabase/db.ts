@@ -26,6 +26,13 @@ export const userQueries = {
     if (error) throw error
     return (data || []) as TeamMember[]
   },
+
+  // Pre-provision a team member (so they're mentionable/assignable before they
+  // ever log in). On their first Google login, auth-provider links by email.
+  async create(u: { id: string; name: string; email: string; role: string; avatar_url?: string | null }) {
+    const { error } = await supabase.from('users').insert([u])
+    if (error) throw error
+  },
 }
 
 export const companyQueries = {

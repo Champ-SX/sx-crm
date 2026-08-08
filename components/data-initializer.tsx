@@ -20,6 +20,7 @@ import { LoadingAnimation } from '@/components/shared/loading-animation'
 export function DataInitializer() {
   const { session } = useAuth()
   const { isInitialized, isLoading, error, initializeData } = useCRMStore()
+  const refreshTeamMembers = useCRMStore((s) => s.refreshTeamMembers)
   const [loadingTimeout, setLoadingTimeout] = useState(false)
 
   useEffect(() => {
@@ -29,6 +30,16 @@ export function DataInitializer() {
       void initializeData()
     }
   }, [session, isInitialized, isLoading, initializeData])
+
+  // Keep the team roster fresh: re-pull the users table when the tab regains
+  // focus, so teammates who joined after this session loaded appear in the
+  // @mention / owner pickers without a manual reload.
+  useEffect(() => {
+    if (!session) return
+    const onFocus = () => { void refreshTeamMembers() }
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [session, refreshTeamMembers])
 
   // Safety timeout: if still loading after 15 seconds, assume Supabase isn't available
   // and fall back to mock data (which should already be loaded by store)

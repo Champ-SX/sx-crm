@@ -184,6 +184,12 @@ interface CRMStore {
   pendingOpen: { entityType: 'customer' | 'lead_opportunity' | 'won_job'; entityId: string } | null
   requestOpenEntity: (entityType: 'customer' | 'lead_opportunity' | 'won_job', entityId: string) => void
   clearPendingOpen: () => void
+
+  // Team roster (mention/owner source). addTeamMember pre-provisions someone who
+  // hasn't logged in yet; refreshTeamMembers re-pulls the users table (fixes stale
+  // rosters when a teammate joins after the app loaded).
+  addTeamMember: (member: { name: string; email: string; role: string }) => Promise<void>
+  refreshTeamMembers: () => Promise<void>
 }
 
 export const useCRMStore = create<CRMStore>()((set, get) => ({
@@ -1235,5 +1241,28 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
   pendingOpen: null,
   requestOpenEntity: (entityType, entityId) => set({ pendingOpen: { entityType, entityId } }),
   clearPendingOpen: () => set({ pendingOpen: null }),
+
+  addTeamMember: async ({ name, email, role }) => {
+    const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `usr-${Date.now()}`
+    const member = { id, name, email, role, avatar_url: null } as TeamMember
+    set((s) => ({ teamMembers: [...s.teamMembers, member] }))
+    if (USE_SUPABASE) {
+      try {
+        await db.userQueries.create({ id, name, email, role })
+      } catch (error) {
+        set({ error: error instanceof Error ? error.message : 'Failed to add team member' })
+      }
+    }
+  },
+
+  refreshTeamMembers: async () => {
+    if (!USE_SUPABASE) return
+    try {
+      const teamMembers = await db.userQueries.getAll()
+      set({ teamMembers })
+    } catch (err) {
+      console.warn('[CRM Store] Could not refresh team members:', err instanceof Error ? err.message : String(err))
+    }
+  },
 }));
 
