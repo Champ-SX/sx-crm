@@ -132,6 +132,7 @@ interface CRMStore {
   addLeadOpportunity: (lop: LeadOpportunity) => Promise<void>
   updateLeadOpportunity: (id: string, updates: Partial<LeadOpportunity>) => Promise<void>
   deleteLeadOpportunity: (id: string) => Promise<void>
+  duplicateLeadOpportunity: (id: string) => Promise<string | null>
   markAsWon: (leadOpId: string) => Promise<WonJob>
   markAsLost: (leadOpId: string) => Promise<void>
 
@@ -140,6 +141,7 @@ interface CRMStore {
   updateWonJob: (id: string, updates: Partial<WonJob>) => Promise<void>
   moveWonJobStage: (id: string, stage: OPStage) => Promise<void>
   deleteWonJob: (id: string) => Promise<void>
+  duplicateWonJob: (id: string) => Promise<string | null>
   reorderWonJobWithinStage: (id: string, newPosition: number, stage: OPStage) => Promise<void>
 
   // OP Stages (dynamic management)
@@ -508,6 +510,26 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
     }
   },
 
+  duplicateLeadOpportunity: async (id) => {
+    const original = get().leadOpportunities.find((l) => l.lead_op_id === id)
+    if (!original) return null
+    const newId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+    const now = new Date().toISOString()
+    const copy: LeadOpportunity = {
+      ...original,
+      lead_op_id: newId,
+      name: `${original.name} (copy)`,
+      status: 'open',
+      is_archived: false,
+      created_at: now,
+      updated_at: now,
+    }
+    await get().addLeadOpportunity(copy)
+    return newId
+  },
+
   markAsWon: async (leadOpId) => {
     const state = get()
     const lop = state.leadOpportunities.find((l) => l.lead_op_id === leadOpId)
@@ -823,6 +845,39 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
         set({ error: error instanceof Error ? error.message : 'Failed to delete won job' })
       }
     }
+  },
+
+  duplicateWonJob: async (id) => {
+    const state = get()
+    const original = state.wonJobs.find((j) => j.job_id === id)
+    if (!original) return null
+    const newId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+    const now = new Date().toISOString()
+
+    // Fresh job_number = highest existing + 1 (jobs are unique per number).
+    const lastJobNum = state.wonJobs
+      .map((j) => parseInt(j.job_number, 10))
+      .filter((n) => !isNaN(n))
+      .sort((a, b) => b - a)[0] ?? 0
+    const newJobNumber = String(lastJobNum + 1).padStart(3, '0')
+
+    const copy: WonJob = {
+      ...original,
+      job_id: newId,
+      job_number: newJobNumber,
+      product_name: original.product_name ? `${original.product_name} (copy)` : original.product_name,
+      op_stage: 'WON_JOB_LIST',
+      position: 0,
+      is_archived: false,
+      // Don't carry a fired due-notification flag onto the copy.
+      due_notified_at: null,
+      created_at: now,
+      updated_at: now,
+    }
+    await get().addWonJob(copy)
+    return newId
   },
 
   reorderWonJobWithinStage: async (id, newPosition, stage) => {

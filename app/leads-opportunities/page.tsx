@@ -30,8 +30,11 @@ import {
   ChevronRight, Trophy, XCircle, Calendar, MapPin,
   Pencil, Check, X, FileText, Send, Trash2,
   CreditCard, ChevronDown, Banknote, Phone, Mail, MessageCircle,
+  Link2, Share2, Copy, Archive, ArchiveRestore,
 } from 'lucide-react'
 import { format } from 'date-fns'
+import { useOpenFromUrl } from '@/hooks/use-open-from-url'
+import { copyCardLink, shareCardLink } from '@/lib/card-links'
 
 const SERVICES = ['CAP*TURES', 'Andy & Fine', 'SX Event', 'Booth Rental', 'Custom Activation', 'Other']
 
@@ -303,7 +306,8 @@ function LeadCard({
 // ── Detail drawer ─────────────────────────────────────────────────────────────
 function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }) {
   const router = useRouter()
-  const { updateLeadOpportunity, deleteLeadOpportunity, markAsWon, markAsLost, leadOpportunities, customers, updateCustomer, addLeadOpportunity } = useCRMStore()
+  const { updateLeadOpportunity, deleteLeadOpportunity, duplicateLeadOpportunity, markAsWon, markAsLost, leadOpportunities, customers, updateCustomer, addLeadOpportunity } = useCRMStore()
+  const requestOpenEntity = useCRMStore((s) => s.requestOpenEntity)
   const isMobile = useIsMobile()
   const [confirmWon, setConfirmWon] = useState(false)
   const [confirmLost, setConfirmLost] = useState(false)
@@ -353,6 +357,13 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
     }
   }
 
+  const handleToggleArchive = async () => {
+    if (!item) return
+    await updateLeadOpportunity(item.lead_op_id, { is_archived: !item.is_archived })
+    // Either way the card changes list membership — close the drawer.
+    onClose()
+  }
+
   async function handleMarkWon() {
     if (!item) return
     await markAsWon(item.lead_op_id)
@@ -378,19 +389,10 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
 
   async function handleDuplicate() {
     if (!item) return
-    const newId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    const newLead = {
-      ...item,
-      lead_op_id: newId,
-      name: `${item.name} (copy)`,
-      status: 'open' as const,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
-    await addLeadOpportunity(newLead)
-    // Show the newly created duplicate
-    setEditData(null)
-    setIsEditing(false)
+    const newId = await duplicateLeadOpportunity(item.lead_op_id)
+    onClose()
+    // Let the list watcher pop the freshly-created copy.
+    if (newId) requestOpenEntity('lead_opportunity', newId)
   }
 
   const cfg = statusConfig[item.status]
@@ -413,6 +415,12 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
             }
             subtitle={item.service_type || undefined}
             actions={[
+              { label: 'Copy link', icon: <Link2 className="w-4 h-4" />, onClick: () => copyCardLink('lead_opportunity', item.lead_op_id) },
+              { label: 'Share link', icon: <Share2 className="w-4 h-4" />, onClick: () => shareCardLink('lead_opportunity', item.lead_op_id, item.name) },
+              { label: 'Duplicate', icon: <Copy className="w-4 h-4" />, onClick: handleDuplicate },
+              item.is_archived
+                ? { label: 'Restore', icon: <ArchiveRestore className="w-4 h-4" />, onClick: handleToggleArchive }
+                : { label: 'Archive', icon: <Archive className="w-4 h-4" />, onClick: handleToggleArchive },
               { label: 'Delete lead', icon: <Trash2 className="w-4 h-4" />, onClick: handleDelete, danger: true },
             ]}
             meta={[
@@ -944,10 +952,17 @@ export default function LeadsOpportunitiesPage() {
   const [serviceFilter, setServiceFilter] = useState<string>('all')
   const [ownerFilter, setOwnerFilter] = useState<string>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  // Open a specific lead from a notification deep-link (?open=<lead_op_id>).
+  const [showArchived, setShowArchived] = useState(false)
+  // Open a specific lead from a notification deep-link signal.
   useOpenDeepLink(
     isHydrated && leadOpportunities.length > 0,
     'lead_opportunity',
+    (id) => leadOpportunities.some((l) => l.lead_op_id === id),
+    setSelectedId,
+  )
+  // Open a specific lead from a shared ?open=<id> link.
+  useOpenFromUrl(
+    isHydrated && leadOpportunities.length > 0,
     (id) => leadOpportunities.some((l) => l.lead_op_id === id),
     setSelectedId,
   )
@@ -960,7 +975,11 @@ export default function LeadsOpportunitiesPage() {
   // Debug: Log selectedId changes
   console.log('[Leads Page] selectedId changed:', selectedId)
 
+  const archivedCount = leadOpportunities.filter((l) => l.is_archived).length
   const filtered = leadOpportunities.filter((l) => {
+    // Archived cards are hidden unless the user opts to show them.
+    if (!showArchived && l.is_archived) return false
+    if (showArchived && !l.is_archived) return false
     const q = search.toLowerCase()
     const matchSearch = l.name.toLowerCase().includes(q) || l.customer_name.toLowerCase().includes(q)
     const matchStatus = statusFilter === 'all' || l.status === statusFilter
@@ -1139,6 +1158,18 @@ export default function LeadsOpportunitiesPage() {
             <OwnerSelectItems className="text-[12px]" />
           </SelectContent>
         </Select>
+        {(showArchived || archivedCount > 0) && (
+          <Button
+            size="sm"
+            variant={showArchived ? 'default' : 'outline'}
+            className="h-8 text-[12px] gap-1.5"
+            onClick={() => setShowArchived((v) => !v)}
+            title={showArchived ? 'Back to active leads' : 'Show archived leads'}
+          >
+            <Archive className="w-3.5 h-3.5" />
+            {showArchived ? 'Archived' : `Archived (${archivedCount})`}
+          </Button>
+        )}
         {selectedForDuplicate.size > 0 && (
           <>
             <Button

@@ -118,6 +118,7 @@ export interface LeadOpportunity {
   owner: string
   notes: string
   status: LeadOpStatus
+  is_archived?: boolean       // hidden from the board when true (Phase 5 card actions)
   created_at: string
   updated_at: string
 }
@@ -250,6 +251,7 @@ export interface WonJob {
   customer_name: string | null  // denormalized display name
   customer_id?: string          // old FK → Customer (deprecated)
   lead_op_id?: string
+  is_archived?: boolean       // hidden from the board when true (Phase 5 card actions)
   created_at: string
   updated_at: string
 }

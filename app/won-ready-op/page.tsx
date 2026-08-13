@@ -46,7 +46,10 @@ import {
   ClipboardList, Truck, CreditCard,
   Users, Banknote, ArrowUpDown, GripVertical,
   Trash2,
+  Link2, Share2, Copy, Archive, ArchiveRestore,
 } from 'lucide-react'
+import { useOpenFromUrl } from '@/hooks/use-open-from-url'
+import { copyCardLink, shareCardLink } from '@/lib/card-links'
 import { format, parseISO } from 'date-fns'
 
 
@@ -821,7 +824,8 @@ function JobDetail({
   onClose: () => void
   onDelete?: (jobId: string) => void
 }) {
-  const { wonJobs, updateWonJob, moveWonJobStage, customers, updateCustomer, updateStaff } = useCRMStore()
+  const { wonJobs, updateWonJob, moveWonJobStage, customers, updateCustomer, updateStaff, duplicateWonJob } = useCRMStore()
+  const requestOpenEntity = useCRMStore((s) => s.requestOpenEntity)
   const jobMaybe = wonJobs.find((j) => j.job_id === jobId)
   const [stageOpen, setStageOpen] = useState(false)
   const [staffSheetOpen, setStaffSheetOpen] = useState(false)
@@ -841,6 +845,18 @@ function JobDetail({
   const uc = linkedCustomer
     ? (updates: Parameters<typeof updateCustomer>[1]) => updateCustomer(linkedCustomer.customer_id, updates)
     : null
+
+  async function handleDuplicate() {
+    const newId = await duplicateWonJob(job.job_id)
+    onClose()
+    if (newId) requestOpenEntity('won_job', newId)
+  }
+
+  async function handleToggleArchive() {
+    await updateWonJob(job.job_id, { is_archived: !job.is_archived })
+    // Either way the card changes board membership — close the drawer.
+    onClose()
+  }
 
   function updateStaffFee(staffId: string, fee: number | null) {
     u({ staff_list: (job.staff_list || []).map((s) => s.staff_id === staffId ? { ...s, fee_thb: fee ?? undefined } : s) })
@@ -977,6 +993,12 @@ function JobDetail({
             }
             subtitle={formatJobMeta(job) || undefined}
             actions={[
+              { label: 'Copy link', icon: <Link2 className="w-4 h-4" />, onClick: () => copyCardLink('won_job', job.job_id) },
+              { label: 'Share link', icon: <Share2 className="w-4 h-4" />, onClick: () => shareCardLink('won_job', job.job_id, jobDisplayTitle(job)) },
+              { label: 'Duplicate', icon: <Copy className="w-4 h-4" />, onClick: handleDuplicate },
+              job.is_archived
+                ? { label: 'Restore', icon: <ArchiveRestore className="w-4 h-4" />, onClick: handleToggleArchive }
+                : { label: 'Archive', icon: <Archive className="w-4 h-4" />, onClick: handleToggleArchive },
               { label: 'Delete card', icon: <Trash2 className="w-4 h-4" />, onClick: () => onDelete?.(job.job_id), danger: true },
             ]}
             meta={[
@@ -1397,10 +1419,17 @@ export default function WonReadyOpPage() {
   const reorderWonJobWithinStage = useCRMStore((s) => s.reorderWonJobWithinStage)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  // Open a specific card from a notification deep-link (?open=<job_id>).
+  const [showArchived, setShowArchived] = useState(false)
+  // Open a specific card from a notification deep-link signal.
   useOpenDeepLink(
     isHydrated && wonJobs.length > 0,
     'won_job',
+    (id) => wonJobs.some((j) => j.job_id === id),
+    setSelectedId,
+  )
+  // Open a specific card from a shared ?open=<id> link.
+  useOpenFromUrl(
+    isHydrated && wonJobs.length > 0,
     (id) => wonJobs.some((j) => j.job_id === id),
     setSelectedId,
   )
@@ -1567,8 +1596,11 @@ export default function WonReadyOpPage() {
     }
   }
 
-  const activeCount = wonJobs.filter((j) => j.op_stage !== 'OP_DONE_PAYMENT').length
-  const totalValue = wonJobs
+  // Archived cards are hidden from the board unless the user toggles them on.
+  const archivedCount = wonJobs.filter((j) => j.is_archived).length
+  const boardJobs = wonJobs.filter((j) => (showArchived ? j.is_archived : !j.is_archived))
+  const activeCount = boardJobs.filter((j) => j.op_stage !== 'OP_DONE_PAYMENT').length
+  const totalValue = boardJobs
     .filter((j) => j.op_stage !== 'OP_DONE_PAYMENT')
     .reduce((s, j) => s + (j.estimated_value || 0), 0)
 
@@ -1604,6 +1636,22 @@ export default function WonReadyOpPage() {
             <p className="text-[12px] sm:text-[12px] text-muted-foreground mt-0.5 hidden sm:block">{activeCount} active jobs · {formatCurrency(totalValue)} in pipeline</p>
           </div>
         </div>
+        <div className="flex items-center gap-1.5">
+          {(showArchived || archivedCount > 0) && (
+            <button
+              type="button"
+              onClick={() => setShowArchived((v) => !v)}
+              title={showArchived ? 'Back to active jobs' : 'Show archived jobs'}
+              className={`h-8 px-2.5 rounded-lg border flex items-center gap-1.5 text-[12px] font-medium transition-colors ${
+                showArchived
+                  ? 'bg-foreground text-background border-transparent'
+                  : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <Archive className="w-3.5 h-3.5" />
+              {showArchived ? 'Archived' : `Archived (${archivedCount})`}
+            </button>
+          )}
         {/* Scroll the board sideways one stage at a time (desktop) */}
         <div className="hidden sm:flex items-center gap-1.5">
           <button
@@ -1622,6 +1670,7 @@ export default function WonReadyOpPage() {
           >
             <ChevronRight className="w-4 h-4" />
           </button>
+        </div>
         </div>
       </div>
 
@@ -1647,7 +1696,7 @@ export default function WonReadyOpPage() {
                 <KanbanColumn
                   key={stage}
                   stage={stage}
-                  jobs={wonJobs.filter((j) => j.op_stage === stage)}
+                  jobs={boardJobs.filter((j) => j.op_stage === stage)}
                   onCardClick={(job) => setSelectedId(job.job_id)}
                   activeId={activeId}
                   onDeleteStage={handleDeleteStage}
