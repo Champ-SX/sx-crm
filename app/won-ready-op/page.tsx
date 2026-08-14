@@ -27,7 +27,8 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { OP_STAGES, OP_STAGE_LABELS } from '@/types'
 import type { WonJob, OPStage, StaffMember } from '@/types'
-import { formatJobMeta, jobDisplayTitle } from '@/lib/jobs'
+import { formatJobMeta, jobDisplayTitle, formatJobTitleShort } from '@/lib/jobs'
+import { UserAvatar } from '@/components/shared/user-avatar'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
 import { LinkifyText } from '@/components/shared/linkify-text'
@@ -50,6 +51,7 @@ import {
 } from 'lucide-react'
 import { useOpenFromUrl } from '@/hooks/use-open-from-url'
 import { copyCardLink, shareCardLink } from '@/lib/card-links'
+import { AssigneePicker, AssigneeFilter, ASSIGNEE_FILTER_ALL, matchesAssigneeFilter } from '@/components/shared/assignee-picker'
 import { format, parseISO } from 'date-fns'
 
 
@@ -210,11 +212,21 @@ function JobCard({
   // listeners here means no drag can start on touch (was crashing the page).
   const dragProps = isMobile ? {} : { ...attributes, ...listeners }
 
+  const teamMembers = useCRMStore((s) => s.teamMembers)
+
   // Staff-payment summary for the card's bottom tab (so payers spot pending tasks)
   const staff = job.staff_list || []
   const paidStaff = staff.filter((s) => s.paid).length
   const staffFeeTotal = staff.reduce((sum, s) => sum + (s.fee_thb || 0), 0)
   const allPaid = staff.length > 0 && paidStaff === staff.length
+
+  // Card headline is composed from the structured fields (product_name@place),
+  // NOT the stored event_display_name — which often holds the full
+  // "YYYY.MM.DD - ### - TYPE - Event - …" string and is unreadable on a card.
+  const cardName = formatJobTitleShort(job)
+  const cat = job.product_cat && job.product_cat !== 'Event' ? job.product_cat : null
+  // People shown on the card: assignees if any, else fall back to the owner.
+  const assigned = teamMembers.filter((m) => (job.assignee_ids ?? []).includes(m.id))
 
   return (
     <div
@@ -222,50 +234,63 @@ function JobCard({
       style={style}
       onClick={(e) => { e.stopPropagation(); onClick() }}
       {...dragProps}
-      className={`bg-card rounded-xl border border-border/60 p-3 ${isMobile ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'} hover:shadow-md hover:border-border transition-all select-none flex items-start gap-2 group ${isBeingDragged ? 'opacity-50 shadow-lg' : ''}`}
+      className={`bg-card rounded-xl border border-border/60 overflow-hidden ${isMobile ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'} hover:shadow-md hover:border-border transition-all select-none group ${isBeingDragged ? 'opacity-50 shadow-lg' : ''}`}
     >
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        {/* Job number + product type */}
-        <div className="flex items-center justify-between mb-2 gap-1">
-          <span className="text-[12px] font-mono font-semibold text-muted-foreground tracking-wider">#{job.job_number}</span>
-          <span className="text-[12px] font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-md shrink-0">{job.product_type || '—'}</span>
+      <div className="p-3">
+        {/* Job # + compact date */}
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <span className="font-mono text-[12px] font-semibold text-foreground tracking-wide">#{job.job_number}</span>
+          {job.event_date && (
+            <span className="font-mono text-[12px] text-muted-foreground shrink-0">
+              {format(parseISO(job.event_date + 'T00:00:00'), 'dd MMM yy')}
+            </span>
+          )}
         </div>
 
-        {/* Title */}
-        <p className="text-[12px] font-semibold text-foreground leading-snug mb-2 line-clamp-2">
-          {jobDisplayTitle(job)}
-        </p>
+        {/* Headline — the human name, from structured fields */}
+        <p className="text-[14px] font-bold text-foreground leading-snug line-clamp-2">{cardName}</p>
+
+        {/* Type + category tags */}
+        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+          {job.product_type && (
+            <span className="font-mono text-[12px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{job.product_type}</span>
+          )}
+          {cat && (
+            <span className="font-mono text-[12px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{cat}</span>
+          )}
+        </div>
 
         {/* Customer */}
-        <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground mb-1.5">
-          <User className="w-3 h-3 shrink-0 text-muted-foreground" />
-          <span className="truncate">{job.customer_name || '—'}</span>
-        </div>
-
-        {/* Date */}
-        {job.event_date && (
-          <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground mb-2">
-            <Calendar className="w-3 h-3 shrink-0 text-muted-foreground" />
-            <span>{format(parseISO(job.event_date + 'T00:00:00'), 'dd MMM yyyy')}</span>
-          </div>
+        {job.customer_name && (
+          <p className="text-[12px] text-muted-foreground mt-2 truncate">{job.customer_name}</p>
         )}
 
-        {/* Value + owner */}
-        <div className="flex items-center justify-between pt-2 border-t border-border gap-1 min-w-0">
-          <span className="text-[12px] font-bold text-foreground shrink-0">{formatCurrency(job.estimated_value)}</span>
-          <span className="text-[12px] font-medium text-muted-foreground bg-muted border border-border px-1.5 py-0.5 rounded-full truncate min-w-0" title={job.owner || ''}>{job.owner}</span>
+        {/* Value + assignees */}
+        <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-border/60 min-w-0">
+          <span className="font-mono text-[13px] font-bold text-foreground shrink-0">{formatCurrency(job.estimated_value)}</span>
+          {assigned.length > 0 ? (
+            <div className="flex -space-x-1.5">
+              {assigned.slice(0, 3).map((m) => (
+                <div key={m.id} className="ring-2 ring-card rounded-full" title={m.name || m.email}>
+                  <UserAvatar name={m.name || m.email} size={22} />
+                </div>
+              ))}
+            </div>
+          ) : job.owner ? (
+            <div title={job.owner}><UserAvatar name={job.owner} size={22} /></div>
+          ) : null}
         </div>
-
-        {/* Staff-payment tab — red while pending, green when fully paid */}
-        {staff.length > 0 && (
-          <div className={`-mx-3 -mb-3 mt-2 px-3 py-1.5 rounded-b-xl border-t flex items-center gap-1.5 ${allPaid ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/15 dark:border-emerald-500/30 dark:text-emerald-300' : 'bg-red-50 border-red-200 text-red-700 dark:bg-red-500/15 dark:border-red-500/30 dark:text-red-300'}`}>
-            {allPaid ? <Check className="w-3 h-3 shrink-0" /> : <CreditCard className="w-3 h-3 shrink-0" />}
-            <span className="text-[12px] font-semibold">จ่ายแล้ว {paidStaff}/{staff.length} · ฿{staffFeeTotal.toLocaleString()}</span>
-          </div>
-        )}
       </div>
 
+      {/* Staff-payment tab — orange dot while pending, green when fully paid */}
+      {staff.length > 0 && (
+        <div className={`px-3 py-1.5 border-t flex items-center gap-2 ${allPaid ? 'border-emerald-200 dark:border-emerald-500/30' : 'border-red-200 dark:border-red-500/30'}`}>
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${allPaid ? 'bg-emerald-500' : 'bg-red-500'}`} />
+          <span className={`font-mono text-[12px] font-medium ${allPaid ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'}`}>
+            จ่ายแล้ว {paidStaff}/{staff.length} · ฿{staffFeeTotal.toLocaleString()}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
@@ -706,16 +731,13 @@ function isoToLocalInput(iso?: string | null): string {
 function JobDueDateEditor({ job, onUpdate }: { job: WonJob; onUpdate: (u: Partial<WonJob>) => void }) {
   const teamMembers = useCRMStore((s) => s.teamMembers)
   const assignees = job.assignee_ids ?? []
+  const assigneeNames = teamMembers.filter((m) => assignees.includes(m.id)).map((m) => m.name || m.email)
   const lead = job.due_lead_minutes ?? 0
   const [open, setOpen] = useState(!!job.due_at)
 
   function setDue(localValue: string) {
     // Changing the due time re-arms the notification (clear the dedup stamp).
     onUpdate({ due_at: localValue ? new Date(localValue).toISOString() : null, due_notified_at: null })
-  }
-  function toggleAssignee(id: string) {
-    const next = assignees.includes(id) ? assignees.filter((x) => x !== id) : [...assignees, id]
-    onUpdate({ assignee_ids: next })
   }
 
   return (
@@ -760,26 +782,14 @@ function JobDueDateEditor({ job, onUpdate }: { job: WonJob; onUpdate: (u: Partia
           </Select>
         </div>
         <div className="space-y-1.5">
-          <label className="field-label">Notify (owner is always notified)</label>
-          <div className="flex flex-wrap gap-1.5">
-            {teamMembers.map((m) => {
-              const on = assignees.includes(m.id)
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => toggleAssignee(m.id)}
-                  className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[12px] font-medium border transition-colors ${
-                    on
-                      ? 'bg-indigo-600 text-white border-indigo-600'
-                      : 'border-border text-muted-foreground bg-card hover:bg-muted'
-                  }`}
-                >
-                  {on && <Check className="w-3 h-3" />}{m.name || m.email}
-                </button>
-              )
-            })}
-          </div>
+          <label className="field-label">Who gets notified</label>
+          <p className="text-[12px] text-muted-foreground leading-relaxed">
+            The <span className="font-medium text-foreground">owner</span>
+            {assigneeNames.length > 0
+              ? <> and <span className="font-medium text-foreground">{assigneeNames.join(', ')}</span></>
+              : null}
+            {' '}when this reminder fires. Change who’s notified by editing <span className="font-medium text-foreground">Assigned to</span> at the top of the card.
+          </p>
         </div>
         {!job.due_at && (
           <p className="text-[12px] text-muted-foreground/70">Set a due date to schedule a reminder push.</p>
@@ -1011,6 +1021,15 @@ function JobDetail({
                     </SelectTrigger>
                     <SelectContent><OwnerSelectItems /></SelectContent>
                   </Select>
+                ),
+              },
+              {
+                label: 'Assigned to',
+                node: (
+                  <AssigneePicker
+                    value={job.assignee_ids}
+                    onChange={(ids) => u({ assignee_ids: ids })}
+                  />
                 ),
               },
               { label: 'OP Stage', node: <JobStagePill job={job} /> },
@@ -1420,6 +1439,8 @@ export default function WonReadyOpPage() {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState(false)
+  const [assigneeFilter, setAssigneeFilter] = useState<string>(ASSIGNEE_FILTER_ALL)
+  const { user } = useAuth()
   // Open a specific card from a notification deep-link signal.
   useOpenDeepLink(
     isHydrated && wonJobs.length > 0,
@@ -1598,7 +1619,9 @@ export default function WonReadyOpPage() {
 
   // Archived cards are hidden from the board unless the user toggles them on.
   const archivedCount = wonJobs.filter((j) => j.is_archived).length
-  const boardJobs = wonJobs.filter((j) => (showArchived ? j.is_archived : !j.is_archived))
+  const boardJobs = wonJobs
+    .filter((j) => (showArchived ? j.is_archived : !j.is_archived))
+    .filter((j) => matchesAssigneeFilter(j.assignee_ids, assigneeFilter, user?.id))
   const activeCount = boardJobs.filter((j) => j.op_stage !== 'OP_DONE_PAYMENT').length
   const totalValue = boardJobs
     .filter((j) => j.op_stage !== 'OP_DONE_PAYMENT')
@@ -1637,6 +1660,7 @@ export default function WonReadyOpPage() {
           </div>
         </div>
         <div className="flex items-center gap-1.5">
+          <AssigneeFilter value={assigneeFilter} onChange={setAssigneeFilter} meId={user?.id} />
           {(showArchived || archivedCount > 0) && (
             <button
               type="button"

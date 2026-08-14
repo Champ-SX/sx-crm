@@ -118,6 +118,7 @@ export interface LeadOpportunity {
   owner: string
   notes: string
   status: LeadOpStatus
+  assignee_ids?: string[] | null  // users.id[] assigned to work this lead (Assign-to)
   is_archived?: boolean       // hidden from the board when true (Phase 5 card actions)
   created_at: string
   updated_at: string

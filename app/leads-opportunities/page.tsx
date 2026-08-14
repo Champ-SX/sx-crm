@@ -35,14 +35,28 @@ import {
 import { format } from 'date-fns'
 import { useOpenFromUrl } from '@/hooks/use-open-from-url'
 import { copyCardLink, shareCardLink } from '@/lib/card-links'
+import { AssigneePicker, AssigneeFilter, ASSIGNEE_FILTER_ALL, matchesAssigneeFilter } from '@/components/shared/assignee-picker'
+import { useAuth } from '@/components/auth-provider'
+import { UserAvatar } from '@/components/shared/user-avatar'
 
 const SERVICES = ['CAP*TURES', 'Andy & Fine', 'SX Event', 'Booth Rental', 'Custom Activation', 'Other']
 
-const statusConfig: Record<LeadOpStatus, { label: string; class: string }> = {
-  open: { label: 'Open', class: 'bg-blue-50 text-blue-600 border-blue-200' },
-  negotiating: { label: 'Negotiating', class: 'bg-amber-50 text-amber-700 border-amber-200' },
-  won: { label: 'Won', class: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
-  lost: { label: 'Lost', class: 'bg-red-50 text-red-500 border-red-200' },
+const statusConfig: Record<LeadOpStatus, { label: string; class: string; dot: string }> = {
+  open: { label: 'Open', class: 'bg-blue-50 text-blue-600 border-blue-200', dot: 'bg-[#D7FE3A] ring-1 ring-black/15' },
+  negotiating: { label: 'Negotiating', class: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-[#FF5B3F]' },
+  won: { label: 'Won', class: 'bg-emerald-50 text-emerald-600 border-emerald-200', dot: 'bg-emerald-500' },
+  lost: { label: 'Lost', class: 'bg-red-50 text-red-500 border-red-200', dot: 'bg-muted-foreground/50' },
+}
+
+// Redesigned status pill — a dot + mono label (replaces the filled pill).
+function StatusDot({ status }: { status: LeadOpStatus }) {
+  const cfg = statusConfig[status]
+  return (
+    <span className="inline-flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-wide text-foreground whitespace-nowrap">
+      <span className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
+      {cfg.label}
+    </span>
+  )
 }
 
 const STATUS_ORDER: LeadOpStatus[] = ['open', 'negotiating', 'won', 'lost']
@@ -186,7 +200,6 @@ function LeadRow({
   isSelected?: boolean
   onToggleSelect?: () => void
 }) {
-  const cfg = statusConfig[item.status]
   return (
     <tr className="border-b border-border/50 hover:bg-muted/70 cursor-pointer transition-colors group" onClick={onClick}>
       {/* Checkbox */}
@@ -219,28 +232,29 @@ function LeadRow({
       </td>
       {/* Service */}
       <td className="px-4 py-3.5">
-        <span className="text-[12px] font-semibold bg-muted text-foreground/80 px-2 py-0.5 rounded-md">{item.service_type}</span>
+        <span className="font-mono text-[12px] text-muted-foreground bg-muted px-2 py-0.5 rounded">{item.service_type}</span>
       </td>
       {/* Event date */}
       <td className="px-4 py-3.5">
-        <p className="text-[12px] text-muted-foreground">
-          {item.event_date ? format(new Date(item.event_date + 'T00:00:00'), 'dd MMM yyyy') : <span className="text-muted-foreground/50">—</span>}
+        <p className="font-mono text-[12px] text-muted-foreground whitespace-nowrap">
+          {item.event_date ? format(new Date(item.event_date + 'T00:00:00'), 'dd MMM yy') : <span className="text-muted-foreground/50">—</span>}
         </p>
       </td>
       {/* Value */}
       <td className="px-4 py-3.5">
-        <p className="text-[13px] font-bold text-foreground">
+        <p className="font-mono text-[13px] font-bold text-foreground tabular-nums whitespace-nowrap">
           {item.estimated_value && item.estimated_value > 0 ? `฿ ${item.estimated_value.toLocaleString()}` : <span className="text-muted-foreground/50 font-normal">—</span>}
         </p>
       </td>
       {/* Owner */}
       <td className="px-4 py-3.5">
-        <span className="text-[12px] text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-full">{item.owner}</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <UserAvatar name={item.owner} size={22} />
+          <span className="text-[12px] text-foreground/80 truncate">{item.owner}</span>
+        </div>
       </td>
       {/* Status */}
-      <td className="px-4 py-3.5">
-        <span className={`text-[12px] font-semibold px-2.5 py-0.5 rounded-full border ${cfg.class}`}>{cfg.label}</span>
-      </td>
+      <td className="px-4 py-3.5"><StatusDot status={item.status} /></td>
       {/* Arrow */}
       <td className="px-4 py-3.5">
         <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 opacity-0 group-hover:opacity-100 group-hover:text-muted-foreground transition-all" />
@@ -261,7 +275,6 @@ function LeadCard({
   isSelected?: boolean
   onToggleSelect?: () => void
 }) {
-  const cfg = statusConfig[item.status]
   return (
     <div
       className="flex items-start gap-3 border-b border-border/50 px-4 py-3.5 active:bg-muted transition-colors"
@@ -275,28 +288,25 @@ function LeadCard({
         className="w-4 h-4 rounded cursor-pointer mt-0.5 shrink-0"
       />
       <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-[14px] font-semibold text-foreground leading-snug">{item.name}</p>
-          <span className={`shrink-0 text-[12px] font-semibold px-2 py-0.5 rounded-full border ${cfg.class}`}>{cfg.label}</span>
+        <div className="flex items-center justify-between gap-2">
+          <StatusDot status={item.status} />
+          <span className="font-mono text-[12px] text-muted-foreground bg-muted px-2 py-0.5 rounded shrink-0">{item.service_type}</span>
         </div>
-        {item.contact_person && (
-          <p className="text-[12px] text-muted-foreground mt-0.5">{item.contact_person}</p>
-        )}
-        <div className="flex items-center gap-2 mt-1.5 text-[12px] text-foreground/80">
+        <p className="text-[16px] font-bold text-foreground leading-snug mt-2">{item.name}</p>
+        <div className="flex items-center gap-2 mt-1.5 text-[12px] text-muted-foreground">
           <div className="w-5 h-5 rounded-md bg-muted flex items-center justify-center text-muted-foreground text-[12px] font-bold shrink-0">
             {(item.customer_name || '?').charAt(0).toUpperCase()}
           </div>
-          <span className="truncate">{item.customer_name || '—'}</span>
+          <span className="truncate">{item.customer_name || '—'}{item.contact_person ? ` · ${item.contact_person}` : ''}</span>
         </div>
-        <div className="flex items-center justify-between gap-2 mt-2">
-          <span className="text-[12px] font-semibold bg-muted text-foreground/80 px-2 py-0.5 rounded-md">{item.service_type}</span>
-          <span className="text-[13px] font-bold text-foreground">
-            {item.estimated_value && item.estimated_value > 0 ? `฿ ${item.estimated_value.toLocaleString()}` : <span className="text-muted-foreground/50 font-normal">—</span>}
+        <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-border/60">
+          <span className="font-mono text-[15px] font-bold text-foreground tabular-nums">
+            {item.estimated_value && item.estimated_value > 0 ? `฿${item.estimated_value.toLocaleString()}` : <span className="text-muted-foreground/50 font-normal">—</span>}
           </span>
-        </div>
-        <div className="flex items-center justify-between gap-2 mt-1.5 text-[12px] text-muted-foreground">
-          <span>{item.event_date ? format(new Date(item.event_date + 'T00:00:00'), 'dd MMM yyyy') : '—'}</span>
-          <span className="bg-muted border border-border px-2 py-0.5 rounded-full text-muted-foreground">{item.owner}</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-mono text-[12px] text-muted-foreground">{item.event_date ? format(new Date(item.event_date + 'T00:00:00'), 'dd MMM yy') : '—'}</span>
+            <UserAvatar name={item.owner} size={22} />
+          </div>
         </div>
       </div>
     </div>
@@ -447,6 +457,15 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                     </SelectTrigger>
                     <SelectContent><OwnerSelectItems /></SelectContent>
                   </Select>
+                ),
+              },
+              {
+                label: 'Assigned to',
+                node: (
+                  <AssigneePicker
+                    value={item.assignee_ids}
+                    onChange={(ids) => updateLeadOpportunity(item.lead_op_id, { assignee_ids: ids })}
+                  />
                 ),
               },
             ]}
@@ -951,6 +970,8 @@ export default function LeadsOpportunitiesPage() {
   const [statusFilter, setStatusFilter] = useState<string>('open')
   const [serviceFilter, setServiceFilter] = useState<string>('all')
   const [ownerFilter, setOwnerFilter] = useState<string>('all')
+  const [assigneeFilter, setAssigneeFilter] = useState<string>(ASSIGNEE_FILTER_ALL)
+  const { user } = useAuth()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState(false)
   // Open a specific lead from a notification deep-link signal.
@@ -985,7 +1006,8 @@ export default function LeadsOpportunitiesPage() {
     const matchStatus = statusFilter === 'all' || l.status === statusFilter
     const matchService = serviceFilter === 'all' || l.service_type === serviceFilter
     const matchOwner = ownerFilter === 'all' || l.owner === ownerFilter
-    return matchSearch && matchStatus && matchService && matchOwner
+    const matchAssignee = matchesAssigneeFilter(l.assignee_ids, assigneeFilter, user?.id)
+    return matchSearch && matchStatus && matchService && matchOwner && matchAssignee
   })
 
   const openCount = leadOpportunities.filter((l) => l.status === 'open').length
@@ -1158,6 +1180,7 @@ export default function LeadsOpportunitiesPage() {
             <OwnerSelectItems className="text-[12px]" />
           </SelectContent>
         </Select>
+        <AssigneeFilter value={assigneeFilter} onChange={setAssigneeFilter} meId={user?.id} />
         {(showArchived || archivedCount > 0) && (
           <Button
             size="sm"
