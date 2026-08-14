@@ -1,11 +1,11 @@
-# 📊 Current State - SX-CRM July 14, 2026
+# 📊 Current State - SX-CRM August 14, 2026
 
 ## 🎯 Project Status
 
 **Production URL:** https://sx-crm.vercel.app  
 **Build Status:** ✅ Passing  
-**Last Update:** July 14, 2026  
-**Current Phase:** Phases 2.6–3.6 + 2.7 shipped ✅ — see backlog for what's left
+**Last Update:** August 14, 2026  
+**Current Phase:** Unified detail header + Phase 5 card actions shipped ✅ — see backlog for what's left
 
 ### Deployment History
 - **v1.0.0** (June 2, 2026) — Phase 1 Complete ✅
@@ -18,21 +18,26 @@
 - **v3.4–3.6** (July 14, 2026) — Won cross-stage drag rework, notification deep-link, default owner = signed-in user ✅
 - **v2.7** (July 14, 2026) — Won card due date + scheduled push (pg_cron) ✅
 - **+ polish** (July 14, 2026) — SIXSHEET logo/favicon, branded Lottie loader, Noto Sans Thai font ✅
+- **Unified detail header** (Aug 2026) — shared `<DetailHeader>` across Customers/Leads/Won ✅
+- **@mention fixes** (Aug 14, 2026) — pre-provision teammates (mentionable before login) + render dropdown in a portal so it isn't clipped ✅
+- **v5.0 — Card actions** (Aug 14, 2026) — Copy link, Share link, Duplicate, Archive on Lead + Won cards ✅ *(built; deploy + `20260813_card_archive.sql` pending)*
 
 ---
 
 ## 🗂️ Remaining Backlog (nothing in-flight)
 
-All numbered phases through 2.7 / 3.6 are shipped. What's left:
+Unified detail header and Phase 5 card actions are shipped. What's left:
 
 0. **Multiple boards (CAP\*TURES + Andy & Fine)** — biggest planned feature; full spec in **Phase 4.0** below. (Med-High)
 1. **Mobile @mention autocomplete** — mobile comment box uses a plain `<input>`, not `MentionTextarea`. (Low)
 2. **Permanent user lockout ("3.0-B")** — `is_active`/blocklist so a deleted user can't sign back in. (Med)
 3. **Server-side customer search/pagination** — client-side today; matters as data grows. (Med)
-4. **Unified detail header (UX pass)** — shared `<DetailHeader>` + `<DetailActionsMenu>` across Customers/Leads/Won: top action row (X / title / ⋯ / +), labeled metadata row (owner · OP stage · value, spread & aligned), Delete moved into a ⋯ overflow (consistent everywhere), close-X no longer overlaps content. Mobile: sticky top bar + overflow sheet. *Layout only.* (Med)
-5. **Card actions (new features)** — the ⋯/＋ menu items that are net-new logic, not layout: **Duplicate card**, **Copy link** (deep-link URL), **Share link**, **Archive card** (needs an archived state/field). Depends on #4's menu shell. (Med)
 
 Email notifications were **dropped** (Web Push covers it). Full per-phase detail is in the sections below (all now marked ✅ Complete).
+
+### Pending hand-offs (run in Supabase)
+- `20260813_card_archive.sql` — **required** for Phase 5 Archive (adds `is_archived`). ✅ *reported done by user Aug 14*
+- `20260714_users_email_unique.sql` — optional safety net (unique email); not blocking anything.
 
 ---
 
@@ -461,6 +466,27 @@ saving). Today it's hardcoded to a fixed name.
 
 **Risk:** Low — a couple of form-init changes using auth context already wired
 elsewhere. No DB/schema change.
+
+---
+
+## 🃏 Phase 5 — Card Actions ✅ (Complete — Aug 14, 2026)
+
+Net-new actions in the shared `DetailHeader` ⋯ menu on **Lead** and **Won-job** cards:
+
+- **Copy link / Share link** — new `?open=<id>` deep-link scheme. Pages read the
+  param (`hooks/use-open-from-url.ts`), pop the drawer, then strip it so
+  refresh/back doesn't reopen. Share uses the native share sheet with a
+  clipboard fallback. Helpers in `lib/card-links.ts`; lightweight `lib/toast.ts`
+  for "Link copied" feedback.
+- **Duplicate** — clone a card (fresh id, "(copy)" title, reset status/stage;
+  Won gets the next `job_number`) then reopen the copy. Store:
+  `duplicateLeadOpportunity` / `duplicateWonJob`.
+- **Archive / Restore** — new `is_archived` column hides cards from the board; a
+  "Show archived" toggle reveals them and the card's menu offers Restore.
+- **Migration:** `supabase/migrations/20260813_card_archive.sql` (idempotent).
+
+**Not included** (still backlog): mobile @mention autocomplete uses a plain
+`<input>`, so these menus are desktop-drawer only where the shared header renders.
 
 ---
 
