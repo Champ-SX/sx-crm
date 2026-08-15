@@ -371,12 +371,11 @@ function KanbanColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col shrink-0 snap-center w-[86vw] min-w-[86vw] h-full min-h-0 sm:w-auto sm:min-w-[240px] sm:max-w-[240px] sm:h-auto sm:max-h-full sm:snap-align-none rounded-2xl border border-border/50 border-t-[3px] ${cfg.accent} ${isOver ? 'ring-2 ring-primary/40' : ''} ${isDragging ? 'opacity-50' : ''} ${cfg.colBg} dark:!bg-card/40 shadow-sm`}
+      className={`flex flex-col shrink-0 snap-center w-[86vw] min-w-[86vw] h-full min-h-0 sm:w-auto sm:min-w-[240px] sm:max-w-[240px] sm:h-auto sm:max-h-full sm:snap-align-none rounded-2xl border border-border/60 ${isOver ? 'ring-2 ring-primary/40' : ''} ${isDragging ? 'opacity-50' : ''} bg-muted/40 dark:bg-card/40 shadow-sm`}
     >
-      {/* Column header */}
-      <div
-        className={`px-3.5 pt-3.5 pb-2.5 rounded-t-xl ${cfg.headerBg} dark:!bg-muted/50 select-none`}
-      >
+      {/* Column header — neutral surface; the stage dot carries the colour */}
+      <div className="px-3.5 pt-3.5 pb-2.5 rounded-t-2xl select-none">
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {/* Dedicated stage-drag handle (desktop only; mobile pages via swipe).
@@ -465,7 +464,7 @@ function KanbanColumn({
           </div>
         </div>
         {jobs.length > 0 && (
-          <p className="text-[12px] font-medium text-muted-foreground pl-4 mt-0.5">{formatCurrency(totalValue)}</p>
+          <p className="font-mono text-[12px] font-medium text-muted-foreground pl-4 mt-0.5">{formatCurrency(totalValue)}</p>
         )}
       </div>
 

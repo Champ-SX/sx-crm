@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter, Noto_Sans_Thai } from 'next/font/google'
+import { Inter, Noto_Sans_Thai, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { Sidebar } from '@/components/layout/sidebar'
 import { MobileNavProvider } from '@/components/layout/mobile-nav-context'
@@ -18,6 +18,9 @@ const inter = Inter({ variable: '--font-inter', subsets: ['latin'], display: 'sw
 // OS default (rendered small + inconsistent). Noto Sans Thai handles Thai glyphs
 // via the font stack in globals.css (Latin → Inter, Thai → Noto Sans Thai).
 const notoThai = Noto_Sans_Thai({ variable: '--font-thai', subsets: ['thai'], display: 'swap' })
+// Brand monospace — used for machine data (job #, dates, ฿ values) on the
+// redesigned cards. Wired via --font-mono in globals.css.
+const jbMono = JetBrains_Mono({ variable: '--font-jbmono', subsets: ['latin'], display: 'swap' })
 
 export const metadata: Metadata = {
   title: 'SX CRM',
@@ -38,7 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${notoThai.variable} h-full antialiased`}
+      className={`${inter.variable} ${notoThai.variable} ${jbMono.variable} h-full antialiased`}
       // themeInitScript adds the `dark` class before hydration to avoid a
       // light-mode flash; the server can't know the visitor's theme, so the
       // <html> className legitimately differs on first paint. Suppress the
