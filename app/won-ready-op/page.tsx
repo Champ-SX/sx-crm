@@ -27,7 +27,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { OP_STAGES, OP_STAGE_LABELS } from '@/types'
 import type { WonJob, OPStage, StaffMember } from '@/types'
-import { formatJobMeta, jobDisplayTitle, formatJobTitleShort } from '@/lib/jobs'
+import { formatJobMeta, jobDisplayTitle, formatJobTitleShort, formatJobTitle } from '@/lib/jobs'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
@@ -988,18 +988,15 @@ function JobDetail({
         <DialogContent showCloseButton={false} className="w-[88vw] max-w-[88vw] sm:max-w-[88vw] top-[4vh] translate-y-0 p-0 gap-0 overflow-hidden max-h-[88dvh] flex flex-col">
 
           {/* ── Header (unified DetailHeader) ── */}
-          <DialogTitle className="sr-only">{jobDisplayTitle(job)}</DialogTitle>
+          {/* Single-card title = the full canonical string composed from the
+              structured fields (date - # - type - cat - name@place), per the
+              naming convention. Edit the parts in section A below. */}
+          <DialogTitle className="sr-only">{formatJobTitle(job)}</DialogTitle>
           <DetailHeader
             idChip={job.job_number}
             dateLabel={job.event_date ? job.event_date.replace(/-/g, '.') : undefined}
             onClose={onClose}
-            title={
-              <InlineEdit
-                value={jobDisplayTitle(job)}
-                onSave={(v) => u({ event_display_name: v })}
-                placeholder="Enter event name…"
-              />
-            }
+            title={<span className="break-words">{formatJobTitle(job)}</span>}
             subtitle={formatJobMeta(job) || undefined}
             actions={[
               { label: 'Copy link', icon: <Link2 className="w-4 h-4" />, onClick: () => copyCardLink('won_job', job.job_id) },
