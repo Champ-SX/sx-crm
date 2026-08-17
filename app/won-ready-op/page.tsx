@@ -739,22 +739,20 @@ function JobDueDateEditor({ job, onUpdate }: { job: WonJob; onUpdate: (u: Partia
   }
 
   return (
-    <div className="rounded-xl border border-indigo-200 dark:border-indigo-500/30 overflow-hidden">
+    <div className="rounded-xl border border-border overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full bg-indigo-50 dark:bg-indigo-500/10 px-4 py-2.5 flex items-center gap-2 hover:bg-indigo-100/60 dark:hover:bg-indigo-500/20 transition-colors text-left"
+        className="w-full bg-muted/40 px-4 py-2.5 flex items-center gap-2.5 hover:bg-muted/70 transition-colors text-left"
       >
-        <div className="w-5 h-5 rounded-md bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center shrink-0">
-          <Calendar className="w-3 h-3 text-indigo-600 dark:text-indigo-300" />
-        </div>
-        <span className="text-[12px] font-bold text-indigo-800 dark:text-indigo-300 tracking-wide flex-1">Due date &amp; reminder</span>
+        <Calendar className="w-3.5 h-3.5 text-[#FF5B3F] shrink-0" />
+        <span className="text-[13px] font-bold text-foreground flex-1 leading-none">Due date &amp; reminder</span>
         {job.due_at && !open && (
-          <span className="text-[12px] font-medium text-indigo-700/80 dark:text-indigo-300/80">
+          <span className="font-mono text-[12px] font-medium text-muted-foreground">
             {new Date(job.due_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
           </span>
         )}
-        <ChevronDown className={`w-3.5 h-3.5 text-indigo-400 transition-transform duration-200 ${open ? 'rotate-0' : '-rotate-90'}`} />
+        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ${open ? 'rotate-0' : '-rotate-90'}`} />
       </button>
       {open && <div className="bg-card px-4 py-3 space-y-3">
         <div className="space-y-1">
@@ -763,7 +761,7 @@ function JobDueDateEditor({ job, onUpdate }: { job: WonJob; onUpdate: (u: Partia
             type="datetime-local"
             value={isoToLocalInput(job.due_at)}
             onChange={(e) => setDue(e.target.value)}
-            className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200"
+            className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
           />
         </div>
         <div className="space-y-1">
@@ -897,14 +895,13 @@ function JobDetail({
     const list = job.staff_list || []
     const { count, paidCount, total } = staffPaySummary(list)
     return (
-      <div className="rounded-xl border border-rose-200 overflow-hidden mt-1">
-        <div className="bg-rose-50 dark:bg-rose-500/10 px-4 py-2.5 flex items-center gap-2">
-          <div className="w-5 h-5 rounded-md bg-rose-100 flex items-center justify-center shrink-0">
-            <Users className="w-3 h-3 text-rose-600" />
-          </div>
-          <span className="text-[12px] font-bold text-rose-800 dark:text-rose-300 tracking-wide flex-1">จ่ายเงินน้องออกงาน</span>
+      <div className="rounded-xl border border-border overflow-hidden mt-1">
+        <div className="bg-muted/40 px-4 py-2.5 flex items-center gap-2.5">
+          <Users className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: count > 0 && paidCount === count ? '#3f9d5b' : '#FF5B3F' }} />
+          <span className="text-[13px] font-bold text-foreground flex-1 leading-none">จ่ายเงินน้องออกงาน</span>
           {count > 0 && (
-            <span className="text-[12px] font-medium text-rose-700/80 dark:text-rose-300/80">
+            <span className="font-mono text-[12px] font-medium text-muted-foreground">
               จ่ายแล้ว {paidCount}/{count} · ฿{total.toLocaleString()}
             </span>
           )}
@@ -1063,8 +1060,8 @@ function JobDetail({
 
               {/* Customer Insights — shared from the linked customer */}
               {linkedCustomer && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/10 p-4">
-                  <p className="field-label mb-2 text-amber-700 dark:text-amber-300">Customer Insights ⭐</p>
+                <div className="rounded-xl border border-border bg-muted/30 p-4">
+                  <p className="field-label mb-2 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#D7FE3A] ring-1 ring-black/15 shrink-0"></span>Customer Insights</p>
                   <InlineEdit value={linkedCustomer.customer_insights ?? ''} placeholder="Insight about this customer (shared across their Leads & Won jobs)…" multiline onSave={(v) => uc?.({ customer_insights: v })} />
                 </div>
               )}
