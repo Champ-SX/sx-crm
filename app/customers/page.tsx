@@ -192,13 +192,14 @@ function InlineEdit({
 }
 
 // ── Type badge colours ────────────────────────────────────────────────────────
+// CAP*TURES: customer type is categorical → neutral mono tag (label carries it).
 const typeColors: Record<string, string> = {
-  brand:      'bg-blue-50 text-blue-600 border-blue-100',
-  agency:     'bg-violet-50 text-violet-600 border-violet-100',
-  venue:      'bg-teal-50 text-teal-600 border-teal-100',
-  organizer:  'bg-amber-50 text-amber-700 border-amber-100',
-  individual: 'bg-muted text-foreground/80 border-border',
-  partner:    'bg-emerald-50 text-emerald-600 border-emerald-100',
+  brand:      'bg-muted text-muted-foreground border-border font-mono uppercase tracking-wide',
+  agency:     'bg-muted text-muted-foreground border-border font-mono uppercase tracking-wide',
+  venue:      'bg-muted text-muted-foreground border-border font-mono uppercase tracking-wide',
+  organizer:  'bg-muted text-muted-foreground border-border font-mono uppercase tracking-wide',
+  individual: 'bg-muted text-muted-foreground border-border font-mono uppercase tracking-wide',
+  partner:    'bg-muted text-muted-foreground border-border font-mono uppercase tracking-wide',
 }
 
 // ── Customer row ──────────────────────────────────────────────────────────────
@@ -586,25 +587,23 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
             </div>
 
             {/* Customer Insights — shared, shows on Lead + Won cards too */}
-            <div className="rounded-lg border border-amber-200 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/10 p-3">
-              <p className="field-label mb-2 text-amber-700 dark:text-amber-300">Customer Insights ⭐</p>
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <p className="field-label mb-2 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#D7FE3A] ring-1 ring-black/15 shrink-0"></span>Customer Insights</p>
               <InlineEdit value={customer.customer_insights ?? ''} placeholder="Add an insight that follows this customer across Leads & Won jobs…" multiline onSave={(v) => updateCustomer(customer.customer_id, { customer_insights: v })} />
             </div>
 
             <Separator />
 
             {/* Company Account */}
-            <div className="rounded-xl border border-amber-200/60 overflow-hidden">
+            <div className="rounded-xl border border-border overflow-hidden">
               <button
                 type="button"
                 onClick={() => setOpenAccount((o) => !o)}
-                className="w-full bg-amber-50/50 dark:bg-amber-950/20 px-4 py-2.5 flex items-center gap-2 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors text-left"
+                className="w-full bg-muted/40 px-4 py-2.5 flex items-center gap-2.5 hover:bg-muted/70 transition-colors text-left"
               >
-                <div className="w-5 h-5 rounded-md bg-amber-100/60 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
-                  <CreditCard className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                </div>
-                <span className="text-[12px] font-bold text-amber-700 dark:text-amber-300 tracking-wide flex-1">Company Account</span>
-                <ChevronDown className={`w-3.5 h-3.5 text-amber-600 dark:text-amber-400 transition-transform duration-200 ${openAccount ? 'rotate-0' : '-rotate-90'}`} />
+                <CreditCard className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <span className="text-[13px] font-bold text-foreground flex-1 leading-none">Company Account</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ${openAccount ? 'rotate-0' : '-rotate-90'}`} />
               </button>
               {openAccount && (
                 <div className="bg-background px-4 py-4 space-y-4">
@@ -678,7 +677,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                         </div>
                         <div className="text-right">
                           <p className="text-[13px] font-bold text-foreground">฿{(l.estimated_value || 0).toLocaleString()}</p>
-                          <span className={`text-[12px] font-semibold px-1.5 py-0.5 rounded-full ${l.status === 'won' ? 'bg-emerald-50 text-emerald-600' : l.status === 'lost' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-600'}`}>
+                          <span className={`font-mono text-[11px] uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted ${l.status === 'won' ? 'text-[#3f9d5b]' : l.status === 'lost' ? 'text-muted-foreground' : 'text-foreground'}`}>
                             {l.status}
                           </span>
                         </div>
@@ -846,25 +845,23 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                   </div>
 
                   {/* Customer Insights — shared, shows on Lead + Won cards too */}
-                  <div className="rounded-lg border border-amber-200 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/10 p-3">
-                    <p className="field-label mb-2 text-amber-700 dark:text-amber-300">Customer Insights ⭐</p>
+                  <div className="rounded-lg border border-border bg-muted/30 p-3">
+                    <p className="field-label mb-2 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#D7FE3A] ring-1 ring-black/15 shrink-0"></span>Customer Insights</p>
                     <InlineEdit value={customer.customer_insights ?? ''} placeholder="Add an insight that follows this customer across Leads & Won jobs…" multiline onSave={(v) => updateCustomer(customer.customer_id, { customer_insights: v })} />
                   </div>
 
                   <Separator />
 
                   {/* Company Account */}
-                  <div className="rounded-xl border border-amber-200/60 overflow-hidden">
+                  <div className="rounded-xl border border-border overflow-hidden">
                     <button
                       type="button"
                       onClick={() => setOpenAccount((o) => !o)}
-                      className="w-full bg-amber-50/50 dark:bg-amber-950/20 px-4 py-2.5 flex items-center gap-2 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors text-left"
+                      className="w-full bg-muted/40 px-4 py-2.5 flex items-center gap-2.5 hover:bg-muted/70 transition-colors text-left"
                     >
-                      <div className="w-5 h-5 rounded-md bg-amber-100/60 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
-                        <CreditCard className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                      </div>
-                      <span className="text-[12px] font-bold text-amber-700 dark:text-amber-300 tracking-wide flex-1">Company Account</span>
-                      <ChevronDown className={`w-3.5 h-3.5 text-amber-600 dark:text-amber-400 transition-transform duration-200 ${openAccount ? 'rotate-0' : '-rotate-90'}`} />
+                      <CreditCard className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <span className="text-[13px] font-bold text-foreground flex-1 leading-none">Company Account</span>
+                      <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ${openAccount ? 'rotate-0' : '-rotate-90'}`} />
                     </button>
                     {openAccount && (
                       <div className="bg-background px-4 py-4 space-y-4">
@@ -938,7 +935,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
                               </div>
                               <div className="text-right">
                                 <p className="text-[13px] font-bold text-foreground">฿{(l.estimated_value || 0).toLocaleString()}</p>
-                                <span className={`text-[12px] font-semibold px-1.5 py-0.5 rounded-full ${l.status === 'won' ? 'bg-emerald-50 text-emerald-600' : l.status === 'lost' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-600'}`}>
+                                <span className={`font-mono text-[11px] uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-muted ${l.status === 'won' ? 'text-[#3f9d5b]' : l.status === 'lost' ? 'text-muted-foreground' : 'text-foreground'}`}>
                                   {l.status}
                                 </span>
                               </div>

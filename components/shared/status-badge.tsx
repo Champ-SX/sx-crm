@@ -1,4 +1,3 @@
-import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
 type StatusVariant =
@@ -21,24 +20,15 @@ type StatusVariant =
   | 'overdue'
   | string
 
-const variantMap: Record<string, string> = {
-  new: 'bg-blue-50 text-blue-700 border-blue-200',
-  contacted: 'bg-amber-50 text-amber-700 border-amber-200',
-  qualified: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  unqualified: 'bg-zinc-100 text-zinc-500 border-zinc-200',
-  won: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-  lost: 'bg-red-50 text-red-600 border-red-200',
-  confirmed: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  brand: 'bg-orange-50 text-orange-700 border-orange-200',
-  agency: 'bg-purple-50 text-purple-700 border-purple-200',
-  venue: 'bg-sky-50 text-sky-700 border-sky-200',
-  organizer: 'bg-teal-50 text-teal-700 border-teal-200',
-  individual: 'bg-zinc-100 text-zinc-600 border-zinc-200',
-  partner: 'bg-pink-50 text-pink-700 border-pink-200',
-  paid: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  pending: 'bg-amber-50 text-amber-700 border-amber-200',
-  sent: 'bg-blue-50 text-blue-700 border-blue-200',
-  overdue: 'bg-red-50 text-red-600 border-red-200',
+// CAP*TURES: neutral pill + mono label + a meaning-coded dot.
+// green = good/done, orange = attention, lemon = new/fresh, grey = category/dormant.
+const LEMON = '#D7FE3A', ORANGE = '#FF5B3F', GREEN = '#3f9d5b', GREY = '#9a968d'
+const dotMap: Record<string, string> = {
+  new: LEMON, sent: LEMON,
+  qualified: GREEN, won: GREEN, paid: GREEN, confirmed: GREEN,
+  contacted: ORANGE, pending: ORANGE, overdue: ORANGE,
+  lost: GREY, unqualified: GREY,
+  brand: GREY, agency: GREY, venue: GREY, organizer: GREY, individual: GREY, partner: GREY,
 }
 
 const labelMap: Record<string, string> = {
@@ -68,15 +58,21 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
   const key = status.toLowerCase()
-  const classes = variantMap[key] ?? 'bg-zinc-100 text-zinc-600 border-zinc-200'
+  const dot = dotMap[key] ?? GREY
   const label = labelMap[key] ?? status
 
   return (
-    <Badge
-      variant="outline"
-      className={cn('text-[12px] font-medium px-2 py-0.5 capitalize border', classes, className)}
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wide text-foreground bg-muted/60 border border-border rounded-full px-2 py-0.5',
+        className,
+      )}
     >
+      <span
+        className="w-1.5 h-1.5 rounded-full shrink-0"
+        style={{ backgroundColor: dot, boxShadow: dot === LEMON ? '0 0 0 1px rgba(10,10,10,.2)' : undefined }}
+      />
       {label}
-    </Badge>
+    </span>
   )
 }
