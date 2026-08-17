@@ -4,8 +4,8 @@
 
 **Production URL:** https://sx-crm.vercel.app  
 **Build Status:** ✅ Passing  
-**Last Update:** August 14, 2026  
-**Current Phase:** Unified detail header + Phase 5 card actions shipped ✅ — see backlog for what's left
+**Last Update:** August 17, 2026  
+**Current Phase:** Assign-to + board/detail redesign + CAP*TURES design system shipped ✅ — see backlog for what's left
 
 ### Deployment History
 - **v1.0.0** (June 2, 2026) — Phase 1 Complete ✅
@@ -20,7 +20,10 @@
 - **+ polish** (July 14, 2026) — SIXSHEET logo/favicon, branded Lottie loader, Noto Sans Thai font ✅
 - **Unified detail header** (Aug 2026) — shared `<DetailHeader>` across Customers/Leads/Won ✅
 - **@mention fixes** (Aug 14, 2026) — pre-provision teammates (mentionable before login) + render dropdown in a portal so it isn't clipped ✅
-- **v5.0 — Card actions** (Aug 14, 2026) — Copy link, Share link, Duplicate, Archive on Lead + Won cards ✅ *(built; deploy + `20260813_card_archive.sql` pending)*
+- **v5.0 — Card actions** (Aug 14, 2026) — Copy link, Share link, Duplicate, Archive on Lead + Won cards ✅
+- **Assign-to + filter** (Aug 17, 2026) — multi-assignee (`assignee_ids`) on Lead + Won cards, assignee filter on both boards, unified Won due-reminder "Notify" onto assignees ✅ *(needs `20260814_lead_assignees.sql` — done by user)*
+- **Board + detail redesign** (Aug 17, 2026) — Won board card decomposed (name-first, mono #/date, tags, assignee avatars); Won single-card title = full canonical `formatJobTitle`; Leads kept original format + full names; per-person avatar colours ✅
+- **v6.0 — CAP*TURES design system, app-wide** (Aug 17, 2026) — cream surfaces, JetBrains Mono for data, mono micro-labels, status as dot + mono, decorative tints (blue/amber/indigo/violet/teal/purple/sky/pink/slate/zinc) → neutral tokens with lemon/orange accents; semantic green/red kept. Won stage-colours + image lightbox preserved. Verified light + dark ✅
 
 ---
 
@@ -36,7 +39,8 @@ Unified detail header and Phase 5 card actions are shipped. What's left:
 Email notifications were **dropped** (Web Push covers it). Full per-phase detail is in the sections below (all now marked ✅ Complete).
 
 ### Pending hand-offs (run in Supabase)
-- `20260813_card_archive.sql` — **required** for Phase 5 Archive (adds `is_archived`). ✅ *reported done by user Aug 14*
+- `20260813_card_archive.sql` — Phase 5 Archive (`is_archived`). ✅ done
+- `20260814_lead_assignees.sql` — assign-to on leads (`assignee_ids`). ✅ done
 - `20260714_users_email_unique.sql` — optional safety net (unique email); not blocking anything.
 
 ---
