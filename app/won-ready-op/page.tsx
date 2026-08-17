@@ -27,7 +27,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { OP_STAGES, OP_STAGE_LABELS } from '@/types'
 import type { WonJob, OPStage, StaffMember } from '@/types'
-import { formatJobMeta, jobDisplayTitle, formatJobTitleShort, formatJobTitle } from '@/lib/jobs'
+import { formatJobMeta, jobDisplayTitle, jobCardName, jobCanonicalTitle } from '@/lib/jobs'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
@@ -223,7 +223,7 @@ function JobCard({
   // Card headline is composed from the structured fields (product_name@place),
   // NOT the stored event_display_name — which often holds the full
   // "YYYY.MM.DD - ### - TYPE - Event - …" string and is unreadable on a card.
-  const cardName = formatJobTitleShort(job)
+  const cardName = jobCardName(job)
   const cat = job.product_cat && job.product_cat !== 'Event' ? job.product_cat : null
   // People shown on the card: assignees if any, else fall back to the owner.
   const assigned = teamMembers.filter((m) => (job.assignee_ids ?? []).includes(m.id))
@@ -991,12 +991,12 @@ function JobDetail({
           {/* Single-card title = the full canonical string composed from the
               structured fields (date - # - type - cat - name@place), per the
               naming convention. Edit the parts in section A below. */}
-          <DialogTitle className="sr-only">{formatJobTitle(job)}</DialogTitle>
+          <DialogTitle className="sr-only">{jobCanonicalTitle(job)}</DialogTitle>
           <DetailHeader
             idChip={job.job_number}
             dateLabel={job.event_date ? job.event_date.replace(/-/g, '.') : undefined}
             onClose={onClose}
-            title={<span className="break-words">{formatJobTitle(job)}</span>}
+            title={<span className="break-words">{jobCanonicalTitle(job)}</span>}
             subtitle={formatJobMeta(job) || undefined}
             actions={[
               { label: 'Copy link', icon: <Link2 className="w-4 h-4" />, onClick: () => copyCardLink('won_job', job.job_id) },

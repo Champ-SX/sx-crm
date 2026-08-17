@@ -23,12 +23,41 @@ export function formatJobTitleShort(job: Pick<WonJob, 'product_cat' | 'product_n
   return joinNameAndPlace(name, place)
 }
 
-// The FULL canonical title shown inside a single card (detail header, dialogs,
-// drag overlay): the user-set event_display_name when present, else the full
-// "YYYY.MM.DD - ### - TYPE - CAT - name@place" string built from the fields.
-// (The Won *board* card composes its own short display separately.)
-export function jobDisplayTitle(job: Pick<WonJob, 'event_display_name' | 'event_date' | 'job_number' | 'product_type' | 'product_cat' | 'product_name' | 'place'>): string {
-  return job.event_display_name || formatJobTitle(job)
+// A stored value "looks canonical" when it starts with a YYYY.MM(.DD) date —
+// i.e. someone typed the whole "2026.08.22 - 080 - …" string into a field.
+function looksCanonical(s: string | null | undefined): boolean {
+  return /^\s*\d{4}\.\d{2}/.test(s || '')
+}
+
+type JobTitleFields = Pick<WonJob, 'event_display_name' | 'event_date' | 'job_number' | 'product_type' | 'product_cat' | 'product_name' | 'place'>
+
+// The FULL canonical string for a job, shown inside a single card (detail
+// header, dialogs). Real data varies: some jobs store the whole canonical
+// string in event_display_name or product_name; others have clean structured
+// fields. Prefer a stored canonical string verbatim (so we never double-nest
+// it), else compose one from the fields.
+export function jobCanonicalTitle(job: JobTitleFields): string {
+  if (looksCanonical(job.event_display_name)) return (job.event_display_name as string).trim()
+  if (looksCanonical(job.product_name)) return (job.product_name as string).trim()
+  return formatJobTitle(job)
+}
+
+// The SHORT name for a Won board card: the event name + place only. Derived by
+// parsing the canonical string down to its name@place segment — so a card whose
+// data holds the full string still shows a readable headline, not the whole
+// "YYYY.MM.DD - ### - TYPE - CAT - …" line.
+export function jobCardName(job: JobTitleFields): string {
+  const canon = jobCanonicalTitle(job)
+  const parsed = parseJobTitle(canon)
+  if (parsed.product_name) {
+    return joinNameAndPlace(parsed.product_name.trim(), (parsed.place || job.place || '').trim())
+  }
+  return formatJobTitleShort(job)
+}
+
+// Back-compat alias used by dialogs/drag overlay — the full canonical string.
+export function jobDisplayTitle(job: JobTitleFields): string {
+  return jobCanonicalTitle(job)
 }
 
 // Metadata breadcrumb for the detail header — product type · category.
