@@ -497,10 +497,10 @@ export default function ImportPage() {
 
           {/* Summary cards */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-blue-50 rounded-xl p-4 text-center">
-              <Building2 className="w-5 h-5 text-blue-500 mx-auto mb-1" />
-              <p className="text-2xl font-bold text-blue-600">{preview.companies.length}</p>
-              <p className="text-xs text-blue-500">Companies</p>
+            <div className="bg-muted rounded-xl p-4 text-center">
+              <Building2 className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
+              <p className="text-2xl font-bold text-muted-foreground">{preview.companies.length}</p>
+              <p className="text-xs text-muted-foreground">Companies</p>
             </div>
             <div className="bg-green-50 rounded-xl p-4 text-center">
               <User className="w-5 h-5 text-green-500 mx-auto mb-1" />
@@ -593,7 +593,7 @@ export default function ImportPage() {
           <h2 className="text-xl font-bold text-foreground">Import Complete</h2>
           <div className="flex items-center justify-center gap-6 text-sm">
             <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">{importResult.companies}</p>
+              <p className="text-2xl font-bold text-muted-foreground">{importResult.companies}</p>
               <p className="text-muted-foreground">Companies added</p>
             </div>
             <div className="text-center">

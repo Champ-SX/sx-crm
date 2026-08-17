@@ -44,11 +44,11 @@ const activityConfig: Record<
   Activity['activity_type'],
   { icon: React.ElementType; color: string; bg: string }
 > = {
-  note: { icon: StickyNote, color: 'text-zinc-500', bg: 'bg-zinc-100' },
-  call: { icon: Phone, color: 'text-blue-500', bg: 'bg-blue-50' },
-  email: { icon: Mail, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-  follow_up: { icon: Bell, color: 'text-amber-500', bg: 'bg-amber-50' },
-  status_change: { icon: TrendingUp, color: 'text-purple-500', bg: 'bg-purple-50' },
+  note: { icon: StickyNote, color: 'text-muted-foreground', bg: 'bg-muted' },
+  call: { icon: Phone, color: 'text-muted-foreground', bg: 'bg-muted' },
+  email: { icon: Mail, color: 'text-muted-foreground', bg: 'bg-muted' },
+  follow_up: { icon: Bell, color: 'text-muted-foreground', bg: 'bg-muted' },
+  status_change: { icon: TrendingUp, color: 'text-muted-foreground', bg: 'bg-muted' },
   deal_won: { icon: Trophy, color: 'text-emerald-500', bg: 'bg-emerald-50' },
   deal_lost: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-50' },
 }
@@ -222,7 +222,7 @@ export function ActivityTimeline({ entityType, entityId, className, entityName }
                               {images.map((img, imgIdx) => (
                                 <div
                                   key={imgIdx}
-                                  className="relative group rounded-lg overflow-hidden bg-muted border border-border hover:border-blue-400 transition-colors cursor-pointer"
+                                  className="relative group rounded-lg overflow-hidden bg-muted border border-border hover:border-border transition-colors cursor-pointer"
                                 >
                                   {/* Image preview - clickable for lightbox */}
                                   <img

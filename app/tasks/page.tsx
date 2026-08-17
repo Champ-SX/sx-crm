@@ -32,8 +32,8 @@ import { format } from 'date-fns'
 
 const priorityConfig = {
   high: { label: 'High', class: 'border-red-200 text-red-600 bg-red-50' },
-  medium: { label: 'Medium', class: 'border-amber-200 text-amber-600 bg-amber-50' },
-  low: { label: 'Low', class: 'border-zinc-200 text-zinc-500 bg-zinc-50' },
+  medium: { label: 'Medium', class: 'border-border text-muted-foreground bg-muted' },
+  low: { label: 'Low', class: 'border-border text-muted-foreground bg-muted' },
 }
 
 function TaskCard({ task, today, onToggle }: { task: Task; today: string; onToggle: () => void }) {
@@ -57,7 +57,7 @@ function TaskCard({ task, today, onToggle }: { task: Task; today: string; onTogg
           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{task.description}</p>
         )}
         <div className="flex items-center gap-3 mt-2 flex-wrap">
-          <div className={`flex items-center gap-1 text-xs ${isOverdue ? 'text-red-500 font-medium' : isDueToday ? 'text-amber-600 font-medium' : 'text-muted-foreground'}`}>
+          <div className={`flex items-center gap-1 text-xs ${isOverdue ? 'text-red-500 font-medium' : isDueToday ? 'text-muted-foreground font-medium' : 'text-muted-foreground'}`}>
             <Calendar className="w-3 h-3" />
             {isOverdue ? 'Overdue · ' : isDueToday ? 'Today · ' : ''}
             {format(new Date(task.due_date + 'T00:00:00'), 'MMM d')}
@@ -264,8 +264,8 @@ export default function TasksPage() {
         {dueToday.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-amber-600">Due Today</h3>
-              <span className="text-[12px] font-semibold bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-full">{dueToday.length}</span>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Due Today</h3>
+              <span className="text-[12px] font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{dueToday.length}</span>
             </div>
             <div className="space-y-2">
               {dueToday.map((task) => (

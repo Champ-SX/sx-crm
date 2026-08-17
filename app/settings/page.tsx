@@ -38,7 +38,7 @@ export default function SettingsPage() {
                 <p className="text-sm font-medium">Data Mode</p>
                 <p className="text-xs text-muted-foreground">Currently using local mock data</p>
               </div>
-              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-xs">Mock</Badge>
+              <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-xs">Mock</Badge>
             </div>
           </CardContent>
         </Card>
@@ -46,7 +46,7 @@ export default function SettingsPage() {
         <Card className="border-border/60">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Database className="w-4 h-4 text-blue-500" /> Supabase Integration
+              <Database className="w-4 h-4 text-muted-foreground" /> Supabase Integration
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -67,7 +67,7 @@ export default function SettingsPage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold flex items-center justify-between gap-2">
               <span className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-purple-500" /> Team Members
+                <Users className="w-4 h-4 text-muted-foreground" /> Team Members
               </span>
               {role === 'admin' && (
                 <Link
@@ -115,7 +115,7 @@ export default function SettingsPage() {
         <Card className="border-border/60">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Layers className="w-4 h-4 text-indigo-500" /> Services
+              <Layers className="w-4 h-4 text-muted-foreground" /> Services
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -130,7 +130,7 @@ export default function SettingsPage() {
         <Card className="border-border/60">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <GitBranch className="w-4 h-4 text-zinc-500" /> Roadmap
+              <GitBranch className="w-4 h-4 text-muted-foreground" /> Roadmap
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -145,7 +145,7 @@ export default function SettingsPage() {
               ].map(({ label, status }) => (
                 <div key={label} className="flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">{label}</p>
-                  <Badge variant="outline" className="text-[12px] bg-zinc-50">{status}</Badge>
+                  <Badge variant="outline" className="text-[12px] bg-muted">{status}</Badge>
                 </div>
               ))}
             </div>
