@@ -40,11 +40,22 @@ import { useAuth } from '@/components/auth-provider'
 
 const SERVICES = ['CAP*TURES', 'Andy & Fine', 'SX Event', 'Booth Rental', 'Custom Activation', 'Other']
 
-const statusConfig: Record<LeadOpStatus, { label: string; class: string }> = {
-  open: { label: 'Open', class: 'bg-blue-50 text-blue-600 border-blue-200' },
-  negotiating: { label: 'Negotiating', class: 'bg-amber-50 text-amber-700 border-amber-200' },
-  won: { label: 'Won', class: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
-  lost: { label: 'Lost', class: 'bg-red-50 text-red-500 border-red-200' },
+const statusConfig: Record<LeadOpStatus, { label: string; class: string; dot: string }> = {
+  open: { label: 'Open', class: 'bg-blue-50 text-blue-600 border-blue-200', dot: 'bg-[#D7FE3A] ring-1 ring-black/15' },
+  negotiating: { label: 'Negotiating', class: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-[#FF5B3F]' },
+  won: { label: 'Won', class: 'bg-emerald-50 text-emerald-600 border-emerald-200', dot: 'bg-emerald-500' },
+  lost: { label: 'Lost', class: 'bg-red-50 text-red-500 border-red-200', dot: 'bg-muted-foreground/50' },
+}
+
+// Status as a dot + mono label (CAP*TURES language): lemon=open, orange=negotiating.
+function StatusDot({ status }: { status: LeadOpStatus }) {
+  const cfg = statusConfig[status]
+  return (
+    <span className="inline-flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-wide text-foreground whitespace-nowrap">
+      <span className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
+      {cfg.label}
+    </span>
+  )
 }
 
 const STATUS_ORDER: LeadOpStatus[] = ['open', 'negotiating', 'won', 'lost']
@@ -188,7 +199,6 @@ function LeadRow({
   isSelected?: boolean
   onToggleSelect?: () => void
 }) {
-  const cfg = statusConfig[item.status]
   return (
     <tr className="border-b border-border/50 hover:bg-muted/70 cursor-pointer transition-colors group" onClick={onClick}>
       {/* Checkbox */}
@@ -240,9 +250,7 @@ function LeadRow({
         <span className="text-[12px] text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-full">{item.owner}</span>
       </td>
       {/* Status */}
-      <td className="px-4 py-3.5">
-        <span className={`text-[12px] font-semibold px-2.5 py-0.5 rounded-full border ${cfg.class}`}>{cfg.label}</span>
-      </td>
+      <td className="px-4 py-3.5"><StatusDot status={item.status} /></td>
       {/* Arrow */}
       <td className="px-4 py-3.5">
         <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 opacity-0 group-hover:opacity-100 group-hover:text-muted-foreground transition-all" />
@@ -263,7 +271,6 @@ function LeadCard({
   isSelected?: boolean
   onToggleSelect?: () => void
 }) {
-  const cfg = statusConfig[item.status]
   return (
     <div
       className="flex items-start gap-3 border-b border-border/50 px-4 py-3.5 active:bg-muted transition-colors"
@@ -279,7 +286,7 @@ function LeadCard({
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <p className="text-[14px] font-semibold text-foreground leading-snug">{item.name}</p>
-          <span className={`shrink-0 text-[12px] font-semibold px-2 py-0.5 rounded-full border ${cfg.class}`}>{cfg.label}</span>
+          <span className="shrink-0"><StatusDot status={item.status} /></span>
         </div>
         {item.contact_person && (
           <p className="text-[12px] text-muted-foreground mt-0.5">{item.contact_person}</p>

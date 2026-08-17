@@ -41,13 +41,24 @@ export function UserAvatar({
     )
   }
 
+  // Stable per-person colour from the name, so different people read as
+  // different avatars at a glance (Google photo still wins above).
+  const bg = AVATAR_COLORS[hashString(lower) % AVATAR_COLORS.length]
   return (
     <span
       title={name}
-      style={{ ...dims, fontSize: Math.max(9, Math.round(size * 0.45)) }}
-      className={`rounded-full bg-primary/10 text-primary font-semibold inline-flex items-center justify-center shrink-0 ${className}`}
+      style={{ ...dims, fontSize: Math.max(9, Math.round(size * 0.45)), backgroundColor: bg, color: '#fff' }}
+      className={`rounded-full font-semibold inline-flex items-center justify-center shrink-0 ${className}`}
     >
       {initial}
     </span>
   )
+}
+
+// Muted, distinct palette (readable with white initials, works on cream + dark).
+const AVATAR_COLORS = ['#C9772E', '#3F6EA5', '#7A5AA5', '#3F9D5B', '#B8543F', '#5A7D3F', '#2E8A9A', '#9A6B2E']
+function hashString(s: string): number {
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0
+  return h
 }
