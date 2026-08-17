@@ -924,7 +924,7 @@ function JobDetail({
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                       {/* ค่าจ้าง — per-job fee in THB (commits on blur) */}
                       <div className="flex items-center gap-1.5">
-                        <label className="text-xs font-medium text-rose-700 dark:text-rose-300">ค่าจ้าง</label>
+                        <label className="text-xs font-medium text-muted-foreground">ค่าจ้าง</label>
                         <span className="text-xs text-muted-foreground">฿</span>
                         <input
                           type="number"
@@ -938,7 +938,7 @@ function JobDetail({
                             const cur = s.fee_thb ?? null
                             if (next !== cur) updateStaffFee(s.staff_id, next)
                           }}
-                          className="h-7 w-28 rounded-md border border-border bg-background px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200"
+                          className="h-7 w-28 rounded-md border border-border bg-background px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
                         />
                       </div>
                       {/* Paid/unpaid toggle pill */}
@@ -946,8 +946,8 @@ function JobDetail({
                         type="button"
                         onClick={() => toggleStaffPaid(s.staff_id)}
                         className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-medium transition-colors ${s.paid
-                          ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                          : 'border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 dark:border-amber-500/40 dark:text-amber-300 dark:bg-amber-500/10 dark:hover:bg-amber-500/20'}`}
+                          ? 'bg-[#3f9d5b] text-white hover:opacity-90'
+                          : 'border border-[#FF5B3F]/40 text-[#FF5B3F] bg-[#FF5B3F]/10 hover:bg-[#FF5B3F]/20'}`}
                         title={s.paid ? 'คลิกเพื่อเปลี่ยนเป็นยังไม่จ่าย' : 'คลิกเพื่อทำเครื่องหมายจ่ายแล้ว'}
                       >
                         {s.paid ? <><Check className="w-3 h-3" /> จ่ายแล้ว</> : <>ยังไม่จ่าย</>}
@@ -966,7 +966,7 @@ function JobDetail({
               ))}
             </ul>
           )}
-          <Button size="sm" variant="outline" className="w-full h-8 text-xs mt-1 border-rose-200 text-rose-700 hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-300 dark:hover:bg-rose-500/10" onClick={() => setStaffSheetOpen(true)}>
+          <Button size="sm" variant="outline" className="w-full h-8 text-xs mt-1 border-border text-muted-foreground hover:bg-muted hover:text-foreground" onClick={() => setStaffSheetOpen(true)}>
             + Add Staff
           </Button>
         </div>
@@ -1245,8 +1245,8 @@ function JobDetail({
                   <div className="px-6 py-5 space-y-5">
                     {/* Customer Insights — shared from the linked customer */}
                     {linkedCustomer && (
-                      <div className="rounded-xl border border-amber-200 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/10 p-4">
-                        <p className="field-label mb-2 text-amber-700 dark:text-amber-300">Customer Insights ⭐</p>
+                      <div className="rounded-xl border border-border bg-muted/30 p-4">
+                        <p className="field-label mb-2 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#D7FE3A] ring-1 ring-black/15 shrink-0"></span>Customer Insights</p>
                         <InlineEdit value={linkedCustomer.customer_insights ?? ''} placeholder="Insight about this customer (shared across their Leads & Won jobs)…" multiline onSave={(v) => uc?.({ customer_insights: v })} />
                       </div>
                     )}
