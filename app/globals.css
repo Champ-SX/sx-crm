@@ -156,9 +156,10 @@
   .text-caption  { @apply text-[12px] text-muted-foreground/70; }
 
   /* Field hierarchy ------------------------------------------------------- */
-  /* Label: small, muted, uppercase — recedes so the value stands out. */
+  /* Label: mono micro-label, muted, uppercase — the CAP*TURES structural mark
+     that recedes so the value stands out. */
   .field-label {
-    @apply block text-[12px] font-medium uppercase tracking-wide text-muted-foreground mb-0.5;
+    @apply block font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground mb-1;
   }
   /* Value: the information that matters — prominent and dark. */
   .field-value {
