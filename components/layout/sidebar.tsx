@@ -74,7 +74,7 @@ function UserProfile() {
             className="w-7 h-7 rounded-full object-cover shrink-0"
           />
         ) : (
-          <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold shrink-0">
+          <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-foreground text-xs font-bold shrink-0">
             {initials}
           </div>
         )}

@@ -50,7 +50,7 @@ function LoginPageContent() {
             onClick={handleGoogleLogin}
             disabled={loading}
             size="lg"
-            className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+            className="w-full h-12 bg-[#FF5B3F] hover:opacity-90 text-white font-medium"
           >
             {loading ? 'Signing in...' : '🔐 Sign in with Google'}
           </Button>

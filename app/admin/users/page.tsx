@@ -231,7 +231,7 @@ export default function AdminUsersPage() {
                   <td className="px-4 py-3 text-muted-foreground">
                     {u.email}
                     {u.id === currentUser?.id && (
-                      <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                      <span className="ml-2 text-[11px] font-mono uppercase tracking-wide bg-muted text-muted-foreground px-2 py-0.5 rounded">
                         You
                       </span>
                     )}

@@ -40,11 +40,11 @@ import { useAuth } from '@/components/auth-provider'
 
 const SERVICES = ['CAP*TURES', 'Andy & Fine', 'SX Event', 'Booth Rental', 'Custom Activation', 'Other']
 
-const statusConfig: Record<LeadOpStatus, { label: string; class: string; dot: string }> = {
-  open: { label: 'Open', class: 'bg-blue-50 text-blue-600 border-blue-200', dot: 'bg-[#D7FE3A] ring-1 ring-black/15' },
-  negotiating: { label: 'Negotiating', class: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-[#FF5B3F]' },
-  won: { label: 'Won', class: 'bg-emerald-50 text-emerald-600 border-emerald-200', dot: 'bg-emerald-500' },
-  lost: { label: 'Lost', class: 'bg-red-50 text-red-500 border-red-200', dot: 'bg-muted-foreground/50' },
+const statusConfig: Record<LeadOpStatus, { label: string; dot: string }> = {
+  open: { label: 'Open', dot: 'bg-[#D7FE3A] ring-1 ring-black/15' },
+  negotiating: { label: 'Negotiating', dot: 'bg-[#FF5B3F]' },
+  won: { label: 'Won', dot: 'bg-emerald-500' },
+  lost: { label: 'Lost', dot: 'bg-muted-foreground/50' },
 }
 
 // Status as a dot + mono label (CAP*TURES language): lemon=open, orange=negotiating.
@@ -89,7 +89,7 @@ function StatusPill({
             onClick={() => onSelect(s)}
             className="text-xs gap-2 cursor-pointer"
           >
-            <span className={`w-2 h-2 rounded-full border ${statusConfig[s].class}`} />
+            <span className={`w-2 h-2 rounded-full shrink-0 ${statusConfig[s].dot}`} />
             {statusConfig[s].label}
             {s === status && <Check className="w-3 h-3 ml-auto text-muted-foreground" />}
           </DropdownMenuItem>
@@ -654,7 +654,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                     </button>
                     {openAccount && (
                       <div className="bg-background px-4 py-4 space-y-4">
-                        <p className="text-[12px] text-amber-600 bg-amber-50 px-2 py-1 rounded-md">Changes here are saved to the Customer record and shared across all jobs.</p>
+                        <p className="text-[12px] text-muted-foreground bg-muted px-2 py-1 rounded-md">Changes here are saved to the Customer record and shared across all jobs.</p>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <p className="field-label">Tax ID</p>
@@ -806,8 +806,8 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                           </div>
                         </button>
                         {/* Customer Insights — shared from the linked customer */}
-                        <div className="rounded-lg border border-amber-200 bg-amber-50/40 dark:border-amber-500/30 dark:bg-amber-500/10 p-3">
-                          <p className="field-label mb-2 text-amber-700 dark:text-amber-300">Customer Insights ⭐</p>
+                        <div className="rounded-lg border border-border bg-muted dark:border-border dark:bg-muted p-3">
+                          <p className="field-label mb-2 text-muted-foreground dark:text-muted-foreground">Customer Insights ⭐</p>
                           <InlineEdit value={linkedCustomer.customer_insights ?? ''} placeholder="Insight about this customer (shared across their Leads & Won jobs)…" multiline onSave={(v) => updateCustomer(linkedCustomer.customer_id, { customer_insights: v })} />
                         </div>
                       </>
@@ -839,21 +839,21 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                     {linkedCustomer && (
                       <>
                         <Separator />
-                        <div className="rounded-lg border border-amber-200/60 overflow-hidden">
+                        <div className="rounded-lg border border-border overflow-hidden">
                           <button
                             type="button"
                             onClick={() => setOpenAccount((o) => !o)}
-                            className="w-full bg-amber-50/50 dark:bg-amber-950/20 px-4 py-2.5 flex items-center gap-2 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors text-left"
+                            className="w-full bg-muted dark:bg-muted px-4 py-2.5 flex items-center gap-2 hover:bg-muted dark:hover:bg-muted transition-colors text-left"
                           >
-                            <div className="w-5 h-5 rounded-md bg-amber-100/60 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
-                              <CreditCard className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                            <div className="w-5 h-5 rounded-md bg-muted dark:bg-muted flex items-center justify-center shrink-0">
+                              <CreditCard className="w-3 h-3 text-muted-foreground dark:text-muted-foreground" />
                             </div>
-                            <span className="text-[12px] font-bold text-amber-700 dark:text-amber-300 tracking-wide flex-1">Company Account</span>
-                            <ChevronDown className={`w-3.5 h-3.5 text-amber-600 dark:text-amber-400 transition-transform duration-200 ${openAccount ? 'rotate-0' : '-rotate-90'}`} />
+                            <span className="text-[12px] font-bold text-muted-foreground dark:text-muted-foreground tracking-wide flex-1">Company Account</span>
+                            <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground dark:text-muted-foreground transition-transform duration-200 ${openAccount ? 'rotate-0' : '-rotate-90'}`} />
                           </button>
                           {openAccount && (
                             <div className="bg-background px-4 py-4 space-y-4">
-                              <p className="text-[12px] text-amber-600 bg-amber-50 px-2 py-1 rounded-md">Changes here are saved to the Customer record and shared across all jobs.</p>
+                              <p className="text-[12px] text-muted-foreground bg-muted px-2 py-1 rounded-md">Changes here are saved to the Customer record and shared across all jobs.</p>
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
                                   <p className="field-label">Tax ID</p>

@@ -63,8 +63,8 @@ export function DataInitializer() {
   if (loadingTimeout && !isInitialized) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-        <div className="bg-background border border-amber-600/50 rounded-lg p-6 max-w-md mx-4">
-          <h2 className="text-lg font-semibold text-amber-600 mb-2">Using Mock Data</h2>
+        <div className="bg-background border border-[#FF5B3F]/50 rounded-lg p-6 max-w-md mx-4">
+          <h2 className="text-lg font-semibold text-[#FF5B3F] mb-2">Using Mock Data</h2>
           <p className="text-sm text-muted-foreground mb-2">
             Unable to connect to database. The app will use sample data for testing.
           </p>
@@ -73,7 +73,7 @@ export function DataInitializer() {
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="w-full px-4 py-2 bg-amber-600/10 hover:bg-amber-600/20 text-amber-600 rounded font-medium transition-colors"
+            className="w-full px-4 py-2 bg-[#FF5B3F]/10 hover:bg-[#FF5B3F]/20 text-[#FF5B3F] rounded font-medium transition-colors"
           >
             Retry Connection
           </button>
