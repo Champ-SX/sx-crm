@@ -95,9 +95,9 @@ export function SalesDashboard({ userName }: { userName: string }) {
           value={decided > 0 ? `${winRate}%` : '—'}
           sub={`${myWon.length} won · ${myLost.length} lost`}
           href="/leads-opportunities"
-          iconBg="bg-blue-50"
-          iconColor="text-blue-500"
-          valueColor="text-blue-600"
+          iconBg="bg-muted"
+          iconColor="text-muted-foreground"
+          valueColor="text-foreground"
         />
         <StatCard
           icon={TrendingUp}
@@ -105,9 +105,9 @@ export function SalesDashboard({ userName }: { userName: string }) {
           value={fmtBaht(myRevenueThisMonth)}
           sub={`of ${fmtBaht(MONTHLY_TARGET)} goal`}
           href="/won-ready-op"
-          iconBg="bg-teal-50"
-          iconColor="text-teal-500"
-          valueColor="text-teal-600"
+          iconBg="bg-muted"
+          iconColor="text-muted-foreground"
+          valueColor="text-foreground"
         />
       </div>
 
@@ -123,7 +123,7 @@ export function SalesDashboard({ userName }: { userName: string }) {
             </div>
             <div className="h-3 bg-muted rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all ${targetPct >= 100 ? 'bg-emerald-500' : 'bg-teal-400'}`}
+                className={`h-full rounded-full transition-all ${targetPct >= 100 ? 'bg-[#3f9d5b]' : 'bg-foreground'}`}
                 style={{ width: `${targetPct}%` }}
               />
             </div>
@@ -137,7 +137,7 @@ export function SalesDashboard({ userName }: { userName: string }) {
                 <p className="text-[12px] text-muted-foreground">Won</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-bold text-teal-600">{fmtBaht(myPipelineValue)}</p>
+                <p className="text-lg font-bold text-foreground">{fmtBaht(myPipelineValue)}</p>
                 <p className="text-[12px] text-muted-foreground">Pipeline Value</p>
               </div>
             </div>

@@ -58,9 +58,9 @@ export function OperationDashboard() {
 
   const bottlenecks = [
     { label: 'Payment overdue', count: overduePayment.length, color: 'text-red-600', bg: 'bg-red-50', dot: 'bg-red-400' },
-    { label: 'Staff pending', count: pendingStaff.length, color: 'text-amber-600', bg: 'bg-amber-50', dot: 'bg-amber-400' },
-    { label: 'Docs pending', count: pendingDocs.length, color: 'text-orange-600', bg: 'bg-orange-50', dot: 'bg-orange-400' },
-    { label: 'Event <30d, not ready', count: eventSoonNotReady.length, color: 'text-violet-600', bg: 'bg-violet-50', dot: 'bg-violet-400' },
+    { label: 'Staff pending', count: pendingStaff.length, color: 'text-muted-foreground', bg: 'bg-muted', dot: 'bg-[#FF5B3F]' },
+    { label: 'Docs pending', count: pendingDocs.length, color: 'text-[#FF5B3F]', bg: 'bg-muted', dot: 'bg-[#FF5B3F]' },
+    { label: 'Event <30d, not ready', count: eventSoonNotReady.length, color: 'text-foreground', bg: 'bg-muted', dot: 'bg-[#FF5B3F]' },
   ]
 
   return (
@@ -73,8 +73,8 @@ export function OperationDashboard() {
           value={activeOPJobs.length}
           sub="not yet done payment"
           href="/won-ready-op"
-          iconBg="bg-violet-50"
-          iconColor="text-violet-500"
+          iconBg="bg-muted"
+          iconColor="text-muted-foreground"
         />
         <StatCard
           icon={Activity}
@@ -92,8 +92,8 @@ export function OperationDashboard() {
           value={workload.length}
           sub="with active jobs"
           href="/won-ready-op"
-          iconBg="bg-blue-50"
-          iconColor="text-blue-500"
+          iconBg="bg-muted"
+          iconColor="text-muted-foreground"
         />
         <StatCard
           icon={AlertTriangle}
@@ -140,7 +140,7 @@ export function OperationDashboard() {
                 <p className="text-[12px] text-muted-foreground">Active OP</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-bold text-teal-600">
+                <p className="text-lg font-bold text-foreground">
                   {fmtBaht(wonJobs.reduce((s, j) => s + (j.estimated_value ?? 0), 0))}
                 </p>
                 <p className="text-[12px] text-muted-foreground">Total Value</p>
@@ -188,7 +188,7 @@ export function OperationDashboard() {
                   <div key={owner} className="flex items-center gap-3">
                     <span className="text-[12px] text-foreground/80 w-32 shrink-0 truncate inline-flex items-center gap-1.5"><UserAvatar name={owner} size={18} />{owner}</span>
                     <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full rounded-full bg-blue-400 transition-all" style={{ width: `${pct}%` }} />
+                      <div className="h-full rounded-full bg-foreground/60 transition-all" style={{ width: `${pct}%` }} />
                     </div>
                     <span className="text-[12px] font-semibold text-foreground/80 w-8 text-right shrink-0">{count}</span>
                   </div>

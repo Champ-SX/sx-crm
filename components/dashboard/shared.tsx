@@ -4,12 +4,13 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 
 // ── Stage styling (shared across dashboards) ────────────────────────────────────
+const NEUTRAL_BADGE = 'bg-muted text-muted-foreground font-mono uppercase tracking-wide'
 export const stageConfig: Record<string, { label: string; dot: string; badge: string }> = {
-  WON_JOB_LIST:                    { label: 'Won Job List',     dot: 'bg-slate-400',   badge: 'bg-slate-50 text-slate-600' },
-  OP_PREPARING_AW_DONE:            { label: 'OP Preparing',     dot: 'bg-blue-400',    badge: 'bg-blue-50 text-blue-600' },
-  OP_READY_FOR_EVENT:              { label: 'Ready for Event',  dot: 'bg-teal-400',    badge: 'bg-teal-50 text-teal-600' },
-  OP_WAIT_STAFF_PAYMENT_DOC_TERR:  { label: 'Wait Staff / Pay', dot: 'bg-amber-400',   badge: 'bg-amber-50 text-amber-700' },
-  OP_DONE_PAYMENT:                 { label: 'Done Payment',     dot: 'bg-purple-400',  badge: 'bg-purple-50 text-purple-600' },
+  WON_JOB_LIST:                    { label: 'Won Job List',     dot: 'bg-slate-400',   badge: NEUTRAL_BADGE },
+  OP_PREPARING_AW_DONE:            { label: 'OP Preparing',     dot: 'bg-blue-400',    badge: NEUTRAL_BADGE },
+  OP_READY_FOR_EVENT:              { label: 'Ready for Event',  dot: 'bg-teal-400',    badge: NEUTRAL_BADGE },
+  OP_WAIT_STAFF_PAYMENT_DOC_TERR:  { label: 'Wait Staff / Pay', dot: 'bg-amber-400',   badge: NEUTRAL_BADGE },
+  OP_DONE_PAYMENT:                 { label: 'Done Payment',     dot: 'bg-purple-400',  badge: NEUTRAL_BADGE },
 }
 
 // ── Stat card ──────────────────────────────────────────────────────────────────
@@ -28,20 +29,20 @@ export function StatCard({
   value: number | string
   sub?: string
   href: string
-  iconBg: string
-  iconColor: string
+  iconBg?: string
+  iconColor?: string
   valueColor?: string
 }) {
   return (
     <Link href={href} className="block group">
       <div className="bg-card border border-border rounded-xl p-5 hover:shadow-md hover:border-border/80 transition-all">
         <div className="flex items-start justify-between mb-4">
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${iconBg}`}>
-            <Icon className={`w-4 h-4 ${iconColor}`} />
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-muted">
+            <Icon className="w-4 h-4 text-muted-foreground" />
           </div>
           <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-muted-foreground group-hover:translate-x-0.5 transition-all" />
         </div>
-        <p className={`text-2xl font-bold leading-none mb-1 ${valueColor ?? 'text-foreground'}`}>{value}</p>
+        <p className="text-2xl font-bold leading-none mb-1 text-foreground font-mono">{value}</p>
         <p className="text-[12px] font-medium text-muted-foreground leading-none mb-1">{label}</p>
         {sub && <p className="text-[12px] text-muted-foreground/80 leading-snug mt-1">{sub}</p>}
       </div>

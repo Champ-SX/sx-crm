@@ -80,8 +80,8 @@ export function AdminDashboard() {
           value={customers.length}
           sub="in database"
           href="/customers"
-          iconBg="bg-blue-50"
-          iconColor="text-blue-500"
+          iconBg="bg-muted"
+          iconColor="text-muted-foreground"
         />
         <StatCard
           icon={FileText}
@@ -109,8 +109,8 @@ export function AdminDashboard() {
           value={owners.size}
           sub="with assigned work"
           href="/admin/users"
-          iconBg="bg-violet-50"
-          iconColor="text-violet-500"
+          iconBg="bg-muted"
+          iconColor="text-muted-foreground"
         />
         <StatCard
           icon={TrendingUp}
@@ -118,9 +118,9 @@ export function AdminDashboard() {
           value={fmtBaht(totalRevenue)}
           sub="from won jobs"
           href="/won-ready-op"
-          iconBg="bg-teal-50"
-          iconColor="text-teal-500"
-          valueColor="text-teal-600"
+          iconBg="bg-muted"
+          iconColor="text-muted-foreground"
+          valueColor="text-foreground"
         />
       </div>
 
@@ -163,10 +163,10 @@ export function AdminDashboard() {
             </div>
             <div className="bg-card border border-border rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
-                <TrendingUp className="w-4 h-4 text-teal-500" />
+                <TrendingUp className="w-4 h-4 text-muted-foreground" />
                 <p className="text-[12px] font-medium text-muted-foreground uppercase tracking-wider">Revenue this month</p>
               </div>
-              <p className="text-2xl font-bold text-teal-600">{fmtBaht(monthRevenue)}</p>
+              <p className="text-2xl font-bold text-foreground">{fmtBaht(monthRevenue)}</p>
             </div>
           </div>
 
@@ -196,7 +196,7 @@ export function AdminDashboard() {
                           <span className="inline-flex items-center gap-2"><UserAvatar name={row.owner} size={20} />{row.owner}</span>
                         </td>
                         <td className="px-3 py-3 text-center text-[12px] font-medium text-emerald-600">{row.deals}</td>
-                        <td className="px-4 py-3 text-right text-[12px] font-semibold text-teal-600">{fmtBaht(row.revenue)}</td>
+                        <td className="px-4 py-3 text-right text-[12px] font-semibold text-foreground">{fmtBaht(row.revenue)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -211,7 +211,7 @@ export function AdminDashboard() {
           <div className="mt-4 bg-card border border-border rounded-xl overflow-hidden">
             <div className="px-5 py-2.5 border-b border-border/60 bg-muted/50 flex items-center justify-between">
               <span className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Won jobs · {monthLabel}</span>
-              <span className="text-[12px] font-semibold text-teal-600">{monthCount} · {fmtBaht(monthRevenue)}</span>
+              <span className="text-[12px] font-semibold text-foreground">{monthCount} · {fmtBaht(monthRevenue)}</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px]">
@@ -238,7 +238,7 @@ export function AdminDashboard() {
                       </td>
                       <td className="px-3 py-3 text-[12px] text-foreground/80 truncate max-w-[160px]">{j.customer_name || '—'}</td>
                       <td className="px-3 py-3 text-[12px] text-foreground/80"><span className="inline-flex items-center gap-1.5">{j.owner ? <><UserAvatar name={j.owner} size={16} />{j.owner}</> : '—'}</span></td>
-                      <td className="px-4 py-3 text-right text-[12px] font-semibold text-teal-600">{fmtBaht(j.estimated_value ?? 0)}</td>
+                      <td className="px-4 py-3 text-right text-[12px] font-semibold text-foreground">{fmtBaht(j.estimated_value ?? 0)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -280,9 +280,9 @@ export function AdminDashboard() {
                         <td className="px-3 py-3 text-center text-[12px] text-foreground/80">{row.open}</td>
                         <td className="px-3 py-3 text-center text-[12px] font-medium text-emerald-600">{row.won}</td>
                         <td className="px-3 py-3 text-center">
-                          <span className="text-[12px] font-semibold text-blue-600">{row.winRate > 0 ? `${row.winRate}%` : '—'}</span>
+                          <span className="text-[12px] font-semibold text-foreground">{row.winRate > 0 ? `${row.winRate}%` : '—'}</span>
                         </td>
-                        <td className="px-4 py-3 text-right text-[12px] font-semibold text-teal-600">{fmtBaht(row.revenue)}</td>
+                        <td className="px-4 py-3 text-right text-[12px] font-semibold text-foreground">{fmtBaht(row.revenue)}</td>
                       </tr>
                     ))}
                   </tbody>
