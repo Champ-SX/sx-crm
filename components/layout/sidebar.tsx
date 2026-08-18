@@ -121,7 +121,7 @@ function ThemeToggleRow() {
   )
 }
 
-function NavContent({ onNavClick }: { onNavClick?: () => void }) {
+function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?: () => void }) {
   const pathname = usePathname()
   const { leadOpportunities, wonJobs, tasks } = useCRMStore()
 
@@ -194,8 +194,17 @@ function NavContent({ onNavClick }: { onNavClick?: () => void }) {
             <p className="text-foreground font-bold text-[14px] leading-tight tracking-tight">SX CRM</p>
             <p className="text-muted-foreground text-[12px] leading-tight">by SIXSHEET</p>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-0.5">
             <NotificationBell />
+            {onClose && (
+              <button
+                onClick={onClose}
+                aria-label="Close menu"
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors lg:hidden"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -252,14 +261,7 @@ export function Sidebar() {
         'fixed top-0 left-0 z-50 h-full w-[228px] bg-card border-r border-[var(--sidebar-border)] flex flex-col transition-transform duration-200 lg:hidden',
         open ? 'translate-x-0' : '-translate-x-full'
       )}>
-        {/* Close button */}
-        <button
-          onClick={() => setOpen(false)}
-          className="absolute top-3 right-3 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
-        <NavContent onNavClick={() => setOpen(false)} />
+        <NavContent onNavClick={() => setOpen(false)} onClose={() => setOpen(false)} />
       </aside>
     </>
   )
