@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, Plus, UserPlus } from 'lucide-react'
+import { Check, Plus, UserPlus, Users, User } from 'lucide-react'
 import { useCRMStore } from '@/store/crm-store'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -100,23 +100,45 @@ export function AssigneeFilter({
   className?: string
 }) {
   const teamMembers = useCRMStore((s) => s.teamMembers)
+  const meName = meId ? (teamMembers.find((m) => m.id === meId)?.name ?? null) : null
+  const selected = value === ASSIGNEE_FILTER_ALL || value === ASSIGNEE_FILTER_ME
+    ? null
+    : teamMembers.find((m) => m.id === value)
   const selectedLabel =
     value === ASSIGNEE_FILTER_ALL
       ? 'All assignees'
       : value === ASSIGNEE_FILTER_ME
         ? 'Assigned to me'
-        : (teamMembers.find((m) => m.id === value)?.name ?? 'Assignee')
+        : (selected?.name ?? 'Assignee')
 
   return (
     <Select value={value} onValueChange={(v) => onChange(v ?? ASSIGNEE_FILTER_ALL)}>
       <SelectTrigger className={className ?? 'w-[150px] h-8 text-[12px] bg-muted border-border'}>
-        <span className="truncate">{selectedLabel}</span>
+        <span className="inline-flex items-center gap-1.5 min-w-0">
+          {selected && <UserAvatar name={selected.name || selected.email} size={16} />}
+          <span className="truncate">{selectedLabel}</span>
+        </span>
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={ASSIGNEE_FILTER_ALL} className="text-[12px]">All assignees</SelectItem>
-        {meId && <SelectItem value={ASSIGNEE_FILTER_ME} className="text-[12px]">Assigned to me</SelectItem>}
+        <SelectItem value={ASSIGNEE_FILTER_ALL} className="text-[12px]">
+          <span className="inline-flex items-center gap-2">
+            <Users className="w-4 h-4 text-muted-foreground shrink-0" />All assignees
+          </span>
+        </SelectItem>
+        {meId && (
+          <SelectItem value={ASSIGNEE_FILTER_ME} className="text-[12px]">
+            <span className="inline-flex items-center gap-2">
+              {meName ? <UserAvatar name={meName} size={18} /> : <User className="w-4 h-4 text-muted-foreground shrink-0" />}
+              Assigned to me
+            </span>
+          </SelectItem>
+        )}
         {teamMembers.map((m) => (
-          <SelectItem key={m.id} value={m.id} className="text-[12px]">{m.name || m.email}</SelectItem>
+          <SelectItem key={m.id} value={m.id} className="text-[12px]">
+            <span className="inline-flex items-center gap-2">
+              <UserAvatar name={m.name || m.email} size={18} />{m.name || m.email}
+            </span>
+          </SelectItem>
         ))}
       </SelectContent>
     </Select>

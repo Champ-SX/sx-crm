@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Textarea } from '@/components/ui/textarea'
 import { useCRMStore } from '@/store/crm-store'
+import { UserAvatar } from '@/components/shared/user-avatar'
 import type { TeamMember } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -132,9 +133,7 @@ export function MentionTextarea({
                   i === activeIdx ? 'bg-primary/10' : 'hover:bg-muted'
                 )}
               >
-                <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-[12px] font-semibold flex items-center justify-center shrink-0">
-                  {display[0]?.toUpperCase()}
-                </span>
+                <UserAvatar name={display} size={24} />
                 <span className="font-medium">{display}</span>
                 <span className="text-[12px] text-muted-foreground capitalize ml-auto">{m.role}</span>
               </button>
