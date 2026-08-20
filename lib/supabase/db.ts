@@ -14,6 +14,7 @@ import type {
   TeamMember,
   Notification,
   Board,
+  AnfOrder,
 } from '@/types'
 
 // ===== BOARDS (Phase 4.0) =====
@@ -25,6 +26,33 @@ export const boardQueries = {
       .order('sort_order')
     if (error) throw error
     return (data || []) as Board[]
+  },
+}
+
+// ===== ANF ORDERS (Phase 4.0) =====
+export const anfOrderQueries = {
+  async getAll() {
+    const { data, error } = await supabase
+      .from('anf_orders')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return (data || []) as AnfOrder[]
+  },
+  async create(order: AnfOrder) {
+    const { error } = await supabase.from('anf_orders').insert([order])
+    if (error) throw error
+  },
+  async update(id: string, updates: Partial<AnfOrder>) {
+    const { error } = await supabase
+      .from('anf_orders')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('order_id', id)
+    if (error) throw error
+  },
+  async delete(id: string) {
+    const { error } = await supabase.from('anf_orders').delete().eq('order_id', id)
+    if (error) throw error
   },
 }
 

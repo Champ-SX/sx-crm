@@ -13,6 +13,7 @@ import {
   Sun,
   X,
   LogOut,
+  Package,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCRMStore } from '@/store/crm-store'
@@ -25,12 +26,20 @@ import { PushPermissionBanner } from '@/components/shared/push-permission-banner
 import { Button } from '@/components/ui/button'
 import { OP_STAGES } from '@/types'
 
-const navItems = [
+// Nav is board-aware (Phase 4.0): the CAP*TURES sales pipeline vs. the ANF
+// Order board's own (different) structure.
+const capturesNav = [
   { href: '/dashboard',            label: 'Dashboard',        icon: LayoutDashboard },
   { href: '/customers',            label: 'Customers',        icon: Users },
   { href: '/leads-opportunities',  label: 'Leads & Opps',     icon: FileText },
   { href: '/won-ready-op',         label: 'Won & Ready for OP', icon: Kanban },
 ]
+const anfNav = [
+  { href: '/anf-order', label: 'Orders', icon: Package },
+]
+function navForBoard(boardId: string | null) {
+  return boardId === 'anf-order' ? anfNav : capturesNav
+}
 
 const bottomItems = [
   { href: '/settings', label: 'Settings', icon: Settings },
@@ -124,7 +133,8 @@ function ThemeToggleRow() {
 
 function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?: () => void }) {
   const pathname = usePathname()
-  const { leadOpportunities, wonJobs, tasks } = useCRMStore()
+  const { leadOpportunities, wonJobs, tasks, anfOrders, activeBoardId } = useCRMStore()
+  const navItems = navForBoard(activeBoardId)
 
   // Active = open or negotiating (both are in-flight leads needing attention)
   const openLeadsCount = leadOpportunities.filter(
@@ -140,9 +150,11 @@ function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?
     j.op_stage !== 'OP_DONE_PAYMENT'
   ).length
 
+  const openOrdersCount = anfOrders.filter((o) => o.status !== 'received').length
   const badges: Record<string, number> = {
     '/leads-opportunities': openLeadsCount,
     '/won-ready-op':        activeOPJobs,
+    '/anf-order':           openOrdersCount,
   }
 
   function NavLink({ href, label, icon: Icon }: { href: string; label: string; icon: React.ElementType }) {

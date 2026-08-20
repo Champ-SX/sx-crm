@@ -1,6 +1,7 @@
 'use client'
 
 import { Check, ChevronDown } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useCRMStore } from '@/store/crm-store'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
@@ -14,12 +15,20 @@ import {
  * board, no switcher).
  */
 export function BoardSwitcher() {
+  const router = useRouter()
   const boards = useCRMStore((s) => s.boards)
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
   const setActiveBoard = useCRMStore((s) => s.setActiveBoard)
 
   if (boards.length === 0) return null
   const active = boards.find((b) => b.board_id === activeBoardId) ?? boards[0]
+
+  // Each board opens at its own home (structures differ).
+  const homeFor = (boardId: string) => (boardId === 'anf-order' ? '/anf-order' : '/dashboard')
+  function pick(boardId: string) {
+    setActiveBoard(boardId)
+    router.push(homeFor(boardId))
+  }
 
   return (
     <DropdownMenu>
@@ -35,7 +44,7 @@ export function BoardSwitcher() {
         {boards.map((b) => (
           <DropdownMenuItem
             key={b.board_id}
-            onClick={() => setActiveBoard(b.board_id)}
+            onClick={() => pick(b.board_id)}
             className="text-sm gap-2.5 cursor-pointer"
           >
             <span className="w-3.5 h-3.5 rounded-[5px] shrink-0" style={{ backgroundColor: b.color }} />

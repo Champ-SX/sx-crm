@@ -4,7 +4,7 @@ import { create } from 'zustand'
 import type {
   Customer, Company, ContactPerson,
   LeadOpportunity, WonJob, Activity, Task, OPStage, StaffMember,
-  DynamicOPStage, JobSortOption, TeamMember, Notification, Board,
+  DynamicOPStage, JobSortOption, TeamMember, Notification, Board, AnfOrder,
 } from '@/types'
 import { parseMentions, notifyByEmail } from '@/lib/mentions'
 import { deleteAttachmentFiles } from '@/lib/supabase/storage'
@@ -112,6 +112,12 @@ interface CRMStore {
   boards: Board[]
   activeBoardId: string | null   // null = no boards / show everything (pre-migration)
   setActiveBoard: (boardId: string) => void
+
+  // ── ANF Order board ─────────────────────────────────────────────────────────
+  anfOrders: AnfOrder[]
+  addAnfOrder: (order: AnfOrder) => Promise<void>
+  updateAnfOrder: (id: string, updates: Partial<AnfOrder>) => Promise<void>
+  deleteAnfOrder: (id: string) => Promise<void>
 
   // ── OP Kanban Stages (dynamic) ──────────────────────────────────────────────
   opStages: DynamicOPStage[]
@@ -233,6 +239,32 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
         try { if (typeof window !== 'undefined') window.localStorage.setItem(ACTIVE_BOARD_KEY, boardId) } catch { /* ignore */ }
       },
 
+      // ── ANF Order board ─────────────────────────────────────────────────────────
+      anfOrders: [],
+      addAnfOrder: async (order) => {
+        set((s) => ({ anfOrders: [order, ...s.anfOrders] }))
+        if (USE_SUPABASE) {
+          try { await db.anfOrderQueries.create(order) }
+          catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to create order' }) }
+        }
+      },
+      updateAnfOrder: async (id, updates) => {
+        set((s) => ({
+          anfOrders: s.anfOrders.map((o) => o.order_id === id ? { ...o, ...updates, updated_at: new Date().toISOString() } : o),
+        }))
+        if (USE_SUPABASE) {
+          try { await db.anfOrderQueries.update(id, updates) }
+          catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to update order' }) }
+        }
+      },
+      deleteAnfOrder: async (id) => {
+        set((s) => ({ anfOrders: s.anfOrders.filter((o) => o.order_id !== id) }))
+        if (USE_SUPABASE) {
+          try { await db.anfOrderQueries.delete(id) }
+          catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to delete order' }) }
+        }
+      },
+
       // ── OP Kanban Stages ────────────────────────────────────────────────────────
       opStages: DEFAULT_OP_STAGES,
       stageSortOptions: {},
@@ -316,6 +348,15 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
             activeBoardId = (saved && boards.some((b) => b.board_id === saved)) ? saved : boards[0].board_id
           }
 
+          // Load ANF Order rows (graceful fallback if table absent pre-migration)
+          let anfOrders: AnfOrder[] = []
+          try {
+            anfOrders = await db.anfOrderQueries.getAll()
+          } catch (err) {
+            console.warn('[CRM Store] Could not load anf_orders (pre-migration?):',
+              err instanceof Error ? err.message : String(err))
+          }
+
           // Load notifications for the current user
           let notifications: Notification[] = []
           try {
@@ -349,6 +390,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
             notifications,
             boards,
             activeBoardId,
+            anfOrders,
             opStages: opStages.length > 0 ? opStages : DEFAULT_OP_STAGES,
             isLoading: false,
             isInitialized: true,

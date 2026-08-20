@@ -94,5 +94,53 @@ export async function POST(req: NextRequest) {
     notified++
   }
 
-  return NextResponse.json({ ok: true, notified })
+  // ── ANF Order reminders (Phase 4.0) — same pattern, own table ──────────────
+  let anfNotified = 0
+  try {
+    const { data: orders } = await sb
+      .from('anf_orders')
+      .select('order_id, item, branch, assignee_id, requested_by, remind_at, needed_by')
+      .not('remind_at', 'is', null)
+      .is('remind_notified_at', null)
+
+    const dueOrders = (orders ?? []).filter((o) => new Date(o.remind_at as string).getTime() <= now)
+    for (const o of dueOrders) {
+      const recipients = new Set<string>()
+      if (o.assignee_id) recipients.add(o.assignee_id as string)
+      const reqUser = o.requested_by ? byName.get((o.requested_by as string).toLowerCase()) : undefined
+      if (reqUser) recipients.add(reqUser.id)
+
+      const label = o.needed_by
+        ? `needed by ${new Date((o.needed_by as string) + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}`
+        : 'reminder'
+      const title = `${o.item}${o.branch ? ` · ${o.branch}` : ''}`
+
+      for (const rid of recipients) {
+        const u = userById.get(rid)
+        try {
+          await sb.from('notifications').insert({
+            recipient_id: rid,
+            recipient_name: u?.name || u?.email || '',
+            actor: 'Reminder',
+            entity_type: 'anf_order',
+            entity_id: o.order_id,
+            entity_name: title,
+            message: `Order ${label}`,
+            read: false,
+          })
+        } catch (e) { console.warn('[cron] anf notification insert skipped', e) }
+        const { data: subs } = await sb.from('push_subscriptions').select('subscription').eq('user_id', rid)
+        if (subs?.length && vapidPublic && vapidPrivate) {
+          const payload = JSON.stringify({ title: 'Order reminder', body: `${title} — ${label}`, url: '/anf-order' })
+          await Promise.allSettled(subs.map((s) => webpush.sendNotification(s.subscription, payload)))
+        }
+      }
+      await sb.from('anf_orders').update({ remind_notified_at: new Date().toISOString() }).eq('order_id', o.order_id)
+      anfNotified++
+    }
+  } catch (e) {
+    console.warn('[cron/due-notify] anf_orders skipped (pre-migration?)', e)
+  }
+
+  return NextResponse.json({ ok: true, notified, anfNotified })
 }

@@ -101,6 +101,34 @@ export type ServiceType =
   | 'Custom Activation'
   | 'Other'
 
+// ─── ANF Order (stock/consumables order board) — Phase 4.0 ──────────────────
+export type AnfOrderStatus = 'to_order' | 'ordered' | 'received'
+export type AnfRemindOption = 'none' | '1d' | '1w' | '1m' | 'custom'
+
+export interface AnfOrder {
+  order_id: string
+  board_id?: string
+  item: string
+  quantity: number
+  unit_price: number
+  with_vat: boolean          // include 7% VAT in the total
+  branch: string | null
+  ordered_at: string | null  // ISO date
+  needed_by: string | null   // ISO date — must be available by
+  remind_option: AnfRemindOption
+  remind_at: string | null           // ISO datetime the reminder fires
+  remind_notified_at?: string | null // dedup once fired
+  requested_by: string | null // who raised it (name)
+  assignee_id: string | null  // who procures it (users.id)
+  status: AnfOrderStatus
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+// VAT rate (Thailand)
+export const VAT_RATE = 0.07
+
 // ─── Board (business unit / brand) — Phase 4.0 ──────────────────────────────
 export interface Board {
   board_id: string
