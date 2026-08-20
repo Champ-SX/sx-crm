@@ -21,6 +21,10 @@ const STATUS: { key: AnfOrderStatus; label: string; dot: string }[] = [
 ]
 const statusMeta = (k: AnfOrderStatus) => STATUS.find((s) => s.key === k) ?? STATUS[0]
 
+// Preset branches; the list also absorbs any branch already used (self-building),
+// and you can add a new one inline.
+const SEED_BRANCHES = ['BACC', 'BTT', 'TRUE ALPHA', 'Cloud 11']
+
 const REMIND: { key: AnfRemindOption; label: string }[] = [
   { key: 'none', label: 'None' },
   { key: '1d', label: '1 day' },
@@ -206,6 +210,11 @@ function OrderDialog({ order, onClose }: { order: AnfOrder | null; onClose: () =
   const [unitPrice, setUnitPrice] = useState(String(order?.unit_price ?? ''))
   const [withVat, setWithVat] = useState(order?.with_vat ?? false)
   const [branch, setBranch] = useState(order?.branch ?? '')
+  const [addingBranch, setAddingBranch] = useState(false)
+  const branchOptions = useMemo(
+    () => [...new Set([...SEED_BRANCHES, ...anfOrders.map((o) => o.branch).filter(Boolean) as string[], ...(order?.branch ? [order.branch] : [])])],
+    [anfOrders, order],
+  )
   const [orderedAt, setOrderedAt] = useState(order?.ordered_at ?? new Date().toISOString().slice(0, 10))
   const [neededBy, setNeededBy] = useState(order?.needed_by ?? '')
   const [remindOption, setRemindOption] = useState<AnfRemindOption>(order?.remind_option ?? 'none')
@@ -319,7 +328,27 @@ function OrderDialog({ order, onClose }: { order: AnfOrder | null; onClose: () =
             {withVat && <span className="ml-auto font-mono text-[12px] text-muted-foreground">+ {baht(qtyN * priceN * VAT_RATE)}</span>}
           </button>
 
-          <div><label className="field-label">Branch</label><Input value={branch} onChange={(e) => setBranch(e.target.value)} placeholder="BACC / BTT…" className="h-9" /></div>
+          <div>
+            <label className="field-label">Branch</label>
+            {addingBranch ? (
+              <div className="flex items-center gap-1.5">
+                <Input autoFocus value={branch} onChange={(e) => setBranch(e.target.value)} placeholder="New branch name" className="h-9" />
+                <button type="button" onClick={() => setAddingBranch(false)} className="text-[11px] text-muted-foreground hover:text-foreground shrink-0 px-1">list</button>
+              </div>
+            ) : (
+              <Select
+                value={branch || 'none'}
+                onValueChange={(v) => { if (v === '__add__') { setBranch(''); setAddingBranch(true) } else setBranch(v === 'none' ? '' : (v ?? '')) }}
+              >
+                <SelectTrigger className="h-9"><span className="truncate">{branch || 'Select branch'}</span></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No branch</SelectItem>
+                  {branchOptions.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                  <SelectItem value="__add__"><span className="inline-flex items-center gap-2 text-[#7A5AA5]"><Plus className="w-3.5 h-3.5" />Add branch…</span></SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          </div>
           <div>
             <label className="field-label">Status</label>
             <Select value={status} onValueChange={(v) => v && setStatus(v as AnfOrderStatus)}>
