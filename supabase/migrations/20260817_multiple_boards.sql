@@ -19,9 +19,14 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- 2. seed the two brands (idempotent)
+-- Rename an earlier 'andy-fine' seed to 'anf-order' if it exists (safe: nothing
+-- is backfilled onto it yet).
+UPDATE boards SET board_id = 'anf-order', name = 'ANF Order', slug = 'anf-order'
+  WHERE board_id = 'andy-fine';
+
 INSERT INTO boards (board_id, name, slug, color, sort_order) VALUES
-  ('captures',   'CAP*TURES',    'captures',    '#FF5B3F', 0),
-  ('andy-fine',  'Andy & Fine.', 'andy-fine',   '#7A5AA5', 1)
+  ('captures',   'CAP*TURES', 'captures',   '#FF5B3F', 0),
+  ('anf-order',  'ANF Order', 'anf-order',  '#7A5AA5', 1)
 ON CONFLICT (board_id) DO NOTHING;
 
 -- 3. board_id on the scoped tables (dynamic_op_stages = custom OP stages;

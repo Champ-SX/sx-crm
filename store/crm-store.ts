@@ -45,7 +45,7 @@ console.log('[CRM Store] USE_SUPABASE =', USE_SUPABASE, {
 // fallback if the boards table can't be read.
 const SEED_BOARDS: Board[] = [
   { board_id: 'captures', name: 'CAP*TURES', slug: 'captures', color: '#FF5B3F', sort_order: 0 },
-  { board_id: 'andy-fine', name: 'Andy & Fine.', slug: 'andy-fine', color: '#7A5AA5', sort_order: 1 },
+  { board_id: 'anf-order', name: 'ANF Order', slug: 'anf-order', color: '#7A5AA5', sort_order: 1 },
 ]
 const ACTIVE_BOARD_KEY = 'sx-active-board'
 
