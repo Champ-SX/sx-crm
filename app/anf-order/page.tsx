@@ -369,7 +369,7 @@ function OrderDialog({ order, onClose }: { order: AnfOrder | null; onClose: () =
           </button>
 
           {/* Branch dropdown (coloured) */}
-          <div>
+          <div className="min-w-0">
             <label className="field-label">Branch</label>
             {addingBranch ? (
               <div className="flex items-center gap-1.5">
@@ -378,7 +378,7 @@ function OrderDialog({ order, onClose }: { order: AnfOrder | null; onClose: () =
               </div>
             ) : (
               <Select value={branch || 'none'} onValueChange={(v) => { if (v === '__add__') { setBranch(''); setAddingBranch(true) } else setBranch(v === 'none' ? '' : (v ?? '')) }}>
-                <SelectTrigger className="h-9"><span className="truncate font-semibold" style={branch ? { color: branchColor(branch) } : undefined}>{branch || <span className="font-normal text-muted-foreground">Select branch</span>}</span></SelectTrigger>
+                <SelectTrigger className="h-9 w-full"><span className="flex-1 min-w-0 truncate text-left font-semibold" style={branch ? { color: branchColor(branch) } : undefined}>{branch || <span className="font-normal text-muted-foreground">Select branch</span>}</span></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No branch</SelectItem>
                   {branchOptions.map((b) => <SelectItem key={b} value={b}><span className="font-semibold" style={{ color: branchColor(b) }}>{b}</span></SelectItem>)}
@@ -388,10 +388,10 @@ function OrderDialog({ order, onClose }: { order: AnfOrder | null; onClose: () =
             )}
           </div>
           {/* Status (with colour dot) */}
-          <div>
+          <div className="min-w-0">
             <label className="field-label">Status</label>
             <Select value={status} onValueChange={(v) => v && setStatus(v as AnfOrderStatus)}>
-              <SelectTrigger className="h-9"><span className="inline-flex items-center gap-2 truncate"><span className={`w-2 h-2 rounded-full ${statusMeta(status).dot}`} />{statusMeta(status).label}</span></SelectTrigger>
+              <SelectTrigger className="h-9 w-full"><span className="flex-1 min-w-0 flex items-center gap-2"><span className={`w-2 h-2 rounded-full shrink-0 ${statusMeta(status).dot}`} /><span className="truncate">{statusMeta(status).label}</span></span></SelectTrigger>
               <SelectContent>{STATUS.map((s) => <SelectItem key={s.key} value={s.key}><span className="inline-flex items-center gap-2"><span className={`w-2 h-2 rounded-full ${s.dot}`} />{s.label}</span></SelectItem>)}</SelectContent>
             </Select>
           </div>
@@ -410,10 +410,10 @@ function OrderDialog({ order, onClose }: { order: AnfOrder | null; onClose: () =
           </div>
 
           {/* Requested by — real user */}
-          <div>
+          <div className="min-w-0">
             <label className="field-label">Requested by</label>
             <Select value={requestedBy || 'none'} onValueChange={(v) => setRequestedBy(v === 'none' ? '' : (v ?? ''))}>
-              <SelectTrigger className="h-9"><span className="inline-flex items-center gap-2 truncate">{requestedBy ? <><UserAvatar name={requestedBy} size={18} />{requestedBy}</> : 'Select user'}</span></SelectTrigger>
+              <SelectTrigger className="h-9 w-full"><span className="flex-1 min-w-0 flex items-center gap-2">{requestedBy ? <><UserAvatar name={requestedBy} size={18} /><span className="truncate">{requestedBy}</span></> : <span className="text-muted-foreground">Select user</span>}</span></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">—</SelectItem>
                 {teamMembers.map((m) => <SelectItem key={m.id} value={m.name || m.email}><span className="inline-flex items-center gap-2"><UserAvatar name={m.name || m.email} size={18} />{m.name || m.email}</span></SelectItem>)}
@@ -421,10 +421,10 @@ function OrderDialog({ order, onClose }: { order: AnfOrder | null; onClose: () =
             </Select>
           </div>
           {/* Assignee */}
-          <div>
+          <div className="min-w-0">
             <label className="field-label">Assignee</label>
             <Select value={assigneeId || 'none'} onValueChange={(v) => setAssigneeId(v === 'none' ? '' : (v ?? ''))}>
-              <SelectTrigger className="h-9"><span className="inline-flex items-center gap-2 truncate">{teamMembers.find((m) => m.id === assigneeId)?.name ?? 'Unassigned'}</span></SelectTrigger>
+              <SelectTrigger className="h-9 w-full"><span className="flex-1 min-w-0 flex items-center gap-2">{(() => { const m = teamMembers.find((m) => m.id === assigneeId); return m ? <><UserAvatar name={m.name || m.email} size={18} /><span className="truncate">{m.name || m.email}</span></> : <span className="text-muted-foreground">Unassigned</span> })()}</span></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Unassigned</SelectItem>
                 {teamMembers.map((m) => <SelectItem key={m.id} value={m.id}><span className="inline-flex items-center gap-2"><UserAvatar name={m.name || m.email} size={18} />{m.name || m.email}</span></SelectItem>)}
