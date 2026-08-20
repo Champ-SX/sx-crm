@@ -1,6 +1,7 @@
 'use client'
 
 import { useCRMStore } from '@/store/crm-store'
+import { matchesBoard } from '@/lib/boards'
 import { OP_STAGES } from '@/types'
 import { format, addDays } from 'date-fns'
 import { parseDbDate } from '@/lib/utils'
@@ -16,7 +17,8 @@ import { UserAvatar } from '@/components/shared/user-avatar'
  * and bottlenecks (overdue payments, pending staff/docs).
  */
 export function OperationDashboard() {
-  const { wonJobs } = useCRMStore()
+  const { wonJobs: allWon, activeBoardId } = useCRMStore()
+  const wonJobs = allWon.filter((j) => matchesBoard(j.board_id, activeBoardId))
 
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]

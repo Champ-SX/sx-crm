@@ -101,8 +101,19 @@ export type ServiceType =
   | 'Custom Activation'
   | 'Other'
 
+// ─── Board (business unit / brand) — Phase 4.0 ──────────────────────────────
+export interface Board {
+  board_id: string
+  name: string
+  slug: string
+  color: string
+  sort_order: number
+  created_at?: string
+}
+
 export interface LeadOpportunity {
   lead_op_id: string
+  board_id?: string   // which board this lead belongs to (Phase 4.0)
   name: string
   // ── New relational FKs (Phase 1+) ──
   company_id?: string          // FK → Company
@@ -159,6 +170,7 @@ export interface DynamicOPStage {
   headerBg: string             // tailwind background for header
   columnBg: string             // tailwind background for column
   isCustom: boolean            // true if user-created, false if built-in
+  boardId?: string             // which board this custom stage belongs to (Phase 4.0)
 }
 
 export type JobSortOption = 'created' | 'name' | 'value' | 'owner' | 'date' | 'freestyle'
@@ -202,6 +214,7 @@ export interface CompanyAccount {
 // Title format: YYYY.MM.DD - JOB_ID - PRODUCT_TYPE - PRODUCT_CAT - PRODUCT_NAME@PLACE
 export interface WonJob {
   job_id: string
+  board_id?: string   // which board this job belongs to (Phase 4.0)
 
   // ── Title components (generate display title from these) ──
   event_date: string | null  // ISO "2026-05-21" → displayed as "2026.05.21" (nullable if not provided)

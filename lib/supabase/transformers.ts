@@ -20,6 +20,7 @@ export function transformStageFromDB(rawStage: any): DynamicOPStage {
     headerBg: rawStage.header_bg || rawStage.headerBg || '',
     columnBg: rawStage.column_bg || rawStage.columnBg || '',
     isCustom: rawStage.is_custom !== undefined ? rawStage.is_custom : rawStage.isCustom ?? false,
+    boardId: rawStage.board_id ?? rawStage.boardId ?? undefined,
   }
 }
 

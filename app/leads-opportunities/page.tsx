@@ -36,6 +36,7 @@ import { format } from 'date-fns'
 import { useOpenFromUrl } from '@/hooks/use-open-from-url'
 import { copyCardLink, shareCardLink } from '@/lib/card-links'
 import { AssigneePicker, AssigneeFilter, ASSIGNEE_FILTER_ALL, matchesAssigneeFilter } from '@/components/shared/assignee-picker'
+import { matchesBoard } from '@/lib/boards'
 import { useAuth } from '@/components/auth-provider'
 
 const SERVICES = ['CAP*TURES', 'Andy & Fine', 'SX Event', 'Booth Rental', 'Custom Activation', 'Other']
@@ -963,7 +964,10 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function LeadsOpportunitiesPage() {
   const isHydrated = useHydrated()
-  const { leadOpportunities, addLeadOpportunity, deleteLeadOpportunity } = useCRMStore()
+  const { leadOpportunities: allLeads, addLeadOpportunity, deleteLeadOpportunity } = useCRMStore()
+  const activeBoardId = useCRMStore((s) => s.activeBoardId)
+  // Scope the list to the active board (Phase 4.0).
+  const leadOpportunities = allLeads.filter((l) => matchesBoard(l.board_id, activeBoardId))
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('open')
   const [serviceFilter, setServiceFilter] = useState<string>('all')

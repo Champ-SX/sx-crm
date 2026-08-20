@@ -1,6 +1,7 @@
 'use client'
 
 import { useCRMStore } from '@/store/crm-store'
+import { matchesBoard } from '@/lib/boards'
 import { format } from 'date-fns'
 import { parseDbDate } from '@/lib/utils'
 import {
@@ -20,7 +21,9 @@ const MONTHLY_TARGET = 500_000
  * or email against the `owner` / `created_by` fields).
  */
 export function SalesDashboard({ userName }: { userName: string }) {
-  const { leadOpportunities, wonJobs, activities } = useCRMStore()
+  const { leadOpportunities: allLeads, wonJobs: allWon, activities, activeBoardId } = useCRMStore()
+  const leadOpportunities = allLeads.filter((l) => matchesBoard(l.board_id, activeBoardId))
+  const wonJobs = allWon.filter((j) => matchesBoard(j.board_id, activeBoardId))
 
   const today = new Date()
   const matchesMe = (owner?: string | null) =>

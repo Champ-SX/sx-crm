@@ -52,6 +52,7 @@ import {
 import { useOpenFromUrl } from '@/hooks/use-open-from-url'
 import { copyCardLink, shareCardLink } from '@/lib/card-links'
 import { AssigneePicker, AssigneeFilter, ASSIGNEE_FILTER_ALL, matchesAssigneeFilter } from '@/components/shared/assignee-picker'
+import { matchesBoard } from '@/lib/boards'
 import { format, parseISO } from 'date-fns'
 
 
@@ -1421,7 +1422,11 @@ function JobDetail({
 export default function WonReadyOpPage() {
   const isHydrated = useHydrated()
   const wonJobs = useCRMStore((s) => s.wonJobs)
-  const opStages = useCRMStore((s) => s.opStages)
+  const activeBoardId = useCRMStore((s) => s.activeBoardId)
+  const allOpStages = useCRMStore((s) => s.opStages)
+  // Per-board OP stages (Phase 4.0): built-in stages show on every board;
+  // custom stages only on the board that owns them.
+  const opStages = allOpStages.filter((s) => !s.isCustom || matchesBoard(s.boardId, activeBoardId))
   const moveWonJobStage = useCRMStore((s) => s.moveWonJobStage)
   const deleteOpStage = useCRMStore((s) => s.deleteOpStage)
   const updateStageColor = useCRMStore((s) => s.updateStageColor)
@@ -1609,9 +1614,12 @@ export default function WonReadyOpPage() {
     }
   }
 
+  // Scope to the active board (Phase 4.0); null board = show all.
+  const inBoard = (j: typeof wonJobs[number]) => matchesBoard(j.board_id, activeBoardId)
   // Archived cards are hidden from the board unless the user toggles them on.
-  const archivedCount = wonJobs.filter((j) => j.is_archived).length
+  const archivedCount = wonJobs.filter((j) => inBoard(j) && j.is_archived).length
   const boardJobs = wonJobs
+    .filter(inBoard)
     .filter((j) => (showArchived ? j.is_archived : !j.is_archived))
     .filter((j) => matchesAssigneeFilter(j.assignee_ids, assigneeFilter, user?.id))
   const activeCount = boardJobs.filter((j) => j.op_stage !== 'OP_DONE_PAYMENT').length

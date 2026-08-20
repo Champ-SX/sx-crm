@@ -20,6 +20,7 @@ import { useTheme } from '@/components/layout/theme-provider'
 import { useMobileNav } from '@/components/layout/mobile-nav-context'
 import { useAuth } from '@/components/auth-provider'
 import { NotificationBell } from '@/components/shared/notification-bell'
+import { BoardSwitcher } from '@/components/shared/board-switcher'
 import { PushPermissionBanner } from '@/components/shared/push-permission-banner'
 import { Button } from '@/components/ui/button'
 import { OP_STAGES } from '@/types'
@@ -206,6 +207,10 @@ function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?
               </button>
             )}
           </div>
+        </div>
+        {/* Board switcher (Phase 4.0) — renders only when boards exist */}
+        <div className="mt-3">
+          <BoardSwitcher />
         </div>
       </div>
 

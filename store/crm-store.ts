@@ -4,7 +4,7 @@ import { create } from 'zustand'
 import type {
   Customer, Company, ContactPerson,
   LeadOpportunity, WonJob, Activity, Task, OPStage, StaffMember,
-  DynamicOPStage, JobSortOption, TeamMember, Notification,
+  DynamicOPStage, JobSortOption, TeamMember, Notification, Board,
 } from '@/types'
 import { parseMentions, notifyByEmail } from '@/lib/mentions'
 import { deleteAttachmentFiles } from '@/lib/supabase/storage'
@@ -40,6 +40,14 @@ console.log('[CRM Store] USE_SUPABASE =', USE_SUPABASE, {
 // 1. Database sync in all action functions (addLeadOpportunity, updateLeadOpportunity, etc.)
 // 2. initializeData() to load from database on app startup
 // This makes the database the source of truth, which is more reliable.
+
+// Seed boards mirrored from the migration — used in mock mode and as the
+// fallback if the boards table can't be read.
+const SEED_BOARDS: Board[] = [
+  { board_id: 'captures', name: 'CAP*TURES', slug: 'captures', color: '#FF5B3F', sort_order: 0 },
+  { board_id: 'andy-fine', name: 'Andy & Fine.', slug: 'andy-fine', color: '#7A5AA5', sort_order: 1 },
+]
+const ACTIVE_BOARD_KEY = 'sx-active-board'
 
 const DEFAULT_OP_STAGES: DynamicOPStage[] = [
   {
@@ -99,6 +107,11 @@ interface CRMStore {
   staff: StaffMember[]
   teamMembers: TeamMember[]  // signed-in users (owner/team source of truth)
   notifications: Notification[]  // in-app @mention notifications
+
+  // ── Boards (business units / brands) — Phase 4.0 ────────────────────────────
+  boards: Board[]
+  activeBoardId: string | null   // null = no boards / show everything (pre-migration)
+  setActiveBoard: (boardId: string) => void
 
   // ── OP Kanban Stages (dynamic) ──────────────────────────────────────────────
   opStages: DynamicOPStage[]
@@ -212,6 +225,14 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       teamMembers: USE_SUPABASE ? [] : mockTeamMembers,
       notifications: [],
 
+      // ── Boards (Phase 4.0) ──────────────────────────────────────────────────────
+      boards: USE_SUPABASE ? [] : SEED_BOARDS,
+      activeBoardId: USE_SUPABASE ? null : 'captures',
+      setActiveBoard: (boardId) => {
+        set({ activeBoardId: boardId })
+        try { if (typeof window !== 'undefined') window.localStorage.setItem(ACTIVE_BOARD_KEY, boardId) } catch { /* ignore */ }
+      },
+
       // ── OP Kanban Stages ────────────────────────────────────────────────────────
       opStages: DEFAULT_OP_STAGES,
       stageSortOptions: {},
@@ -278,6 +299,23 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
               err instanceof Error ? err.message : String(err))
           }
 
+          // Load boards (Phase 4.0). Graceful fallback: if the table isn't there
+          // yet (pre-migration), leave boards empty + activeBoardId null so the
+          // app shows everything unscoped.
+          let boards: Board[] = []
+          try {
+            boards = await db.boardQueries.getAll()
+          } catch (err) {
+            console.warn('[CRM Store] Could not load boards (pre-migration?):',
+              err instanceof Error ? err.message : String(err))
+          }
+          let activeBoardId: string | null = null
+          if (boards.length > 0) {
+            let saved: string | null = null
+            try { if (typeof window !== 'undefined') saved = window.localStorage.getItem(ACTIVE_BOARD_KEY) } catch { /* ignore */ }
+            activeBoardId = (saved && boards.some((b) => b.board_id === saved)) ? saved : boards[0].board_id
+          }
+
           // Load notifications for the current user
           let notifications: Notification[] = []
           try {
@@ -309,6 +347,8 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
             staff,
             teamMembers,
             notifications,
+            boards,
+            activeBoardId,
             opStages: opStages.length > 0 ? opStages : DEFAULT_OP_STAGES,
             isLoading: false,
             isInitialized: true,
@@ -468,6 +508,8 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
 
   // ── Leads & Opportunities ──────────────────────────────────────────────────
   addLeadOpportunity: async (lop) => {
+    // Stamp the active board so new leads land on the board you're viewing.
+    if (!lop.board_id && get().activeBoardId) lop = { ...lop, board_id: get().activeBoardId! }
     set((s) => ({
       leadOpportunities: [...s.leadOpportunities, lop],
     }))
@@ -547,6 +589,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       ...blankWonJobFields(),
       job_id: crypto.randomUUID(),
       job_number: newJobNumber,
+      board_id: lop.board_id ?? get().activeBoardId ?? undefined,  // carry the lead's board
       // Map lead fields → WonJob title components
       event_date: lop.event_date || null,       // Send null for invalid dates, not empty string
       product_type: lop.service_type,            // e.g. "CAP*TURES"
@@ -733,6 +776,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
 
   // ── Won Jobs ───────────────────────────────────────────────────────────────
   addWonJob: async (job) => {
+    if (!job.board_id && get().activeBoardId) job = { ...job, board_id: get().activeBoardId! }
     set((s) => ({ wonJobs: [...s.wonJobs, job] }))
     if (USE_SUPABASE) {
       try {
@@ -932,6 +976,8 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
 
   // ── OP Stages (dynamic management) ──────────────────────────────────────────
   addOpStage: async (stage) => {
+    // Stamp the active board so custom stages belong to the board you're on.
+    if (!stage.boardId && get().activeBoardId) stage = { ...stage, boardId: get().activeBoardId! }
     // Optimistically add to store first
     set((s) => ({ opStages: [...s.opStages, stage] }))
 

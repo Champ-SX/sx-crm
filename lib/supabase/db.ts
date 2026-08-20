@@ -13,7 +13,20 @@ import type {
   OPStage,
   TeamMember,
   Notification,
+  Board,
 } from '@/types'
+
+// ===== BOARDS (Phase 4.0) =====
+export const boardQueries = {
+  async getAll() {
+    const { data, error } = await supabase
+      .from('boards')
+      .select('*')
+      .order('sort_order')
+    if (error) throw error
+    return (data || []) as Board[]
+  },
+}
 
 // ===== COMPANIES =====
 export const userQueries = {
@@ -353,6 +366,7 @@ export const opStageQueries = {
       header_bg: stage.headerBg,
       column_bg: stage.columnBg,
       is_custom: stage.isCustom,
+      board_id: stage.boardId,
     }
 
     const { data, error } = await supabase

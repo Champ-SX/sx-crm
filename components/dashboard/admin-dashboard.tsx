@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCRMStore } from '@/store/crm-store'
+import { matchesBoard } from '@/lib/boards'
 import { format } from 'date-fns'
 import { parseDbDate } from '@/lib/utils'
 import { jobDisplayTitle } from '@/lib/jobs'
@@ -19,7 +20,9 @@ import { StatCard, SectionHeader, fmtBaht } from './shared'
  */
 export function AdminDashboard() {
   const router = useRouter()
-  const { customers, leadOpportunities, wonJobs, activities } = useCRMStore()
+  const { customers, leadOpportunities: allLeads, wonJobs: allWon, activities, activeBoardId } = useCRMStore()
+  const leadOpportunities = allLeads.filter((l) => matchesBoard(l.board_id, activeBoardId))
+  const wonJobs = allWon.filter((j) => matchesBoard(j.board_id, activeBoardId))
 
   const today = new Date()
 
