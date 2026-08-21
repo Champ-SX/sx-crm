@@ -334,10 +334,12 @@ function StockDialog({ row, onClose, onRaise }: {
                 <button type="button" onClick={() => setQty(String((parseInt(qty, 10) || 0) + 1))} className="w-10 h-10 rounded-xl border border-border bg-muted/40 text-2xl leading-none flex items-center justify-center hover:bg-muted shrink-0">+</button>
               </div>
             </div>
-            <div className="flex-1 min-w-0 rounded-xl border border-border bg-card px-3 py-3 flex flex-col justify-between">
-              <label className="field-label mb-0">Checked</label>
-              <Input type="date" value={checkedAt} onChange={(e) => setCheckedAt(e.target.value)} className="h-9 px-1.5 text-[12px]" />
-            </div>
+            <label className="relative flex-1 min-w-0 rounded-xl border border-border bg-card px-3 py-3 flex flex-col justify-center cursor-pointer hover:bg-muted/40">
+              <span className="font-mono text-[9.5px] uppercase tracking-wide text-muted-foreground">Checked</span>
+              <span className="font-mono text-[15px] font-bold leading-none mt-2">{checkedAt ? fmtDate(checkedAt) : '—'}</span>
+              <span className="font-mono text-[9px] text-muted-foreground mt-1.5">tap to edit</span>
+              <input type="date" value={checkedAt} onChange={(e) => setCheckedAt(e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" aria-label="Checked date" />
+            </label>
           </div>
 
           {/* Description — prominent, optional */}
