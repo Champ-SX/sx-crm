@@ -145,6 +145,7 @@ export interface AnfStock {
   alert_qty: number | null     // reorder threshold; LOW when qty <= alert_qty
   alert_unit: string | null    // boxes / packs / pcs (display only)
   checked_at: string | null    // ISO date staff last observed the stock
+  checked_by?: string | null   // who did the count (free text), captured on save
   reported_at: string | null   // ISO date the current open order was raised
   delivered_at: string | null  // ISO date of the latest received order (synced)
   notes: string | null

@@ -173,7 +173,7 @@ function BranchTable({ rows, lowOnly, onOrder, onOpen, onRaise }: {
                         <td className={`px-4 py-3 text-right font-mono font-bold tabular-nums ${st !== 'ok' ? 'text-[#FF5B3F]' : ''}`}>{r.qty}</td>
                         <td className="px-4 py-3 text-right font-mono text-[12px] text-muted-foreground whitespace-nowrap">{r.alert_qty ?? '—'}{r.alert_unit ? ` ${r.alert_unit.toLowerCase()}` : ''}</td>
                         <td className="px-4 py-3">{onOrder.has(r.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5]">● on order</span> : <StateFlag s={st} />}</td>
-                        <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap">{fmtDate(r.checked_at)}</td>
+                        <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap">{fmtDate(r.checked_at)}{r.checked_by && <span className="block text-[10px]">by {r.checked_by}</span>}</td>
                         <td className="px-4 py-3 font-mono text-[11px] whitespace-nowrap">{r.delivered_at ? <span className="text-[#3f9d5b]">↓ {fmtDate(r.delivered_at)}{r.sign && <span className="block text-[10px] text-muted-foreground">by {r.sign}</span>}</span> : <span className="text-muted-foreground/40">— never</span>}</td>
                         <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                           {st !== 'ok' && !onOrder.has(r.item) && (
@@ -208,7 +208,7 @@ function BranchTable({ rows, lowOnly, onOrder, onOpen, onRaise }: {
                       <span className="min-w-0 flex-1">
                         <span className="block font-semibold text-[13.5px] leading-tight truncate">{r.item}</span>
                         {r.description && <span className="block text-[12px] text-muted-foreground truncate mt-0.5">{r.description}</span>}
-                        <span className="font-mono text-[10px] text-muted-foreground/80 block mt-0.5">{r.room || '—'} · checked {fmtDate(r.checked_at)}</span>
+                        <span className="font-mono text-[10px] text-muted-foreground/80 block mt-0.5">{r.room || '—'} · checked {fmtDate(r.checked_at)}{r.checked_by && ` by ${r.checked_by}`}</span>
                         {r.delivered_at && <span className="font-mono text-[10px] text-[#3f9d5b] block mt-0.5">↓ last in {fmtDate(r.delivered_at)}{r.sign && ` · by ${r.sign}`}</span>}
                       </span>
                       <span className="text-right shrink-0">
@@ -328,6 +328,16 @@ function StockDialog({ row, onClose, onRaise }: {
   const [alertUnit, setAlertUnit] = useState(row?.alert_unit ?? '')
   const [checkedAt, setCheckedAt] = useState(row?.checked_at ?? new Date().toISOString().slice(0, 10))
   const [notes, setNotes] = useState(row?.notes ?? '')
+  // Save-time "who counted" prompt (blank each time) when qty/checked changed.
+  const [askChecker, setAskChecker] = useState(false)
+  const [checkedBy, setCheckedBy] = useState('')
+  const origQty = row?.qty ?? 0
+  const origChecked = row?.checked_at ?? ''
+  const today = new Date().toISOString().slice(0, 10)
+  const recentCheckers = useMemo(
+    () => [...new Set(anfStock.map((r) => r.checked_by).filter(Boolean) as string[])].slice(0, 6),
+    [anfStock],
+  )
 
   const branchOptions = useMemo(
     () => [...new Set([...SEED_BRANCHES, ...anfStock.map((r) => r.branch).filter(Boolean) as string[], ...(branch ? [branch] : [])])],
@@ -348,15 +358,23 @@ function StockDialog({ row, onClose, onRaise }: {
       .slice(0, 4)
   }, [anfOrders, row])
 
+  const qtyChanged = (parseInt(qty, 10) || 0) !== origQty
+  const checkedChanged = (checkedAt || '') !== origChecked
+
   function save() {
     if (!item.trim()) return
+    // A count/check change must record who did it → prompt (blank each time).
+    if (qtyChanged || checkedChanged) { setCheckedBy(''); setAskChecker(true); return }
+    persist(row?.checked_by ?? null, checkedAt)
+  }
+  function persist(checkedByVal: string | null, checkedAtVal: string) {
     // Note: `sign` and `delivered_at` are NOT edited here — they're synced from
     // the order receive step (read-only "Last in").
     const base = {
       item: item.trim(), description: description.trim() || null, category, branch: branch.trim() || null,
       room: room.trim() || null, qty: parseInt(qty, 10) || 0,
       alert_qty: alertQty === '' ? null : (parseInt(alertQty, 10) || 0),
-      alert_unit: alertUnit.trim() || null, checked_at: checkedAt || null,
+      alert_unit: alertUnit.trim() || null, checked_at: checkedAtVal || null, checked_by: checkedByVal,
       notes: notes.trim() || null,
     }
     if (isEdit && row) void updateAnfStock(row.stock_id, base)
@@ -366,6 +384,11 @@ function StockDialog({ row, onClose, onRaise }: {
     })
     onClose()
   }
+  function confirmChecker() {
+    // Auto-stamp the checked date to today if the count changed but the date wasn't.
+    const finalChecked = checkedChanged ? checkedAt : (qtyChanged ? today : checkedAt)
+    persist(checkedBy.trim() || null, finalChecked)
+  }
   function remove() {
     if (row && window.confirm(`Delete stock item “${row.item}”?`)) { void deleteAnfStock(row.stock_id); onClose() }
   }
@@ -373,6 +396,36 @@ function StockDialog({ row, onClose, onRaise }: {
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent showCloseButton={false} className="max-w-xl p-0 gap-0 overflow-hidden">
+        {/* Save-time checker prompt — overlays the form */}
+        {askChecker && (
+          <div className="absolute inset-0 z-20 bg-background/70 backdrop-blur-[1px] flex items-center justify-center p-4">
+            <div className="w-full max-w-sm bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
+              <div className="flex items-center gap-2.5 px-5 py-3 border-b border-border">
+                <span className="w-3 h-3 rounded-[4px]" style={{ backgroundColor: ANF_ACCENT }} />
+                <span className="text-[15px] font-bold">Stock check</span>
+              </div>
+              <div className="px-5 py-4">
+                <p className="text-[14px] font-semibold">Who did this check?</p>
+                <p className="text-[12.5px] text-muted-foreground mt-0.5">You updated the count — record who counted it.</p>
+                <div className="flex flex-wrap gap-1.5 my-3">
+                  {qtyChanged && <span className="font-mono text-[10.5px] border border-border rounded-md px-2 py-1 text-muted-foreground">On hand <b className="text-foreground">{origQty} → {parseInt(qty, 10) || 0}</b></span>}
+                  <span className="font-mono text-[10.5px] border border-border rounded-md px-2 py-1 text-muted-foreground">Checked <b className="text-foreground">{fmtDate((checkedChanged ? checkedAt : (qtyChanged ? today : checkedAt)) || null)}</b></span>
+                </div>
+                <label className="field-label">Checked by</label>
+                <Input autoFocus value={checkedBy} onChange={(e) => setCheckedBy(e.target.value)} placeholder="name…" className="h-9" onKeyDown={(e) => { if (e.key === 'Enter') confirmChecker() }} />
+                {recentCheckers.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {recentCheckers.map((n) => <button key={n} type="button" onClick={() => setCheckedBy(n)} className="text-[12px] border border-border rounded-full px-2.5 py-1 hover:bg-muted">{n}</button>)}
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2 px-5 py-3 border-t border-border">
+                <Button variant="ghost" size="sm" onClick={() => setAskChecker(false)}>Back</Button>
+                <Button size="sm" className="ml-auto bg-[#7A5AA5] hover:opacity-90 text-white" onClick={confirmChecker}>Save check</Button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="flex items-center gap-2.5 px-5 py-3 border-b border-border">
           <span className="w-3 h-3 rounded-[4px]" style={{ backgroundColor: ANF_ACCENT }} />
           <DialogTitle className="text-[15px] font-bold">{isEdit ? 'Edit stock item' : 'Add stock item'}</DialogTitle>
@@ -413,7 +466,7 @@ function StockDialog({ row, onClose, onRaise }: {
             <label className="relative flex-1 min-w-0 rounded-xl border border-border bg-card px-3 py-3 flex flex-col justify-center cursor-pointer hover:bg-muted/40">
               <span className="font-mono text-[9.5px] uppercase tracking-wide text-muted-foreground">Checked</span>
               <span className="font-mono text-[15px] font-bold leading-none mt-2">{checkedAt ? fmtDate(checkedAt) : '—'}</span>
-              <span className="font-mono text-[9px] text-muted-foreground mt-1.5">tap to edit</span>
+              <span className="font-mono text-[9px] text-muted-foreground mt-1.5">{row?.checked_by ? `by ${row.checked_by}` : 'tap to edit'}</span>
               <input type="date" value={checkedAt} onChange={(e) => setCheckedAt(e.target.value)} onClick={(e) => { try { (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.() } catch { /* not supported */ } }} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" aria-label="Checked date" />
             </label>
           </div>
