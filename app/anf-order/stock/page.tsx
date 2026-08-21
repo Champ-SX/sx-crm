@@ -12,10 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/u
 import { type AnfStock } from '@/types'
 import { Boxes, Plus, Trash2, ShoppingCart } from 'lucide-react'
 import { OrderDialog, type OrderPrefill } from '@/components/anf/order-dialog'
-import { ANF_ACCENT, SEED_BRANCHES, branchColor, fmtDate, statusMeta, CATEGORIES, CATEGORY_ORDER, categoryMeta, inferCategory, type AnfStockCategory } from '@/lib/anf'
+import { ANF_ACCENT, SEED_BRANCHES, branchColor, fmtDate, statusMeta, CATEGORIES, categoryMeta, categoryColor, orderedCategories, inferCategory } from '@/lib/anf'
 
-const catOf = (r: { category?: string | null; item: string }): AnfStockCategory =>
-  ((r.category as AnfStockCategory) || inferCategory(r.item))
+const catOf = (r: { category?: string | null; item: string }): string =>
+  (r.category || inferCategory(r.item))
 
 type StockState = 'ok' | 'low' | 'out'
 function stockState(r: Pick<AnfStock, 'qty' | 'alert_qty'>): StockState {
@@ -137,8 +137,8 @@ function BranchTable({ rows, lowOnly, onOrder, onOpen, onRaise }: {
 }) {
   const list = lowOnly ? rows.filter((r) => stockState(r) !== 'ok') : rows
   if (list.length === 0) return <Empty />
-  // Group into category sections in a fixed order; drop empty categories.
-  const groups = CATEGORY_ORDER.map((cat) => ({ cat, rows: list.filter((r) => catOf(r) === cat) })).filter((g) => g.rows.length > 0)
+  // Group into category sections (seed order first, custom after).
+  const groups = orderedCategories([...new Set(list.map(catOf))]).map((cat) => ({ cat, rows: list.filter((r) => catOf(r) === cat) }))
   return (
     <>
       {/* Desktop — one card, category header bands + a gap between sections */}
@@ -160,7 +160,7 @@ function BranchTable({ rows, lowOnly, onOrder, onOpen, onRaise }: {
                   <tr>
                     <td colSpan={8} className="px-4 py-2 border-l-[3px]" style={{ borderColor: cm.color, backgroundColor: `color-mix(in srgb, ${cm.color} 8%, transparent)` }}>
                       <span className="font-semibold text-[13px]">{cm.th}</span>
-                      <span className="font-mono text-[9.5px] uppercase tracking-wider text-muted-foreground ml-2">{cm.en}</span>
+                      {cm.en && <span className="font-mono text-[9.5px] uppercase tracking-wider text-muted-foreground ml-2">{cm.en}</span>}
                       <span className="font-mono text-[10.5px] text-muted-foreground ml-2">— {crows.length}{lowN > 0 && <span className="text-[#FF5B3F] font-semibold"> · {lowN} low</span>}</span>
                     </td>
                   </tr>
@@ -197,7 +197,7 @@ function BranchTable({ rows, lowOnly, onOrder, onOpen, onRaise }: {
             <div key={cat} className="border border-border rounded-xl overflow-hidden bg-card">
               <div className="px-3 py-2 border-l-[3px] flex items-center gap-2" style={{ borderColor: cm.color, backgroundColor: `color-mix(in srgb, ${cm.color} 8%, transparent)` }}>
                 <span className="font-semibold text-[12.5px]">{cm.th}</span>
-                <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">{cm.en}</span>
+                {cm.en && <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">{cm.en}</span>}
                 <span className="font-mono text-[10px] text-muted-foreground ml-auto">{crows.length}</span>
               </div>
               {crows.map((r) => {
@@ -239,7 +239,7 @@ function TotalPivot({ rows, branches, lowOnly, onOrder, onRaise }: {
   onRaise: (item: string, branch: string | null, id: string | null) => void
 }) {
   const items = useMemo(() => {
-    const m = new Map<string, { item: string; code: string | null; cat: AnfStockCategory; per: Record<string, number | null>; total: number; low: boolean }>()
+    const m = new Map<string, { item: string; code: string | null; cat: string; per: Record<string, number | null>; total: number; low: boolean }>()
     for (const r of rows) {
       const key = r.item
       if (!m.has(key)) m.set(key, { item: r.item, code: r.description, cat: catOf(r), per: {}, total: 0, low: false })
@@ -256,7 +256,7 @@ function TotalPivot({ rows, branches, lowOnly, onOrder, onRaise }: {
   if (list.length === 0) return <Empty />
   const state = (i: typeof items[number]): StockState => (i.total <= 0 ? 'out' : i.low ? 'low' : 'ok')
   const cols = branches.length + 4
-  const groups = CATEGORY_ORDER.map((cat) => ({ cat, items: list.filter((i) => i.cat === cat) })).filter((g) => g.items.length > 0)
+  const groups = orderedCategories([...new Set(list.map((i) => i.cat))]).map((cat) => ({ cat, items: list.filter((i) => i.cat === cat) }))
   return (
     <div className="border border-border rounded-xl overflow-x-auto bg-card">
       <table className="w-full text-sm min-w-[640px]">
@@ -276,7 +276,7 @@ function TotalPivot({ rows, branches, lowOnly, onOrder, onRaise }: {
                 <tr>
                   <td colSpan={cols} className="px-4 py-2 border-l-[3px]" style={{ borderColor: cm.color, backgroundColor: `color-mix(in srgb, ${cm.color} 8%, transparent)` }}>
                     <span className="font-semibold text-[13px]">{cm.th}</span>
-                    <span className="font-mono text-[9.5px] uppercase tracking-wider text-muted-foreground ml-2">{cm.en}</span>
+                    {cm.en && <span className="font-mono text-[9.5px] uppercase tracking-wider text-muted-foreground ml-2">{cm.en}</span>}
                   </td>
                 </tr>
                 {citems.map((i) => {
@@ -317,8 +317,9 @@ function StockDialog({ row, onClose, onRaise }: {
   const isEdit = !!row
   const [item, setItem] = useState(row?.item ?? '')
   const [description, setDescription] = useState(row?.description ?? '')
-  const [category, setCategory] = useState<AnfStockCategory>((row?.category as AnfStockCategory) || inferCategory(row?.item ?? ''))
+  const [category, setCategory] = useState<string>(row?.category || inferCategory(row?.item ?? ''))
   const [catTouched, setCatTouched] = useState(!!row?.category)
+  const [addingCategory, setAddingCategory] = useState(false)
   const [branch, setBranch] = useState(row?.branch ?? '')
   const [addingBranch, setAddingBranch] = useState(false)
   const [room, setRoom] = useState(row?.room ?? '')
@@ -331,6 +332,11 @@ function StockDialog({ row, onClose, onRaise }: {
   const branchOptions = useMemo(
     () => [...new Set([...SEED_BRANCHES, ...anfStock.map((r) => r.branch).filter(Boolean) as string[], ...(branch ? [branch] : [])])],
     [anfStock, branch],
+  )
+  // Seed categories + any already in use + the current one — the picker list.
+  const categoryOptions = useMemo(
+    () => [...new Set([...CATEGORIES.map((c) => c.key), ...anfStock.map((r) => r.category).filter(Boolean) as string[], ...(category ? [category] : [])])],
+    [anfStock, category],
   )
 
   // Order history for this item @ this branch (newest first) — traces the loop.
@@ -375,15 +381,23 @@ function StockDialog({ row, onClose, onRaise }: {
         <div className="px-5 py-4 max-h-[70vh] overflow-y-auto grid grid-cols-2 gap-3.5">
           <div className="col-span-2"><label className="field-label">Item</label><Input value={item} onChange={(e) => { const v = e.target.value; setItem(v); if (!catTouched) setCategory(inferCategory(v)) }} placeholder="e.g. กระดาษปริ้นท์ RX1" className="h-9" /></div>
 
-          {/* Category — auto-suggested from the item title, editable */}
+          {/* Category — auto-suggested from title; extensible (add new inline) */}
           <div className="col-span-2 min-w-0">
             <label className="field-label">Category {!catTouched && <span className="font-normal normal-case tracking-normal text-muted-foreground/70">· auto from title</span>}</label>
-            <Select value={category} onValueChange={(v) => { if (v) { setCategory(v as AnfStockCategory); setCatTouched(true) } }}>
-              <SelectTrigger className="h-9 w-full"><span className="flex-1 min-w-0 flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-[3px] shrink-0" style={{ backgroundColor: categoryMeta(category).color }} /><span className="truncate">{categoryMeta(category).th} <span className="text-muted-foreground text-[11px]">{categoryMeta(category).en}</span></span></span></SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map((c) => <SelectItem key={c.key} value={c.key}><span className="inline-flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-[3px]" style={{ backgroundColor: c.color }} />{c.th} <span className="text-muted-foreground text-[11px]">{c.en}</span></span></SelectItem>)}
-              </SelectContent>
-            </Select>
+            {addingCategory ? (
+              <div className="flex items-center gap-1.5">
+                <Input autoFocus value={category} onChange={(e) => { setCategory(e.target.value); setCatTouched(true) }} placeholder="New category name" className="h-9" />
+                <button type="button" onClick={() => setAddingCategory(false)} className="text-[11px] text-muted-foreground hover:text-foreground shrink-0 px-1">list</button>
+              </div>
+            ) : (
+              <Select value={category} onValueChange={(v) => { if (v === '__add__') { setCategory(''); setCatTouched(true); setAddingCategory(true) } else if (v) { setCategory(v); setCatTouched(true) } }}>
+                <SelectTrigger className="h-9 w-full"><span className="flex-1 min-w-0 flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-[3px] shrink-0" style={{ backgroundColor: categoryMeta(category).color }} /><span className="truncate">{categoryMeta(category).th}{categoryMeta(category).en && <span className="text-muted-foreground text-[11px]"> {categoryMeta(category).en}</span>}</span></span></SelectTrigger>
+                <SelectContent>
+                  {categoryOptions.map((key) => { const cm = categoryMeta(key); return <SelectItem key={key} value={key}><span className="inline-flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-[3px]" style={{ backgroundColor: cm.color }} />{cm.th}{cm.en && <span className="text-muted-foreground text-[11px]"> {cm.en}</span>}</span></SelectItem> })}
+                  <SelectItem value="__add__"><span className="inline-flex items-center gap-2 text-[#7A5AA5]"><Plus className="w-3.5 h-3.5" />Add category…</span></SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* On hand (75%) — type or −/+ — with Checked (25%) on the right */}
