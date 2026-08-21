@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
 import { UserAvatar } from '@/components/shared/user-avatar'
+import { AssigneePicker } from '@/components/shared/assignee-picker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -47,7 +48,7 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
   const [remindOption, setRemindOption] = useState<AnfRemindOption>(order?.remind_option ?? 'none')
   const [customDate, setCustomDate] = useState(order?.remind_option === 'custom' ? (order?.remind_at ?? '').slice(0, 10) : '')
   const [requestedBy, setRequestedBy] = useState(order ? (order.requested_by ?? '') : myName)
-  const [assigneeId, setAssigneeId] = useState(order?.assignee_id ?? '')
+  const [assigneeIds, setAssigneeIds] = useState<string[]>(order?.assignee_ids ?? (order?.assignee_id ? [order.assignee_id] : []))
   const [status, setStatus] = useState<AnfOrderStatus>(order?.status ?? 'to_order')
   const [receivedAt, setReceivedAt] = useState(order?.received_at ?? new Date().toISOString().slice(0, 10))
   const [receivedQty, setReceivedQty] = useState(String(order?.received_qty ?? order?.quantity ?? 1))
@@ -88,7 +89,7 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
       item: item.trim(), description: description.trim() || null, quantity: qtyN, unit_price: priceN, with_vat: withVat,
       branch: branch.trim() || null, ordered_at: orderedAt || null, needed_by: neededBy || null,
       remind_option: remindOption, remind_at, requested_by: requestedBy.trim() || null,
-      assignee_id: assigneeId || null, status,
+      assignee_ids: assigneeIds, assignee_id: assigneeIds[0] ?? null, status,
       received_at: status === 'received' ? (receivedAt || null) : (order?.received_at ?? null),
       received_qty: status === 'received' ? (parseInt(receivedQty, 10) || qtyN) : (order?.received_qty ?? null),
       received_by: status === 'received' ? (receivedBy.trim() || null) : (order?.received_by ?? null),
@@ -213,16 +214,10 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
               </SelectContent>
             </Select>
           </div>
-          {/* Assignee */}
+          {/* Assignees — multi-select; all get notified */}
           <div className="min-w-0">
-            <label className="field-label">Assignee</label>
-            <Select value={assigneeId || 'none'} onValueChange={(v) => setAssigneeId(v === 'none' ? '' : (v ?? ''))}>
-              <SelectTrigger className="h-9 w-full"><span className="flex-1 min-w-0 flex items-center gap-2">{(() => { const m = teamMembers.find((m) => m.id === assigneeId); return m ? <><UserAvatar name={m.name || m.email} size={18} /><span className="truncate">{m.name || m.email}</span></> : <span className="text-muted-foreground">Unassigned</span> })()}</span></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Unassigned</SelectItem>
-                {teamMembers.map((m) => <SelectItem key={m.id} value={m.id}><span className="inline-flex items-center gap-2"><UserAvatar name={m.name || m.email} size={18} />{m.name || m.email}</span></SelectItem>)}
-              </SelectContent>
-            </Select>
+            <label className="field-label">Assignees</label>
+            <div className="min-h-9 flex items-center"><AssigneePicker value={assigneeIds} onChange={setAssigneeIds} size={22} /></div>
           </div>
 
           <div className="col-span-2"><label className="field-label">Notes</label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="text-sm resize-none" /></div>

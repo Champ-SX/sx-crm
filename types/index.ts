@@ -120,7 +120,8 @@ export interface AnfOrder {
   remind_at: string | null           // ISO datetime the reminder fires
   remind_notified_at?: string | null // dedup once fired
   requested_by: string | null // who raised it (name)
-  assignee_id: string | null  // who procures it (users.id)
+  assignee_id?: string | null   // legacy single assignee (kept for back-compat)
+  assignee_ids?: string[] | null // who procures it (users.id[]) — multi-assignee
   status: AnfOrderStatus
   received_at: string | null   // ISO date the order was marked Received (syncs to stock)
   received_qty?: number | null // qty actually delivered (default = quantity); tops up stock

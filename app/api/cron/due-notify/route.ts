@@ -99,13 +99,15 @@ export async function POST(req: NextRequest) {
   try {
     const { data: orders } = await sb
       .from('anf_orders')
-      .select('order_id, item, branch, assignee_id, requested_by, remind_at, needed_by')
+      .select('order_id, item, branch, assignee_id, assignee_ids, requested_by, remind_at, needed_by')
       .not('remind_at', 'is', null)
       .is('remind_notified_at', null)
 
     const dueOrders = (orders ?? []).filter((o) => new Date(o.remind_at as string).getTime() <= now)
     for (const o of dueOrders) {
       const recipients = new Set<string>()
+      // All assignees (multi), plus the legacy single field for old rows.
+      for (const id of (o.assignee_ids as string[] | null) ?? []) recipients.add(id)
       if (o.assignee_id) recipients.add(o.assignee_id as string)
       const reqUser = o.requested_by ? byName.get((o.requested_by as string).toLowerCase()) : undefined
       if (reqUser) recipients.add(reqUser.id)

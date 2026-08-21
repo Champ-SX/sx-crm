@@ -11,14 +11,20 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { type AnfOrder, type AnfOrderStatus } from '@/types'
 import { Plus, Bell, Package, ChevronDown, Check } from 'lucide-react'
 import { OrderDialog } from '@/components/anf/order-dialog'
+import { AssigneeFilter, matchesAssigneeFilter, ASSIGNEE_FILTER_ALL } from '@/components/shared/assignee-picker'
 import { STATUS, statusMeta, branchColor, baht, lineTotal, fmtDate } from '@/lib/anf'
+
+const assigneesOf = (o: AnfOrder): string[] => o.assignee_ids ?? (o.assignee_id ? [o.assignee_id] : [])
 
 export default function AnfOrderPage() {
   const isHydrated = useHydrated()
+  const { user } = useAuth()
+  const meId = user?.id ?? null
   const anfOrders = useCRMStore((s) => s.anfOrders)
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
   const [statusFilter, setStatusFilter] = useState<AnfOrderStatus | 'all'>('all')
   const [branchFilter, setBranchFilter] = useState<string>('all')
+  const [assigneeFilter, setAssigneeFilter] = useState<string>(ASSIGNEE_FILTER_ALL)
   const [editing, setEditing] = useState<AnfOrder | null>(null)
   const [creating, setCreating] = useState(false)
 
@@ -31,7 +37,9 @@ export default function AnfOrderPage() {
     [orders],
   )
   const filtered = orders.filter(
-    (o) => (statusFilter === 'all' || o.status === statusFilter) && (branchFilter === 'all' || o.branch === branchFilter),
+    (o) => (statusFilter === 'all' || o.status === statusFilter) &&
+      (branchFilter === 'all' || o.branch === branchFilter) &&
+      matchesAssigneeFilter(assigneesOf(o), assigneeFilter, meId),
   )
   const groups = useMemo(() => {
     const m = new Map<string, AnfOrder[]>()
@@ -74,6 +82,7 @@ export default function AnfOrderPage() {
         {branches.map((b) => (
           <FilterChip key={b} label={b} color={branchColor(b)} on={branchFilter === b} onClick={() => setBranchFilter(b)} />
         ))}
+        <span className="ml-auto"><AssigneeFilter value={assigneeFilter} onChange={setAssigneeFilter} meId={meId} /></span>
       </div>
 
       {/* Body */}
@@ -192,7 +201,6 @@ function StatusInline({ order }: { order: AnfOrder }) {
 
 function DesktopBranch({ branch, rows, onOpen }: { branch: string; rows: AnfOrder[]; onOpen: (o: AnfOrder) => void }) {
   const teamMembers = useCRMStore((s) => s.teamMembers)
-  const nameFor = (id: string | null) => teamMembers.find((m) => m.id === id)?.name ?? null
   const today = new Date()
   const color = branchColor(branch)
   return (
@@ -204,7 +212,7 @@ function DesktopBranch({ branch, rows, onOpen }: { branch: string; rows: AnfOrde
         </td>
       </tr>
       {rows.map((o) => {
-        const assignee = nameFor(o.assignee_id)
+        const assignees = teamMembers.filter((m) => assigneesOf(o).includes(m.id))
         const dueSoon = o.needed_by && o.status !== 'received' && new Date(o.needed_by + 'T00:00:00').getTime() - today.getTime() < 3 * 864e5
         return (
           <tr key={o.order_id} className="border-b border-border/50 last:border-0 hover:bg-muted/40 cursor-pointer" onClick={() => onOpen(o)}>
@@ -215,7 +223,7 @@ function DesktopBranch({ branch, rows, onOpen }: { branch: string; rows: AnfOrde
             <td className="px-4 py-3 text-right font-mono tabular-nums whitespace-nowrap">{baht(lineTotal(o))}{o.with_vat && <span className="ml-1.5 font-mono text-[9px] tracking-wide bg-[#7A5AA5]/15 text-[#7A5AA5] px-1.5 py-0.5 rounded">+VAT</span>}</td>
             <td className={`px-4 py-3 font-mono text-[12px] whitespace-nowrap ${dueSoon ? 'text-[#FF5B3F] font-bold' : 'text-muted-foreground'}`}>{fmtDate(o.needed_by)}{o.remind_at && <Bell className="inline w-3 h-3 ml-1.5 text-[#7A5AA5]" />}</td>
             <td className="px-4 py-3 font-mono text-[11.5px] whitespace-nowrap">{o.status === 'received' ? <span><span className="block text-[#3f9d5b]">✓ {fmtDate(o.received_at)}</span>{o.received_qty != null && <span className="block text-muted-foreground">{o.received_qty} in</span>}{o.received_by && <span className="block text-[10px] text-muted-foreground">by {o.received_by}</span>}</span> : o.status === 'ordered' ? <span className="text-muted-foreground/70">awaiting</span> : <span className="text-muted-foreground/40">—</span>}</td>
-            <td className="px-4 py-3">{assignee ?<span className="inline-flex items-center gap-2 whitespace-nowrap"><UserAvatar name={assignee} size={22} /><span className="text-[12px]">{assignee}</span></span> : <span className="text-muted-foreground/60 text-[12px]">—</span>}</td>
+            <td className="px-4 py-3">{assignees.length > 0 ? (assignees.length === 1 ? <span className="inline-flex items-center gap-2 whitespace-nowrap"><UserAvatar name={assignees[0].name || assignees[0].email} size={22} /><span className="text-[12px]">{assignees[0].name || assignees[0].email}</span></span> : <span className="inline-flex -space-x-1.5" title={assignees.map((m) => m.name || m.email).join(', ')}>{assignees.slice(0, 4).map((m) => <span key={m.id} className="ring-2 ring-card rounded-full"><UserAvatar name={m.name || m.email} size={22} /></span>)}{assignees.length > 4 && <span className="w-[22px] h-[22px] rounded-full bg-muted ring-2 ring-card text-[9px] font-mono flex items-center justify-center text-muted-foreground">+{assignees.length - 4}</span>}</span>) : <span className="text-muted-foreground/60 text-[12px]">—</span>}</td>
           </tr>
         )
       })}
