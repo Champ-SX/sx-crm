@@ -137,6 +137,7 @@ export interface AnfStock {
   board_id?: string
   item: string
   description: string | null   // spec/description (was product_code); shown prominently
+  category?: string | null     // paper | cartridge | ink | sleeve | other (grouping)
   branch: string | null
   room: string | null          // booth / machine location codes
   qty: number                  // on hand

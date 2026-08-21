@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { useCRMStore } from '@/store/crm-store'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
@@ -12,7 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/u
 import { type AnfStock } from '@/types'
 import { Boxes, Plus, Trash2, ShoppingCart } from 'lucide-react'
 import { OrderDialog, type OrderPrefill } from '@/components/anf/order-dialog'
-import { ANF_ACCENT, SEED_BRANCHES, branchColor, fmtDate, statusMeta } from '@/lib/anf'
+import { ANF_ACCENT, SEED_BRANCHES, branchColor, fmtDate, statusMeta, CATEGORIES, CATEGORY_ORDER, categoryMeta, inferCategory, type AnfStockCategory } from '@/lib/anf'
+
+const catOf = (r: { category?: string | null; item: string }): AnfStockCategory =>
+  ((r.category as AnfStockCategory) || inferCategory(r.item))
 
 type StockState = 'ok' | 'low' | 'out'
 function stockState(r: Pick<AnfStock, 'qty' | 'alert_qty'>): StockState {
@@ -134,9 +137,11 @@ function BranchTable({ rows, lowOnly, onOrder, onOpen, onRaise }: {
 }) {
   const list = lowOnly ? rows.filter((r) => stockState(r) !== 'ok') : rows
   if (list.length === 0) return <Empty />
+  // Group into category sections in a fixed order; drop empty categories.
+  const groups = CATEGORY_ORDER.map((cat) => ({ cat, rows: list.filter((r) => catOf(r) === cat) })).filter((g) => g.rows.length > 0)
   return (
     <>
-      {/* Desktop */}
+      {/* Desktop — one card, category header bands + a gap between sections */}
       <div className="hidden md:block border border-border rounded-xl overflow-hidden bg-card">
         <table className="w-full text-sm table-fixed">
           <colgroup><col style={{ width: '32%' }} /><col style={{ width: '110px' }} /><col /><col /><col /><col style={{ width: '78px' }} /><col style={{ width: '96px' }} /><col style={{ width: '92px' }} /></colgroup>
@@ -146,52 +151,80 @@ function BranchTable({ rows, lowOnly, onOrder, onOpen, onRaise }: {
             ))}
           </tr></thead>
           <tbody>
-            {list.map((r) => {
-              const st = stockState(r)
+            {groups.map(({ cat, rows: crows }, gi) => {
+              const cm = categoryMeta(cat)
+              const lowN = crows.filter((r) => stockState(r) !== 'ok').length
               return (
-                <tr key={r.stock_id} className="border-b border-border/50 last:border-0 hover:bg-muted/40 cursor-pointer" onClick={() => onOpen(r)}>
-                  <td className="px-4 py-3"><div className="font-semibold truncate">{r.item}</div>{r.description && <div className="text-[12.5px] text-muted-foreground truncate mt-0.5">{r.description}</div>}</td>
-                  <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground truncate">{r.room || '—'}</td>
-                  <td className={`px-4 py-3 text-right font-mono font-bold tabular-nums ${st !== 'ok' ? 'text-[#FF5B3F]' : ''}`}>{r.qty}</td>
-                  <td className="px-4 py-3 text-right font-mono text-[12px] text-muted-foreground whitespace-nowrap">{r.alert_qty ?? '—'}{r.alert_unit ? ` ${r.alert_unit.toLowerCase()}` : ''}</td>
-                  <td className="px-4 py-3">{onOrder.has(r.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5]">● on order</span> : <StateFlag s={st} />}</td>
-                  <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap">{fmtDate(r.checked_at)}</td>
-                  <td className="px-4 py-3 font-mono text-[11px] whitespace-nowrap">{r.delivered_at ? <span className="text-[#3f9d5b]">↓ {fmtDate(r.delivered_at)}{r.sign && <span className="block text-[10px] text-muted-foreground">by {r.sign}</span>}</span> : <span className="text-muted-foreground/40">— never</span>}</td>
-                  <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                    {st !== 'ok' && !onOrder.has(r.item) && (
-                      <button onClick={() => onRaise(r.item, r.branch, r.stock_id)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1 hover:bg-[#7A5AA5]/10 whitespace-nowrap"><ShoppingCart className="w-3 h-3" />Order</button>
-                    )}
-                  </td>
-                </tr>
+                <Fragment key={cat}>
+                  {gi > 0 && <tr aria-hidden><td colSpan={8} className="h-2.5 bg-muted/20" /></tr>}
+                  <tr>
+                    <td colSpan={8} className="px-4 py-2 border-l-[3px]" style={{ borderColor: cm.color, backgroundColor: `color-mix(in srgb, ${cm.color} 8%, transparent)` }}>
+                      <span className="font-semibold text-[13px]">{cm.th}</span>
+                      <span className="font-mono text-[9.5px] uppercase tracking-wider text-muted-foreground ml-2">{cm.en}</span>
+                      <span className="font-mono text-[10.5px] text-muted-foreground ml-2">— {crows.length}{lowN > 0 && <span className="text-[#FF5B3F] font-semibold"> · {lowN} low</span>}</span>
+                    </td>
+                  </tr>
+                  {crows.map((r) => {
+                    const st = stockState(r)
+                    return (
+                      <tr key={r.stock_id} className="border-t border-border/50 hover:bg-muted/40 cursor-pointer" onClick={() => onOpen(r)}>
+                        <td className="px-4 py-3"><div className="font-semibold truncate">{r.item}</div>{r.description && <div className="text-[12.5px] text-muted-foreground truncate mt-0.5">{r.description}</div>}</td>
+                        <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground truncate">{r.room || '—'}</td>
+                        <td className={`px-4 py-3 text-right font-mono font-bold tabular-nums ${st !== 'ok' ? 'text-[#FF5B3F]' : ''}`}>{r.qty}</td>
+                        <td className="px-4 py-3 text-right font-mono text-[12px] text-muted-foreground whitespace-nowrap">{r.alert_qty ?? '—'}{r.alert_unit ? ` ${r.alert_unit.toLowerCase()}` : ''}</td>
+                        <td className="px-4 py-3">{onOrder.has(r.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5]">● on order</span> : <StateFlag s={st} />}</td>
+                        <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap">{fmtDate(r.checked_at)}</td>
+                        <td className="px-4 py-3 font-mono text-[11px] whitespace-nowrap">{r.delivered_at ? <span className="text-[#3f9d5b]">↓ {fmtDate(r.delivered_at)}{r.sign && <span className="block text-[10px] text-muted-foreground">by {r.sign}</span>}</span> : <span className="text-muted-foreground/40">— never</span>}</td>
+                        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                          {st !== 'ok' && !onOrder.has(r.item) && (
+                            <button onClick={() => onRaise(r.item, r.branch, r.stock_id)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1 hover:bg-[#7A5AA5]/10 whitespace-nowrap"><ShoppingCart className="w-3 h-3" />Order</button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </Fragment>
               )
             })}
           </tbody>
         </table>
       </div>
-      {/* Mobile */}
-      <div className="md:hidden space-y-2">
-        {list.map((r) => {
-          const st = stockState(r)
+      {/* Mobile — a card per category */}
+      <div className="md:hidden space-y-4">
+        {groups.map(({ cat, rows: crows }) => {
+          const cm = categoryMeta(cat)
           return (
-            <div key={r.stock_id} className="border border-border rounded-xl bg-card px-3 py-3">
-              <button onClick={() => onOpen(r)} className="w-full flex items-start gap-3 text-left">
-                <span className="min-w-0 flex-1">
-                  <span className="block font-semibold text-[13.5px] leading-tight truncate">{r.item}</span>
-                  {r.description && <span className="block text-[12px] text-muted-foreground truncate mt-0.5">{r.description}</span>}
-                  <span className="font-mono text-[10px] text-muted-foreground/80 block mt-0.5">{r.room || '—'} · checked {fmtDate(r.checked_at)}</span>
-                  {r.delivered_at && <span className="font-mono text-[10px] text-[#3f9d5b] block mt-0.5">↓ last in {fmtDate(r.delivered_at)}{r.sign && ` · by ${r.sign}`}</span>}
-                </span>
-                <span className="text-right shrink-0">
-                  <span className={`font-mono text-[15px] font-bold tabular-nums ${st !== 'ok' ? 'text-[#FF5B3F]' : ''}`}>{r.qty}</span>
-                  <span className="block font-mono text-[9px] text-muted-foreground">/ {r.alert_qty ?? '—'} alert</span>
-                </span>
-              </button>
-              <div className="flex items-center gap-2 mt-2">
-                {onOrder.has(r.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5]">● on order</span> : <StateFlag s={st} />}
-                {st !== 'ok' && !onOrder.has(r.item) && (
-                  <button onClick={() => onRaise(r.item, r.branch, r.stock_id)} className="ml-auto inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1"><ShoppingCart className="w-3 h-3" />Order</button>
-                )}
+            <div key={cat} className="border border-border rounded-xl overflow-hidden bg-card">
+              <div className="px-3 py-2 border-l-[3px] flex items-center gap-2" style={{ borderColor: cm.color, backgroundColor: `color-mix(in srgb, ${cm.color} 8%, transparent)` }}>
+                <span className="font-semibold text-[12.5px]">{cm.th}</span>
+                <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">{cm.en}</span>
+                <span className="font-mono text-[10px] text-muted-foreground ml-auto">{crows.length}</span>
               </div>
+              {crows.map((r) => {
+                const st = stockState(r)
+                return (
+                  <div key={r.stock_id} className="px-3 py-3 border-t border-border/50">
+                    <button onClick={() => onOpen(r)} className="w-full flex items-start gap-3 text-left">
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-semibold text-[13.5px] leading-tight truncate">{r.item}</span>
+                        {r.description && <span className="block text-[12px] text-muted-foreground truncate mt-0.5">{r.description}</span>}
+                        <span className="font-mono text-[10px] text-muted-foreground/80 block mt-0.5">{r.room || '—'} · checked {fmtDate(r.checked_at)}</span>
+                        {r.delivered_at && <span className="font-mono text-[10px] text-[#3f9d5b] block mt-0.5">↓ last in {fmtDate(r.delivered_at)}{r.sign && ` · by ${r.sign}`}</span>}
+                      </span>
+                      <span className="text-right shrink-0">
+                        <span className={`font-mono text-[15px] font-bold tabular-nums ${st !== 'ok' ? 'text-[#FF5B3F]' : ''}`}>{r.qty}</span>
+                        <span className="block font-mono text-[9px] text-muted-foreground">/ {r.alert_qty ?? '—'} alert</span>
+                      </span>
+                    </button>
+                    <div className="flex items-center gap-2 mt-2">
+                      {onOrder.has(r.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5]">● on order</span> : <StateFlag s={st} />}
+                      {st !== 'ok' && !onOrder.has(r.item) && (
+                        <button onClick={() => onRaise(r.item, r.branch, r.stock_id)} className="ml-auto inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1"><ShoppingCart className="w-3 h-3" />Order</button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )
         })}
@@ -206,10 +239,10 @@ function TotalPivot({ rows, branches, lowOnly, onOrder, onRaise }: {
   onRaise: (item: string, branch: string | null, id: string | null) => void
 }) {
   const items = useMemo(() => {
-    const m = new Map<string, { item: string; code: string | null; per: Record<string, number | null>; total: number; low: boolean }>()
+    const m = new Map<string, { item: string; code: string | null; cat: AnfStockCategory; per: Record<string, number | null>; total: number; low: boolean }>()
     for (const r of rows) {
       const key = r.item
-      if (!m.has(key)) m.set(key, { item: r.item, code: r.description, per: {}, total: 0, low: false })
+      if (!m.has(key)) m.set(key, { item: r.item, code: r.description, cat: catOf(r), per: {}, total: 0, low: false })
       const e = m.get(key)!
       if (!e.code && r.description) e.code = r.description
       const b = r.branch || '—'
@@ -222,6 +255,8 @@ function TotalPivot({ rows, branches, lowOnly, onOrder, onRaise }: {
   const list = lowOnly ? items.filter((i) => i.total <= 0 || i.low) : items
   if (list.length === 0) return <Empty />
   const state = (i: typeof items[number]): StockState => (i.total <= 0 ? 'out' : i.low ? 'low' : 'ok')
+  const cols = branches.length + 4
+  const groups = CATEGORY_ORDER.map((cat) => ({ cat, items: list.filter((i) => i.cat === cat) })).filter((g) => g.items.length > 0)
   return (
     <div className="border border-border rounded-xl overflow-x-auto bg-card">
       <table className="w-full text-sm min-w-[640px]">
@@ -233,20 +268,34 @@ function TotalPivot({ rows, branches, lowOnly, onOrder, onRaise }: {
           <th className="px-3 py-3" />
         </tr></thead>
         <tbody>
-          {list.map((i) => {
-            const st = state(i)
+          {groups.map(({ cat, items: citems }, gi) => {
+            const cm = categoryMeta(cat)
             return (
-              <tr key={i.item} className="border-b border-border/50 last:border-0 hover:bg-muted/30">
-                <td className="px-4 py-3"><div className="font-semibold">{i.item}</div>{i.code && <div className="text-[12.5px] text-muted-foreground mt-0.5">{i.code}</div>}</td>
-                {branches.map((b) => <td key={b} className="px-3 py-3 text-right font-mono tabular-nums">{i.per[b] == null ? <span className="text-muted-foreground/40">N/A</span> : i.per[b]}</td>)}
-                <td className={`px-4 py-3 text-right font-mono font-bold tabular-nums ${st !== 'ok' ? 'text-[#FF5B3F]' : ''}`}>{i.total}</td>
-                <td className="px-4 py-3">{onOrder.has(i.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5]">● on order</span> : <StateFlag s={st} />}</td>
-                <td className="px-3 py-3 text-right">
-                  {st !== 'ok' && !onOrder.has(i.item) && (
-                    <button onClick={() => onRaise(i.item, null, null)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1 hover:bg-[#7A5AA5]/10 whitespace-nowrap"><ShoppingCart className="w-3 h-3" />Order</button>
-                  )}
-                </td>
-              </tr>
+              <Fragment key={cat}>
+                {gi > 0 && <tr aria-hidden><td colSpan={cols} className="h-2.5 bg-muted/20" /></tr>}
+                <tr>
+                  <td colSpan={cols} className="px-4 py-2 border-l-[3px]" style={{ borderColor: cm.color, backgroundColor: `color-mix(in srgb, ${cm.color} 8%, transparent)` }}>
+                    <span className="font-semibold text-[13px]">{cm.th}</span>
+                    <span className="font-mono text-[9.5px] uppercase tracking-wider text-muted-foreground ml-2">{cm.en}</span>
+                  </td>
+                </tr>
+                {citems.map((i) => {
+                  const st = state(i)
+                  return (
+                    <tr key={i.item} className="border-t border-border/50 hover:bg-muted/30">
+                      <td className="px-4 py-3"><div className="font-semibold">{i.item}</div>{i.code && <div className="text-[12.5px] text-muted-foreground mt-0.5">{i.code}</div>}</td>
+                      {branches.map((b) => <td key={b} className="px-3 py-3 text-right font-mono tabular-nums">{i.per[b] == null ? <span className="text-muted-foreground/40">N/A</span> : i.per[b]}</td>)}
+                      <td className={`px-4 py-3 text-right font-mono font-bold tabular-nums ${st !== 'ok' ? 'text-[#FF5B3F]' : ''}`}>{i.total}</td>
+                      <td className="px-4 py-3">{onOrder.has(i.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5]">● on order</span> : <StateFlag s={st} />}</td>
+                      <td className="px-3 py-3 text-right">
+                        {st !== 'ok' && !onOrder.has(i.item) && (
+                          <button onClick={() => onRaise(i.item, null, null)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1 hover:bg-[#7A5AA5]/10 whitespace-nowrap"><ShoppingCart className="w-3 h-3" />Order</button>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </Fragment>
             )
           })}
         </tbody>
@@ -268,6 +317,8 @@ function StockDialog({ row, onClose, onRaise }: {
   const isEdit = !!row
   const [item, setItem] = useState(row?.item ?? '')
   const [description, setDescription] = useState(row?.description ?? '')
+  const [category, setCategory] = useState<AnfStockCategory>((row?.category as AnfStockCategory) || inferCategory(row?.item ?? ''))
+  const [catTouched, setCatTouched] = useState(!!row?.category)
   const [branch, setBranch] = useState(row?.branch ?? '')
   const [addingBranch, setAddingBranch] = useState(false)
   const [room, setRoom] = useState(row?.room ?? '')
@@ -296,7 +347,7 @@ function StockDialog({ row, onClose, onRaise }: {
     // Note: `sign` and `delivered_at` are NOT edited here — they're synced from
     // the order receive step (read-only "Last in").
     const base = {
-      item: item.trim(), description: description.trim() || null, branch: branch.trim() || null,
+      item: item.trim(), description: description.trim() || null, category, branch: branch.trim() || null,
       room: room.trim() || null, qty: parseInt(qty, 10) || 0,
       alert_qty: alertQty === '' ? null : (parseInt(alertQty, 10) || 0),
       alert_unit: alertUnit.trim() || null, checked_at: checkedAt || null,
@@ -322,7 +373,18 @@ function StockDialog({ row, onClose, onRaise }: {
           <button onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground text-lg leading-none px-1">✕</button>
         </div>
         <div className="px-5 py-4 max-h-[70vh] overflow-y-auto grid grid-cols-2 gap-3.5">
-          <div className="col-span-2"><label className="field-label">Item</label><Input value={item} onChange={(e) => setItem(e.target.value)} placeholder="e.g. กระดาษปริ้นท์ RX1" className="h-9" /></div>
+          <div className="col-span-2"><label className="field-label">Item</label><Input value={item} onChange={(e) => { const v = e.target.value; setItem(v); if (!catTouched) setCategory(inferCategory(v)) }} placeholder="e.g. กระดาษปริ้นท์ RX1" className="h-9" /></div>
+
+          {/* Category — auto-suggested from the item title, editable */}
+          <div className="col-span-2 min-w-0">
+            <label className="field-label">Category {!catTouched && <span className="font-normal normal-case tracking-normal text-muted-foreground/70">· auto from title</span>}</label>
+            <Select value={category} onValueChange={(v) => { if (v) { setCategory(v as AnfStockCategory); setCatTouched(true) } }}>
+              <SelectTrigger className="h-9 w-full"><span className="flex-1 min-w-0 flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-[3px] shrink-0" style={{ backgroundColor: categoryMeta(category).color }} /><span className="truncate">{categoryMeta(category).th} <span className="text-muted-foreground text-[11px]">{categoryMeta(category).en}</span></span></span></SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map((c) => <SelectItem key={c.key} value={c.key}><span className="inline-flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-[3px]" style={{ backgroundColor: c.color }} />{c.th} <span className="text-muted-foreground text-[11px]">{c.en}</span></span></SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* On hand (75%) — type or −/+ — with Checked (25%) on the right */}
           <div className="col-span-2 flex gap-2.5 items-stretch">

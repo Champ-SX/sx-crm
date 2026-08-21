@@ -25,6 +25,30 @@ export function branchColor(name?: string | null): string {
   return BRANCH_PALETTE[h % BRANCH_PALETTE.length]
 }
 
+// ─── Stock categories ────────────────────────────────────────────────────────
+export type AnfStockCategory = 'paper' | 'cartridge' | 'ink' | 'sleeve' | 'other'
+export const CATEGORIES: { key: AnfStockCategory; th: string; en: string; color: string }[] = [
+  { key: 'paper',     th: 'กระดาษ',   en: 'Paper',         color: '#3F6EA5' },
+  { key: 'cartridge', th: 'ตลับหมึก', en: 'Ink cartridge', color: '#C9772E' },
+  { key: 'ink',       th: 'หมึก',     en: 'Ink',           color: '#7A5AA5' },
+  { key: 'sleeve',    th: 'ซองใส',    en: 'Sleeve',        color: '#2E8A9A' },
+  { key: 'other',     th: 'อื่นๆ',    en: 'Other',         color: '#8a8a8a' },
+]
+export const categoryMeta = (k?: string | null) => CATEGORIES.find((c) => c.key === k) ?? CATEGORIES[4]
+// Order stock rows fall into on the board.
+export const CATEGORY_ORDER: AnfStockCategory[] = ['paper', 'cartridge', 'ink', 'sleeve', 'other']
+
+// Guess a category from the item title. Precedence: ตลับ (cartridge) before
+// หมึก (ink) — "ตลับซับหมึก" contains both.
+export function inferCategory(item: string): AnfStockCategory {
+  const s = item || ''
+  if (/ตลับ/.test(s)) return 'cartridge'
+  if (/หมึก/.test(s)) return 'ink'
+  if (/ซอง/.test(s)) return 'sleeve'
+  if (/กระดาษ|ฟิล|กรอบ|สติ๊กเกอร์|ปริ้น/.test(s)) return 'paper'
+  return 'other'
+}
+
 export const REMIND: { key: AnfRemindOption; label: string }[] = [
   { key: 'none', label: 'None' },
   { key: '1d', label: '1 day' },
