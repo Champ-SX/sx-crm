@@ -261,6 +261,23 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       anfOrders: [],
       addAnfOrder: async (order) => {
         set((s) => ({ anfOrders: [order, ...s.anfOrders] }))
+        // Loop: an order created directly as Received tops up its linked stock
+        // (the transition case is handled in updateAnfOrder).
+        if (order.status === 'received') {
+          const receivedAt = order.received_at ?? new Date().toISOString().slice(0, 10)
+          const receivedQty = order.received_qty ?? order.quantity
+          const stockRow = order.stock_id
+            ? get().anfStock.find((r) => r.stock_id === order.stock_id)
+            : get().anfStock.find((r) => r.item === order.item && r.branch === order.branch)
+          if (stockRow) {
+            void get().updateAnfStock(stockRow.stock_id, {
+              qty: stockRow.qty + (receivedQty || 0),
+              delivered_at: receivedAt,
+              sign: order.received_by ?? stockRow.sign,
+              reported_at: null,
+            })
+          }
+        }
         if (USE_SUPABASE) {
           try { await db.anfOrderQueries.create(order) }
           catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to create order' }) }
@@ -281,10 +298,12 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
           const stockRow = stockId
             ? get().anfStock.find((r) => r.stock_id === stockId)
             : get().anfStock.find((r) => r.item === prev.item && r.branch === prev.branch)
+          const receivedBy = updates.received_by ?? prev.received_by ?? null
           if (stockRow) {
             void get().updateAnfStock(stockRow.stock_id, {
               qty: stockRow.qty + (receivedQty || 0),
               delivered_at: receivedAt,
+              sign: receivedBy ?? stockRow.sign,
               reported_at: null,
             })
           }

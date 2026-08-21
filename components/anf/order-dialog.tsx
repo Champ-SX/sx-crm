@@ -42,6 +42,7 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
   const [status, setStatus] = useState<AnfOrderStatus>(order?.status ?? 'to_order')
   const [receivedAt, setReceivedAt] = useState(order?.received_at ?? new Date().toISOString().slice(0, 10))
   const [receivedQty, setReceivedQty] = useState(String(order?.received_qty ?? order?.quantity ?? 1))
+  const [receivedBy, setReceivedBy] = useState(order?.received_by ?? '')
   const [notes, setNotes] = useState(order?.notes ?? '')
 
   const qtyN = parseInt(quantity, 10) || 0
@@ -74,6 +75,7 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
       assignee_id: assigneeId || null, status,
       received_at: status === 'received' ? (receivedAt || null) : (order?.received_at ?? null),
       received_qty: status === 'received' ? (parseInt(receivedQty, 10) || qtyN) : (order?.received_qty ?? null),
+      received_by: status === 'received' ? (receivedBy.trim() || null) : (order?.received_by ?? null),
       stock_id: stockId,
       notes: notes.trim() || null,
     }
@@ -164,6 +166,7 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
               <div className="col-span-2 field-label mb-0 text-[#3f9d5b]">Received {stockId ? '— tops up linked stock' : ''}</div>
               <div><label className="field-label">Received date</label><Input type="date" value={receivedAt} onChange={(e) => setReceivedAt(e.target.value)} className="h-9" /></div>
               <div><label className="field-label">Qty delivered</label><Input type="number" min={0} value={receivedQty} onChange={(e) => setReceivedQty(e.target.value)} className="h-9" /></div>
+              <div className="col-span-2"><label className="field-label">Received by — who took delivery</label><Input value={receivedBy} onChange={(e) => setReceivedBy(e.target.value)} placeholder="name" className="h-9" /></div>
             </div>
           )}
 

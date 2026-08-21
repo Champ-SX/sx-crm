@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/u
 import { type AnfStock } from '@/types'
 import { Boxes, Plus, Trash2, ShoppingCart } from 'lucide-react'
 import { OrderDialog, type OrderPrefill } from '@/components/anf/order-dialog'
-import { ANF_ACCENT, SEED_BRANCHES, branchColor, fmtDate } from '@/lib/anf'
+import { ANF_ACCENT, SEED_BRANCHES, branchColor, fmtDate, statusMeta } from '@/lib/anf'
 
 type StockState = 'ok' | 'low' | 'out'
 function stockState(r: Pick<AnfStock, 'qty' | 'alert_qty'>): StockState {
@@ -111,7 +111,7 @@ export default function AnfStockPage() {
         )}
       </div>
 
-      {(creating || editing) && <StockDialog row={editing} onClose={() => { setCreating(false); setEditing(null) }} />}
+      {(creating || editing) && <StockDialog row={editing} onClose={() => { setCreating(false); setEditing(null) }} onRaise={raiseOrder} />}
       {orderPrefill && <OrderDialog order={null} prefill={orderPrefill} onClose={() => setOrderPrefill(null)} />}
     </div>
   )
@@ -138,9 +138,9 @@ function BranchTable({ rows, lowOnly, onOrder, onOpen, onRaise }: {
       {/* Desktop */}
       <div className="hidden md:block border border-border rounded-xl overflow-hidden bg-card">
         <table className="w-full text-sm table-fixed">
-          <colgroup><col style={{ width: '38%' }} /><col style={{ width: '120px' }} /><col /><col /><col /><col style={{ width: '90px' }} /><col style={{ width: '96px' }} /></colgroup>
+          <colgroup><col style={{ width: '32%' }} /><col style={{ width: '110px' }} /><col /><col /><col /><col style={{ width: '78px' }} /><col style={{ width: '96px' }} /><col style={{ width: '92px' }} /></colgroup>
           <thead><tr className="border-b border-border">
-            {['Product', 'Room', 'On hand', 'Alert', 'State', 'Checked', ''].map((h, i) => (
+            {['Product', 'Room', 'On hand', 'Alert', 'State', 'Checked', 'Last in', ''].map((h, i) => (
               <th key={i} className={`font-mono text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-4 py-3 whitespace-nowrap ${i === 2 || i === 3 ? 'text-right' : 'text-left'}`}>{h}</th>
             ))}
           </tr></thead>
@@ -154,7 +154,8 @@ function BranchTable({ rows, lowOnly, onOrder, onOpen, onRaise }: {
                   <td className={`px-4 py-3 text-right font-mono font-bold tabular-nums ${st !== 'ok' ? 'text-[#FF5B3F]' : ''}`}>{r.qty}</td>
                   <td className="px-4 py-3 text-right font-mono text-[12px] text-muted-foreground whitespace-nowrap">{r.alert_qty ?? '—'}{r.alert_unit ? ` ${r.alert_unit.toLowerCase()}` : ''}</td>
                   <td className="px-4 py-3">{onOrder.has(r.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5]">● on order</span> : <StateFlag s={st} />}</td>
-                  <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap">{fmtDate(r.checked_at)}{r.sign && <span className="block text-[10px]">by {r.sign}</span>}</td>
+                  <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap">{fmtDate(r.checked_at)}</td>
+                  <td className="px-4 py-3 font-mono text-[11px] whitespace-nowrap">{r.delivered_at ? <span className="text-[#3f9d5b]">↓ {fmtDate(r.delivered_at)}{r.sign && <span className="block text-[10px] text-muted-foreground">by {r.sign}</span>}</span> : <span className="text-muted-foreground/40">— never</span>}</td>
                   <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                     {st !== 'ok' && !onOrder.has(r.item) && (
                       <button onClick={() => onRaise(r.item, r.branch, r.stock_id)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1 hover:bg-[#7A5AA5]/10 whitespace-nowrap"><ShoppingCart className="w-3 h-3" />Order</button>
@@ -176,6 +177,7 @@ function BranchTable({ rows, lowOnly, onOrder, onOpen, onRaise }: {
                 <span className="min-w-0 flex-1">
                   <span className="block font-medium text-[13.5px] leading-tight truncate">{r.item}</span>
                   <span className="font-mono text-[10.5px] text-muted-foreground block mt-0.5">{r.room || '—'} · checked {fmtDate(r.checked_at)}</span>
+                  {r.delivered_at && <span className="font-mono text-[10px] text-[#3f9d5b] block mt-0.5">↓ last in {fmtDate(r.delivered_at)}{r.sign && ` · by ${r.sign}`}</span>}
                 </span>
                 <span className="text-right shrink-0">
                   <span className={`font-mono text-[15px] font-bold tabular-nums ${st !== 'ok' ? 'text-[#FF5B3F]' : ''}`}>{r.qty}</span>
@@ -256,8 +258,11 @@ function Empty() {
 }
 
 // ── Stock item editor ─────────────────────────────────────────────────────────
-function StockDialog({ row, onClose }: { row: AnfStock | null; onClose: () => void }) {
-  const { anfStock, activeBoardId, addAnfStock, updateAnfStock, deleteAnfStock } = useCRMStore()
+function StockDialog({ row, onClose, onRaise }: {
+  row: AnfStock | null; onClose: () => void
+  onRaise: (item: string, branch: string | null, id: string | null) => void
+}) {
+  const { anfStock, anfOrders, activeBoardId, addAnfStock, updateAnfStock, deleteAnfStock } = useCRMStore()
   const isEdit = !!row
   const [item, setItem] = useState(row?.item ?? '')
   const [code, setCode] = useState(row?.product_code ?? '')
@@ -268,7 +273,6 @@ function StockDialog({ row, onClose }: { row: AnfStock | null; onClose: () => vo
   const [alertQty, setAlertQty] = useState(String(row?.alert_qty ?? ''))
   const [alertUnit, setAlertUnit] = useState(row?.alert_unit ?? '')
   const [checkedAt, setCheckedAt] = useState(row?.checked_at ?? new Date().toISOString().slice(0, 10))
-  const [sign, setSign] = useState(row?.sign ?? '')
   const [notes, setNotes] = useState(row?.notes ?? '')
 
   const branchOptions = useMemo(
@@ -276,19 +280,30 @@ function StockDialog({ row, onClose }: { row: AnfStock | null; onClose: () => vo
     [anfStock, branch],
   )
 
+  // Order history for this item @ this branch (newest first) — traces the loop.
+  const history = useMemo(() => {
+    if (!row) return []
+    return anfOrders
+      .filter((o) => o.item === row.item && (o.branch ?? null) === (row.branch ?? null))
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+      .slice(0, 4)
+  }, [anfOrders, row])
+
   function save() {
     if (!item.trim()) return
+    // Note: `sign` and `delivered_at` are NOT edited here — they're synced from
+    // the order receive step (read-only "Last in").
     const base = {
       item: item.trim(), product_code: code.trim() || null, branch: branch.trim() || null,
       room: room.trim() || null, qty: parseInt(qty, 10) || 0,
       alert_qty: alertQty === '' ? null : (parseInt(alertQty, 10) || 0),
       alert_unit: alertUnit.trim() || null, checked_at: checkedAt || null,
-      sign: sign.trim() || null, notes: notes.trim() || null,
+      notes: notes.trim() || null,
     }
     if (isEdit && row) void updateAnfStock(row.stock_id, base)
     else void addAnfStock({
       stock_id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stk-${Date.now()}`,
-      board_id: activeBoardId ?? 'anf-order', reported_at: null, delivered_at: null, ...base,
+      board_id: activeBoardId ?? 'anf-order', reported_at: null, delivered_at: null, sign: null, ...base,
     })
     onClose()
   }
@@ -334,13 +349,45 @@ function StockDialog({ row, onClose }: { row: AnfStock | null; onClose: () => vo
             <div><label className="field-label">Unit</label><Input value={alertUnit} onChange={(e) => setAlertUnit(e.target.value)} placeholder="boxes" className="h-9" /></div>
           </div>
 
-          <div><label className="field-label">Checked date</label><Input type="date" value={checkedAt} onChange={(e) => setCheckedAt(e.target.value)} className="h-9" /></div>
-          <div><label className="field-label">Checked by (sign)</label><Input value={sign} onChange={(e) => setSign(e.target.value)} placeholder="name" className="h-9" /></div>
+          <div className="col-span-2"><label className="field-label">Checked date</label><Input type="date" value={checkedAt} onChange={(e) => setCheckedAt(e.target.value)} className="h-9" /></div>
+
+          {/* Last in — read-only, synced from the order receive step */}
+          {isEdit && (
+            <div className="col-span-2 rounded-lg border border-[#3f9d5b]/40 bg-[#3f9d5b]/[0.06] p-3">
+              <div className="flex items-center gap-2 mb-2"><span className="field-label mb-0 text-[#3f9d5b]">↓ Last in</span><span className="ml-auto font-mono text-[9px] uppercase tracking-wide text-muted-foreground">read-only · from orders</span></div>
+              {row?.delivered_at ? (
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div><span className="field-label">Received date</span><div className="font-mono text-[13px] text-[#3f9d5b]">{fmtDate(row.delivered_at)}</div></div>
+                  <div><span className="field-label">Received by (sign)</span><div className="text-[13px]">{row.sign || '—'}</div></div>
+                </div>
+              ) : (
+                <p className="text-[12px] text-muted-foreground">Never received against — marking an order for this item “Received” fills this in.</p>
+              )}
+            </div>
+          )}
+
+          {/* Order history — traces the loop */}
+          {isEdit && history.length > 0 && (
+            <div className="col-span-2">
+              <label className="field-label">Order history · this item @ {row?.branch || 'no branch'}</label>
+              <div className="space-y-1.5">
+                {history.map((o) => (
+                  <div key={o.order_id} className="flex items-center gap-2 border border-border rounded-lg px-2.5 py-1.5 bg-muted/30">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${statusMeta(o.status).dot}`} />
+                    <span className="text-[12px]">{statusMeta(o.status).label}</span>
+                    <span className="font-mono text-[10.5px] text-muted-foreground">{o.status === 'received' ? `+${o.received_qty ?? o.quantity} in${o.received_by ? ` · by ${o.received_by}` : ''}` : `qty ${o.quantity}`}</span>
+                    <span className="ml-auto font-mono text-[10.5px] text-muted-foreground whitespace-nowrap">{o.status === 'received' ? fmtDate(o.received_at) : `raised ${fmtDate(o.ordered_at)}`}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="col-span-2"><label className="field-label">Notes</label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="text-sm resize-none" /></div>
         </div>
         <div className="flex items-center gap-2 px-5 py-3 border-t border-border">
           {isEdit && <button onClick={remove} className="text-destructive hover:opacity-80 text-sm inline-flex items-center gap-1.5 mr-auto"><Trash2 className="w-4 h-4" /> Delete</button>}
+          {isEdit && row && <button onClick={() => { onRaise(row.item, row.branch, row.stock_id); onClose() }} className="inline-flex items-center gap-1.5 text-sm text-[#7A5AA5] border border-[#7A5AA5] rounded-md px-3 h-9 hover:bg-[#7A5AA5]/10"><ShoppingCart className="w-4 h-4" /> Raise order</button>}
           <Button variant="ghost" size="sm" className={isEdit ? '' : 'ml-auto'} onClick={onClose}>Cancel</Button>
           <Button size="sm" className="bg-[#7A5AA5] hover:opacity-90 text-white" onClick={save} disabled={!item.trim()}>{isEdit ? 'Save' : 'Add item'}</Button>
         </div>

@@ -93,12 +93,12 @@ export default function AnfOrderPage() {
             <div className="hidden md:block border border-border rounded-xl overflow-hidden bg-card">
               <table className="w-full text-sm table-fixed">
                 <colgroup>
-                  <col style={{ width: '150px' }} /><col style={{ width: '40%' }} /><col style={{ width: '64px' }} />
-                  <col /><col /><col /><col />
+                  <col style={{ width: '150px' }} /><col style={{ width: '36%' }} /><col style={{ width: '56px' }} />
+                  <col /><col /><col /><col /><col />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-border">
-                    {['Status', 'Item', 'Qty', 'Unit price', 'Total', 'Needed by', 'Assignee'].map((h, i) => (
+                    {['Status', 'Item', 'Qty', 'Unit price', 'Total', 'Needed by', 'Received', 'Assignee'].map((h, i) => (
                       <th key={h} className={`font-mono text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-4 py-3 whitespace-nowrap ${i >= 2 && i <= 4 ? 'text-right' : 'text-left'}`}>{h}</th>
                     ))}
                   </tr>
@@ -126,6 +126,7 @@ export default function AnfOrderPage() {
                         <span className="block font-medium text-[13.5px] leading-tight truncate">{o.item}</span>
                         <span className="font-mono text-[10.5px] mt-0.5 block">
                           <span className="font-semibold" style={{ color: branchColor(o.branch) }}>{o.branch || '—'}</span><span className="text-muted-foreground"> · {baht(lineTotal(o))}</span>
+                          {o.status === 'received' && <span className="text-[#3f9d5b]"> · ✓ recv {fmtDate(o.received_at)}</span>}
                         </span>
                       </span>
                       <span className="font-mono text-[13px] font-bold tabular-nums text-right">{o.quantity}<span className="block font-normal text-[9px] tracking-widest text-muted-foreground">QTY</span></span>
@@ -196,7 +197,7 @@ function DesktopBranch({ branch, rows, onOpen }: { branch: string; rows: AnfOrde
   return (
     <>
       <tr>
-        <td colSpan={7} className="bg-muted/50 px-4 py-2">
+        <td colSpan={8} className="bg-muted/50 px-4 py-2">
           <span className="font-mono text-[11px] uppercase tracking-wider font-bold" style={{ color }}>{branch}</span>
           <span className="font-mono text-[10px] text-muted-foreground ml-2">— {rows.length} item{rows.length > 1 ? 's' : ''}</span>
         </td>
@@ -212,7 +213,8 @@ function DesktopBranch({ branch, rows, onOpen }: { branch: string; rows: AnfOrde
             <td className="px-4 py-3 text-right font-mono tabular-nums whitespace-nowrap">{baht(o.unit_price)}</td>
             <td className="px-4 py-3 text-right font-mono tabular-nums whitespace-nowrap">{baht(lineTotal(o))}{o.with_vat && <span className="ml-1.5 font-mono text-[9px] tracking-wide bg-[#7A5AA5]/15 text-[#7A5AA5] px-1.5 py-0.5 rounded">+VAT</span>}</td>
             <td className={`px-4 py-3 font-mono text-[12px] whitespace-nowrap ${dueSoon ? 'text-[#FF5B3F] font-bold' : 'text-muted-foreground'}`}>{fmtDate(o.needed_by)}{o.remind_at && <Bell className="inline w-3 h-3 ml-1.5 text-[#7A5AA5]" />}</td>
-            <td className="px-4 py-3">{assignee ? <span className="inline-flex items-center gap-2 whitespace-nowrap"><UserAvatar name={assignee} size={22} /><span className="text-[12px]">{assignee}</span></span> : <span className="text-muted-foreground/60 text-[12px]">—</span>}</td>
+            <td className="px-4 py-3 font-mono text-[11.5px] whitespace-nowrap">{o.status === 'received' ? <span className="text-[#3f9d5b]">✓ {fmtDate(o.received_at)}{o.received_qty != null && <span className="text-muted-foreground"> · {o.received_qty} in</span>}{o.received_by && <span className="block text-[10px] text-muted-foreground">by {o.received_by}</span>}</span> : o.status === 'ordered' ? <span className="text-muted-foreground/70">awaiting</span> : <span className="text-muted-foreground/40">—</span>}</td>
+            <td className="px-4 py-3">{assignee ?<span className="inline-flex items-center gap-2 whitespace-nowrap"><UserAvatar name={assignee} size={22} /><span className="text-[12px]">{assignee}</span></span> : <span className="text-muted-foreground/60 text-[12px]">—</span>}</td>
           </tr>
         )
       })}

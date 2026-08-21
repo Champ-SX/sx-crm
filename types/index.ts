@@ -123,6 +123,7 @@ export interface AnfOrder {
   status: AnfOrderStatus
   received_at: string | null   // ISO date the order was marked Received (syncs to stock)
   received_qty?: number | null // qty actually delivered (default = quantity); tops up stock
+  received_by?: string | null  // who took delivery (free text) — syncs to stock.sign
   stock_id?: string | null     // FK → anf_stock; if set, Received replenishes that row
   notes: string | null
   created_at: string
@@ -144,7 +145,7 @@ export interface AnfStock {
   reported_at: string | null   // ISO date the current open order was raised
   delivered_at: string | null  // ISO date of the latest received order (synced)
   notes: string | null
-  sign: string | null          // who checked — free text
+  sign: string | null          // received by — who took the last delivery (free text); synced from orders
   created_at?: string
   updated_at?: string
 }

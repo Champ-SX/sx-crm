@@ -5,6 +5,7 @@
 -- 1. Order→Stock loop columns ------------------------------------------------
 ALTER TABLE anf_orders ADD COLUMN IF NOT EXISTS received_at   DATE;
 ALTER TABLE anf_orders ADD COLUMN IF NOT EXISTS received_qty  INTEGER;
+ALTER TABLE anf_orders ADD COLUMN IF NOT EXISTS received_by   TEXT;
 ALTER TABLE anf_orders ADD COLUMN IF NOT EXISTS stock_id      TEXT;
 
 -- 2. anf_stock ---------------------------------------------------------------
