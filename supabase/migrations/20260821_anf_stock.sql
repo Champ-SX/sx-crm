@@ -7,13 +7,14 @@ ALTER TABLE anf_orders ADD COLUMN IF NOT EXISTS received_at   DATE;
 ALTER TABLE anf_orders ADD COLUMN IF NOT EXISTS received_qty  INTEGER;
 ALTER TABLE anf_orders ADD COLUMN IF NOT EXISTS received_by   TEXT;
 ALTER TABLE anf_orders ADD COLUMN IF NOT EXISTS stock_id      TEXT;
+ALTER TABLE anf_orders ADD COLUMN IF NOT EXISTS description   TEXT;
 
 -- 2. anf_stock ---------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS anf_stock (
   stock_id     TEXT PRIMARY KEY,
   board_id     TEXT NOT NULL DEFAULT 'anf-order',
   item         TEXT NOT NULL,
-  product_code TEXT,
+  description  TEXT,
   branch       TEXT,
   room         TEXT,
   qty          INTEGER NOT NULL DEFAULT 0,
@@ -35,7 +36,7 @@ DROP POLICY IF EXISTS "anf_stock all" ON anf_stock;
 CREATE POLICY "anf_stock all" ON anf_stock FOR ALL USING (true) WITH CHECK (true);
 
 -- 3. Seed — imported from [ANF] Stock.xlsx -----------------------------------
-INSERT INTO anf_stock (stock_id, board_id, item, product_code, branch, room, qty, alert_qty, alert_unit, checked_at, reported_at, delivered_at, notes, sign) VALUES
+INSERT INTO anf_stock (stock_id, board_id, item, description, branch, room, qty, alert_qty, alert_unit, checked_at, reported_at, delivered_at, notes, sign) VALUES
   ('stk-bacc-001', 'anf-order', 'กระดาษปริ้นท์ RX1', 'PAPER DNP RX1 4*6', 'BACC', 'A64/A65/A66/BACC Fl.5', 2, 2, 'BOXES', '2026-08-18', '2026-08-09', '2026-08-18', 'มาส่ง 1 กล่อง', 'Bank'),
   ('stk-bacc-002', 'anf-order', 'กระดาษปริ้นท์ RX1 A60', 'PAPER DNP RX1 5*7', 'BACC', 'A60', 3, 1, 'BOXES', '2026-08-16', '2026-07-12', '2026-08-05', 'มาส่ง 3 กล่อง', 'Bank'),
   ('stk-bacc-003', 'anf-order', 'กระดาษฟิล​มสไลด์ (ใส)', 'PAPER CANON FILM 4*6', 'BACC', 'A63', 27, 10, 'PACKS', '2026-08-16', '2026-08-09', '2026-08-18', '20 packs', 'Bank'),

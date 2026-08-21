@@ -51,14 +51,14 @@ const ACTIVE_BOARD_KEY = 'sx-active-board'
 
 // Local mock stock (used only in mock mode — real data comes from the import).
 const MOCK_ANF_STOCK: AnfStock[] = [
-  { stock_id: 'm1', board_id: 'anf-order', item: 'กระดาษปริ้นท์ RX1', product_code: 'PAPER DNP RX1 4*6', branch: 'BACC', room: 'A64/A65/A66', qty: 2, alert_qty: 2, alert_unit: 'BOXES', checked_at: '2026-08-18', reported_at: '2026-08-09', delivered_at: '2026-08-18', notes: null, sign: 'Bank' },
-  { stock_id: 'm2', board_id: 'anf-order', item: 'ฟิล์มสไลด์ (ใส)', product_code: 'PAPER CANON FILM 4*6', branch: 'BACC', room: 'A63', qty: 27, alert_qty: 10, alert_unit: 'PACKS', checked_at: '2026-08-16', reported_at: null, delivered_at: '2026-08-18', notes: null, sign: 'Bank' },
-  { stock_id: 'm3', board_id: 'anf-order', item: 'กระดาษปริ้นสติ๊กเกอร์', product_code: null, branch: 'BACC', room: 'A61', qty: 1, alert_qty: 4, alert_unit: 'PACKS', checked_at: '2026-08-16', reported_at: null, delivered_at: null, notes: null, sign: null },
-  { stock_id: 'm4', board_id: 'anf-order', item: 'กรอบฟิล์มใส (ฟ้า)', product_code: 'PAPER FRAME SKY', branch: 'BACC', room: 'A63', qty: 0, alert_qty: 5, alert_unit: 'PACKS', checked_at: '2026-08-16', reported_at: null, delivered_at: null, notes: null, sign: null },
-  { stock_id: 'm5', board_id: 'anf-order', item: 'กระดาษปริ้นท์ RX1', product_code: 'PAPER DNP RX1 4*6', branch: 'BTT', room: 'B82/B84/B85', qty: 2, alert_qty: 1, alert_unit: 'BOXES', checked_at: '2026-08-16', reported_at: null, delivered_at: null, notes: null, sign: 'Bank' },
-  { stock_id: 'm6', board_id: 'anf-order', item: 'ซองใส ใส่รูป', product_code: 'ANDY PHOTO WALLET', branch: 'BTT', room: 'All', qty: 3, alert_qty: 2, alert_unit: 'PACKS', checked_at: '2026-08-16', reported_at: null, delivered_at: null, notes: null, sign: null },
-  { stock_id: 'm7', board_id: 'anf-order', item: 'กระดาษปริ้นท์ RX1', product_code: 'PAPER DNP RX1 4*6', branch: 'OFFICE', room: null, qty: 2, alert_qty: null, alert_unit: null, checked_at: null, reported_at: null, delivered_at: null, notes: null, sign: null },
-  { stock_id: 'm8', board_id: 'anf-order', item: 'ซองใส ใส่รูป', product_code: 'ANDY PHOTO WALLET', branch: 'OFFICE', room: null, qty: 12, alert_qty: null, alert_unit: null, checked_at: null, reported_at: null, delivered_at: null, notes: null, sign: null },
+  { stock_id: 'm1', board_id: 'anf-order', item: 'กระดาษปริ้นท์ RX1', description: 'PAPER DNP RX1 4*6', branch: 'BACC', room: 'A64/A65/A66', qty: 2, alert_qty: 2, alert_unit: 'BOXES', checked_at: '2026-08-18', reported_at: '2026-08-09', delivered_at: '2026-08-18', notes: null, sign: 'Bank' },
+  { stock_id: 'm2', board_id: 'anf-order', item: 'ฟิล์มสไลด์ (ใส)', description: 'PAPER CANON FILM 4*6', branch: 'BACC', room: 'A63', qty: 27, alert_qty: 10, alert_unit: 'PACKS', checked_at: '2026-08-16', reported_at: null, delivered_at: '2026-08-18', notes: null, sign: 'Bank' },
+  { stock_id: 'm3', board_id: 'anf-order', item: 'กระดาษปริ้นสติ๊กเกอร์', description: null, branch: 'BACC', room: 'A61', qty: 1, alert_qty: 4, alert_unit: 'PACKS', checked_at: '2026-08-16', reported_at: null, delivered_at: null, notes: null, sign: null },
+  { stock_id: 'm4', board_id: 'anf-order', item: 'กรอบฟิล์มใส (ฟ้า)', description: 'PAPER FRAME SKY', branch: 'BACC', room: 'A63', qty: 0, alert_qty: 5, alert_unit: 'PACKS', checked_at: '2026-08-16', reported_at: null, delivered_at: null, notes: null, sign: null },
+  { stock_id: 'm5', board_id: 'anf-order', item: 'กระดาษปริ้นท์ RX1', description: 'PAPER DNP RX1 4*6', branch: 'BTT', room: 'B82/B84/B85', qty: 2, alert_qty: 1, alert_unit: 'BOXES', checked_at: '2026-08-16', reported_at: null, delivered_at: null, notes: null, sign: 'Bank' },
+  { stock_id: 'm6', board_id: 'anf-order', item: 'ซองใส ใส่รูป', description: 'ANDY PHOTO WALLET', branch: 'BTT', room: 'All', qty: 3, alert_qty: 2, alert_unit: 'PACKS', checked_at: '2026-08-16', reported_at: null, delivered_at: null, notes: null, sign: null },
+  { stock_id: 'm7', board_id: 'anf-order', item: 'กระดาษปริ้นท์ RX1', description: 'PAPER DNP RX1 4*6', branch: 'OFFICE', room: null, qty: 2, alert_qty: null, alert_unit: null, checked_at: null, reported_at: null, delivered_at: null, notes: null, sign: null },
+  { stock_id: 'm8', board_id: 'anf-order', item: 'ซองใส ใส่รูป', description: 'ANDY PHOTO WALLET', branch: 'OFFICE', room: null, qty: 12, alert_qty: null, alert_unit: null, checked_at: null, reported_at: null, delivered_at: null, notes: null, sign: null },
 ]
 
 const DEFAULT_OP_STAGES: DynamicOPStage[] = [

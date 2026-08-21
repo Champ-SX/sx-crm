@@ -109,6 +109,7 @@ export interface AnfOrder {
   order_id: string
   board_id?: string
   item: string
+  description?: string | null  // optional spec/description, consistent with stock
   quantity: number
   unit_price: number
   with_vat: boolean          // include 7% VAT in the total
@@ -135,7 +136,7 @@ export interface AnfStock {
   stock_id: string
   board_id?: string
   item: string
-  product_code: string | null
+  description: string | null   // spec/description (was product_code); shown prominently
   branch: string | null
   room: string | null          // booth / machine location codes
   qty: number                  // on hand

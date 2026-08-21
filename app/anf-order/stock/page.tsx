@@ -65,7 +65,8 @@ export default function AnfStockPage() {
   const lowCount = rows.filter((r) => stockState(r) !== 'ok').length
 
   function raiseOrder(item: string, branch: string | null, stock_id: string | null) {
-    setOrderPrefill({ item, branch, stock_id, unit_price: lastPrice.get(item) })
+    const src = stock_id ? rows.find((r) => r.stock_id === stock_id) : rows.find((r) => r.item === item && r.branch === branch)
+    setOrderPrefill({ item, branch, stock_id, unit_price: lastPrice.get(item), description: src?.description ?? null })
   }
 
   if (!isHydrated) return null
@@ -149,7 +150,7 @@ function BranchTable({ rows, lowOnly, onOrder, onOpen, onRaise }: {
               const st = stockState(r)
               return (
                 <tr key={r.stock_id} className="border-b border-border/50 last:border-0 hover:bg-muted/40 cursor-pointer" onClick={() => onOpen(r)}>
-                  <td className="px-4 py-3"><div className="font-medium truncate">{r.item}</div>{r.product_code && <div className="font-mono text-[10px] text-muted-foreground truncate mt-0.5">{r.product_code}</div>}</td>
+                  <td className="px-4 py-3"><div className="font-semibold truncate">{r.item}</div>{r.description && <div className="text-[12.5px] text-muted-foreground truncate mt-0.5">{r.description}</div>}</td>
                   <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground truncate">{r.room || '—'}</td>
                   <td className={`px-4 py-3 text-right font-mono font-bold tabular-nums ${st !== 'ok' ? 'text-[#FF5B3F]' : ''}`}>{r.qty}</td>
                   <td className="px-4 py-3 text-right font-mono text-[12px] text-muted-foreground whitespace-nowrap">{r.alert_qty ?? '—'}{r.alert_unit ? ` ${r.alert_unit.toLowerCase()}` : ''}</td>
@@ -175,8 +176,9 @@ function BranchTable({ rows, lowOnly, onOrder, onOpen, onRaise }: {
             <div key={r.stock_id} className="border border-border rounded-xl bg-card px-3 py-3">
               <button onClick={() => onOpen(r)} className="w-full flex items-start gap-3 text-left">
                 <span className="min-w-0 flex-1">
-                  <span className="block font-medium text-[13.5px] leading-tight truncate">{r.item}</span>
-                  <span className="font-mono text-[10.5px] text-muted-foreground block mt-0.5">{r.room || '—'} · checked {fmtDate(r.checked_at)}</span>
+                  <span className="block font-semibold text-[13.5px] leading-tight truncate">{r.item}</span>
+                  {r.description && <span className="block text-[12px] text-muted-foreground truncate mt-0.5">{r.description}</span>}
+                  <span className="font-mono text-[10px] text-muted-foreground/80 block mt-0.5">{r.room || '—'} · checked {fmtDate(r.checked_at)}</span>
                   {r.delivered_at && <span className="font-mono text-[10px] text-[#3f9d5b] block mt-0.5">↓ last in {fmtDate(r.delivered_at)}{r.sign && ` · by ${r.sign}`}</span>}
                 </span>
                 <span className="text-right shrink-0">
@@ -207,9 +209,9 @@ function TotalPivot({ rows, branches, lowOnly, onOrder, onRaise }: {
     const m = new Map<string, { item: string; code: string | null; per: Record<string, number | null>; total: number; low: boolean }>()
     for (const r of rows) {
       const key = r.item
-      if (!m.has(key)) m.set(key, { item: r.item, code: r.product_code, per: {}, total: 0, low: false })
+      if (!m.has(key)) m.set(key, { item: r.item, code: r.description, per: {}, total: 0, low: false })
       const e = m.get(key)!
-      if (!e.code && r.product_code) e.code = r.product_code
+      if (!e.code && r.description) e.code = r.description
       const b = r.branch || '—'
       e.per[b] = (e.per[b] ?? 0) + r.qty
       e.total += r.qty
@@ -235,7 +237,7 @@ function TotalPivot({ rows, branches, lowOnly, onOrder, onRaise }: {
             const st = state(i)
             return (
               <tr key={i.item} className="border-b border-border/50 last:border-0 hover:bg-muted/30">
-                <td className="px-4 py-3"><div className="font-medium">{i.item}</div>{i.code && <div className="font-mono text-[10px] text-muted-foreground mt-0.5">{i.code}</div>}</td>
+                <td className="px-4 py-3"><div className="font-semibold">{i.item}</div>{i.code && <div className="text-[12.5px] text-muted-foreground mt-0.5">{i.code}</div>}</td>
                 {branches.map((b) => <td key={b} className="px-3 py-3 text-right font-mono tabular-nums">{i.per[b] == null ? <span className="text-muted-foreground/40">N/A</span> : i.per[b]}</td>)}
                 <td className={`px-4 py-3 text-right font-mono font-bold tabular-nums ${st !== 'ok' ? 'text-[#FF5B3F]' : ''}`}>{i.total}</td>
                 <td className="px-4 py-3">{onOrder.has(i.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5]">● on order</span> : <StateFlag s={st} />}</td>
@@ -265,7 +267,7 @@ function StockDialog({ row, onClose, onRaise }: {
   const { anfStock, anfOrders, activeBoardId, addAnfStock, updateAnfStock, deleteAnfStock } = useCRMStore()
   const isEdit = !!row
   const [item, setItem] = useState(row?.item ?? '')
-  const [code, setCode] = useState(row?.product_code ?? '')
+  const [description, setDescription] = useState(row?.description ?? '')
   const [branch, setBranch] = useState(row?.branch ?? '')
   const [addingBranch, setAddingBranch] = useState(false)
   const [room, setRoom] = useState(row?.room ?? '')
@@ -294,7 +296,7 @@ function StockDialog({ row, onClose, onRaise }: {
     // Note: `sign` and `delivered_at` are NOT edited here — they're synced from
     // the order receive step (read-only "Last in").
     const base = {
-      item: item.trim(), product_code: code.trim() || null, branch: branch.trim() || null,
+      item: item.trim(), description: description.trim() || null, branch: branch.trim() || null,
       room: room.trim() || null, qty: parseInt(qty, 10) || 0,
       alert_qty: alertQty === '' ? null : (parseInt(alertQty, 10) || 0),
       alert_unit: alertUnit.trim() || null, checked_at: checkedAt || null,
@@ -313,7 +315,7 @@ function StockDialog({ row, onClose, onRaise }: {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent showCloseButton={false} className="max-w-lg p-0 gap-0 overflow-hidden">
+      <DialogContent showCloseButton={false} className="max-w-xl p-0 gap-0 overflow-hidden">
         <div className="flex items-center gap-2.5 px-5 py-3 border-b border-border">
           <span className="w-3 h-3 rounded-[4px]" style={{ backgroundColor: ANF_ACCENT }} />
           <DialogTitle className="text-[15px] font-bold">{isEdit ? 'Edit stock item' : 'Add stock item'}</DialogTitle>
@@ -321,7 +323,31 @@ function StockDialog({ row, onClose, onRaise }: {
         </div>
         <div className="px-5 py-4 max-h-[70vh] overflow-y-auto grid grid-cols-2 gap-3.5">
           <div className="col-span-2"><label className="field-label">Item</label><Input value={item} onChange={(e) => setItem(e.target.value)} placeholder="e.g. กระดาษปริ้นท์ RX1" className="h-9" /></div>
-          <div className="col-span-2"><label className="field-label">Product code</label><Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="PAPER DNP RX1 4*6" className="h-9" /></div>
+
+          {/* On hand (75%) — type or −/+ — with Checked (25%) on the right */}
+          <div className="col-span-2 flex gap-2.5 items-stretch">
+            <div className="flex-[3] min-w-0 rounded-xl border-[1.5px] border-[#FF5B3F]/40 bg-card px-3.5 py-3">
+              <div className="flex items-baseline gap-2 mb-2.5">
+                <span className="text-[14px] font-semibold leading-none">On hand</span>
+                <span className="font-mono text-[10px] text-muted-foreground leading-none truncate">type or −/+{alertQty !== '' ? ` · LOW ≤ ${alertQty}${alertUnit ? ` ${alertUnit.toLowerCase()}` : ''}` : ''}</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <button type="button" onClick={() => setQty(String(Math.max(0, (parseInt(qty, 10) || 0) - 1)))} className="w-9 h-9 rounded-lg border border-border bg-muted/40 text-xl leading-none flex items-center justify-center hover:bg-muted shrink-0">−</button>
+                <Input type="number" min={0} value={qty} onChange={(e) => setQty(e.target.value)} className="flex-1 h-11 text-center font-mono text-2xl font-bold px-1 text-[#FF5B3F]" />
+                <button type="button" onClick={() => setQty(String((parseInt(qty, 10) || 0) + 1))} className="w-9 h-9 rounded-lg border border-border bg-muted/40 text-xl leading-none flex items-center justify-center hover:bg-muted shrink-0">+</button>
+              </div>
+            </div>
+            <div className="flex-1 min-w-0 rounded-xl border border-border bg-card px-3 py-3 flex flex-col justify-between">
+              <label className="field-label mb-0">Checked</label>
+              <Input type="date" value={checkedAt} onChange={(e) => setCheckedAt(e.target.value)} className="h-9 px-1.5 text-[12px]" />
+            </div>
+          </div>
+
+          {/* Description — prominent, optional */}
+          <div className="col-span-2">
+            <label className="field-label">Description <span className="font-normal normal-case tracking-normal text-muted-foreground/70">· optional</span></label>
+            <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Paper DNP RX1 4×6 — glossy photo roll" className="h-9" />
+          </div>
 
           <div className="min-w-0">
             <label className="field-label">Branch</label>
@@ -343,13 +369,8 @@ function StockDialog({ row, onClose, onRaise }: {
           </div>
           <div><label className="field-label">Room / location</label><Input value={room} onChange={(e) => setRoom(e.target.value)} placeholder="A63" className="h-9" /></div>
 
-          <div><label className="field-label">On hand</label><Input type="number" min={0} value={qty} onChange={(e) => setQty(e.target.value)} className="h-9" /></div>
-          <div className="grid grid-cols-2 gap-2">
-            <div><label className="field-label">Alert at</label><Input type="number" min={0} value={alertQty} onChange={(e) => setAlertQty(e.target.value)} placeholder="—" className="h-9" /></div>
-            <div><label className="field-label">Unit</label><Input value={alertUnit} onChange={(e) => setAlertUnit(e.target.value)} placeholder="boxes" className="h-9" /></div>
-          </div>
-
-          <div className="col-span-2"><label className="field-label">Checked date</label><Input type="date" value={checkedAt} onChange={(e) => setCheckedAt(e.target.value)} className="h-9" /></div>
+          <div><label className="field-label">Alert threshold</label><Input type="number" min={0} value={alertQty} onChange={(e) => setAlertQty(e.target.value)} placeholder="—" className="h-9" /></div>
+          <div><label className="field-label">Alert unit</label><Input value={alertUnit} onChange={(e) => setAlertUnit(e.target.value)} placeholder="boxes" className="h-9" /></div>
 
           {/* Last in — read-only, synced from the order receive step */}
           {isEdit && (

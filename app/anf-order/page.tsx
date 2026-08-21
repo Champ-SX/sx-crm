@@ -123,7 +123,8 @@ export default function AnfOrderPage() {
                     <button key={o.order_id} onClick={() => setEditing(o)} className="w-full grid grid-cols-[auto_1fr_auto] gap-3 items-center px-3 py-3 border-b border-border/50 last:border-0 text-left active:bg-muted/40">
                       <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${statusMeta(o.status).dot}`} />
                       <span className="min-w-0">
-                        <span className="block font-medium text-[13.5px] leading-tight truncate">{o.item}</span>
+                        <span className="block font-semibold text-[13.5px] leading-tight truncate">{o.item}</span>
+                        {o.description && <span className="block text-[11.5px] text-muted-foreground truncate mt-0.5">{o.description}</span>}
                         <span className="font-mono text-[10.5px] mt-0.5 block">
                           <span className="font-semibold" style={{ color: branchColor(o.branch) }}>{o.branch || '—'}</span><span className="text-muted-foreground"> · {baht(lineTotal(o))}</span>
                           {o.status === 'received' && <span className="text-[#3f9d5b]"> · ✓ recv {fmtDate(o.received_at)}</span>}
@@ -208,7 +209,7 @@ function DesktopBranch({ branch, rows, onOpen }: { branch: string; rows: AnfOrde
         return (
           <tr key={o.order_id} className="border-b border-border/50 last:border-0 hover:bg-muted/40 cursor-pointer" onClick={() => onOpen(o)}>
             <td className="px-4 py-3"><StatusInline order={o} /></td>
-            <td className="px-4 py-3 font-medium truncate">{o.item}</td>
+            <td className="px-4 py-3 min-w-0"><div className="font-semibold truncate">{o.item}</div>{o.description && <div className="text-[12.5px] text-muted-foreground truncate mt-0.5">{o.description}</div>}</td>
             <td className="px-4 py-3 text-right font-mono tabular-nums">{o.quantity}</td>
             <td className="px-4 py-3 text-right font-mono tabular-nums whitespace-nowrap">{baht(o.unit_price)}</td>
             <td className="px-4 py-3 text-right font-mono tabular-nums whitespace-nowrap">{baht(lineTotal(o))}{o.with_vat && <span className="ml-1.5 font-mono text-[9px] tracking-wide bg-[#7A5AA5]/15 text-[#7A5AA5] px-1.5 py-0.5 rounded">+VAT</span>}</td>
