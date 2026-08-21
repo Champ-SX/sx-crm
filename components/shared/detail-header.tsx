@@ -1,6 +1,7 @@
 'use client'
 
-import { X, Plus, MoreHorizontal } from 'lucide-react'
+import { useState } from 'react'
+import { X, Plus, MoreHorizontal, ChevronDown } from 'lucide-react'
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
@@ -56,6 +57,7 @@ export function DetailHeader({
   title,
   subtitle,
   meta,
+  summary,
   onClose,
   actions,
   addItems,
@@ -65,10 +67,14 @@ export function DetailHeader({
   title: React.ReactNode
   subtitle?: React.ReactNode
   meta?: MetaCell[]
+  // Optional compact one-line summary shown on MOBILE instead of the full meta
+  // grid; tapping "Details" expands the grid. Desktop always shows the grid.
+  summary?: React.ReactNode
   onClose: () => void
   actions?: ActionItem[]
   addItems?: ActionItem[]
 }) {
+  const [open, setOpen] = useState(false)
   return (
     <div className="border-b border-border bg-card shrink-0">
       {/* Top action row — X never overlaps content (its own band). */}
@@ -95,13 +101,30 @@ export function DetailHeader({
         <div className="text-title">{title}</div>
         {subtitle && <div className="text-subtitle mt-0.5">{subtitle}</div>}
         {meta && meta.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-border/60 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
-            {meta.map((m, i) => (
-              <div key={i} className="min-w-0">
-                <p className="field-label">{m.label}</p>
-                <div className="text-sm text-foreground">{m.node}</div>
-              </div>
-            ))}
+          <div className="mt-3 pt-3 border-t border-border/60">
+            {/* Mobile: tappable one-line summary that expands the grid */}
+            {summary && (
+              <button
+                type="button"
+                onClick={() => setOpen((o) => !o)}
+                className="sm:hidden w-full flex items-center gap-2 text-left"
+                aria-expanded={open}
+              >
+                <div className="flex-1 min-w-0 flex items-center gap-2 overflow-hidden">{summary}</div>
+                <span className="shrink-0 font-mono text-[10px] uppercase tracking-wide text-muted-foreground flex items-center gap-1">
+                  {open ? 'Hide' : 'Details'}
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+                </span>
+              </button>
+            )}
+            <div className={`${summary ? (open ? 'grid mt-3' : 'hidden') : 'grid'} sm:grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3`}>
+              {meta.map((m, i) => (
+                <div key={i} className="min-w-0">
+                  <p className="field-label">{m.label}</p>
+                  <div className="text-sm text-foreground">{m.node}</div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

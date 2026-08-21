@@ -425,6 +425,15 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
               />
             }
             subtitle={item.service_type || undefined}
+            summary={
+              <>
+                <StatusDot status={item.status} />
+                <span className="text-muted-foreground">·</span>
+                <span className="font-mono text-[12px] text-foreground shrink-0">{item.estimated_value && item.estimated_value > 0 ? `฿${item.estimated_value.toLocaleString()}` : '฿—'}</span>
+                <span className="text-muted-foreground">·</span>
+                <span className="text-[12px] text-foreground truncate">{item.owner}</span>
+              </>
+            }
             actions={[
               { label: 'Copy link', icon: <Link2 className="w-4 h-4" />, onClick: () => copyCardLink('lead_opportunity', item.lead_op_id) },
               { label: 'Share link', icon: <Share2 className="w-4 h-4" />, onClick: () => shareCardLink('lead_opportunity', item.lead_op_id, item.name) },
@@ -807,8 +816,8 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                           </div>
                         </button>
                         {/* Customer Insights — shared from the linked customer */}
-                        <div className="rounded-lg border border-border bg-muted dark:border-border dark:bg-muted p-3">
-                          <p className="field-label mb-2 text-muted-foreground dark:text-muted-foreground">Customer Insights ⭐</p>
+                        <div className="rounded-lg border border-border bg-muted/30 p-3">
+                          <p className="field-label mb-2 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#D7FE3A] ring-1 ring-black/15 shrink-0"></span>Customer Insights</p>
                           <InlineEdit value={linkedCustomer.customer_insights ?? ''} placeholder="Insight about this customer (shared across their Leads & Won jobs)…" multiline onSave={(v) => updateCustomer(linkedCustomer.customer_id, { customer_insights: v })} />
                         </div>
                       </>

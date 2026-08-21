@@ -995,6 +995,17 @@ function JobDetail({
             onClose={onClose}
             title={<span className="break-words">{jobCanonicalTitle(job)}</span>}
             subtitle={formatJobMeta(job) || undefined}
+            summary={
+              <>
+                <span className="inline-flex items-center gap-1.5 font-mono text-[12px] uppercase tracking-wide shrink-0">
+                  <span className={`w-2 h-2 rounded-full ${stageConfig[job.op_stage as OPStage]?.dot ?? 'bg-slate-400'}`} />
+                  {OP_STAGE_LABELS[job.op_stage as OPStage] ?? job.op_stage}
+                </span>
+                <span className="text-muted-foreground">·</span>
+                <span className="font-mono text-[12px] text-foreground shrink-0">{formatCurrency(job.estimated_value)}</span>
+                {job.owner && <><span className="text-muted-foreground">·</span><span className="text-[12px] text-foreground truncate">{job.owner}</span></>}
+              </>
+            }
             actions={[
               { label: 'Copy link', icon: <Link2 className="w-4 h-4" />, onClick: () => copyCardLink('won_job', job.job_id) },
               { label: 'Share link', icon: <Share2 className="w-4 h-4" />, onClick: () => shareCardLink('won_job', job.job_id, jobDisplayTitle(job)) },
