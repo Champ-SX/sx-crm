@@ -982,7 +982,7 @@ function JobDetail({
   return (
     <>
       <Dialog open onOpenChange={onClose}>
-        <DialogContent showCloseButton={false} className="w-[88vw] max-w-[88vw] sm:max-w-[88vw] top-[4vh] translate-y-0 p-0 gap-0 overflow-hidden max-h-[88dvh] flex flex-col">
+        <DialogContent showCloseButton={false} className="!fixed !top-0 !left-0 !-translate-x-0 !-translate-y-0 !w-screen !h-[100dvh] !max-w-none !p-0 !gap-0 sm:!w-[88vw] sm:!max-w-[88vw] sm:!h-auto sm:!top-1/2 sm:!left-1/2 sm:!-translate-x-1/2 sm:!-translate-y-1/2 !overflow-hidden !max-h-[100dvh] sm:!max-h-[88vh] !flex !flex-col !rounded-none sm:!rounded-lg">
 
           {/* ── Header (unified DetailHeader) ── */}
           {/* Single-card title = the full canonical string composed from the
