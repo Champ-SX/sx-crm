@@ -4,7 +4,7 @@ import { create } from 'zustand'
 import type {
   Customer, Company, ContactPerson,
   LeadOpportunity, WonJob, Activity, Task, OPStage, StaffMember,
-  DynamicOPStage, JobSortOption, TeamMember, Notification, Board, AnfOrder,
+  DynamicOPStage, JobSortOption, TeamMember, Notification, Board, AnfOrder, AnfStock,
 } from '@/types'
 import { parseMentions, notifyByEmail } from '@/lib/mentions'
 import { deleteAttachmentFiles } from '@/lib/supabase/storage'
@@ -48,6 +48,18 @@ const SEED_BOARDS: Board[] = [
   { board_id: 'anf-order', name: 'ANF Order', slug: 'anf-order', color: '#7A5AA5', sort_order: 1 },
 ]
 const ACTIVE_BOARD_KEY = 'sx-active-board'
+
+// Local mock stock (used only in mock mode — real data comes from the import).
+const MOCK_ANF_STOCK: AnfStock[] = [
+  { stock_id: 'm1', board_id: 'anf-order', item: 'กระดาษปริ้นท์ RX1', product_code: 'PAPER DNP RX1 4*6', branch: 'BACC', room: 'A64/A65/A66', qty: 2, alert_qty: 2, alert_unit: 'BOXES', checked_at: '2026-08-18', reported_at: '2026-08-09', delivered_at: '2026-08-18', notes: null, sign: 'Bank' },
+  { stock_id: 'm2', board_id: 'anf-order', item: 'ฟิล์มสไลด์ (ใส)', product_code: 'PAPER CANON FILM 4*6', branch: 'BACC', room: 'A63', qty: 27, alert_qty: 10, alert_unit: 'PACKS', checked_at: '2026-08-16', reported_at: null, delivered_at: '2026-08-18', notes: null, sign: 'Bank' },
+  { stock_id: 'm3', board_id: 'anf-order', item: 'กระดาษปริ้นสติ๊กเกอร์', product_code: null, branch: 'BACC', room: 'A61', qty: 1, alert_qty: 4, alert_unit: 'PACKS', checked_at: '2026-08-16', reported_at: null, delivered_at: null, notes: null, sign: null },
+  { stock_id: 'm4', board_id: 'anf-order', item: 'กรอบฟิล์มใส (ฟ้า)', product_code: 'PAPER FRAME SKY', branch: 'BACC', room: 'A63', qty: 0, alert_qty: 5, alert_unit: 'PACKS', checked_at: '2026-08-16', reported_at: null, delivered_at: null, notes: null, sign: null },
+  { stock_id: 'm5', board_id: 'anf-order', item: 'กระดาษปริ้นท์ RX1', product_code: 'PAPER DNP RX1 4*6', branch: 'BTT', room: 'B82/B84/B85', qty: 2, alert_qty: 1, alert_unit: 'BOXES', checked_at: '2026-08-16', reported_at: null, delivered_at: null, notes: null, sign: 'Bank' },
+  { stock_id: 'm6', board_id: 'anf-order', item: 'ซองใส ใส่รูป', product_code: 'ANDY PHOTO WALLET', branch: 'BTT', room: 'All', qty: 3, alert_qty: 2, alert_unit: 'PACKS', checked_at: '2026-08-16', reported_at: null, delivered_at: null, notes: null, sign: null },
+  { stock_id: 'm7', board_id: 'anf-order', item: 'กระดาษปริ้นท์ RX1', product_code: 'PAPER DNP RX1 4*6', branch: 'OFFICE', room: null, qty: 2, alert_qty: null, alert_unit: null, checked_at: null, reported_at: null, delivered_at: null, notes: null, sign: null },
+  { stock_id: 'm8', board_id: 'anf-order', item: 'ซองใส ใส่รูป', product_code: 'ANDY PHOTO WALLET', branch: 'OFFICE', room: null, qty: 12, alert_qty: null, alert_unit: null, checked_at: null, reported_at: null, delivered_at: null, notes: null, sign: null },
+]
 
 const DEFAULT_OP_STAGES: DynamicOPStage[] = [
   {
@@ -118,6 +130,12 @@ interface CRMStore {
   addAnfOrder: (order: AnfOrder) => Promise<void>
   updateAnfOrder: (id: string, updates: Partial<AnfOrder>) => Promise<void>
   deleteAnfOrder: (id: string) => Promise<void>
+
+  // ── ANF Stock (per-branch inventory; shares item catalog with orders) ───────
+  anfStock: AnfStock[]
+  addAnfStock: (row: AnfStock) => Promise<void>
+  updateAnfStock: (id: string, updates: Partial<AnfStock>) => Promise<void>
+  deleteAnfStock: (id: string) => Promise<void>
 
   // ── OP Kanban Stages (dynamic) ──────────────────────────────────────────────
   opStages: DynamicOPStage[]
@@ -249,11 +267,33 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
         }
       },
       updateAnfOrder: async (id, updates) => {
+        const prev = get().anfOrders.find((o) => o.order_id === id)
+        // Loop: when an order first becomes Received, stamp the received date and
+        // top up the linked stock row (qty += received_qty, delivered date synced).
+        let patch = { ...updates }
+        if (updates.status === 'received' && prev && prev.status !== 'received') {
+          const today = new Date().toISOString().slice(0, 10)
+          const receivedAt = updates.received_at ?? prev.received_at ?? today
+          const receivedQty = updates.received_qty ?? prev.received_qty ?? prev.quantity
+          patch = { ...patch, received_at: receivedAt, received_qty: receivedQty }
+          const stockId = updates.stock_id ?? prev.stock_id ?? null
+          // Resolve the stock row: explicit link, else match by item + branch.
+          const stockRow = stockId
+            ? get().anfStock.find((r) => r.stock_id === stockId)
+            : get().anfStock.find((r) => r.item === prev.item && r.branch === prev.branch)
+          if (stockRow) {
+            void get().updateAnfStock(stockRow.stock_id, {
+              qty: stockRow.qty + (receivedQty || 0),
+              delivered_at: receivedAt,
+              reported_at: null,
+            })
+          }
+        }
         set((s) => ({
-          anfOrders: s.anfOrders.map((o) => o.order_id === id ? { ...o, ...updates, updated_at: new Date().toISOString() } : o),
+          anfOrders: s.anfOrders.map((o) => o.order_id === id ? { ...o, ...patch, updated_at: new Date().toISOString() } : o),
         }))
         if (USE_SUPABASE) {
-          try { await db.anfOrderQueries.update(id, updates) }
+          try { await db.anfOrderQueries.update(id, patch) }
           catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to update order' }) }
         }
       },
@@ -262,6 +302,32 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
         if (USE_SUPABASE) {
           try { await db.anfOrderQueries.delete(id) }
           catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to delete order' }) }
+        }
+      },
+
+      // ── ANF Stock ─────────────────────────────────────────────────────────────
+      anfStock: USE_SUPABASE ? [] : MOCK_ANF_STOCK,
+      addAnfStock: async (row) => {
+        set((s) => ({ anfStock: [...s.anfStock, row] }))
+        if (USE_SUPABASE) {
+          try { await db.anfStockQueries.create(row) }
+          catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to create stock item' }) }
+        }
+      },
+      updateAnfStock: async (id, updates) => {
+        set((s) => ({
+          anfStock: s.anfStock.map((r) => r.stock_id === id ? { ...r, ...updates, updated_at: new Date().toISOString() } : r),
+        }))
+        if (USE_SUPABASE) {
+          try { await db.anfStockQueries.update(id, updates) }
+          catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to update stock item' }) }
+        }
+      },
+      deleteAnfStock: async (id) => {
+        set((s) => ({ anfStock: s.anfStock.filter((r) => r.stock_id !== id) }))
+        if (USE_SUPABASE) {
+          try { await db.anfStockQueries.delete(id) }
+          catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to delete stock item' }) }
         }
       },
 
@@ -357,6 +423,15 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
               err instanceof Error ? err.message : String(err))
           }
 
+          // Load ANF Stock rows (graceful fallback if table absent pre-migration)
+          let anfStock: AnfStock[] = []
+          try {
+            anfStock = await db.anfStockQueries.getAll()
+          } catch (err) {
+            console.warn('[CRM Store] Could not load anf_stock (pre-migration?):',
+              err instanceof Error ? err.message : String(err))
+          }
+
           // Load notifications for the current user
           let notifications: Notification[] = []
           try {
@@ -391,6 +466,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
             boards,
             activeBoardId,
             anfOrders,
+            anfStock,
             opStages: opStages.length > 0 ? opStages : DEFAULT_OP_STAGES,
             isLoading: false,
             isInitialized: true,

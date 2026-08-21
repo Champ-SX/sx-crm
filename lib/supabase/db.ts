@@ -15,6 +15,7 @@ import type {
   Notification,
   Board,
   AnfOrder,
+  AnfStock,
 } from '@/types'
 
 // ===== BOARDS (Phase 4.0) =====
@@ -52,6 +53,33 @@ export const anfOrderQueries = {
   },
   async delete(id: string) {
     const { error } = await supabase.from('anf_orders').delete().eq('order_id', id)
+    if (error) throw error
+  },
+}
+
+// ===== ANF STOCK (Phase 4.0) =====
+export const anfStockQueries = {
+  async getAll() {
+    const { data, error } = await supabase
+      .from('anf_stock')
+      .select('*')
+      .order('item')
+    if (error) throw error
+    return (data || []) as AnfStock[]
+  },
+  async create(row: AnfStock) {
+    const { error } = await supabase.from('anf_stock').insert([row])
+    if (error) throw error
+  },
+  async update(id: string, updates: Partial<AnfStock>) {
+    const { error } = await supabase
+      .from('anf_stock')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('stock_id', id)
+    if (error) throw error
+  },
+  async delete(id: string) {
+    const { error } = await supabase.from('anf_stock').delete().eq('stock_id', id)
     if (error) throw error
   },
 }

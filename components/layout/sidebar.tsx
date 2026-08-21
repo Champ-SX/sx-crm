@@ -14,6 +14,7 @@ import {
   X,
   LogOut,
   Package,
+  Boxes,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCRMStore } from '@/store/crm-store'
@@ -36,6 +37,7 @@ const capturesNav = [
 ]
 const anfNav = [
   { href: '/anf-order', label: 'Orders', icon: Package },
+  { href: '/anf-order/stock', label: 'Stock', icon: Boxes },
 ]
 function navForBoard(boardId: string | null) {
   return boardId === 'anf-order' ? anfNav : capturesNav
@@ -158,7 +160,9 @@ function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?
   }
 
   function NavLink({ href, label, icon: Icon }: { href: string; label: string; icon: React.ElementType }) {
-    const isActive = pathname === href || pathname.startsWith(href + '/')
+    // Exact-match for /anf-order so its sub-route (/anf-order/stock) doesn't
+    // light up both nav items.
+    const isActive = pathname === href || (href !== '/anf-order' && pathname.startsWith(href + '/'))
     const badge = badges[href]
 
     return (

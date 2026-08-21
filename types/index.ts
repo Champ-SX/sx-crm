@@ -121,9 +121,32 @@ export interface AnfOrder {
   requested_by: string | null // who raised it (name)
   assignee_id: string | null  // who procures it (users.id)
   status: AnfOrderStatus
+  received_at: string | null   // ISO date the order was marked Received (syncs to stock)
+  received_qty?: number | null // qty actually delivered (default = quantity); tops up stock
+  stock_id?: string | null     // FK → anf_stock; if set, Received replenishes that row
   notes: string | null
   created_at: string
   updated_at: string
+}
+
+// ─── ANF Stock (per-branch inventory, shares item catalog with AnfOrder) ─────
+export interface AnfStock {
+  stock_id: string
+  board_id?: string
+  item: string
+  product_code: string | null
+  branch: string | null
+  room: string | null          // booth / machine location codes
+  qty: number                  // on hand
+  alert_qty: number | null     // reorder threshold; LOW when qty <= alert_qty
+  alert_unit: string | null    // boxes / packs / pcs (display only)
+  checked_at: string | null    // ISO date staff last observed the stock
+  reported_at: string | null   // ISO date the current open order was raised
+  delivered_at: string | null  // ISO date of the latest received order (synced)
+  notes: string | null
+  sign: string | null          // who checked — free text
+  created_at?: string
+  updated_at?: string
 }
 
 // VAT rate (Thailand)
