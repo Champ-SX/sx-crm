@@ -135,7 +135,7 @@ function ThemeToggleRow() {
 
 function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?: () => void }) {
   const pathname = usePathname()
-  const { leadOpportunities, wonJobs, tasks, anfOrders, activeBoardId } = useCRMStore()
+  const { leadOpportunities, wonJobs, tasks, anfOrders, anfStock, activeBoardId } = useCRMStore()
   const navItems = navForBoard(activeBoardId)
 
   // Active = open or negotiating (both are in-flight leads needing attention)
@@ -153,11 +153,19 @@ function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?
   ).length
 
   const openOrdersCount = anfOrders.filter((o) => o.status !== 'received').length
+  // Stock items needing reorder (LOW + OUT) on the active board.
+  const lowStockCount = anfStock.filter(
+    (r) => (!activeBoardId || r.board_id === activeBoardId || !r.board_id) &&
+      (r.qty <= 0 || (r.alert_qty != null && r.qty <= r.alert_qty))
+  ).length
   const badges: Record<string, number> = {
     '/leads-opportunities': openLeadsCount,
     '/won-ready-op':        activeOPJobs,
     '/anf-order':           openOrdersCount,
+    '/anf-order/stock':     lowStockCount,
   }
+  // Hrefs whose badge is an alert (warning tint) rather than a neutral count.
+  const warnBadges = new Set(['/anf-order/stock'])
 
   function NavLink({ href, label, icon: Icon }: { href: string; label: string; icon: React.ElementType }) {
     // Exact-match for /anf-order so its sub-route (/anf-order/stock) doesn't
@@ -186,7 +194,9 @@ function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?
         {badge != null && badge > 0 && (
           <span className={cn(
             'text-[12px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1.5 leading-none',
-            isActive ? 'bg-[var(--sidebar-primary)] text-white' : 'bg-muted text-muted-foreground'
+            warnBadges.has(href)
+              ? 'bg-[#FF5B3F] text-white'
+              : isActive ? 'bg-[var(--sidebar-primary)] text-white' : 'bg-muted text-muted-foreground'
           )}>
             {badge}
           </span>
