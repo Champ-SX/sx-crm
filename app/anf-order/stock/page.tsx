@@ -326,15 +326,12 @@ function StockDialog({ row, onClose, onRaise }: {
 
           {/* On hand (75%) — type or −/+ — with Checked (25%) on the right */}
           <div className="col-span-2 flex gap-2.5 items-stretch">
-            <div className="flex-[3] min-w-0 rounded-xl border-[1.5px] border-[#FF5B3F]/40 bg-card px-3.5 py-3">
-              <div className="flex items-baseline gap-2 mb-2.5">
-                <span className="text-[14px] font-semibold leading-none">On hand</span>
-                <span className="font-mono text-[10px] text-muted-foreground leading-none truncate">type or −/+{alertQty !== '' ? ` · LOW ≤ ${alertQty}${alertUnit ? ` ${alertUnit.toLowerCase()}` : ''}` : ''}</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <button type="button" onClick={() => setQty(String(Math.max(0, (parseInt(qty, 10) || 0) - 1)))} className="w-9 h-9 rounded-lg border border-border bg-muted/40 text-xl leading-none flex items-center justify-center hover:bg-muted shrink-0">−</button>
-                <Input type="number" min={0} value={qty} onChange={(e) => setQty(e.target.value)} className="flex-1 h-11 text-center font-mono text-2xl font-bold px-1 text-[#FF5B3F]" />
-                <button type="button" onClick={() => setQty(String((parseInt(qty, 10) || 0) + 1))} className="w-9 h-9 rounded-lg border border-border bg-muted/40 text-xl leading-none flex items-center justify-center hover:bg-muted shrink-0">+</button>
+            <div className="flex-[3] min-w-0 rounded-xl border-[1.5px] border-[#FF5B3F]/40 bg-card px-3.5 pt-2.5 pb-3.5 flex flex-col">
+              <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">On hand</span>
+              <div className="flex items-center justify-center gap-4 mt-1">
+                <button type="button" onClick={() => setQty(String(Math.max(0, (parseInt(qty, 10) || 0) - 1)))} className="w-10 h-10 rounded-xl border border-border bg-muted/40 text-2xl leading-none flex items-center justify-center hover:bg-muted shrink-0">−</button>
+                <Input type="number" min={0} value={qty} onChange={(e) => setQty(e.target.value)} className="w-[110px] h-14 text-center font-mono !text-[46px] font-extrabold px-1 text-[#FF5B3F] border-0 shadow-none bg-transparent focus-visible:ring-0 tabular-nums" />
+                <button type="button" onClick={() => setQty(String((parseInt(qty, 10) || 0) + 1))} className="w-10 h-10 rounded-xl border border-border bg-muted/40 text-2xl leading-none flex items-center justify-center hover:bg-muted shrink-0">+</button>
               </div>
             </div>
             <div className="flex-1 min-w-0 rounded-xl border border-border bg-card px-3 py-3 flex flex-col justify-between">
