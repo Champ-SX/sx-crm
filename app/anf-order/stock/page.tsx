@@ -338,7 +338,7 @@ function StockDialog({ row, onClose, onRaise }: {
               <span className="font-mono text-[9.5px] uppercase tracking-wide text-muted-foreground">Checked</span>
               <span className="font-mono text-[15px] font-bold leading-none mt-2">{checkedAt ? fmtDate(checkedAt) : '—'}</span>
               <span className="font-mono text-[9px] text-muted-foreground mt-1.5">tap to edit</span>
-              <input type="date" value={checkedAt} onChange={(e) => setCheckedAt(e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" aria-label="Checked date" />
+              <input type="date" value={checkedAt} onChange={(e) => setCheckedAt(e.target.value)} onClick={(e) => { try { (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.() } catch { /* not supported */ } }} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" aria-label="Checked date" />
             </label>
           </div>
 
