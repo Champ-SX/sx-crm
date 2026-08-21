@@ -32,8 +32,10 @@ CREATE INDEX IF NOT EXISTS idx_anf_stock_board  ON anf_stock (board_id);
 CREATE INDEX IF NOT EXISTS idx_anf_stock_branch ON anf_stock (branch);
 
 ALTER TABLE anf_stock ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "anf_stock all" ON anf_stock;
-CREATE POLICY "anf_stock all" ON anf_stock FOR ALL USING (true) WITH CHECK (true);
+DO $$ BEGIN
+  CREATE POLICY "authenticated read anf_stock"  ON anf_stock FOR SELECT USING (auth.role() = 'authenticated');
+  CREATE POLICY "authenticated write anf_stock" ON anf_stock FOR ALL   USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- 3. Seed — imported from [ANF] Stock.xlsx -----------------------------------
 INSERT INTO anf_stock (stock_id, board_id, item, description, branch, room, qty, alert_qty, alert_unit, checked_at, reported_at, delivered_at, notes, sign) VALUES
