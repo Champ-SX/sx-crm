@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useCRMStore } from '@/store/crm-store'
+import { useAuth } from '@/components/auth-provider'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,7 +26,13 @@ export interface OrderPrefill {
 
 export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | null; prefill?: OrderPrefill; onClose: () => void }) {
   const { anfOrders, anfStock, teamMembers, activeBoardId, addAnfOrder, updateAnfOrder, deleteAnfOrder } = useCRMStore()
+  const { user } = useAuth()
   const isEdit = !!order
+
+  // Default "Requested by" to the logged-in user (name matched to the roster;
+  // falls back to their profile name / email). New orders only — editable.
+  const me = teamMembers.find((m) => m.id === user?.id || (!!user?.email && m.email === user.email))
+  const myName = me ? (me.name || me.email) : (user?.user_metadata?.full_name || user?.email || '')
 
   const [item, setItem] = useState(order?.item ?? prefill?.item ?? '')
   const [description, setDescription] = useState(order?.description ?? prefill?.description ?? '')
@@ -39,7 +46,7 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
   const [neededBy, setNeededBy] = useState(order?.needed_by ?? '')
   const [remindOption, setRemindOption] = useState<AnfRemindOption>(order?.remind_option ?? 'none')
   const [customDate, setCustomDate] = useState(order?.remind_option === 'custom' ? (order?.remind_at ?? '').slice(0, 10) : '')
-  const [requestedBy, setRequestedBy] = useState(order?.requested_by ?? '')
+  const [requestedBy, setRequestedBy] = useState(order ? (order.requested_by ?? '') : myName)
   const [assigneeId, setAssigneeId] = useState(order?.assignee_id ?? '')
   const [status, setStatus] = useState<AnfOrderStatus>(order?.status ?? 'to_order')
   const [receivedAt, setReceivedAt] = useState(order?.received_at ?? new Date().toISOString().slice(0, 10))
