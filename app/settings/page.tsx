@@ -1,14 +1,66 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Zap, Database, Users, Layers, GitBranch, ShieldCheck } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { UserAvatar } from '@/components/shared/user-avatar'
+import { Zap, Database, Users, Layers, GitBranch, ShieldCheck, UserCircle, Check } from 'lucide-react'
 import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
 import Link from 'next/link'
+
+function ProfileCard() {
+  const { user } = useAuth()
+  const teamMembers = useCRMStore((s) => s.teamMembers)
+  const updateProfileName = useCRMStore((s) => s.updateProfileName)
+  const me = teamMembers.find((m) => m.id === user?.id)
+  const currentName = me?.name ?? ''
+  const [name, setName] = useState(currentName)
+  const [saved, setSaved] = useState(false)
+  // Sync once the roster loads / the signed-in user resolves.
+  useEffect(() => { setName(currentName) }, [currentName])
+
+  const dirty = name.trim() !== currentName && name.trim().length > 0
+  async function save() {
+    if (!user?.id || !dirty) return
+    await updateProfileName(user.id, name.trim())
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  return (
+    <Card className="border-border/60">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+          <UserCircle className="w-4 h-4 text-primary" /> Your profile
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-3">
+          <UserAvatar name={currentName || me?.email || 'U'} size={40} />
+          <div className="min-w-0">
+            <p className="text-sm font-medium leading-tight truncate">{currentName || '—'}</p>
+            <p className="text-[12px] text-muted-foreground leading-tight truncate">{me?.email}</p>
+          </div>
+        </div>
+        <div>
+          <label className="text-[12px] font-medium text-muted-foreground">Display name</label>
+          <div className="flex items-center gap-2 mt-1.5">
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className="h-9 max-w-xs" onKeyDown={(e) => { if (e.key === 'Enter') void save() }} />
+            <Button size="sm" className="h-9" onClick={() => void save()} disabled={!dirty}>
+              {saved ? <><Check className="w-4 h-4 mr-1" />Saved</> : 'Save'}
+            </Button>
+          </div>
+          <p className="text-[12px] text-muted-foreground mt-1.5">Shown across the app — sidebar, @mentions, assignees. Your email and role aren&apos;t editable here.</p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function SettingsPage() {
   const teamMembers = useCRMStore((s) => s.teamMembers)
@@ -17,6 +69,8 @@ export default function SettingsPage() {
     <div className="flex flex-col h-full">
       <PageHeader title="Settings" description="Workspace configuration" />
       <div className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 overflow-y-auto max-w-2xl">
+
+        <ProfileCard />
 
         <Card className="border-border/60">
           <CardHeader className="pb-3">

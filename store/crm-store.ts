@@ -120,6 +120,7 @@ interface CRMStore {
   tasks: Task[]
   staff: StaffMember[]
   teamMembers: TeamMember[]  // signed-in users (owner/team source of truth)
+  updateProfileName: (id: string, name: string) => Promise<void>  // self-edit display name
   notifications: Notification[]  // in-app @mention notifications
 
   // ── Boards (business units / brands) — Phase 4.0 ────────────────────────────
@@ -323,6 +324,15 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
         if (USE_SUPABASE) {
           try { await db.anfOrderQueries.delete(id) }
           catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to delete order' }) }
+        }
+      },
+
+      // ── Profile ─────────────────────────────────────────────────────────────────
+      updateProfileName: async (id, name) => {
+        set((s) => ({ teamMembers: s.teamMembers.map((m) => m.id === id ? { ...m, name } : m) }))
+        if (USE_SUPABASE) {
+          try { await db.userQueries.updateName(id, name) }
+          catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to update name' }) }
         }
       },
 

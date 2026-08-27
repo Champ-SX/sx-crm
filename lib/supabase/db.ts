@@ -102,6 +102,12 @@ export const userQueries = {
     const { error } = await supabase.from('users').insert([u])
     if (error) throw error
   },
+
+  // A user editing their own display name (Settings → Your profile).
+  async updateName(id: string, name: string) {
+    const { error } = await supabase.from('users').update({ name }).eq('id', id)
+    if (error) throw error
+  },
 }
 
 export const companyQueries = {

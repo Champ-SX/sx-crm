@@ -66,14 +66,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const fullName = session.user.user_metadata?.full_name
             const { data: existing } = await supabase
               .from('users')
-              .select('id, role')
+              .select('id, role, name')
               .eq('email', session.user.email)
               .maybeSingle()
 
             if (existing) {
               setRole(existing.role || 'operation')
+              // Refresh the avatar only; keep the stored name so a user's own
+              // edit (Settings → Your profile) isn't clobbered on each login.
+              // Backfill the name only if it's still empty.
+              const patch: { avatar_url: string | null; name?: string } = { avatar_url: avatarUrl }
+              if (!existing.name && fullName) patch.name = fullName
               void supabase.from('users')
-                .update({ name: fullName, avatar_url: avatarUrl })
+                .update(patch)
                 .eq('email', session.user.email)
             } else {
               const { error: insertError } = await supabase.from('users').insert({
