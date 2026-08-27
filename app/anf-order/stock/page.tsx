@@ -123,7 +123,7 @@ export default function AnfStockPage() {
         )}
       </div>
 
-      {(creating || editing) && <StockDialog row={editing} onClose={() => { setCreating(false); setEditing(null) }} onRaise={raiseOrder} />}
+      {(creating || editing) && <StockDialog row={editing} onClose={() => { setCreating(false); setEditing(null) }} onRaise={raiseOrder} onTransfer={setTransferRow} />}
       {orderPrefill && <OrderDialog order={null} prefill={orderPrefill} onClose={() => setOrderPrefill(null)} />}
       {transferRow && <TransferDialog row={transferRow} onClose={() => setTransferRow(null)} />}
     </div>
@@ -388,9 +388,10 @@ function TransferDialog({ row, onClose }: { row: AnfStock; onClose: () => void }
 }
 
 // ── Stock item editor ─────────────────────────────────────────────────────────
-function StockDialog({ row, onClose, onRaise }: {
+function StockDialog({ row, onClose, onRaise, onTransfer }: {
   row: AnfStock | null; onClose: () => void
   onRaise: (item: string, branch: string | null, id: string | null) => void
+  onTransfer: (r: AnfStock) => void
 }) {
   const { anfStock, anfOrders, activeBoardId, addAnfStock, updateAnfStock, deleteAnfStock } = useCRMStore()
   const isEdit = !!row
@@ -615,6 +616,7 @@ function StockDialog({ row, onClose, onRaise }: {
         </div>
         <div className="flex items-center gap-2 px-5 py-3 border-t border-border">
           {isEdit && <button onClick={remove} className="text-destructive hover:opacity-80 text-sm inline-flex items-center gap-1.5 mr-auto"><Trash2 className="w-4 h-4" /> Delete</button>}
+          {isEdit && row && row.branch !== WAREHOUSE && <button onClick={() => { onTransfer(row); onClose() }} className="inline-flex items-center gap-1.5 text-sm text-[#5B6470] border border-[#5B6470] rounded-md px-3 h-9 hover:bg-[#5B6470]/10">↦ From warehouse</button>}
           {isEdit && row && <button onClick={() => { onRaise(row.item, row.branch, row.stock_id); onClose() }} className="inline-flex items-center gap-1.5 text-sm text-[#7A5AA5] border border-[#7A5AA5] rounded-md px-3 h-9 hover:bg-[#7A5AA5]/10"><ShoppingCart className="w-4 h-4" /> Raise order</button>}
           <Button variant="ghost" size="sm" className={isEdit ? '' : 'ml-auto'} onClick={onClose}>Cancel</Button>
           <Button size="sm" className="bg-[#7A5AA5] hover:opacity-90 text-white" onClick={save} disabled={!item.trim()}>{isEdit ? 'Save' : 'Add item'}</Button>
