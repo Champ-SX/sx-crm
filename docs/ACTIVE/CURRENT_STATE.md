@@ -40,6 +40,13 @@ Unified detail header and Phase 5 card actions are shipped. What's left:
    - **Orders:** STATUS สถานะ · ITEM รายการ · QTY จำนวน · UNIT PRICE ราคา/หน่วย · TOTAL ยอดรวม · NEEDED BY ต้องใช้ภายใน · RECEIVED รับแล้ว · ASSIGNEE ผู้รับผิดชอบ
    - **Stock (branch):** PRODUCT สินค้า · ROOM สำหรับห้อง · ON HAND คงเหลือ · ALERT จุดแจ้งเตือน · STATE สถานะ · CHECKED ตรวจนับ · LAST IN รับเข้าล่าสุด
    - **Stock (TOTAL pivot):** PRODUCT สินค้า · TOTAL ยอดรวม · STATE สถานะ (branch columns unchanged). (Low)
+7. **ANF Stock — warehouse-centric model** (approved). Central WAREHOUSE stock; branches are stocked by transferring out of it.
+   - **Rename OFFICE → WAREHOUSE** everywhere (tabs, TOTAL pivot column, branch color, seed) + migration renaming existing `branch = 'OFFICE'` stock rows → `'WAREHOUSE'`.
+   - **Stock-in → WAREHOUSE only:** when an order is marked Received, replenish the item's **WAREHOUSE** row (Last-in/received-by live there), even if the ＋Order was raised from a branch low row. If no WAREHOUSE row exists for that item, **auto-create one**.
+   - **Transfer = dedicated action** (NOT auto-deduct): branch rows get **↦ From warehouse** → prompt (qty stepper, shows Warehouse before→after and branch before→after) → branch +n, WAREHOUSE −n (total unchanged). **Block** if n exceeds warehouse on-hand. The plain On-hand count edit stays a pure correction — never touches the warehouse.
+   - **WAREHOUSE is a normal location for flags/reorder:** keeps its own LOW/OUT + ＋Order (that's what triggers restocking). No transfer button on the WAREHOUSE view itself (it's the source).
+   - **Tabs:** WAREHOUSE first, then branches; **TOTAL last, rendered as a plain text link** (not a pill/capsule).
+   - Confirmed decisions: dedicated transfer action ✓; receive→warehouse ✓; block over-transfer ✓; auto-create warehouse row ✓; warehouse keeps LOW/OUT+Order ✓. (Med)
 4. **ANF Order — archive received orders** — received orders pile up over time and clutter the board. Plan (approved, backlogged): **(A)** soft archive via a new `archived_at` on `anf_orders` — archived orders hidden from the board by default, a "Show archived" toggle restores them, and they still appear in each item's Stock order history; **(C)** nightly auto-archive of received orders older than N days (~90) via the existing `due-notify` cron. No hard delete. Note: safe because the loop already copies received date/qty/receiver onto the stock row, so archiving/deleting old orders never changes live stock. (Low-Med)
 
 Email notifications were **dropped** (Web Push covers it). Full per-phase detail is in the sections below (all now marked ✅ Complete).
