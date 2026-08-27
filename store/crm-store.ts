@@ -20,7 +20,30 @@ import {
   mockTeamMembers,
 } from '@/lib/mock-data'
 import { blankWonJobFields, companyToAccount, customerToAccount } from '@/lib/jobs'
+import { WAREHOUSE, inferCategory } from '@/lib/anf'
 import * as db from '@/lib/supabase/db'
+
+// Stock-in always lands in the central WAREHOUSE row for an item; auto-create
+// it if none exists yet. Used by the order-received loop (add + update).
+function replenishWarehouse(
+  get: () => CRMStore,
+  item: string, board: string | undefined, qty: number,
+  receivedAt: string, receivedBy: string | null,
+) {
+  const wh = get().anfStock.find((r) => r.item === item && r.branch === WAREHOUSE)
+  if (wh) {
+    void get().updateAnfStock(wh.stock_id, {
+      qty: wh.qty + (qty || 0), delivered_at: receivedAt, sign: receivedBy ?? wh.sign, reported_at: null,
+    })
+  } else {
+    void get().addAnfStock({
+      stock_id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stk-${Date.now()}`,
+      board_id: board ?? 'anf-order', item, description: null, category: inferCategory(item),
+      branch: WAREHOUSE, room: null, qty: qty || 0, alert_qty: null, alert_unit: null,
+      checked_at: null, checked_by: null, reported_at: null, delivered_at: receivedAt, notes: null, sign: receivedBy,
+    })
+  }
+}
 
 // === SUPABASE INTEGRATION MODE ===
 // Set to true to use Supabase; false to use local mock data
@@ -59,8 +82,8 @@ const MOCK_ANF_STOCK: AnfStock[] = [
   { stock_id: 'm10', board_id: 'anf-order', item: 'หมึก canon : BK', description: 'INK CANON BK GI-73', category: 'ink', branch: 'BACC', room: 'A63', qty: 4, alert_qty: 2, alert_unit: null, checked_at: '2026-08-16', reported_at: null, delivered_at: null, notes: null, sign: null },
   { stock_id: 'm5', board_id: 'anf-order', item: 'กระดาษปริ้นท์ RX1', description: 'PAPER DNP RX1 4*6', category: 'paper', branch: 'BTT', room: 'B82/B84/B85', qty: 2, alert_qty: 1, alert_unit: 'BOXES', checked_at: '2026-08-16', reported_at: null, delivered_at: null, notes: null, sign: 'Bank' },
   { stock_id: 'm6', board_id: 'anf-order', item: 'ซองใส ใส่รูป', description: 'ANDY PHOTO WALLET', category: 'sleeve', branch: 'BTT', room: 'All', qty: 3, alert_qty: 2, alert_unit: 'PACKS', checked_at: '2026-08-16', reported_at: null, delivered_at: null, notes: null, sign: null },
-  { stock_id: 'm7', board_id: 'anf-order', item: 'กระดาษปริ้นท์ RX1', description: 'PAPER DNP RX1 4*6', category: 'paper', branch: 'OFFICE', room: null, qty: 2, alert_qty: null, alert_unit: null, checked_at: null, reported_at: null, delivered_at: null, notes: null, sign: null },
-  { stock_id: 'm8', board_id: 'anf-order', item: 'ซองใส ใส่รูป', description: 'ANDY PHOTO WALLET', category: 'sleeve', branch: 'OFFICE', room: null, qty: 12, alert_qty: null, alert_unit: null, checked_at: null, reported_at: null, delivered_at: null, notes: null, sign: null },
+  { stock_id: 'm7', board_id: 'anf-order', item: 'กระดาษปริ้นท์ RX1', description: 'PAPER DNP RX1 4*6', category: 'paper', branch: 'WAREHOUSE', room: null, qty: 2, alert_qty: null, alert_unit: null, checked_at: null, reported_at: null, delivered_at: null, notes: null, sign: null },
+  { stock_id: 'm8', board_id: 'anf-order', item: 'ซองใส ใส่รูป', description: 'ANDY PHOTO WALLET', category: 'sleeve', branch: 'WAREHOUSE', room: null, qty: 12, alert_qty: null, alert_unit: null, checked_at: null, reported_at: null, delivered_at: null, notes: null, sign: null },
 ]
 
 const DEFAULT_OP_STAGES: DynamicOPStage[] = [
@@ -269,17 +292,8 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
         if (order.status === 'received') {
           const receivedAt = order.received_at ?? new Date().toISOString().slice(0, 10)
           const receivedQty = order.received_qty ?? order.quantity
-          const stockRow = order.stock_id
-            ? get().anfStock.find((r) => r.stock_id === order.stock_id)
-            : get().anfStock.find((r) => r.item === order.item && r.branch === order.branch)
-          if (stockRow) {
-            void get().updateAnfStock(stockRow.stock_id, {
-              qty: stockRow.qty + (receivedQty || 0),
-              delivered_at: receivedAt,
-              sign: order.received_by ?? stockRow.sign,
-              reported_at: null,
-            })
-          }
+          // Stock-in lands in the WAREHOUSE (not the branch the order came from).
+          replenishWarehouse(get, order.item, order.board_id, receivedQty || 0, receivedAt, order.received_by ?? null)
         }
         if (USE_SUPABASE) {
           try { await db.anfOrderQueries.create(order) }
@@ -296,20 +310,9 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
           const receivedAt = updates.received_at ?? prev.received_at ?? today
           const receivedQty = updates.received_qty ?? prev.received_qty ?? prev.quantity
           patch = { ...patch, received_at: receivedAt, received_qty: receivedQty }
-          const stockId = updates.stock_id ?? prev.stock_id ?? null
-          // Resolve the stock row: explicit link, else match by item + branch.
-          const stockRow = stockId
-            ? get().anfStock.find((r) => r.stock_id === stockId)
-            : get().anfStock.find((r) => r.item === prev.item && r.branch === prev.branch)
           const receivedBy = updates.received_by ?? prev.received_by ?? null
-          if (stockRow) {
-            void get().updateAnfStock(stockRow.stock_id, {
-              qty: stockRow.qty + (receivedQty || 0),
-              delivered_at: receivedAt,
-              sign: receivedBy ?? stockRow.sign,
-              reported_at: null,
-            })
-          }
+          // Stock-in lands in the WAREHOUSE (not the branch the order came from).
+          replenishWarehouse(get, prev.item, prev.board_id, receivedQty || 0, receivedAt, receivedBy)
         }
         set((s) => ({
           anfOrders: s.anfOrders.map((o) => o.order_id === id ? { ...o, ...patch, updated_at: new Date().toISOString() } : o),

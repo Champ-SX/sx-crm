@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { VAT_RATE, type AnfOrder, type AnfOrderStatus, type AnfRemindOption } from '@/types'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Archive } from 'lucide-react'
 import {
   ANF_ACCENT, STATUS, statusMeta, SEED_BRANCHES, branchColor, REMIND, baht, computeRemindAt,
 } from '@/lib/anf'
@@ -230,7 +230,11 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
 
         <div className="flex items-center gap-2 px-5 py-3 border-t border-border">
           {isEdit && <button onClick={remove} className="text-destructive hover:opacity-80 text-sm inline-flex items-center gap-1.5 mr-auto"><Trash2 className="w-4 h-4" /> Delete</button>}
-          <Button variant="ghost" size="sm" className={isEdit ? '' : 'ml-auto'} onClick={onClose}>Cancel</Button>
+          {isEdit && order && (order.archived_at
+            ? <button onClick={() => { void updateAnfOrder(order.order_id, { archived_at: null }); onClose() }} className="text-[#7A5AA5] hover:opacity-80 text-sm inline-flex items-center gap-1.5"><Archive className="w-4 h-4" /> Restore</button>
+            : <button onClick={() => { void updateAnfOrder(order.order_id, { archived_at: new Date().toISOString() }); onClose() }} className="text-muted-foreground hover:text-foreground text-sm inline-flex items-center gap-1.5"><Archive className="w-4 h-4" /> Archive</button>
+          )}
+          <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
           <Button size="sm" className="bg-[#7A5AA5] hover:opacity-90 text-white" onClick={save} disabled={!item.trim()}>{isEdit ? 'Save' : 'Add order'}</Button>
         </div>
       </DialogContent>

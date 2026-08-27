@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/u
 import { type AnfStock } from '@/types'
 import { Boxes, Plus, Trash2, ShoppingCart } from 'lucide-react'
 import { OrderDialog, type OrderPrefill } from '@/components/anf/order-dialog'
-import { ANF_ACCENT, SEED_BRANCHES, branchColor, fmtDate, statusMeta, CATEGORIES, categoryMeta, categoryColor, orderedCategories, inferCategory } from '@/lib/anf'
+import { ANF_ACCENT, SEED_BRANCHES, WAREHOUSE, branchColor, fmtDate, statusMeta, CATEGORIES, categoryMeta, orderedCategories, inferCategory } from '@/lib/anf'
 
 const catOf = (r: { category?: string | null; item: string }): string =>
   (r.category || inferCategory(r.item))
@@ -39,6 +39,7 @@ export default function AnfStockPage() {
   const [editing, setEditing] = useState<AnfStock | null>(null)
   const [creating, setCreating] = useState(false)
   const [orderPrefill, setOrderPrefill] = useState<OrderPrefill | null>(null)
+  const [transferRow, setTransferRow] = useState<AnfStock | null>(null)
 
   const rows = useMemo(
     () => anfStock.filter((r) => !activeBoardId || r.board_id === activeBoardId || !r.board_id),
@@ -90,15 +91,22 @@ export default function AnfStockPage() {
         </Button>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs — WAREHOUSE first (via SEED order), then branches; TOTAL as an end link */}
       <div className="px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center gap-2 border-b border-border/60">
-        <Tab label="TOTAL" on={tab === 'TOTAL'} onClick={() => setTab('TOTAL')} />
         {branches.map((b) => <Tab key={b} label={b} color={branchColor(b)} on={tab === b} onClick={() => setTab(b)} />)}
+        <button type="button" onClick={() => setTab('TOTAL')} className={`text-[13px] underline underline-offset-4 transition-colors ${isTotal ? 'text-foreground font-semibold' : 'text-[#7A5AA5] hover:opacity-80'}`}>TOTAL ↗</button>
         <span className="flex-1" />
         <button type="button" onClick={() => setLowOnly((v) => !v)} className={`inline-flex items-center gap-1.5 text-[12px] rounded-full px-3 py-1 border transition-colors ${lowOnly ? 'bg-[#FF5B3F] text-white border-transparent font-medium' : 'border-border bg-card text-[#FF5B3F] font-semibold hover:bg-muted'}`}>
           ⚠ Low only{lowCount > 0 && ` (${lowCount})`}
         </button>
       </div>
+      {/* Hint — TOTAL is a read-only overview */}
+      {isTotal && (
+        <div className="px-4 sm:px-6 lg:px-8 pt-2.5 -mb-1 text-[12px] text-muted-foreground flex items-start gap-1.5">
+          <span className="opacity-70">ⓘ</span>
+          <span>Open a branch to add or edit stock.<br /><span className="opacity-80">เปิดสาขาเพื่อเพิ่มหรือแก้ไขสต็อก</span></span>
+        </div>
+      )}
 
       {/* Body */}
       <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -111,12 +119,13 @@ export default function AnfStockPage() {
         ) : isTotal ? (
           <TotalPivot rows={rows} branches={branches} lowOnly={lowOnly} onOrder={onOrder} onRaise={raiseOrder} />
         ) : (
-          <BranchTable rows={rows.filter((r) => r.branch === tab)} lowOnly={lowOnly} onOrder={onOrder} onOpen={setEditing} onRaise={raiseOrder} />
+          <BranchTable rows={rows.filter((r) => r.branch === tab)} branch={tab} lowOnly={lowOnly} onOrder={onOrder} onOpen={setEditing} onRaise={raiseOrder} onTransfer={setTransferRow} />
         )}
       </div>
 
       {(creating || editing) && <StockDialog row={editing} onClose={() => { setCreating(false); setEditing(null) }} onRaise={raiseOrder} />}
       {orderPrefill && <OrderDialog order={null} prefill={orderPrefill} onClose={() => setOrderPrefill(null)} />}
+      {transferRow && <TransferDialog row={transferRow} onClose={() => setTransferRow(null)} />}
     </div>
   )
 }
@@ -131,10 +140,12 @@ function Tab({ label, on, onClick, color }: { label: string; on: boolean; onClic
 }
 
 // ── By-branch table ─────────────────────────────────────────────────────────
-function BranchTable({ rows, lowOnly, onOrder, onOpen, onRaise }: {
-  rows: AnfStock[]; lowOnly: boolean; onOrder: Set<string>
+function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransfer }: {
+  rows: AnfStock[]; branch: string; lowOnly: boolean; onOrder: Set<string>
   onOpen: (r: AnfStock) => void; onRaise: (item: string, branch: string | null, id: string | null) => void
+  onTransfer: (r: AnfStock) => void
 }) {
+  const isWarehouse = branch === WAREHOUSE  // source location — no transfer button
   const list = lowOnly ? rows.filter((r) => stockState(r) !== 'ok') : rows
   if (list.length === 0) return <Empty />
   // Group into category sections (seed order first, custom after).
@@ -146,8 +157,11 @@ function BranchTable({ rows, lowOnly, onOrder, onOpen, onRaise }: {
         <table className="w-full text-sm table-fixed">
           <colgroup><col style={{ width: '32%' }} /><col style={{ width: '110px' }} /><col /><col /><col /><col style={{ width: '78px' }} /><col style={{ width: '96px' }} /><col style={{ width: '92px' }} /></colgroup>
           <thead><tr className="border-b border-border">
-            {['Product', 'Room', 'On hand', 'Alert', 'State', 'Checked', 'Last in', ''].map((h, i) => (
-              <th key={i} className={`font-mono text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-4 py-3 whitespace-nowrap ${i === 2 || i === 3 ? 'text-right' : 'text-left'}`}>{h}</th>
+            {[['Product', 'สินค้า'], ['Room', 'สำหรับห้อง'], ['On hand', 'คงเหลือ'], ['Alert', 'จุดแจ้งเตือน'], ['State', 'สถานะ'], ['Checked', 'ตรวจนับ'], ['Last in', 'รับเข้าล่าสุด'], ['', '']].map(([en, th], i) => (
+              <th key={i} className={`px-4 py-3 whitespace-nowrap align-top ${i === 2 || i === 3 ? 'text-right' : 'text-left'}`}>
+                <span className="block font-mono text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{en}</span>
+                {th && <span className="block text-[10.5px] text-muted-foreground/75 font-normal mt-0.5">{th}</span>}
+              </th>
             ))}
           </tr></thead>
           <tbody>
@@ -175,7 +189,10 @@ function BranchTable({ rows, lowOnly, onOrder, onOpen, onRaise }: {
                         <td className="px-4 py-3">{onOrder.has(r.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5]">● on order</span> : <StateFlag s={st} />}</td>
                         <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap">{fmtDate(r.checked_at)}{r.checked_by && <span className="block text-[10px]">by {r.checked_by}</span>}</td>
                         <td className="px-4 py-3 font-mono text-[11px] whitespace-nowrap">{r.delivered_at ? <span className="text-[#3f9d5b]">↓ {fmtDate(r.delivered_at)}{r.sign && <span className="block text-[10px] text-muted-foreground">by {r.sign}</span>}</span> : <span className="text-muted-foreground/40">— never</span>}</td>
-                        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                        <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                          {!isWarehouse && (
+                            <button onClick={() => onTransfer(r)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#5B6470] text-[#5B6470] rounded-md px-2 py-1 hover:bg-[#5B6470]/10 whitespace-nowrap mr-1.5">↦ From WH</button>
+                          )}
                           {st !== 'ok' && !onOrder.has(r.item) && (
                             <button onClick={() => onRaise(r.item, r.branch, r.stock_id)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1 hover:bg-[#7A5AA5]/10 whitespace-nowrap"><ShoppingCart className="w-3 h-3" />Order</button>
                           )}
@@ -218,9 +235,14 @@ function BranchTable({ rows, lowOnly, onOrder, onOpen, onRaise }: {
                     </button>
                     <div className="flex items-center gap-2 mt-2">
                       {onOrder.has(r.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5]">● on order</span> : <StateFlag s={st} />}
-                      {st !== 'ok' && !onOrder.has(r.item) && (
-                        <button onClick={() => onRaise(r.item, r.branch, r.stock_id)} className="ml-auto inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1"><ShoppingCart className="w-3 h-3" />Order</button>
-                      )}
+                      <span className="ml-auto flex items-center gap-1.5">
+                        {!isWarehouse && (
+                          <button onClick={() => onTransfer(r)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#5B6470] text-[#5B6470] rounded-md px-2 py-1">↦ From WH</button>
+                        )}
+                        {st !== 'ok' && !onOrder.has(r.item) && (
+                          <button onClick={() => onRaise(r.item, r.branch, r.stock_id)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1"><ShoppingCart className="w-3 h-3" />Order</button>
+                        )}
+                      </span>
                     </div>
                   </div>
                 )
@@ -261,10 +283,10 @@ function TotalPivot({ rows, branches, lowOnly, onOrder, onRaise }: {
     <div className="border border-border rounded-xl overflow-x-auto bg-card">
       <table className="w-full text-sm min-w-[640px]">
         <thead><tr className="border-b border-border">
-          <th className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-4 py-3 text-left">Product</th>
-          {branches.map((b) => <th key={b} className="font-mono text-[10px] uppercase tracking-wider font-semibold px-3 py-3 text-right" style={{ color: branchColor(b) }}>{b}</th>)}
-          <th className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-4 py-3 text-right">Total</th>
-          <th className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-4 py-3 text-left">State</th>
+          <th className="px-4 py-3 text-left align-top"><span className="block font-mono text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Product</span><span className="block text-[10.5px] text-muted-foreground/75 mt-0.5">สินค้า</span></th>
+          {branches.map((b) => <th key={b} className="font-mono text-[10px] uppercase tracking-wider font-semibold px-3 py-3 text-right align-top" style={{ color: branchColor(b) }}>{b}</th>)}
+          <th className="px-4 py-3 text-right align-top"><span className="block font-mono text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Total</span><span className="block text-[10.5px] text-muted-foreground/75 mt-0.5">ยอดรวม</span></th>
+          <th className="px-4 py-3 text-left align-top"><span className="block font-mono text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">State</span><span className="block text-[10.5px] text-muted-foreground/75 mt-0.5">สถานะ</span></th>
           <th className="px-3 py-3" />
         </tr></thead>
         <tbody>
@@ -306,6 +328,63 @@ function TotalPivot({ rows, branches, lowOnly, onOrder, onRaise }: {
 
 function Empty() {
   return <div className="text-center py-16 text-sm text-muted-foreground">Nothing to show here.</div>
+}
+
+// ── Transfer from WAREHOUSE → branch (branch +n, warehouse −n) ──────────────────
+function TransferDialog({ row, onClose }: { row: AnfStock; onClose: () => void }) {
+  const anfStock = useCRMStore((s) => s.anfStock)
+  const updateAnfStock = useCRMStore((s) => s.updateAnfStock)
+  const wh = anfStock.find((r) => r.item === row.item && r.branch === WAREHOUSE)
+  const whQty = wh?.qty ?? 0
+  const [qty, setQty] = useState(Math.min(1, whQty))
+  const n = Math.max(0, Math.min(qty, whQty))
+  const canMove = !!wh && n > 0
+
+  function move() {
+    if (!wh || n <= 0) return
+    void updateAnfStock(row.stock_id, { qty: row.qty + n })
+    void updateAnfStock(wh.stock_id, { qty: wh.qty - n })
+    onClose()
+  }
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent showCloseButton={false} className="max-w-sm p-0 gap-0 overflow-hidden">
+        <div className="flex items-center gap-2.5 px-5 py-3 border-b border-border">
+          <span className="w-3 h-3 rounded-[4px]" style={{ backgroundColor: '#5B6470' }} />
+          <DialogTitle className="text-[15px] font-bold">Move to {row.branch}</DialogTitle>
+          <button onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground text-lg leading-none px-1">✕</button>
+        </div>
+        <div className="px-5 py-4">
+          <div className="font-medium text-[14px]">{row.item}</div>
+          {row.description && <div className="text-[12px] text-muted-foreground mt-0.5">{row.description}</div>}
+
+          {!wh ? (
+            <p className="text-[13px] text-muted-foreground mt-4">No WAREHOUSE stock for this item yet — receive an order first.</p>
+          ) : (
+            <>
+              <div className="flex items-center justify-center gap-3 mt-4 mb-1 text-center">
+                <div><div className="field-label mb-0.5">Warehouse</div><div className="font-mono text-[22px] font-bold text-[#5B6470]">{whQty}</div><div className="font-mono text-[10px] text-muted-foreground">→ {whQty - n}</div></div>
+                <div className="text-[#7A5AA5] text-xl">↦</div>
+                <div><div className="field-label mb-0.5" style={{ color: branchColor(row.branch) }}>{row.branch}</div><div className="font-mono text-[22px] font-bold" style={{ color: branchColor(row.branch) }}>{row.qty}</div><div className="font-mono text-[10px] text-muted-foreground">→ {row.qty + n}</div></div>
+              </div>
+              <label className="field-label block text-center mt-3">Quantity to move</label>
+              <div className="flex items-center justify-center gap-4 mt-1">
+                <button type="button" onClick={() => setQty((q) => Math.max(0, q - 1))} className="w-9 h-9 rounded-xl border border-border bg-muted/40 text-xl leading-none flex items-center justify-center hover:bg-muted">−</button>
+                <Input type="number" min={0} max={whQty} value={String(n)} onChange={(e) => setQty(parseInt(e.target.value, 10) || 0)} className="w-[70px] h-11 text-center font-mono text-2xl font-bold px-1 text-[#7A5AA5] border-0 shadow-none bg-transparent focus-visible:ring-0 tabular-nums" />
+                <button type="button" onClick={() => setQty((q) => Math.min(whQty, q + 1))} className="w-9 h-9 rounded-xl border border-border bg-muted/40 text-xl leading-none flex items-center justify-center hover:bg-muted">+</button>
+              </div>
+              <p className="text-center font-mono text-[11px] text-muted-foreground mt-2">Warehouse has <b className="text-foreground">{whQty}</b> · can move up to {whQty}</p>
+            </>
+          )}
+        </div>
+        <div className="flex items-center gap-2 px-5 py-3 border-t border-border">
+          <Button variant="ghost" size="sm" className="ml-auto" onClick={onClose}>Cancel</Button>
+          <Button size="sm" className="bg-[#5B6470] hover:opacity-90 text-white" onClick={move} disabled={!canMove}>Move{canMove ? ` ${n}` : ''}</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 // ── Stock item editor ─────────────────────────────────────────────────────────

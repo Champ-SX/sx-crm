@@ -127,6 +127,7 @@ export interface AnfOrder {
   received_qty?: number | null // qty actually delivered (default = quantity); tops up stock
   received_by?: string | null  // who took delivery (free text) — syncs to stock.sign
   stock_id?: string | null     // FK → anf_stock; if set, Received replenishes that row
+  archived_at?: string | null  // soft-archive (hidden from the board); null = active
   notes: string | null
   created_at: string
   updated_at: string

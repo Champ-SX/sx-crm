@@ -21,10 +21,12 @@ export default function AnfOrderPage() {
   const { user } = useAuth()
   const meId = user?.id ?? null
   const anfOrders = useCRMStore((s) => s.anfOrders)
+  const updateAnfOrder = useCRMStore((s) => s.updateAnfOrder)
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
   const [statusFilter, setStatusFilter] = useState<AnfOrderStatus | 'all'>('all')
   const [branchFilter, setBranchFilter] = useState<string>('all')
   const [assigneeFilter, setAssigneeFilter] = useState<string>(ASSIGNEE_FILTER_ALL)
+  const [showArchived, setShowArchived] = useState(false)
   const [editing, setEditing] = useState<AnfOrder | null>(null)
   const [creating, setCreating] = useState(false)
 
@@ -36,10 +38,21 @@ export default function AnfOrderPage() {
     () => [...new Set(orders.map((o) => o.branch).filter(Boolean))] as string[],
     [orders],
   )
+  const archivedCount = orders.filter((o) => o.archived_at).length
+  const clearableCount = orders.filter((o) => o.status === 'received' && !o.archived_at).length
+  function clearReceived() {
+    const targets = orders.filter((o) => o.status === 'received' && !o.archived_at)
+    if (targets.length === 0) return
+    if (!window.confirm(`Archive ${targets.length} received order${targets.length > 1 ? 's' : ''}? They stay in item history and can be restored from “Show archived”.`)) return
+    const now = new Date().toISOString()
+    targets.forEach((o) => void updateAnfOrder(o.order_id, { archived_at: now }))
+  }
+
   const filtered = orders.filter(
     (o) => (statusFilter === 'all' || o.status === statusFilter) &&
       (branchFilter === 'all' || o.branch === branchFilter) &&
-      matchesAssigneeFilter(assigneesOf(o), assigneeFilter, meId),
+      matchesAssigneeFilter(assigneesOf(o), assigneeFilter, meId) &&
+      (showArchived || !o.archived_at),
   )
   const groups = useMemo(() => {
     const m = new Map<string, AnfOrder[]>()
@@ -82,7 +95,19 @@ export default function AnfOrderPage() {
         {branches.map((b) => (
           <FilterChip key={b} label={b} color={branchColor(b)} on={branchFilter === b} onClick={() => setBranchFilter(b)} />
         ))}
-        <span className="ml-auto"><AssigneeFilter value={assigneeFilter} onChange={setAssigneeFilter} meId={meId} /></span>
+        <span className="ml-auto flex items-center gap-2">
+          {clearableCount > 0 && (
+            <button type="button" onClick={clearReceived} className="inline-flex items-center gap-1.5 text-[12px] rounded-full px-3 py-1 border border-border bg-card text-muted-foreground hover:bg-muted transition-colors">
+              🗂 Clear received ({clearableCount})
+            </button>
+          )}
+          {archivedCount > 0 && (
+            <button type="button" onClick={() => setShowArchived((v) => !v)} className={`inline-flex items-center gap-1.5 text-[12px] rounded-full px-3 py-1 border transition-colors ${showArchived ? 'bg-foreground text-background border-transparent font-medium' : 'border-border bg-card text-muted-foreground hover:bg-muted'}`}>
+              {showArchived ? 'Hide' : 'Show'} archived ({archivedCount})
+            </button>
+          )}
+          <AssigneeFilter value={assigneeFilter} onChange={setAssigneeFilter} meId={meId} />
+        </span>
       </div>
 
       {/* Body */}
@@ -107,8 +132,11 @@ export default function AnfOrderPage() {
                 </colgroup>
                 <thead>
                   <tr className="border-b border-border">
-                    {['Status', 'Item', 'Qty', 'Unit price', 'Total', 'Needed by', 'Received', 'Assignee'].map((h, i) => (
-                      <th key={h} className={`font-mono text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-4 py-3 whitespace-nowrap ${i >= 2 && i <= 4 ? 'text-right' : 'text-left'}`}>{h}</th>
+                    {[['Status', 'สถานะ'], ['Item', 'รายการ'], ['Qty', 'จำนวน'], ['Unit price', 'ราคา/หน่วย'], ['Total', 'ยอดรวม'], ['Needed by', 'ต้องใช้ภายใน'], ['Received', 'รับแล้ว'], ['Assignee', 'ผู้รับผิดชอบ']].map(([en, th], i) => (
+                      <th key={en} className={`px-4 py-3 whitespace-nowrap align-top ${i >= 2 && i <= 4 ? 'text-right' : 'text-left'}`}>
+                        <span className="block font-mono text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{en}</span>
+                        <span className="block text-[10.5px] text-muted-foreground/75 font-normal mt-0.5">{th}</span>
+                      </th>
                     ))}
                   </tr>
                 </thead>
@@ -129,7 +157,7 @@ export default function AnfOrderPage() {
                     <span className="font-mono text-[10px] text-muted-foreground">— {rows.length}</span>
                   </div>
                   {rows.map((o) => (
-                    <button key={o.order_id} onClick={() => setEditing(o)} className="w-full grid grid-cols-[auto_1fr_auto] gap-3 items-center px-3 py-3 border-b border-border/50 last:border-0 text-left active:bg-muted/40">
+                    <button key={o.order_id} onClick={() => setEditing(o)} className={`w-full grid grid-cols-[auto_1fr_auto] gap-3 items-center px-3 py-3 border-b border-border/50 last:border-0 text-left active:bg-muted/40 ${o.archived_at ? 'opacity-55' : ''}`}>
                       <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${statusMeta(o.status).dot}`} />
                       <span className="min-w-0">
                         <span className="block font-semibold text-[13.5px] leading-tight truncate">{o.item}</span>
@@ -215,7 +243,7 @@ function DesktopBranch({ branch, rows, onOpen }: { branch: string; rows: AnfOrde
         const assignees = teamMembers.filter((m) => assigneesOf(o).includes(m.id))
         const dueSoon = o.needed_by && o.status !== 'received' && new Date(o.needed_by + 'T00:00:00').getTime() - today.getTime() < 3 * 864e5
         return (
-          <tr key={o.order_id} className="border-b border-border/50 last:border-0 hover:bg-muted/40 cursor-pointer" onClick={() => onOpen(o)}>
+          <tr key={o.order_id} className={`border-b border-border/50 last:border-0 hover:bg-muted/40 cursor-pointer ${o.archived_at ? 'opacity-55' : ''}`} onClick={() => onOpen(o)}>
             <td className="px-4 py-3"><StatusInline order={o} /></td>
             <td className="px-4 py-3 min-w-0"><div className="font-semibold truncate">{o.item}</div>{o.description && <div className="text-[12.5px] text-muted-foreground truncate mt-0.5">{o.description}</div>}</td>
             <td className="px-4 py-3 text-right font-mono tabular-nums">{o.quantity}</td>

@@ -11,10 +11,13 @@ export const STATUS: { key: AnfOrderStatus; label: string; dot: string }[] = [
 export const statusMeta = (k: AnfOrderStatus) => STATUS.find((s) => s.key === k) ?? STATUS[0]
 
 // Preset branches; pickers also absorb any branch already used, and you can add
-// a new one inline. Each branch gets a stable colour. OFFICE is a branch too.
-export const SEED_BRANCHES = ['BACC', 'BTT', 'OFFICE', 'TRUE ALPHA', 'Cloud 11']
+// a new one inline. Each branch gets a stable colour. WAREHOUSE is the central
+// source-of-truth location that deliveries fill and branches transfer out of.
+export const WAREHOUSE = 'WAREHOUSE'
+export const SEED_BRANCHES = ['WAREHOUSE', 'BACC', 'BTT', 'TRUE ALPHA', 'Cloud 11']
 const BRANCH_COLORS: Record<string, string> = {
-  'BACC': '#3F6EA5', 'BTT': '#2E8A9A', 'OFFICE': '#C9772E', 'TRUE ALPHA': '#5A7D3F', 'Cloud 11': '#B8543F',
+  'WAREHOUSE': '#5B6470', 'BACC': '#3F6EA5', 'BTT': '#2E8A9A', 'TRUE ALPHA': '#5A7D3F', 'Cloud 11': '#B8543F',
+  'OFFICE': '#C9772E', // legacy alias (pre-rename rows)
 }
 const BRANCH_PALETTE = ['#3F6EA5', '#2E8A9A', '#5A7D3F', '#C9772E', '#7A5AA5', '#B8543F', '#9A6B2E', '#3F9D5B']
 export function branchColor(name?: string | null): string {
