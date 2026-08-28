@@ -4,7 +4,7 @@ import { create } from 'zustand'
 import type {
   Customer, Company, ContactPerson,
   LeadOpportunity, WonJob, Activity, Task, OPStage, StaffMember,
-  DynamicOPStage, JobSortOption, TeamMember, Notification, Board, AnfOrder, AnfStock,
+  DynamicOPStage, JobSortOption, TeamMember, Notification, Board, AnfOrder, AnfStock, AnfProduct,
 } from '@/types'
 import { parseMentions, notifyByEmail } from '@/lib/mentions'
 import { deleteAttachmentFiles } from '@/lib/supabase/storage'
@@ -86,6 +86,19 @@ const MOCK_ANF_STOCK: AnfStock[] = [
   { stock_id: 'm8', board_id: 'anf-order', item: 'ซองใส ใส่รูป', description: 'ANDY PHOTO WALLET', category: 'sleeve', branch: 'WAREHOUSE', room: null, qty: 12, alert_qty: null, alert_unit: null, checked_at: null, reported_at: null, delivered_at: null, notes: null, sign: null },
 ]
 
+// Mock catalog derived from the mock stock (one product per distinct item);
+// product_id is also stamped back onto the stock rows so the picker/catalog work.
+const MOCK_ANF_PRODUCTS: AnfProduct[] = (() => {
+  const m = new Map<string, AnfProduct>()
+  for (const r of MOCK_ANF_STOCK) {
+    if (!m.has(r.item)) m.set(r.item, { product_id: `p-${m.size + 1}`, board_id: 'anf-order', name: r.item, code: r.description, category: r.category ?? null, unit: null })
+  }
+  return [...m.values()]
+})()
+for (const r of MOCK_ANF_STOCK) {
+  r.product_id = MOCK_ANF_PRODUCTS.find((p) => p.name === r.item)?.product_id ?? null
+}
+
 const DEFAULT_OP_STAGES: DynamicOPStage[] = [
   {
     id: 'WON_JOB_LIST',
@@ -162,6 +175,12 @@ interface CRMStore {
   addAnfStock: (row: AnfStock) => Promise<void>
   updateAnfStock: (id: string, updates: Partial<AnfStock>) => Promise<void>
   deleteAnfStock: (id: string) => Promise<void>
+
+  // ── ANF Products (catalog / SKU) ────────────────────────────────────────────
+  anfProducts: AnfProduct[]
+  addAnfProduct: (p: AnfProduct) => Promise<void>
+  updateAnfProduct: (id: string, updates: Partial<AnfProduct>) => Promise<void>
+  deleteAnfProduct: (id: string) => Promise<void>
 
   // ── OP Kanban Stages (dynamic) ──────────────────────────────────────────────
   opStages: DynamicOPStage[]
@@ -365,6 +384,58 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
         }
       },
 
+      // ── ANF Products (catalog / SKU) ──────────────────────────────────────────
+      anfProducts: USE_SUPABASE ? [] : MOCK_ANF_PRODUCTS,
+      addAnfProduct: async (p) => {
+        set((s) => ({ anfProducts: [...s.anfProducts, p] }))
+        if (USE_SUPABASE) {
+          try { await db.anfProductQueries.create(p) }
+          catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to create product' }) }
+        }
+      },
+      updateAnfProduct: async (id, updates) => {
+        // Renaming/re-coding a product propagates to its stock + order rows so
+        // the (still name-based) board reflects it immediately.
+        set((s) => {
+          const anfProducts = s.anfProducts.map((p) => p.product_id === id ? { ...p, ...updates } : p)
+          const stampName = updates.name !== undefined || updates.code !== undefined || updates.category !== undefined
+          const anfStock = stampName ? s.anfStock.map((r) => r.product_id === id ? {
+            ...r,
+            item: updates.name ?? r.item,
+            description: updates.code !== undefined ? updates.code : r.description,
+            category: updates.category !== undefined ? updates.category : r.category,
+          } : r) : s.anfStock
+          const anfOrders = stampName ? s.anfOrders.map((o) => o.product_id === id ? {
+            ...o,
+            item: updates.name ?? o.item,
+            description: updates.code !== undefined ? updates.code : o.description,
+          } : o) : s.anfOrders
+          return { anfProducts, anfStock, anfOrders }
+        })
+        if (USE_SUPABASE) {
+          try {
+            await db.anfProductQueries.update(id, updates)
+            // propagate to stock + orders in the DB
+            const p = get().anfProducts.find((x) => x.product_id === id)
+            if (p) {
+              for (const r of get().anfStock.filter((r) => r.product_id === id)) {
+                await db.anfStockQueries.update(r.stock_id, { item: p.name, description: p.code, category: p.category })
+              }
+              for (const o of get().anfOrders.filter((o) => o.product_id === id)) {
+                await db.anfOrderQueries.update(o.order_id, { item: p.name, description: p.code })
+              }
+            }
+          } catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to update product' }) }
+        }
+      },
+      deleteAnfProduct: async (id) => {
+        set((s) => ({ anfProducts: s.anfProducts.filter((p) => p.product_id !== id) }))
+        if (USE_SUPABASE) {
+          try { await db.anfProductQueries.delete(id) }
+          catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to delete product' }) }
+        }
+      },
+
       // ── OP Kanban Stages ────────────────────────────────────────────────────────
       opStages: DEFAULT_OP_STAGES,
       stageSortOptions: {},
@@ -466,6 +537,14 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
               err instanceof Error ? err.message : String(err))
           }
 
+          let anfProducts: AnfProduct[] = []
+          try {
+            anfProducts = await db.anfProductQueries.getAll()
+          } catch (err) {
+            console.warn('[CRM Store] Could not load anf_products (pre-migration?):',
+              err instanceof Error ? err.message : String(err))
+          }
+
           // Load notifications for the current user
           let notifications: Notification[] = []
           try {
@@ -501,6 +580,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
             activeBoardId,
             anfOrders,
             anfStock,
+            anfProducts,
             opStages: opStages.length > 0 ? opStages : DEFAULT_OP_STAGES,
             isLoading: false,
             isInitialized: true,

@@ -16,6 +16,7 @@ import type {
   Board,
   AnfOrder,
   AnfStock,
+  AnfProduct,
 } from '@/types'
 
 // ===== BOARDS (Phase 4.0) =====
@@ -53,6 +54,28 @@ export const anfOrderQueries = {
   },
   async delete(id: string) {
     const { error } = await supabase.from('anf_orders').delete().eq('order_id', id)
+    if (error) throw error
+  },
+}
+
+// ===== ANF PRODUCTS (catalog / SKU) =====
+export const anfProductQueries = {
+  async getAll() {
+    const { data, error } = await supabase.from('anf_products').select('*').order('name')
+    if (error) throw error
+    return (data || []) as AnfProduct[]
+  },
+  async create(p: AnfProduct) {
+    const { error } = await supabase.from('anf_products').insert([p])
+    if (error) throw error
+  },
+  async update(id: string, updates: Partial<AnfProduct>) {
+    const { error } = await supabase.from('anf_products')
+      .update({ ...updates, updated_at: new Date().toISOString() }).eq('product_id', id)
+    if (error) throw error
+  },
+  async delete(id: string) {
+    const { error } = await supabase.from('anf_products').delete().eq('product_id', id)
     if (error) throw error
   },
 }

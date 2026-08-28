@@ -5,6 +5,7 @@ import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { AssigneePicker } from '@/components/shared/assignee-picker'
+import { ProductPicker } from '@/components/anf/product-picker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -23,6 +24,7 @@ export interface OrderPrefill {
   stock_id?: string | null
   unit_price?: number
   description?: string | null
+  product_id?: string | null
 }
 
 export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | null; prefill?: OrderPrefill; onClose: () => void }) {
@@ -35,9 +37,9 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
   const me = teamMembers.find((m) => m.id === user?.id || (!!user?.email && m.email === user.email))
   const myName = me ? (me.name || me.email) : (user?.user_metadata?.full_name || user?.email || '')
 
+  const [productId, setProductId] = useState<string | null>(order?.product_id ?? prefill?.product_id ?? null)
   const [item, setItem] = useState(order?.item ?? prefill?.item ?? '')
   const [description, setDescription] = useState(order?.description ?? prefill?.description ?? '')
-  const [showSug, setShowSug] = useState(false)
   const [quantity, setQuantity] = useState(String(order?.quantity ?? 1))
   const [unitPrice, setUnitPrice] = useState(String(order?.unit_price ?? prefill?.unit_price ?? ''))
   const [withVat, setWithVat] = useState(order?.with_vat ?? false)
@@ -65,28 +67,17 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
     [anfOrders, branch],
   )
 
-  // Shared item catalog: orders (for last price) + stock (for description).
-  const suggestions = useMemo(() => {
-    const q = item.trim().toLowerCase()
-    const seen = new Map<string, { price: number; desc: string | null }>()
-    for (const o of anfOrders) {
-      if (!o.item || seen.has(o.item)) continue
-      seen.set(o.item, { price: o.unit_price, desc: o.description ?? null })
-    }
-    for (const s of anfStock) {
-      if (!s.item) continue
-      const e = seen.get(s.item)
-      if (!e) seen.set(s.item, { price: 0, desc: s.description ?? null })
-      else if (!e.desc && s.description) e.desc = s.description
-    }
-    return [...seen.entries()].filter(([name]) => q && name.toLowerCase().includes(q) && name.toLowerCase() !== q).slice(0, 5)
-  }, [anfOrders, anfStock, item])
+  // Last unit price seen for a product name — prefill on pick.
+  function lastPriceFor(name: string): number {
+    const o = anfOrders.find((o) => o.item === name && o.unit_price)
+    return o?.unit_price ?? 0
+  }
 
   function save() {
     if (!item.trim()) return
     const remind_at = computeRemindAt(neededBy || null, remindOption, customDate)
     const base = {
-      item: item.trim(), description: description.trim() || null, quantity: qtyN, unit_price: priceN, with_vat: withVat,
+      product_id: productId, item: item.trim(), description: description.trim() || null, quantity: qtyN, unit_price: priceN, with_vat: withVat,
       branch: branch.trim() || null, ordered_at: orderedAt || null, needed_by: neededBy || null,
       remind_option: remindOption, remind_at, requested_by: requestedBy.trim() || null,
       assignee_ids: assigneeIds, assignee_id: assigneeIds[0] ?? null, status,
@@ -121,26 +112,11 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
         </div>
 
         <div className="px-5 py-4 max-h-[70vh] overflow-y-auto grid grid-cols-2 gap-3.5">
-          {/* Item + autocomplete */}
-          <div className="col-span-2 relative">
-            <label className="field-label">Item</label>
-            <Input value={item} onChange={(e) => { setItem(e.target.value); setShowSug(true) }} onFocus={() => setShowSug(true)} onBlur={() => setTimeout(() => setShowSug(false), 150)} placeholder="e.g. กระดาษปริ้นท์ RX1 4×6" className="h-9" />
-            {showSug && suggestions.length > 0 && (
-              <div className="absolute z-10 left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-md overflow-hidden">
-                {suggestions.map(([name, info]) => (
-                  <button key={name} type="button" onMouseDown={(e) => { e.preventDefault(); setItem(name); if (!unitPrice && info.price) setUnitPrice(String(info.price)); if (!description.trim() && info.desc) setDescription(info.desc); setShowSug(false) }} className="w-full flex items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-muted">
-                    <span className="min-w-0"><span className="font-medium truncate block">{name}</span>{info.desc && <span className="text-[11px] text-muted-foreground truncate block">{info.desc}</span>}</span>
-                    {info.price > 0 && <span className="font-mono text-[11px] text-muted-foreground shrink-0">last {baht(info.price)}</span>}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Description — optional, consistent with stock */}
-          <div className="col-span-2">
-            <label className="field-label">Description <span className="font-normal normal-case tracking-normal text-muted-foreground/70">· optional</span></label>
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Paper DNP RX1 4×6 — glossy photo roll" className="h-9" />
+          {/* Product — pick from the catalog (shares the SKU with stock) */}
+          <div className="col-span-2 min-w-0">
+            <label className="field-label">Product</label>
+            <ProductPicker value={productId} boardId={activeBoardId} onSelect={(p) => { setProductId(p.product_id); setItem(p.name); setDescription(p.code ?? ''); const last = lastPriceFor(p.name); if (!unitPrice && last) setUnitPrice(String(last)) }} />
+            {productId && description && <div className="mt-1.5 text-[12px] text-muted-foreground truncate">{description}</div>}
           </div>
 
           <div><label className="field-label">Qty</label><Input type="number" min={0} value={quantity} onChange={(e) => setQuantity(e.target.value)} className="h-9" /></div>

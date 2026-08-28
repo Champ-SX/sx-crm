@@ -10,9 +10,11 @@ import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
-import { type AnfStock } from '@/types'
+import { type AnfStock, type AnfProduct } from '@/types'
 import { Boxes, Plus, Trash2, ShoppingCart, Package, MoreHorizontal, Copy, Share2, Check } from 'lucide-react'
 import { OrderDialog, type OrderPrefill } from '@/components/anf/order-dialog'
+import { ProductPicker } from '@/components/anf/product-picker'
+import { ProductDialog } from '@/components/anf/product-dialog'
 import { ANF_ACCENT, SEED_BRANCHES, WAREHOUSE, branchColor, fmtDate, statusMeta, CATEGORIES, categoryMeta, orderedCategories, inferCategory } from '@/lib/anf'
 
 const catOf = (r: { category?: string | null; item: string }): string =>
@@ -34,6 +36,7 @@ export default function AnfStockPage() {
   const isHydrated = useHydrated()
   const anfStock = useCRMStore((s) => s.anfStock)
   const anfOrders = useCRMStore((s) => s.anfOrders)
+  const anfProducts = useCRMStore((s) => s.anfProducts)
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
   const [tab, setTab] = useState<string>(WAREHOUSE)
   const [lowOnly, setLowOnly] = useState(false)
@@ -41,6 +44,7 @@ export default function AnfStockPage() {
   const [creating, setCreating] = useState(false)
   const [orderPrefill, setOrderPrefill] = useState<OrderPrefill | null>(null)
   const [transferRow, setTransferRow] = useState<AnfStock | null>(null)
+  const [editProductRow, setEditProductRow] = useState<AnfProduct | null>(null)
 
   const rows = useMemo(
     () => anfStock.filter((r) => !activeBoardId || r.board_id === activeBoardId || !r.board_id),
@@ -71,7 +75,7 @@ export default function AnfStockPage() {
 
   function raiseOrder(item: string, branch: string | null, stock_id: string | null) {
     const src = stock_id ? rows.find((r) => r.stock_id === stock_id) : rows.find((r) => r.item === item && r.branch === branch)
-    setOrderPrefill({ item, branch, stock_id, unit_price: lastPrice.get(item), description: src?.description ?? null })
+    setOrderPrefill({ item, branch, stock_id, unit_price: lastPrice.get(item), description: src?.description ?? null, product_id: src?.product_id ?? null })
   }
   const addAnfStock = useCRMStore((s) => s.addAnfStock)
   function duplicateStock(row: AnfStock) {
@@ -97,6 +101,8 @@ export default function AnfStockPage() {
 
   if (!isHydrated) return null
   const isTotal = tab === 'TOTAL'
+  const isCatalog = tab === 'CATALOG'
+  const products = anfProducts.filter((p) => !activeBoardId || p.board_id === activeBoardId || !p.board_id)
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
@@ -117,6 +123,7 @@ export default function AnfStockPage() {
       <div className="px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center gap-2 border-b border-border/60">
         {branches.map((b) => <Tab key={b} label={b} color={branchColor(b)} on={tab === b} onClick={() => setTab(b)} />)}
         <button type="button" onClick={() => setTab('TOTAL')} className={`text-[13px] underline underline-offset-4 transition-colors ${isTotal ? 'text-foreground font-semibold' : 'text-[#7A5AA5] hover:opacity-80'}`}>TOTAL ↗</button>
+        <button type="button" onClick={() => setTab('CATALOG')} className={`text-[13px] underline underline-offset-4 transition-colors ${isCatalog ? 'text-foreground font-semibold' : 'text-[#7A5AA5] hover:opacity-80'}`}>Catalog ↗</button>
         <span className="flex-1" />
         <button type="button" onClick={() => setLowOnly((v) => !v)} className={`inline-flex items-center gap-1.5 text-[12px] rounded-full px-3 py-1 border transition-colors ${lowOnly ? 'bg-[#FF5B3F] text-white border-transparent font-medium' : 'border-border bg-card text-[#FF5B3F] font-semibold hover:bg-muted'}`}>
           ⚠ Low only{lowCount > 0 && ` (${lowCount})`}
@@ -132,7 +139,9 @@ export default function AnfStockPage() {
 
       {/* Body */}
       <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-4">
-        {rows.length === 0 ? (
+        {isCatalog ? (
+          <CatalogView products={products} anfStock={anfStock} onEdit={setEditProductRow} />
+        ) : rows.length === 0 ? (
           <div className="text-center py-20">
             <Boxes className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-sm font-medium text-foreground">No stock yet</p>
@@ -148,6 +157,46 @@ export default function AnfStockPage() {
       {(creating || editing) && <StockDialog key={editing?.stock_id ?? 'new'} row={editing} onClose={() => { setCreating(false); setEditing(null) }} onRaise={raiseOrder} onTransfer={setTransferRow} onDuplicate={duplicateStock} />}
       {orderPrefill && <OrderDialog order={null} prefill={orderPrefill} onClose={() => setOrderPrefill(null)} />}
       {transferRow && <TransferDialog row={transferRow} onClose={() => setTransferRow(null)} />}
+      {editProductRow && <ProductDialog product={editProductRow} onClose={() => setEditProductRow(null)} />}
+    </div>
+  )
+}
+
+// ── Catalog view — manage products (SKUs); edit propagates to stock + orders ──
+function CatalogView({ products, anfStock, onEdit }: {
+  products: AnfProduct[]; anfStock: AnfStock[]; onEdit: (p: AnfProduct) => void
+}) {
+  if (products.length === 0) return <Empty />
+  const groups = orderedCategories([...new Set(products.map((p) => p.category || 'other'))])
+    .map((cat) => ({ cat, items: products.filter((p) => (p.category || 'other') === cat).sort((a, b) => a.name.localeCompare(b.name)) }))
+  const usedBy = (pid: string) => anfStock.filter((r) => r.product_id === pid).length
+  return (
+    <div className="border border-border rounded-xl overflow-hidden bg-card max-w-3xl">
+      <div className="px-4 py-2.5 border-b border-border flex items-center gap-2">
+        <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Catalog</span>
+        <span className="font-mono text-[10px] text-muted-foreground">— {products.length} products</span>
+        <span className="ml-auto font-mono text-[9.5px] text-muted-foreground">edit once → updates everywhere</span>
+      </div>
+      {groups.map(({ cat, items }) => {
+        const cm = categoryMeta(cat)
+        return (
+          <Fragment key={cat}>
+            <div className="px-4 py-2 border-l-[3px]" style={{ borderColor: cm.color, backgroundColor: `color-mix(in srgb, ${cm.color} 8%, transparent)` }}>
+              <span className="font-semibold text-[13px]">{cm.th}</span>{cm.en && <span className="font-mono text-[9.5px] uppercase tracking-wider text-muted-foreground ml-2">{cm.en}</span>}
+            </div>
+            {items.map((p) => (
+              <button key={p.product_id} onClick={() => onEdit(p)} className="w-full flex items-center gap-3 px-4 py-3 border-t border-border/50 text-left hover:bg-muted/40">
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold truncate">{p.name}</span>
+                  {p.code && <span className="block text-[12px] text-muted-foreground truncate">{p.code}</span>}
+                </span>
+                <span className="font-mono text-[10.5px] text-muted-foreground shrink-0">{usedBy(p.product_id)} loc</span>
+                <span className="font-mono text-[10px] text-[#7A5AA5] shrink-0">Edit</span>
+              </button>
+            ))}
+          </Fragment>
+        )
+      })}
     </div>
   )
 }
@@ -421,7 +470,7 @@ function StockDialog({ row, onClose, onRaise, onTransfer, onDuplicate }: {
   onTransfer: (r: AnfStock) => void
   onDuplicate: (r: AnfStock) => void
 }) {
-  const { anfStock, anfOrders, activeBoardId, addAnfStock, updateAnfStock, deleteAnfStock } = useCRMStore()
+  const { anfStock, anfOrders, anfProducts, activeBoardId, addAnfStock, updateAnfStock, deleteAnfStock } = useCRMStore()
   const isEdit = !!row
   const [copied, setCopied] = useState(false)
   function share() {
@@ -429,11 +478,12 @@ function StockDialog({ row, onClose, onRaise, onTransfer, onDuplicate }: {
     const link = `${window.location.origin}/anf-order/stock?item=${row.stock_id}`
     void navigator.clipboard?.writeText(link).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) }).catch(() => {})
   }
+  // Identity comes from the catalog product (read-only here; edit in catalog).
+  const [productId, setProductId] = useState<string | null>(row?.product_id ?? null)
   const [item, setItem] = useState(row?.item ?? '')
   const [description, setDescription] = useState(row?.description ?? '')
   const [category, setCategory] = useState<string>(row?.category || inferCategory(row?.item ?? ''))
-  const [catTouched, setCatTouched] = useState(!!row?.category)
-  const [addingCategory, setAddingCategory] = useState(false)
+  const [editProduct, setEditProduct] = useState(false)
   const [branch, setBranch] = useState(row?.branch ?? '')
   const [addingBranch, setAddingBranch] = useState(false)
   const [room, setRoom] = useState(row?.room ?? '')
@@ -456,11 +506,6 @@ function StockDialog({ row, onClose, onRaise, onTransfer, onDuplicate }: {
   const branchOptions = useMemo(
     () => [...new Set([...SEED_BRANCHES, ...anfStock.map((r) => r.branch).filter(Boolean) as string[], ...(branch ? [branch] : [])])],
     [anfStock, branch],
-  )
-  // Seed categories + any already in use + the current one — the picker list.
-  const categoryOptions = useMemo(
-    () => [...new Set([...CATEGORIES.map((c) => c.key), ...anfStock.map((r) => r.category).filter(Boolean) as string[], ...(category ? [category] : [])])],
-    [anfStock, category],
   )
 
   // Order history for this item @ this branch (newest first) — traces the loop.
@@ -485,7 +530,7 @@ function StockDialog({ row, onClose, onRaise, onTransfer, onDuplicate }: {
     // Note: `sign` and `delivered_at` are NOT edited here — they're synced from
     // the order receive step (read-only "Last in").
     const base = {
-      item: item.trim(), description: description.trim() || null, category, branch: branch.trim() || null,
+      product_id: productId, item: item.trim(), description: description.trim() || null, category, branch: branch.trim() || null,
       room: room.trim() || null, qty: parseInt(qty, 10) || 0,
       alert_qty: alertQty === '' ? null : (parseInt(alertQty, 10) || 0),
       alert_unit: alertUnit.trim() || null, checked_at: checkedAtVal || null, checked_by: checkedByVal,
@@ -507,7 +552,11 @@ function StockDialog({ row, onClose, onRaise, onTransfer, onDuplicate }: {
     if (row && window.confirm(`Delete stock item “${row.item}”?`)) { void deleteAnfStock(row.stock_id); onClose() }
   }
 
+  const editingProduct = anfProducts.find((p) => p.product_id === productId) || null
+
   return (
+    <>
+    {editProduct && editingProduct && <ProductDialog product={editingProduct} onClose={() => setEditProduct(false)} />}
     <Dialog open onOpenChange={onClose}>
       <DialogContent showCloseButton={false} className="w-[calc(100vw-1.5rem)] max-w-xl p-0 gap-0 overflow-hidden">
         {/* Save-time checker prompt — overlays the form */}
@@ -558,24 +607,16 @@ function StockDialog({ row, onClose, onRaise, onTransfer, onDuplicate }: {
           </div>
         </div>
         <div className="px-5 py-4 max-h-[70vh] overflow-y-auto grid grid-cols-2 gap-3.5">
-          <div className="col-span-2"><label className="field-label">Item</label><Input value={item} onChange={(e) => { const v = e.target.value; setItem(v); if (!catTouched) setCategory(inferCategory(v)) }} placeholder="e.g. กระดาษปริ้นท์ RX1" className="h-9" /></div>
-
-          {/* Category — auto-suggested from title; extensible (add new inline) */}
+          {/* Product — pick from catalog; name/code/category come from it (read-only) */}
           <div className="col-span-2 min-w-0">
-            <label className="field-label">Category {!catTouched && <span className="font-normal normal-case tracking-normal text-muted-foreground/70">· auto from title</span>}</label>
-            {addingCategory ? (
-              <div className="flex items-center gap-1.5">
-                <Input autoFocus value={category} onChange={(e) => { setCategory(e.target.value); setCatTouched(true) }} placeholder="New category name" className="h-9" />
-                <button type="button" onClick={() => setAddingCategory(false)} className="text-[11px] text-muted-foreground hover:text-foreground shrink-0 px-1">list</button>
+            <label className="field-label">Product</label>
+            <ProductPicker value={productId} boardId={activeBoardId} onSelect={(p) => { setProductId(p.product_id); setItem(p.name); setDescription(p.code ?? ''); setCategory(p.category || 'other') }} />
+            {productId && (
+              <div className="mt-1.5 flex items-center gap-2 text-[12px] text-muted-foreground">
+                <span className="w-2.5 h-2.5 rounded-[3px] shrink-0" style={{ backgroundColor: categoryMeta(category).color }} />
+                <span className="truncate">{categoryMeta(category).th}{description ? ` · ${description}` : ''}</span>
+                <button type="button" onClick={() => setEditProduct(true)} className="ml-auto text-[#7A5AA5] hover:underline shrink-0">Edit product</button>
               </div>
-            ) : (
-              <Select value={category} onValueChange={(v) => { if (v === '__add__') { setCategory(''); setCatTouched(true); setAddingCategory(true) } else if (v) { setCategory(v); setCatTouched(true) } }}>
-                <SelectTrigger className="h-9 w-full"><span className="flex-1 min-w-0 flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-[3px] shrink-0" style={{ backgroundColor: categoryMeta(category).color }} /><span className="truncate">{categoryMeta(category).th}{categoryMeta(category).en && <span className="text-muted-foreground text-[11px]"> {categoryMeta(category).en}</span>}</span></span></SelectTrigger>
-                <SelectContent>
-                  {categoryOptions.map((key) => { const cm = categoryMeta(key); return <SelectItem key={key} value={key}><span className="inline-flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-[3px]" style={{ backgroundColor: cm.color }} />{cm.th}{cm.en && <span className="text-muted-foreground text-[11px]"> {cm.en}</span>}</span></SelectItem> })}
-                  <SelectItem value="__add__"><span className="inline-flex items-center gap-2 text-[#7A5AA5]"><Plus className="w-3.5 h-3.5" />Add category…</span></SelectItem>
-                </SelectContent>
-              </Select>
             )}
           </div>
 
@@ -597,11 +638,6 @@ function StockDialog({ row, onClose, onRaise, onTransfer, onDuplicate }: {
             </label>
           </div>
 
-          {/* Description — prominent, optional */}
-          <div className="col-span-2">
-            <label className="field-label">Description <span className="font-normal normal-case tracking-normal text-muted-foreground/70">· optional</span></label>
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Paper DNP RX1 4×6 — glossy photo roll" className="h-9" />
-          </div>
 
           <div className="min-w-0">
             <label className="field-label">Branch</label>
@@ -668,5 +704,6 @@ function StockDialog({ row, onClose, onRaise, onTransfer, onDuplicate }: {
         </div>
       </DialogContent>
     </Dialog>
+    </>
   )
 }
