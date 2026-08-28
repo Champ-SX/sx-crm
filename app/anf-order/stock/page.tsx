@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useCRMStore } from '@/store/crm-store'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
@@ -9,8 +9,9 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { type AnfStock } from '@/types'
-import { Boxes, Plus, Trash2, ShoppingCart } from 'lucide-react'
+import { Boxes, Plus, Trash2, ShoppingCart, Package, MoreHorizontal, Copy, Share2, Check } from 'lucide-react'
 import { OrderDialog, type OrderPrefill } from '@/components/anf/order-dialog'
 import { ANF_ACCENT, SEED_BRANCHES, WAREHOUSE, branchColor, fmtDate, statusMeta, CATEGORIES, categoryMeta, orderedCategories, inferCategory } from '@/lib/anf'
 
@@ -34,7 +35,7 @@ export default function AnfStockPage() {
   const anfStock = useCRMStore((s) => s.anfStock)
   const anfOrders = useCRMStore((s) => s.anfOrders)
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
-  const [tab, setTab] = useState<string>('TOTAL')
+  const [tab, setTab] = useState<string>(WAREHOUSE)
   const [lowOnly, setLowOnly] = useState(false)
   const [editing, setEditing] = useState<AnfStock | null>(null)
   const [creating, setCreating] = useState(false)
@@ -72,6 +73,27 @@ export default function AnfStockPage() {
     const src = stock_id ? rows.find((r) => r.stock_id === stock_id) : rows.find((r) => r.item === item && r.branch === branch)
     setOrderPrefill({ item, branch, stock_id, unit_price: lastPrice.get(item), description: src?.description ?? null })
   }
+  const addAnfStock = useCRMStore((s) => s.addAnfStock)
+  function duplicateStock(row: AnfStock) {
+    const copy: AnfStock = {
+      ...row,
+      stock_id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stk-${Date.now()}`,
+      item: `${row.item} - copy`,
+    }
+    void addAnfStock(copy)
+    setEditing(copy)  // reopen on the copy
+  }
+
+  // Deep link: /anf-order/stock?item=<id> opens that item's card (Share).
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const id = new URLSearchParams(window.location.search).get('item')
+    if (!id) return
+    const found = anfStock.find((r) => r.stock_id === id)
+    if (found) { setEditing(found); if (found.branch) setTab(found.branch) }
+    // clear the param so it doesn't reopen on later state changes
+    window.history.replaceState({}, '', window.location.pathname)
+  }, [anfStock])
 
   if (!isHydrated) return null
   const isTotal = tab === 'TOTAL'
@@ -123,7 +145,7 @@ export default function AnfStockPage() {
         )}
       </div>
 
-      {(creating || editing) && <StockDialog row={editing} onClose={() => { setCreating(false); setEditing(null) }} onRaise={raiseOrder} onTransfer={setTransferRow} />}
+      {(creating || editing) && <StockDialog key={editing?.stock_id ?? 'new'} row={editing} onClose={() => { setCreating(false); setEditing(null) }} onRaise={raiseOrder} onTransfer={setTransferRow} onDuplicate={duplicateStock} />}
       {orderPrefill && <OrderDialog order={null} prefill={orderPrefill} onClose={() => setOrderPrefill(null)} />}
       {transferRow && <TransferDialog row={transferRow} onClose={() => setTransferRow(null)} />}
     </div>
@@ -182,7 +204,15 @@ function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransf
                     const st = stockState(r)
                     return (
                       <tr key={r.stock_id} className="border-t border-border/50 hover:bg-muted/40 cursor-pointer" onClick={() => onOpen(r)}>
-                        <td className="px-4 py-3"><div className="font-semibold truncate">{r.item}</div>{r.description && <div className="text-[12.5px] text-muted-foreground truncate mt-0.5">{r.description}</div>}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-semibold truncate">{r.item}</span>
+                            {!isWarehouse && (
+                              <button onClick={(e) => { e.stopPropagation(); onTransfer(r) }} title="Move from warehouse" className="shrink-0 inline-flex items-center gap-1 font-mono text-[9.5px] uppercase tracking-wide border border-[#5B6470] text-[#5B6470] rounded-md px-1.5 py-1 hover:bg-[#5B6470]/10"><Package className="w-3 h-3" />WH</button>
+                            )}
+                          </div>
+                          {r.description && <div className="text-[12.5px] text-muted-foreground truncate mt-0.5">{r.description}</div>}
+                        </td>
                         <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground truncate">{r.room || '—'}</td>
                         <td className={`px-4 py-3 text-right font-mono font-bold tabular-nums ${st !== 'ok' ? 'text-[#FF5B3F]' : ''}`}>{r.qty}</td>
                         <td className="px-4 py-3 text-right font-mono text-[12px] text-muted-foreground whitespace-nowrap">{r.alert_qty ?? '—'}{r.alert_unit ? ` ${r.alert_unit.toLowerCase()}` : ''}</td>
@@ -190,9 +220,6 @@ function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransf
                         <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap">{fmtDate(r.checked_at)}{r.checked_by && <span className="block text-[10px]">by {r.checked_by}</span>}</td>
                         <td className="px-4 py-3 font-mono text-[11px] whitespace-nowrap">{r.delivered_at ? <span className="text-[#3f9d5b]">↓ {fmtDate(r.delivered_at)}{r.sign && <span className="block text-[10px] text-muted-foreground">by {r.sign}</span>}</span> : <span className="text-muted-foreground/40">— never</span>}</td>
                         <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                          {!isWarehouse && (
-                            <button onClick={() => onTransfer(r)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#5B6470] text-[#5B6470] rounded-md px-2 py-1 hover:bg-[#5B6470]/10 whitespace-nowrap mr-1.5">↦ From WH</button>
-                          )}
                           {st !== 'ok' && !onOrder.has(r.item) && (
                             <button onClick={() => onRaise(r.item, r.branch, r.stock_id)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1 hover:bg-[#7A5AA5]/10 whitespace-nowrap"><ShoppingCart className="w-3 h-3" />Order</button>
                           )}
@@ -237,7 +264,7 @@ function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransf
                       {onOrder.has(r.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5]">● on order</span> : <StateFlag s={st} />}
                       <span className="ml-auto flex items-center gap-1.5">
                         {!isWarehouse && (
-                          <button onClick={() => onTransfer(r)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#5B6470] text-[#5B6470] rounded-md px-2 py-1">↦ From WH</button>
+                          <button onClick={() => onTransfer(r)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#5B6470] text-[#5B6470] rounded-md px-2 py-1"><Package className="w-3 h-3" />From WH</button>
                         )}
                         {st !== 'ok' && !onOrder.has(r.item) && (
                           <button onClick={() => onRaise(r.item, r.branch, r.stock_id)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1"><ShoppingCart className="w-3 h-3" />Order</button>
@@ -388,13 +415,20 @@ function TransferDialog({ row, onClose }: { row: AnfStock; onClose: () => void }
 }
 
 // ── Stock item editor ─────────────────────────────────────────────────────────
-function StockDialog({ row, onClose, onRaise, onTransfer }: {
+function StockDialog({ row, onClose, onRaise, onTransfer, onDuplicate }: {
   row: AnfStock | null; onClose: () => void
   onRaise: (item: string, branch: string | null, id: string | null) => void
   onTransfer: (r: AnfStock) => void
+  onDuplicate: (r: AnfStock) => void
 }) {
   const { anfStock, anfOrders, activeBoardId, addAnfStock, updateAnfStock, deleteAnfStock } = useCRMStore()
   const isEdit = !!row
+  const [copied, setCopied] = useState(false)
+  function share() {
+    if (!row) return
+    const link = `${window.location.origin}/anf-order/stock?item=${row.stock_id}`
+    void navigator.clipboard?.writeText(link).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) }).catch(() => {})
+  }
   const [item, setItem] = useState(row?.item ?? '')
   const [description, setDescription] = useState(row?.description ?? '')
   const [category, setCategory] = useState<string>(row?.category || inferCategory(row?.item ?? ''))
@@ -475,7 +509,7 @@ function StockDialog({ row, onClose, onRaise, onTransfer }: {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent showCloseButton={false} className="max-w-xl p-0 gap-0 overflow-hidden">
+      <DialogContent showCloseButton={false} className="w-[calc(100vw-1.5rem)] max-w-xl p-0 gap-0 overflow-hidden">
         {/* Save-time checker prompt — overlays the form */}
         {askChecker && (
           <div className="absolute inset-0 z-20 bg-background/70 backdrop-blur-[1px] flex items-center justify-center p-4">
@@ -509,7 +543,19 @@ function StockDialog({ row, onClose, onRaise, onTransfer }: {
         <div className="flex items-center gap-2.5 px-5 py-3 border-b border-border">
           <span className="w-3 h-3 rounded-[4px]" style={{ backgroundColor: ANF_ACCENT }} />
           <DialogTitle className="text-[15px] font-bold">{isEdit ? 'Edit stock item' : 'Add stock item'}</DialogTitle>
-          <button onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground text-lg leading-none px-1">✕</button>
+          <div className="ml-auto flex items-center gap-0.5">
+            {isEdit && row && (
+              <DropdownMenu>
+                <DropdownMenuTrigger aria-label="More" className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><MoreHorizontal className="w-[18px] h-[18px]" /></DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[170px]">
+                  <DropdownMenuItem onClick={() => { onDuplicate(row) }} className="text-sm gap-2.5 cursor-pointer"><Copy className="w-4 h-4" />Duplicate</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={(e) => { e.preventDefault(); share() }} className="text-sm gap-2.5 cursor-pointer">{copied ? <><Check className="w-4 h-4 text-[#3f9d5b]" />Link copied</> : <><Share2 className="w-4 h-4" />Share</>}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={remove} className="text-sm gap-2.5 cursor-pointer text-destructive focus:text-destructive"><Trash2 className="w-4 h-4" />Delete</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors text-lg leading-none">✕</button>
+          </div>
         </div>
         <div className="px-5 py-4 max-h-[70vh] overflow-y-auto grid grid-cols-2 gap-3.5">
           <div className="col-span-2"><label className="field-label">Item</label><Input value={item} onChange={(e) => { const v = e.target.value; setItem(v); if (!catTouched) setCategory(inferCategory(v)) }} placeholder="e.g. กระดาษปริ้นท์ RX1" className="h-9" /></div>
@@ -614,11 +660,10 @@ function StockDialog({ row, onClose, onRaise, onTransfer }: {
 
           <div className="col-span-2"><label className="field-label">Notes</label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="text-sm resize-none" /></div>
         </div>
-        <div className="flex items-center gap-2 px-5 py-3 border-t border-border">
-          {isEdit && <button onClick={remove} className="text-destructive hover:opacity-80 text-sm inline-flex items-center gap-1.5 mr-auto"><Trash2 className="w-4 h-4" /> Delete</button>}
-          {isEdit && row && row.branch !== WAREHOUSE && <button onClick={() => { onTransfer(row); onClose() }} className="inline-flex items-center gap-1.5 text-sm text-[#5B6470] border border-[#5B6470] rounded-md px-3 h-9 hover:bg-[#5B6470]/10">↦ From warehouse</button>}
+        <div className="flex flex-wrap items-center gap-2 px-5 py-3 border-t border-border">
+          {isEdit && row && row.branch !== WAREHOUSE && <button onClick={() => { onTransfer(row); onClose() }} className="inline-flex items-center gap-1.5 text-sm text-[#5B6470] border border-[#5B6470] rounded-md px-3 h-9 hover:bg-[#5B6470]/10"><Package className="w-4 h-4" /> From warehouse</button>}
           {isEdit && row && <button onClick={() => { onRaise(row.item, row.branch, row.stock_id); onClose() }} className="inline-flex items-center gap-1.5 text-sm text-[#7A5AA5] border border-[#7A5AA5] rounded-md px-3 h-9 hover:bg-[#7A5AA5]/10"><ShoppingCart className="w-4 h-4" /> Raise order</button>}
-          <Button variant="ghost" size="sm" className={isEdit ? '' : 'ml-auto'} onClick={onClose}>Cancel</Button>
+          <Button variant="ghost" size="sm" className="ml-auto" onClick={onClose}>Cancel</Button>
           <Button size="sm" className="bg-[#7A5AA5] hover:opacity-90 text-white" onClick={save} disabled={!item.trim()}>{isEdit ? 'Save' : 'Add item'}</Button>
         </div>
       </DialogContent>
