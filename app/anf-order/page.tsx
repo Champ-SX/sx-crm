@@ -7,6 +7,8 @@ import { useHydrated } from '@/hooks/use-hydrated'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { type AnfOrder, type AnfOrderStatus } from '@/types'
 import { Plus, Bell, Package, ChevronDown, Check } from 'lucide-react'
@@ -29,6 +31,7 @@ export default function AnfOrderPage() {
   const [showArchived, setShowArchived] = useState(false)
   const [editing, setEditing] = useState<AnfOrder | null>(null)
   const [creating, setCreating] = useState(false)
+  const [receiveOrder, setReceiveOrder] = useState<AnfOrder | null>(null)
 
   const orders = useMemo(
     () => anfOrders.filter((o) => !activeBoardId || o.board_id === activeBoardId || !o.board_id),
@@ -142,7 +145,7 @@ export default function AnfOrderPage() {
                 </thead>
                 <tbody>
                   {groups.map(([branch, rows]) => (
-                    <DesktopBranch key={branch} branch={branch} rows={rows} onOpen={setEditing} />
+                    <DesktopBranch key={branch} branch={branch} rows={rows} onOpen={setEditing} onReceive={setReceiveOrder} />
                   ))}
                 </tbody>
               </table>
@@ -180,7 +183,53 @@ export default function AnfOrderPage() {
       {(creating || editing) && (
         <OrderDialog order={editing} onClose={() => { setCreating(false); setEditing(null) }} />
       )}
+      {receiveOrder && <ReceiveOrderDialog order={receiveOrder} onClose={() => setReceiveOrder(null)} />}
     </div>
+  )
+}
+
+// Board status → Received: capture date · qty · who before flipping (req 3).
+function ReceiveOrderDialog({ order, onClose }: { order: AnfOrder; onClose: () => void }) {
+  const updateAnfOrder = useCRMStore((s) => s.updateAnfOrder)
+  const anfStock = useCRMStore((s) => s.anfStock)
+  const currentUserName = useCRMStore((s) => s.currentUserName)
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  const [qty, setQty] = useState(String(order.quantity ?? 1))
+  const [by, setBy] = useState('')
+  const recent = [...new Set(anfStock.map((r) => r.sign).filter(Boolean) as string[])].slice(0, 6)
+  function confirm() {
+    void updateAnfOrder(order.order_id, {
+      status: 'received', received_at: date || null,
+      received_qty: parseInt(qty, 10) || order.quantity, received_by: by.trim() || currentUserName || null,
+    })
+    onClose()
+  }
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent showCloseButton={false} className="max-w-sm p-0 gap-0 overflow-hidden">
+        <div className="flex items-center gap-2.5 px-5 py-3 border-b border-border">
+          <span className="w-3 h-3 rounded-[4px] bg-[#3f9d5b]" />
+          <DialogTitle className="text-[15px] font-bold">Received — {order.item}</DialogTitle>
+          <button onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground text-lg leading-none px-1">✕</button>
+        </div>
+        <div className="px-5 py-4">
+          <p className="text-[12.5px] text-muted-foreground mb-3">Tops up the WAREHOUSE and fills this order&apos;s Last-in.</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="field-label">Received date</label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-9" /></div>
+            <div><label className="field-label">Qty delivered</label><Input type="number" min={0} value={qty} onChange={(e) => setQty(e.target.value)} className="h-9" /></div>
+          </div>
+          <div className="mt-3">
+            <label className="field-label">Received by</label>
+            <Input value={by} onChange={(e) => setBy(e.target.value)} placeholder={currentUserName || 'name…'} className="h-9" />
+            {recent.length > 0 && <div className="flex flex-wrap gap-1.5 mt-1.5">{recent.map((nm) => <button key={nm} type="button" onClick={() => setBy(nm)} className="text-[12px] border border-border rounded-full px-2.5 py-1 hover:bg-muted">{nm}</button>)}</div>}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 px-5 py-3 border-t border-border">
+          <Button variant="ghost" size="sm" className="ml-auto" onClick={onClose}>Cancel</Button>
+          <Button size="sm" className="bg-[#3f9d5b] hover:opacity-90 text-white" onClick={confirm}>Mark received</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -199,7 +248,7 @@ function FilterChip({ label, on, onClick, dot, color }: { label: string; on: boo
 }
 
 // Inline status dropdown — change status from the board without opening the editor.
-function StatusInline({ order }: { order: AnfOrder }) {
+function StatusInline({ order, onReceive }: { order: AnfOrder; onReceive: (o: AnfOrder) => void }) {
   const updateAnfOrder = useCRMStore((s) => s.updateAnfOrder)
   const st = statusMeta(order.status)
   return (
@@ -216,7 +265,7 @@ function StatusInline({ order }: { order: AnfOrder }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-[140px]">
           {STATUS.map((s) => (
-            <DropdownMenuItem key={s.key} onClick={() => { if (s.key !== order.status) void updateAnfOrder(order.order_id, { status: s.key }) }} className="text-xs gap-2 cursor-pointer font-mono uppercase tracking-wide">
+            <DropdownMenuItem key={s.key} onClick={() => { if (s.key === order.status) return; if (s.key === 'received') onReceive(order); else void updateAnfOrder(order.order_id, { status: s.key }) }} className="text-xs gap-2 cursor-pointer font-mono uppercase tracking-wide">
               <span className={`w-2 h-2 rounded-full ${s.dot}`} />{s.label}
               {s.key === order.status && <Check className="w-3.5 h-3.5 ml-auto text-muted-foreground" />}
             </DropdownMenuItem>
@@ -227,7 +276,7 @@ function StatusInline({ order }: { order: AnfOrder }) {
   )
 }
 
-function DesktopBranch({ branch, rows, onOpen }: { branch: string; rows: AnfOrder[]; onOpen: (o: AnfOrder) => void }) {
+function DesktopBranch({ branch, rows, onOpen, onReceive }: { branch: string; rows: AnfOrder[]; onOpen: (o: AnfOrder) => void; onReceive: (o: AnfOrder) => void }) {
   const teamMembers = useCRMStore((s) => s.teamMembers)
   const today = new Date()
   const color = branchColor(branch)
@@ -244,7 +293,7 @@ function DesktopBranch({ branch, rows, onOpen }: { branch: string; rows: AnfOrde
         const dueSoon = o.needed_by && o.status !== 'received' && new Date(o.needed_by + 'T00:00:00').getTime() - today.getTime() < 3 * 864e5
         return (
           <tr key={o.order_id} className={`border-b border-border/50 last:border-0 hover:bg-muted/40 cursor-pointer ${o.archived_at ? 'opacity-55' : ''}`} onClick={() => onOpen(o)}>
-            <td className="px-4 py-3"><StatusInline order={o} /></td>
+            <td className="px-4 py-3"><StatusInline order={o} onReceive={onReceive} /></td>
             <td className="px-4 py-3 min-w-0"><div className="font-semibold truncate">{o.item}</div>{o.description && <div className="text-[12.5px] text-muted-foreground truncate mt-0.5">{o.description}</div>}</td>
             <td className="px-4 py-3 text-right font-mono tabular-nums">{o.quantity}</td>
             <td className="px-4 py-3 text-right font-mono tabular-nums whitespace-nowrap">{baht(o.unit_price)}</td>

@@ -410,16 +410,27 @@ function Empty() {
 function TransferDialog({ row, onClose }: { row: AnfStock; onClose: () => void }) {
   const anfStock = useCRMStore((s) => s.anfStock)
   const updateAnfStock = useCRMStore((s) => s.updateAnfStock)
+  const addAnfStockLog = useCRMStore((s) => s.addAnfStockLog)
+  const currentUserName = useCRMStore((s) => s.currentUserName)
   const wh = anfStock.find((r) => r.item === row.item && r.branch === WAREHOUSE)
   const whQty = wh?.qty ?? 0
   const [qty, setQty] = useState(Math.min(1, whQty))
+  const [receivedBy, setReceivedBy] = useState('')
+  const recent = [...new Set(anfStock.map((r) => r.sign).filter(Boolean) as string[])].slice(0, 6)
   const n = Math.max(0, Math.min(qty, whQty))
   const canMove = !!wh && n > 0
 
   function move() {
     if (!wh || n <= 0) return
-    void updateAnfStock(row.stock_id, { qty: row.qty + n })
+    const by = receivedBy.trim() || currentUserName || null
+    const at = new Date().toISOString()
+    const note = `${WAREHOUSE} → ${row.branch}`
+    const mkId = () => (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `log-${Date.now()}-${Math.round(performance.now())}`
+    void updateAnfStock(row.stock_id, { qty: row.qty + n, sign: by ?? row.sign })
     void updateAnfStock(wh.stock_id, { qty: wh.qty - n })
+    // Log both sides (#6, Q3=both).
+    void addAnfStockLog({ log_id: mkId(), board_id: row.board_id, stock_id: wh.stock_id, product_id: wh.product_id ?? null, branch: WAREHOUSE, type: 'transfer', qty_delta: -n, qty_after: wh.qty - n, by_name: by, note, ref: null, at })
+    void addAnfStockLog({ log_id: mkId(), board_id: row.board_id, stock_id: row.stock_id, product_id: row.product_id ?? null, branch: row.branch, type: 'transfer', qty_delta: n, qty_after: row.qty + n, by_name: by, note, ref: null, at })
     onClose()
   }
 
@@ -451,6 +462,11 @@ function TransferDialog({ row, onClose }: { row: AnfStock; onClose: () => void }
                 <button type="button" onClick={() => setQty((q) => Math.min(whQty, q + 1))} className="w-9 h-9 rounded-xl border border-border bg-muted/40 text-xl leading-none flex items-center justify-center hover:bg-muted">+</button>
               </div>
               <p className="text-center font-mono text-[11px] text-muted-foreground mt-2">Warehouse has <b className="text-foreground">{whQty}</b> · can move up to {whQty}</p>
+              <div className="mt-4">
+                <label className="field-label">Received by <span className="font-normal normal-case tracking-normal text-muted-foreground/70">· who collected at {row.branch}</span></label>
+                <Input value={receivedBy} onChange={(e) => setReceivedBy(e.target.value)} placeholder={currentUserName || 'name…'} className="h-9" />
+                {recent.length > 0 && <div className="flex flex-wrap gap-1.5 mt-1.5">{recent.map((nm) => <button key={nm} type="button" onClick={() => setReceivedBy(nm)} className="text-[12px] border border-border rounded-full px-2.5 py-1 hover:bg-muted">{nm}</button>)}</div>}
+              </div>
             </>
           )}
         </div>
@@ -470,7 +486,7 @@ function StockDialog({ row, onClose, onRaise, onTransfer, onDuplicate }: {
   onTransfer: (r: AnfStock) => void
   onDuplicate: (r: AnfStock) => void
 }) {
-  const { anfStock, anfOrders, anfProducts, activeBoardId, addAnfStock, updateAnfStock, deleteAnfStock } = useCRMStore()
+  const { anfStock, anfOrders, anfProducts, anfStockLog, activeBoardId, addAnfStock, updateAnfStock, deleteAnfStock, addAnfStockLog } = useCRMStore()
   const isEdit = !!row
   const [copied, setCopied] = useState(false)
   function share() {
@@ -508,14 +524,14 @@ function StockDialog({ row, onClose, onRaise, onTransfer, onDuplicate }: {
     [anfStock, branch],
   )
 
-  // Order history for this item @ this branch (newest first) — traces the loop.
-  const history = useMemo(() => {
+  // Movement log for this stock row (receive / transfer / check), newest first.
+  const movements = useMemo(() => {
     if (!row) return []
-    return anfOrders
-      .filter((o) => o.item === row.item && (o.branch ?? null) === (row.branch ?? null))
-      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
-      .slice(0, 4)
-  }, [anfOrders, row])
+    return anfStockLog
+      .filter((e) => (e.stock_id && e.stock_id === row.stock_id) || (e.product_id && e.product_id === row.product_id && (e.branch ?? null) === (row.branch ?? null)))
+      .sort((a, b) => (b.at || '').localeCompare(a.at || ''))
+      .slice(0, 8)
+  }, [anfStockLog, row])
 
   const qtyChanged = (parseInt(qty, 10) || 0) !== origQty
   const checkedChanged = (checkedAt || '') !== origChecked
@@ -546,7 +562,15 @@ function StockDialog({ row, onClose, onRaise, onTransfer, onDuplicate }: {
   function confirmChecker() {
     // Auto-stamp the checked date to today if the count changed but the date wasn't.
     const finalChecked = checkedChanged ? checkedAt : (qtyChanged ? today : checkedAt)
-    persist(checkedBy.trim() || null, finalChecked)
+    const by = checkedBy.trim() || null
+    // Log the stock check (#7).
+    void addAnfStockLog({
+      log_id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `log-${Date.now()}`,
+      board_id: activeBoardId ?? 'anf-order', stock_id: row?.stock_id ?? null, product_id: productId, branch: branch.trim() || null,
+      type: 'check', qty_delta: row ? (parseInt(qty, 10) || 0) - origQty : null, qty_after: parseInt(qty, 10) || 0,
+      by_name: by, note: 'Stock check', ref: null, at: new Date().toISOString(),
+    })
+    persist(by, finalChecked)
   }
   function remove() {
     if (row && window.confirm(`Delete stock item “${row.item}”?`)) { void deleteAnfStock(row.stock_id); onClose() }
@@ -677,19 +701,24 @@ function StockDialog({ row, onClose, onRaise, onTransfer, onDuplicate }: {
             </div>
           )}
 
-          {/* Order history — traces the loop */}
-          {isEdit && history.length > 0 && (
+          {/* Movement log — receive / transfer / check (#5,6,7) */}
+          {isEdit && movements.length > 0 && (
             <div className="col-span-2">
-              <label className="field-label">Order history · this item @ {row?.branch || 'no branch'}</label>
+              <label className="field-label">Movement log</label>
               <div className="space-y-1.5">
-                {history.map((o) => (
-                  <div key={o.order_id} className="flex items-center gap-2 border border-border rounded-lg px-2.5 py-1.5 bg-muted/30">
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${statusMeta(o.status).dot}`} />
-                    <span className="text-[12px]">{statusMeta(o.status).label}</span>
-                    <span className="font-mono text-[10.5px] text-muted-foreground">{o.status === 'received' ? `+${o.received_qty ?? o.quantity} in${o.received_by ? ` · by ${o.received_by}` : ''}` : `qty ${o.quantity}`}</span>
-                    <span className="ml-auto font-mono text-[10.5px] text-muted-foreground whitespace-nowrap">{o.status === 'received' ? fmtDate(o.received_at) : `raised ${fmtDate(o.ordered_at)}`}</span>
-                  </div>
-                ))}
+                {movements.map((e) => {
+                  const c = e.type === 'receive' ? '#3f9d5b' : e.type === 'transfer' ? '#5B6470' : ANF_ACCENT
+                  const delta = e.qty_delta == null ? '' : (e.qty_delta > 0 ? `+${e.qty_delta}` : `${e.qty_delta}`)
+                  const label = e.type === 'receive' ? 'Received' : e.type === 'transfer' ? 'Transfer' : 'Check'
+                  return (
+                    <div key={e.log_id} className="flex items-center gap-2 border border-border rounded-lg px-2.5 py-1.5 bg-muted/30">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c }} />
+                      <span className="text-[12px]">{label}{e.note ? <span className="text-muted-foreground"> · {e.note}</span> : ''}</span>
+                      <span className="font-mono text-[10.5px] text-muted-foreground">{delta}{delta && ' · '}{e.qty_after != null ? `→ ${e.qty_after}` : ''}{e.by_name ? ` · by ${e.by_name}` : ''}</span>
+                      <span className="ml-auto font-mono text-[10.5px] text-muted-foreground whitespace-nowrap">{fmtDate((e.at || '').slice(0, 10))}</span>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}

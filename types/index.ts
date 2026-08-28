@@ -120,7 +120,8 @@ export interface AnfOrder {
   remind_option: AnfRemindOption
   remind_at: string | null           // ISO datetime the reminder fires
   remind_notified_at?: string | null // dedup once fired
-  requested_by: string | null // who raised it (name)
+  requested_by: string | null // who checked stock & requested it (name)
+  ordered_by?: string | null    // who does procurement / placed the order (name)
   assignee_id?: string | null   // legacy single assignee (kept for back-compat)
   assignee_ids?: string[] | null // who procures it (users.id[]) — multi-assignee
   status: AnfOrderStatus
@@ -167,6 +168,22 @@ export interface AnfProduct {
   unit: string | null       // box | pack | pcs
   created_at?: string
   updated_at?: string
+}
+
+// ─── ANF Stock movement log (receive / transfer / check) ────────────────────
+export interface AnfStockLog {
+  log_id: string
+  board_id?: string
+  stock_id: string | null
+  product_id: string | null
+  branch: string | null
+  type: 'receive' | 'transfer' | 'check'
+  qty_delta: number | null
+  qty_after: number | null
+  by_name: string | null
+  note: string | null
+  ref: string | null
+  at: string
 }
 
 // VAT rate (Thailand)

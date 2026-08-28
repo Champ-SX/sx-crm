@@ -4,7 +4,7 @@ import { create } from 'zustand'
 import type {
   Customer, Company, ContactPerson,
   LeadOpportunity, WonJob, Activity, Task, OPStage, StaffMember,
-  DynamicOPStage, JobSortOption, TeamMember, Notification, Board, AnfOrder, AnfStock, AnfProduct,
+  DynamicOPStage, JobSortOption, TeamMember, Notification, Board, AnfOrder, AnfStock, AnfProduct, AnfStockLog,
 } from '@/types'
 import { parseMentions, notifyByEmail } from '@/lib/mentions'
 import { deleteAttachmentFiles } from '@/lib/supabase/storage'
@@ -29,19 +29,28 @@ function replenishWarehouse(
   get: () => CRMStore,
   item: string, board: string | undefined, qty: number,
   receivedAt: string, receivedBy: string | null,
+  productId?: string | null, ref?: string | null,
 ) {
+  const mkLog = (stock_id: string, pid: string | null, qtyAfter: number) => void get().addAnfStockLog({
+    log_id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `log-${Date.now()}`,
+    board_id: board ?? 'anf-order', stock_id, product_id: pid, branch: WAREHOUSE, type: 'receive',
+    qty_delta: qty || 0, qty_after: qtyAfter, by_name: receivedBy, note: 'Received into warehouse',
+    ref: ref ?? null, at: new Date().toISOString(),
+  })
   const wh = get().anfStock.find((r) => r.item === item && r.branch === WAREHOUSE)
   if (wh) {
     void get().updateAnfStock(wh.stock_id, {
       qty: wh.qty + (qty || 0), delivered_at: receivedAt, sign: receivedBy ?? wh.sign, reported_at: null,
     })
+    mkLog(wh.stock_id, wh.product_id ?? productId ?? null, wh.qty + (qty || 0))
   } else {
+    const stock_id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stk-${Date.now()}`
     void get().addAnfStock({
-      stock_id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stk-${Date.now()}`,
-      board_id: board ?? 'anf-order', item, description: null, category: inferCategory(item),
+      stock_id, board_id: board ?? 'anf-order', product_id: productId ?? null, item, description: null, category: inferCategory(item),
       branch: WAREHOUSE, room: null, qty: qty || 0, alert_qty: null, alert_unit: null,
       checked_at: null, checked_by: null, reported_at: null, delivered_at: receivedAt, notes: null, sign: receivedBy,
     })
+    mkLog(stock_id, productId ?? null, qty || 0)
   }
 }
 
@@ -221,6 +230,10 @@ interface CRMStore {
   updateAnfProduct: (id: string, updates: Partial<AnfProduct>) => Promise<void>
   deleteAnfProduct: (id: string) => Promise<void>
 
+  // ── ANF Stock movement log (receive / transfer / check) ─────────────────────
+  anfStockLog: AnfStockLog[]
+  addAnfStockLog: (e: AnfStockLog) => Promise<void>
+
   // ── OP Kanban Stages (dynamic) ──────────────────────────────────────────────
   opStages: DynamicOPStage[]
   stageSortOptions: Record<string, JobSortOption>  // stageId → sortOption
@@ -352,7 +365,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
           const receivedAt = order.received_at ?? new Date().toISOString().slice(0, 10)
           const receivedQty = order.received_qty ?? order.quantity
           // Stock-in lands in the WAREHOUSE (not the branch the order came from).
-          replenishWarehouse(get, order.item, order.board_id, receivedQty || 0, receivedAt, order.received_by ?? null)
+          replenishWarehouse(get, order.item, order.board_id, receivedQty || 0, receivedAt, order.received_by ?? null, order.product_id ?? null, order.order_id)
         }
         if (USE_SUPABASE) {
           try { await db.anfOrderQueries.create(order) }
@@ -371,7 +384,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
           patch = { ...patch, received_at: receivedAt, received_qty: receivedQty }
           const receivedBy = updates.received_by ?? prev.received_by ?? null
           // Stock-in lands in the WAREHOUSE (not the branch the order came from).
-          replenishWarehouse(get, prev.item, prev.board_id, receivedQty || 0, receivedAt, receivedBy)
+          replenishWarehouse(get, prev.item, prev.board_id, receivedQty || 0, receivedAt, receivedBy, prev.product_id ?? null, prev.order_id)
         }
         set((s) => ({
           anfOrders: s.anfOrders.map((o) => o.order_id === id ? { ...o, ...patch, updated_at: new Date().toISOString() } : o),
@@ -486,6 +499,16 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
         }
       },
 
+      // ── ANF Stock movement log ──────────────────────────────────────────────────
+      anfStockLog: [],
+      addAnfStockLog: async (e) => {
+        set((s) => ({ anfStockLog: [e, ...s.anfStockLog] }))
+        if (USE_SUPABASE) {
+          try { await db.anfStockLogQueries.create(e) }
+          catch (error) { console.warn('[CRM] stock log insert skipped', error) }
+        }
+      },
+
       // ── OP Kanban Stages ────────────────────────────────────────────────────────
       opStages: DEFAULT_OP_STAGES,
       stageSortOptions: {},
@@ -595,6 +618,14 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
               err instanceof Error ? err.message : String(err))
           }
 
+          let anfStockLog: AnfStockLog[] = []
+          try {
+            anfStockLog = await db.anfStockLogQueries.getAll()
+          } catch (err) {
+            console.warn('[CRM Store] Could not load anf_stock_log (pre-migration?):',
+              err instanceof Error ? err.message : String(err))
+          }
+
           // Load notifications for the current user
           let notifications: Notification[] = []
           try {
@@ -631,6 +662,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
             anfOrders,
             anfStock,
             anfProducts,
+            anfStockLog,
             opStages: opStages.length > 0 ? opStages : DEFAULT_OP_STAGES,
             isLoading: false,
             isInitialized: true,

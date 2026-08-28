@@ -49,7 +49,8 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
   const [neededBy, setNeededBy] = useState(order?.needed_by ?? '')
   const [remindOption, setRemindOption] = useState<AnfRemindOption>(order?.remind_option ?? 'none')
   const [customDate, setCustomDate] = useState(order?.remind_option === 'custom' ? (order?.remind_at ?? '').slice(0, 10) : '')
-  const [requestedBy, setRequestedBy] = useState(order ? (order.requested_by ?? '') : myName)
+  const [requestedBy, setRequestedBy] = useState(order?.requested_by ?? '')
+  const [orderedBy, setOrderedBy] = useState(order ? (order.ordered_by ?? '') : myName)
   const [assigneeIds, setAssigneeIds] = useState<string[]>(order?.assignee_ids ?? (order?.assignee_id ? [order.assignee_id] : []))
   const [status, setStatus] = useState<AnfOrderStatus>(order?.status ?? 'to_order')
   const [receivedAt, setReceivedAt] = useState(order?.received_at ?? new Date().toISOString().slice(0, 10))
@@ -79,7 +80,7 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
     const base = {
       product_id: productId, item: item.trim(), description: description.trim() || null, quantity: qtyN, unit_price: priceN, with_vat: withVat,
       branch: branch.trim() || null, ordered_at: orderedAt || null, needed_by: neededBy || null,
-      remind_option: remindOption, remind_at, requested_by: requestedBy.trim() || null,
+      remind_option: remindOption, remind_at, requested_by: requestedBy.trim() || null, ordered_by: orderedBy.trim() || null,
       assignee_ids: assigneeIds, assignee_id: assigneeIds[0] ?? null, status,
       received_at: status === 'received' ? (receivedAt || null) : (order?.received_at ?? null),
       received_qty: status === 'received' ? (parseInt(receivedQty, 10) || qtyN) : (order?.received_qty ?? null),
@@ -179,9 +180,20 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
             {remindOption === 'custom' && <Input type="date" value={customDate} onChange={(e) => setCustomDate(e.target.value)} className="h-9 mt-2" />}
           </div>
 
-          {/* Requested by — real user */}
+          {/* Ordered by — procurement (defaults to the logged-in user) */}
           <div className="min-w-0">
-            <label className="field-label">Requested by</label>
+            <label className="field-label">Ordered by <span className="font-normal normal-case tracking-normal text-muted-foreground/70">· procurement</span></label>
+            <Select value={orderedBy || 'none'} onValueChange={(v) => setOrderedBy(v === 'none' ? '' : (v ?? ''))}>
+              <SelectTrigger className="h-9 w-full"><span className="flex-1 min-w-0 flex items-center gap-2">{orderedBy ? <><UserAvatar name={orderedBy} size={18} /><span className="truncate">{orderedBy}</span></> : <span className="text-muted-foreground">Select user</span>}</span></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">—</SelectItem>
+                {teamMembers.map((m) => <SelectItem key={m.id} value={m.name || m.email}><span className="inline-flex items-center gap-2"><UserAvatar name={m.name || m.email} size={18} />{m.name || m.email}</span></SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          {/* Requested by — who checked stock & requested it */}
+          <div className="min-w-0">
+            <label className="field-label">Requested by <span className="font-normal normal-case tracking-normal text-muted-foreground/70">· stock check</span></label>
             <Select value={requestedBy || 'none'} onValueChange={(v) => setRequestedBy(v === 'none' ? '' : (v ?? ''))}>
               <SelectTrigger className="h-9 w-full"><span className="flex-1 min-w-0 flex items-center gap-2">{requestedBy ? <><UserAvatar name={requestedBy} size={18} /><span className="truncate">{requestedBy}</span></> : <span className="text-muted-foreground">Select user</span>}</span></SelectTrigger>
               <SelectContent>

@@ -17,6 +17,7 @@ import type {
   AnfOrder,
   AnfStock,
   AnfProduct,
+  AnfStockLog,
 } from '@/types'
 
 // ===== BOARDS (Phase 4.0) =====
@@ -76,6 +77,19 @@ export const anfProductQueries = {
   },
   async delete(id: string) {
     const { error } = await supabase.from('anf_products').delete().eq('product_id', id)
+    if (error) throw error
+  },
+}
+
+// ===== ANF STOCK LOG (movement history) =====
+export const anfStockLogQueries = {
+  async getAll() {
+    const { data, error } = await supabase.from('anf_stock_log').select('*').order('at', { ascending: false })
+    if (error) throw error
+    return (data || []) as AnfStockLog[]
+  },
+  async create(e: AnfStockLog) {
+    const { error } = await supabase.from('anf_stock_log').insert([e])
     if (error) throw error
   },
 }
