@@ -108,6 +108,7 @@ export type AnfRemindOption = 'none' | '1d' | '1w' | '1m' | 'custom'
 export interface AnfOrder {
   order_id: string
   board_id?: string
+  product_id?: string | null   // FK → anf_products (SKU); Phase 1 catalog
   item: string
   description?: string | null  // optional spec/description, consistent with stock
   quantity: number
@@ -137,6 +138,7 @@ export interface AnfOrder {
 export interface AnfStock {
   stock_id: string
   board_id?: string
+  product_id?: string | null   // FK → anf_products (SKU); Phase 1 catalog
   item: string
   description: string | null   // spec/description (was product_code); shown prominently
   category?: string | null     // paper | cartridge | ink | sleeve | other (grouping)
@@ -151,6 +153,18 @@ export interface AnfStock {
   delivered_at: string | null  // ISO date of the latest received order (synced)
   notes: string | null
   sign: string | null          // received by — who took the last delivery (free text); synced from orders
+  created_at?: string
+  updated_at?: string
+}
+
+// ─── ANF Product catalog (SKU) — Phase 1 ────────────────────────────────────
+export interface AnfProduct {
+  product_id: string
+  board_id?: string
+  name: string
+  code: string | null       // spec / product code
+  category: string | null
+  unit: string | null       // box | pack | pcs
   created_at?: string
   updated_at?: string
 }
