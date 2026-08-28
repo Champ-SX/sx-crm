@@ -21,17 +21,21 @@ export function NotificationBell() {
   const router = useRouter()
   const { user } = useAuth()
   const notifications = useCRMStore((s) => s.notifications)
+  const activeBoardId = useCRMStore((s) => s.activeBoardId)
   const markNotificationRead = useCRMStore((s) => s.markNotificationRead)
   const markAllNotificationsRead = useCRMStore((s) => s.markAllNotificationsRead)
   const requestOpenEntity = useCRMStore((s) => s.requestOpenEntity)
   const [open, setOpen] = useState(false)
 
-  // Only notifications addressed to the current user (by team id, name, or email).
+  // Only the current user's notifications, scoped to the active board so ANF
+  // Order and CAP*TURES bells stay separate (null board_id ⇒ CAP*TURES).
+  const board = activeBoardId ?? 'captures'
   const mine = notifications.filter(
     (n) =>
-      n.recipient_id === user?.id ||
-      n.recipient_name === user?.user_metadata?.full_name ||
-      n.recipient_name === user?.email
+      (n.recipient_id === user?.id ||
+        n.recipient_name === user?.user_metadata?.full_name ||
+        n.recipient_name === user?.email) &&
+      (n.board_id ?? 'captures') === board
   )
   const unread = mine.filter((n) => !n.read).length
 

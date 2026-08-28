@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   // Pending jobs with a due date; final lead-time filter is applied in JS.
   const { data: jobs, error } = await sb
     .from('won_jobs')
-    .select('job_id, event_display_name, product_name, job_number, owner, assignee_ids, due_at, due_lead_minutes')
+    .select('job_id, event_display_name, product_name, job_number, owner, assignee_ids, due_at, due_lead_minutes, board_id')
     .not('due_at', 'is', null)
     .is('due_notified_at', null)
   if (error) {
@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
         entity_name: title,
         message: `Due ${whenLabel}`,
         read: false,
+        board_id: (j.board_id as string | null) ?? 'captures',
       })
       const { data: subs } = await sb.from('push_subscriptions').select('subscription').eq('user_id', rid)
       if (subs?.length && vapidPublic && vapidPrivate) {
@@ -129,6 +130,7 @@ export async function POST(req: NextRequest) {
             entity_name: title,
             message: `Order ${label}`,
             read: false,
+            board_id: 'anf-order',
           })
         } catch (e) { console.warn('[cron] anf notification insert skipped', e) }
         const { data: subs } = await sb.from('push_subscriptions').select('subscription').eq('user_id', rid)

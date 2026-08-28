@@ -50,6 +50,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session) {
           setSession(session)
           setUser(session.user)
+          // Tell the store who's signed in (actor / skip-self for notifications).
+          try {
+            const { useCRMStore } = await import('@/store/crm-store')
+            useCRMStore.getState().setCurrentUser(
+              session.user.id,
+              session.user.user_metadata?.full_name || session.user.email || null,
+            )
+          } catch { /* ignore */ }
 
           // Register SW only — permission prompt needs a user gesture (button tap).
           // See PushPermissionBanner in sidebar for the explicit opt-in step.

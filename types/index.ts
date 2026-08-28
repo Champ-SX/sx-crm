@@ -381,11 +381,12 @@ export interface Notification {
   recipient_id: string       // TeamMember.id of who is notified
   recipient_name: string     // denormalized for matching/display
   actor: string              // who wrote the note (display name)
-  entity_type: 'customer' | 'lead_opportunity' | 'won_job'
+  entity_type: 'customer' | 'lead_opportunity' | 'won_job' | 'anf_order'
   entity_id: string
   entity_name: string        // e.g. lead/customer/job title for context
   message: string            // short preview of the note
   read: boolean
+  board_id?: string | null   // which board's bell this belongs to
   created_at: string
 }
 

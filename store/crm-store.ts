@@ -45,6 +45,42 @@ function replenishWarehouse(
   }
 }
 
+// Notify an ANF order's assignees (in-app bell + web push), skipping the actor.
+function notifyAnfAssignees(
+  get: () => CRMStore, set: (partial: Partial<CRMStore>) => void,
+  order: AnfOrder, message: string,
+) {
+  const meId = get().currentUserId
+  const ids = (order.assignee_ids ?? (order.assignee_id ? [order.assignee_id] : []))
+    .filter((id) => id && id !== meId)
+  if (ids.length === 0) return
+  const now = new Date().toISOString()
+  const actor = get().currentUserName || 'Someone'
+  const title = `${order.item}${order.branch ? ` · ${order.branch}` : ''}`
+  const notis: Notification[] = ids.map((id) => {
+    const m = get().teamMembers.find((x) => x.id === id)
+    return {
+      id: `notif-${Date.now()}-${id}`, recipient_id: id, recipient_name: m?.name || m?.email || '',
+      actor, entity_type: 'anf_order', entity_id: order.order_id, entity_name: title, message,
+      read: false, board_id: 'anf-order', created_at: now,
+    }
+  })
+  set({ notifications: [...notis, ...get().notifications] })
+  if (USE_SUPABASE) {
+    for (const n of notis) {
+      void db.notificationQueries.insert({
+        recipient_id: n.recipient_id, recipient_name: n.recipient_name, actor: n.actor,
+        entity_type: n.entity_type, entity_id: n.entity_id, entity_name: n.entity_name,
+        message: n.message, read: false, board_id: n.board_id,
+      })
+      void fetch('/api/push/send', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipientId: n.recipient_id, title, body: message, url: '/anf-order' }),
+      }).catch(() => {})
+    }
+  }
+}
+
 // === SUPABASE INTEGRATION MODE ===
 // Set to true to use Supabase; false to use local mock data
 const USE_SUPABASE = !!(
@@ -156,6 +192,9 @@ interface CRMStore {
   tasks: Task[]
   staff: StaffMember[]
   teamMembers: TeamMember[]  // signed-in users (owner/team source of truth)
+  currentUserId: string | null    // the signed-in user (for actor/skip-self)
+  currentUserName: string | null
+  setCurrentUser: (id: string | null, name: string | null) => void
   updateProfileName: (id: string, name: string) => Promise<void>  // self-edit display name
   notifications: Notification[]  // in-app @mention notifications
 
@@ -306,6 +345,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       anfOrders: [],
       addAnfOrder: async (order) => {
         set((s) => ({ anfOrders: [order, ...s.anfOrders] }))
+        notifyAnfAssignees(get, set, order, `New order · ${order.quantity}×`)
         // Loop: an order created directly as Received tops up its linked stock
         // (the transition case is handled in updateAnfOrder).
         if (order.status === 'received') {
@@ -336,6 +376,11 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
         set((s) => ({
           anfOrders: s.anfOrders.map((o) => o.order_id === id ? { ...o, ...patch, updated_at: new Date().toISOString() } : o),
         }))
+        // Notify assignees on a status change.
+        if (prev && updates.status && updates.status !== prev.status) {
+          const label = updates.status === 'received' ? 'Received' : updates.status === 'ordered' ? 'Ordered' : 'To order'
+          notifyAnfAssignees(get, set, { ...prev, ...patch }, `Status → ${label}`)
+        }
         if (USE_SUPABASE) {
           try { await db.anfOrderQueries.update(id, patch) }
           catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to update order' }) }
@@ -348,6 +393,11 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
           catch (error) { set({ error: error instanceof Error ? error.message : 'Failed to delete order' }) }
         }
       },
+
+      // ── Current user (actor / skip-self for notifications) ──────────────────────
+      currentUserId: null,
+      currentUserName: null,
+      setCurrentUser: (id, name) => set({ currentUserId: id, currentUserName: name }),
 
       // ── Profile ─────────────────────────────────────────────────────────────────
       updateProfileName: async (id, name) => {
@@ -1505,6 +1555,12 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
 
     const now = new Date().toISOString()
     const truncated = text.length > 120 ? text.slice(0, 120) + '…' : text
+    // Which board's bell this belongs to (mentions live on CAP*TURES entities).
+    const boardId = entityType === 'lead_opportunity'
+      ? (get().leadOpportunities.find((l) => l.lead_op_id === entityId)?.board_id ?? 'captures')
+      : entityType === 'won_job'
+        ? (get().wonJobs.find((j) => j.job_id === entityId)?.board_id ?? 'captures')
+        : 'captures'
     const newNotifications: Notification[] = mentioned.map((m) => ({
       id: `notif-${Date.now()}-${m.id}`,
       recipient_id: m.id,
@@ -1515,6 +1571,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       entity_name: entityName,
       message: truncated,
       read: false,
+      board_id: boardId,
       created_at: now,
     }))
 
@@ -1533,6 +1590,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
           entity_name: n.entity_name,
           message: n.message,
           read: false,
+          board_id: n.board_id,
         })
         // Send web push (fire-and-forget)
         void fetch('/api/push/send', {
