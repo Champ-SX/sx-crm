@@ -47,6 +47,12 @@ Unified detail header and Phase 5 card actions are shipped. What's left:
    - **WAREHOUSE is a normal location for flags/reorder:** keeps its own LOW/OUT + ＋Order (that's what triggers restocking). No transfer button on the WAREHOUSE view itself (it's the source).
    - **Tabs:** WAREHOUSE first, then branches; **TOTAL last, rendered as a plain text link** (not a pill/capsule).
    - Confirmed decisions: dedicated transfer action ✓; receive→warehouse ✓; block over-transfer ✓; auto-create warehouse row ✓; warehouse keeps LOW/OUT+Order ✓. (Med)
+8. **ANF — product catalog (SKU) + de-dup merge** (approved, FULL). Root cause: item identity is free-text `item`, matched by name+branch, so the same product exists under many name variants (e.g. RX1 4*6 ×2, RX1 5*7/A60 ×2, sticker ×2, film ×2), fragmenting the pivot/loop/transfers.
+   - **New `anf_products`** (product_id=SKU, name, code/description, category, unit). `anf_stock` + `anf_orders` reference `product_id` (a stock row = product × branch); name/desc/category move to the product.
+   - **Warehouse + all branches share one product_id** → pivot/receive-loop/transfer align automatically; can't mistype a new SKU.
+   - **Guided merge tool (human-reviewed):** proposes candidate duplicate groups (fuzzy name + code), user confirms each group + picks canonical; on merge, sum qty per branch, re-point orders, reversible until commit. Ambiguous groups (e.g. "ใหญ่"/PLATINUM LAB, different codes) flagged for the user to decide — ASK per item.
+   - **UI:** item free-text → product picker (＋New product only when genuinely new); catalog management (rename/code once).
+   - Phased: (1) schema+backfill, (2) merge tool, (3) picker UI. (High — biggest ANF change)
 4. **ANF Order — archive received orders** — received orders pile up over time and clutter the board. Plan (approved, backlogged): **(A)** soft archive via a new `archived_at` on `anf_orders` — archived orders hidden from the board by default, a "Show archived" toggle restores them, and they still appear in each item's Stock order history; **(C)** nightly auto-archive of received orders older than N days (~90) via the existing `due-notify` cron. No hard delete. Note: safe because the loop already copies received date/qty/receiver onto the stock row, so archiving/deleting old orders never changes live stock. (Low-Med)
 
 Email notifications were **dropped** (Web Push covers it). Full per-phase detail is in the sections below (all now marked ✅ Complete).
