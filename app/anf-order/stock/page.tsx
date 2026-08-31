@@ -73,6 +73,39 @@ export default function AnfStockPage() {
 
   const lowCount = rows.filter((r) => stockState(r) !== 'ok').length
 
+  // Warehouse tab lists the FULL catalog — every product, 0 when unstocked.
+  // Products without a real warehouse row are shown as virtual (stock_id "virtual:…").
+  const warehouseRows = useMemo(() => {
+    const real = rows.filter((r) => r.branch === WAREHOUSE)
+    const haveProduct = new Set(real.map((r) => r.product_id).filter(Boolean) as string[])
+    const haveItem = new Set(real.map((r) => r.item))
+    const prods = anfProducts.filter((p) => !activeBoardId || p.board_id === activeBoardId || !p.board_id)
+    const virtual: AnfStock[] = prods
+      .filter((p) => !(p.product_id && haveProduct.has(p.product_id)) && !haveItem.has(p.name))
+      .map((p) => ({
+        stock_id: `virtual:${p.product_id}`,
+        board_id: activeBoardId || 'anf-order',
+        product_id: p.product_id,
+        item: p.name,
+        description: p.code ?? null,
+        category: p.category ?? null,
+        branch: WAREHOUSE,
+        room: null, qty: 0, alert_qty: null, alert_unit: null,
+        checked_at: null, checked_by: null, reported_at: null,
+        delivered_at: null, notes: null, sign: null,
+      }))
+    return [...real, ...virtual]
+  }, [rows, anfProducts, activeBoardId])
+
+  // Open a card — a virtual warehouse row is materialised into a real 0-qty row first.
+  function openStock(r: AnfStock) {
+    if (r.stock_id.startsWith('virtual:')) {
+      const real: AnfStock = { ...r, stock_id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `stk-${Date.now()}` }
+      void addAnfStock(real)
+      setEditing(real)
+    } else setEditing(r)
+  }
+
   function raiseOrder(item: string, branch: string | null, stock_id: string | null) {
     const src = stock_id ? rows.find((r) => r.stock_id === stock_id) : rows.find((r) => r.item === item && r.branch === branch)
     setOrderPrefill({ item, branch, stock_id, unit_price: lastPrice.get(item), description: src?.description ?? null, product_id: src?.product_id ?? null })
@@ -141,7 +174,7 @@ export default function AnfStockPage() {
       <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-4">
         {isCatalog ? (
           <CatalogView products={products} anfStock={anfStock} onEdit={setEditProductRow} />
-        ) : rows.length === 0 ? (
+        ) : (rows.length === 0 && !(tab === WAREHOUSE && warehouseRows.length > 0)) ? (
           <div className="text-center py-20">
             <Boxes className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-sm font-medium text-foreground">No stock yet</p>
@@ -149,8 +182,10 @@ export default function AnfStockPage() {
           </div>
         ) : isTotal ? (
           <TotalPivot rows={rows} branches={branches} lowOnly={lowOnly} onOrder={onOrder} onRaise={raiseOrder} />
+        ) : tab === WAREHOUSE ? (
+          <BranchTable rows={warehouseRows} branch={WAREHOUSE} lowOnly={lowOnly} onOrder={onOrder} onOpen={openStock} onRaise={raiseOrder} onTransfer={setTransferRow} />
         ) : (
-          <BranchTable rows={rows.filter((r) => r.branch === tab)} branch={tab} lowOnly={lowOnly} onOrder={onOrder} onOpen={setEditing} onRaise={raiseOrder} onTransfer={setTransferRow} />
+          <BranchTable rows={rows.filter((r) => r.branch === tab)} branch={tab} lowOnly={lowOnly} onOrder={onOrder} onOpen={openStock} onRaise={raiseOrder} onTransfer={setTransferRow} />
         )}
       </div>
 
@@ -216,7 +251,6 @@ function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransf
   onOpen: (r: AnfStock) => void; onRaise: (item: string, branch: string | null, id: string | null) => void
   onTransfer: (r: AnfStock) => void
 }) {
-  const isWarehouse = branch === WAREHOUSE  // source location — no transfer button
   const list = lowOnly ? rows.filter((r) => stockState(r) !== 'ok') : rows
   if (list.length === 0) return <Empty />
   // Group into category sections (seed order first, custom after).
@@ -256,8 +290,8 @@ function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransf
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="font-semibold truncate">{r.item}</span>
-                            {!isWarehouse && (
-                              <button onClick={(e) => { e.stopPropagation(); onTransfer(r) }} title="Move from warehouse" className="shrink-0 inline-flex items-center gap-1 font-mono text-[9.5px] uppercase tracking-wide border border-[#5B6470] text-[#5B6470] rounded-md px-1.5 py-1 hover:bg-[#5B6470]/10"><Package className="w-3 h-3" />WH</button>
+                            {!r.stock_id.startsWith('virtual:') && (
+                              <button onClick={(e) => { e.stopPropagation(); onTransfer(r) }} title="Move stock" className="shrink-0 inline-flex items-center gap-1 font-mono text-[9.5px] uppercase tracking-wide border border-[#5B6470] text-[#5B6470] rounded-md px-1.5 py-1 hover:bg-[#5B6470]/10"><Package className="w-3 h-3" />Move</button>
                             )}
                           </div>
                           {r.description && <div className="text-[12.5px] text-muted-foreground truncate mt-0.5">{r.description}</div>}
@@ -270,7 +304,7 @@ function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransf
                         <td className="px-4 py-3 font-mono text-[11px] whitespace-nowrap">{r.delivered_at ? <span className="text-[#3f9d5b]">↓ {fmtDate(r.delivered_at)}{r.sign && <span className="block text-[10px] text-muted-foreground">by {r.sign}</span>}</span> : <span className="text-muted-foreground/40">— never</span>}</td>
                         <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                           {st !== 'ok' && !onOrder.has(r.item) && (
-                            <button onClick={() => onRaise(r.item, r.branch, r.stock_id)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1 hover:bg-[#7A5AA5]/10 whitespace-nowrap"><ShoppingCart className="w-3 h-3" />Order</button>
+                            <button onClick={() => onRaise(r.item, r.branch, r.stock_id.startsWith('virtual:') ? null : r.stock_id)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1 hover:bg-[#7A5AA5]/10 whitespace-nowrap"><ShoppingCart className="w-3 h-3" />Order</button>
                           )}
                         </td>
                       </tr>
@@ -312,11 +346,11 @@ function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransf
                     <div className="flex items-center gap-2 mt-2">
                       {onOrder.has(r.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5]">● on order</span> : <StateFlag s={st} />}
                       <span className="ml-auto flex items-center gap-1.5">
-                        {!isWarehouse && (
-                          <button onClick={() => onTransfer(r)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#5B6470] text-[#5B6470] rounded-md px-2 py-1"><Package className="w-3 h-3" />From WH</button>
+                        {!r.stock_id.startsWith('virtual:') && (
+                          <button onClick={() => onTransfer(r)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#5B6470] text-[#5B6470] rounded-md px-2 py-1"><Package className="w-3 h-3" />Move</button>
                         )}
                         {st !== 'ok' && !onOrder.has(r.item) && (
-                          <button onClick={() => onRaise(r.item, r.branch, r.stock_id)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1"><ShoppingCart className="w-3 h-3" />Order</button>
+                          <button onClick={() => onRaise(r.item, r.branch, r.stock_id.startsWith('virtual:') ? null : r.stock_id)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1"><ShoppingCart className="w-3 h-3" />Order</button>
                         )}
                       </span>
                     </div>
@@ -406,69 +440,113 @@ function Empty() {
   return <div className="text-center py-16 text-sm text-muted-foreground">Nothing to show here.</div>
 }
 
-// ── Transfer from WAREHOUSE → branch (branch +n, warehouse −n) ──────────────────
+// ── Move stock between any two locations (source −n, destination +n) ────────────
 function TransferDialog({ row, onClose }: { row: AnfStock; onClose: () => void }) {
   const anfStock = useCRMStore((s) => s.anfStock)
   const updateAnfStock = useCRMStore((s) => s.updateAnfStock)
+  const addAnfStock = useCRMStore((s) => s.addAnfStock)
   const addAnfStockLog = useCRMStore((s) => s.addAnfStockLog)
   const currentUserName = useCRMStore((s) => s.currentUserName)
-  const wh = anfStock.find((r) => r.item === row.item && r.branch === WAREHOUSE)
-  const whQty = wh?.qty ?? 0
-  const [qty, setQty] = useState(Math.min(1, whQty))
+
+  // Same product across locations — match by product_id when present, else by name.
+  const sameItem = (r: AnfStock) => (row.product_id && r.product_id) ? r.product_id === row.product_id : r.item === row.item
+  const itemRows = anfStock.filter(sameItem)
+  const byBranch = new Map<string, AnfStock>()
+  for (const r of itemRows) if (r.branch) byBranch.set(r.branch, r)
+  const qtyAt = (b: string) => byBranch.get(b)?.qty ?? 0
+
+  // Location universe: warehouse + seed branches + anywhere this item currently sits.
+  const locations = [...new Set([WAREHOUSE, ...SEED_BRANCHES, ...itemRows.map((r) => r.branch).filter(Boolean) as string[]])]
+
+  // Default direction from which row was clicked: warehouse row → push out; branch row → pull in.
+  const openedAtWarehouse = row.branch === WAREHOUSE
+  const [from, setFrom] = useState<string>(WAREHOUSE)
+  const [to, setTo] = useState(openedAtWarehouse ? (SEED_BRANCHES.find((b) => b !== WAREHOUSE) || locations.find((b) => b !== WAREHOUSE) || '') : (row.branch || ''))
+  const [qty, setQty] = useState(1)
   const [receivedBy, setReceivedBy] = useState('')
   const recent = [...new Set(anfStock.map((r) => r.sign).filter(Boolean) as string[])].slice(0, 6)
-  const n = Math.max(0, Math.min(qty, whQty))
-  const canMove = !!wh && n > 0
+
+  const srcQty = qtyAt(from)
+  const n = Math.max(0, Math.min(qty, srcQty))
+  const canMove = from !== to && !!to && !!from && n > 0 && srcQty >= n
+
+  const mkId = () => (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `id-${Date.now()}-${Math.round(performance.now())}`
 
   function move() {
-    if (!wh || n <= 0) return
+    if (!canMove) return
+    const src = byBranch.get(from)
+    if (!src) return
     const by = receivedBy.trim() || currentUserName || null
     const at = new Date().toISOString()
-    const note = `${WAREHOUSE} → ${row.branch}`
-    const mkId = () => (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `log-${Date.now()}-${Math.round(performance.now())}`
-    void updateAnfStock(row.stock_id, { qty: row.qty + n, sign: by ?? row.sign })
-    void updateAnfStock(wh.stock_id, { qty: wh.qty - n })
-    // Log both sides (#6, Q3=both).
-    void addAnfStockLog({ log_id: mkId(), board_id: row.board_id, stock_id: wh.stock_id, product_id: wh.product_id ?? null, branch: WAREHOUSE, type: 'transfer', qty_delta: -n, qty_after: wh.qty - n, by_name: by, note, ref: null, at })
-    void addAnfStockLog({ log_id: mkId(), board_id: row.board_id, stock_id: row.stock_id, product_id: row.product_id ?? null, branch: row.branch, type: 'transfer', qty_delta: n, qty_after: row.qty + n, by_name: by, note, ref: null, at })
+    const note = `${from} → ${to}`
+    // Source: deduct.
+    void updateAnfStock(src.stock_id, { qty: src.qty - n })
+    void addAnfStockLog({ log_id: mkId(), board_id: src.board_id, stock_id: src.stock_id, product_id: src.product_id ?? null, branch: from, type: 'transfer', qty_delta: -n, qty_after: src.qty - n, by_name: by, note, ref: null, at })
+    // Destination: top up an existing row, or materialise a new one.
+    const dest = byBranch.get(to)
+    if (dest) {
+      void updateAnfStock(dest.stock_id, { qty: dest.qty + n, sign: by ?? dest.sign, delivered_at: at.slice(0, 10) })
+      void addAnfStockLog({ log_id: mkId(), board_id: dest.board_id, stock_id: dest.stock_id, product_id: dest.product_id ?? null, branch: to, type: 'transfer', qty_delta: n, qty_after: dest.qty + n, by_name: by, note, ref: null, at })
+    } else {
+      const newRow: AnfStock = {
+        ...src, stock_id: mkId(), branch: to, room: null, qty: n,
+        checked_at: null, checked_by: null, reported_at: null, delivered_at: at.slice(0, 10),
+        notes: null, sign: by,
+      }
+      void addAnfStock(newRow)
+      void addAnfStockLog({ log_id: mkId(), board_id: newRow.board_id, stock_id: newRow.stock_id, product_id: newRow.product_id ?? null, branch: to, type: 'transfer', qty_delta: n, qty_after: n, by_name: by, note, ref: null, at })
+    }
     onClose()
   }
+
+  const LocSelect = ({ value, onChange, exclude }: { value: string; onChange: (v: string) => void; exclude?: string }) => (
+    <Select value={value} onValueChange={(v) => { if (v) onChange(v) }}>
+      <SelectTrigger className="h-9 w-full text-[13px]"><span className="truncate">{value ? `${value} · ${qtyAt(value)}` : 'Select…'}</span></SelectTrigger>
+      <SelectContent>
+        {locations.filter((b) => b !== exclude).map((b) => (
+          <SelectItem key={b} value={b}><span style={{ color: branchColor(b) }} className="font-medium">{b}</span> <span className="font-mono text-[11px] text-muted-foreground">· {qtyAt(b)}</span></SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
 
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent showCloseButton={false} className="max-w-sm p-0 gap-0 overflow-hidden">
         <div className="flex items-center gap-2.5 px-5 py-3 border-b border-border">
           <span className="w-3 h-3 rounded-[4px]" style={{ backgroundColor: '#5B6470' }} />
-          <DialogTitle className="text-[15px] font-bold">Move to {row.branch}</DialogTitle>
+          <DialogTitle className="text-[15px] font-bold">Move stock</DialogTitle>
           <button onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground text-lg leading-none px-1">✕</button>
         </div>
         <div className="px-5 py-4">
           <div className="font-medium text-[14px]">{row.item}</div>
           {row.description && <div className="text-[12px] text-muted-foreground mt-0.5">{row.description}</div>}
 
-          {!wh ? (
-            <p className="text-[13px] text-muted-foreground mt-4">No WAREHOUSE stock for this item yet — receive an order first.</p>
-          ) : (
-            <>
-              <div className="flex items-center justify-center gap-3 mt-4 mb-1 text-center">
-                <div><div className="field-label mb-0.5">Warehouse</div><div className="font-mono text-[22px] font-bold text-[#5B6470]">{whQty}</div><div className="font-mono text-[10px] text-muted-foreground">→ {whQty - n}</div></div>
-                <div className="text-[#7A5AA5] text-xl">↦</div>
-                <div><div className="field-label mb-0.5" style={{ color: branchColor(row.branch) }}>{row.branch}</div><div className="font-mono text-[22px] font-bold" style={{ color: branchColor(row.branch) }}>{row.qty}</div><div className="font-mono text-[10px] text-muted-foreground">→ {row.qty + n}</div></div>
-              </div>
-              <label className="field-label block text-center mt-3">Quantity to move</label>
-              <div className="flex items-center justify-center gap-4 mt-1">
-                <button type="button" onClick={() => setQty((q) => Math.max(0, q - 1))} className="w-9 h-9 rounded-xl border border-border bg-muted/40 text-xl leading-none flex items-center justify-center hover:bg-muted">−</button>
-                <Input type="number" min={0} max={whQty} value={String(n)} onChange={(e) => setQty(parseInt(e.target.value, 10) || 0)} className="w-[70px] h-11 text-center font-mono text-2xl font-bold px-1 text-[#7A5AA5] border-0 shadow-none bg-transparent focus-visible:ring-0 tabular-nums" />
-                <button type="button" onClick={() => setQty((q) => Math.min(whQty, q + 1))} className="w-9 h-9 rounded-xl border border-border bg-muted/40 text-xl leading-none flex items-center justify-center hover:bg-muted">+</button>
-              </div>
-              <p className="text-center font-mono text-[11px] text-muted-foreground mt-2">Warehouse has <b className="text-foreground">{whQty}</b> · can move up to {whQty}</p>
-              <div className="mt-4">
-                <label className="field-label">Received by <span className="font-normal normal-case tracking-normal text-muted-foreground/70">· who collected at {row.branch}</span></label>
-                <Input value={receivedBy} onChange={(e) => setReceivedBy(e.target.value)} placeholder={currentUserName || 'name…'} className="h-9" />
-                {recent.length > 0 && <div className="flex flex-wrap gap-1.5 mt-1.5">{recent.map((nm) => <button key={nm} type="button" onClick={() => setReceivedBy(nm)} className="text-[12px] border border-border rounded-full px-2.5 py-1 hover:bg-muted">{nm}</button>)}</div>}
-              </div>
-            </>
-          )}
+          <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2 mt-4">
+            <div><label className="field-label mb-1 block">From</label><LocSelect value={from} onChange={setFrom} exclude={to} /></div>
+            <div className="pb-2 text-[#7A5AA5] text-lg text-center">↦</div>
+            <div><label className="field-label mb-1 block">To</label><LocSelect value={to} onChange={setTo} exclude={from} /></div>
+          </div>
+
+          <div className="flex items-center justify-center gap-3 mt-4 mb-1 text-center">
+            <div><div className="field-label mb-0.5" style={{ color: branchColor(from) }}>{from}</div><div className="font-mono text-[20px] font-bold" style={{ color: branchColor(from) }}>{srcQty}</div><div className="font-mono text-[10px] text-muted-foreground">→ {srcQty - n}</div></div>
+            <div className="text-muted-foreground text-lg">↦</div>
+            <div><div className="field-label mb-0.5" style={{ color: branchColor(to) }}>{to || '—'}</div><div className="font-mono text-[20px] font-bold" style={{ color: branchColor(to) }}>{qtyAt(to)}</div><div className="font-mono text-[10px] text-muted-foreground">→ {qtyAt(to) + n}</div></div>
+          </div>
+
+          <label className="field-label block text-center mt-3">Quantity to move</label>
+          <div className="flex items-center justify-center gap-4 mt-1">
+            <button type="button" onClick={() => setQty((q) => Math.max(0, Math.min(srcQty, q) - 1))} className="w-9 h-9 rounded-xl border border-border bg-muted/40 text-xl leading-none flex items-center justify-center hover:bg-muted">−</button>
+            <Input type="number" min={0} max={srcQty} value={String(n)} onChange={(e) => setQty(parseInt(e.target.value, 10) || 0)} className="w-[70px] h-11 text-center font-mono text-2xl font-bold px-1 text-[#7A5AA5] border-0 shadow-none bg-transparent focus-visible:ring-0 tabular-nums" />
+            <button type="button" onClick={() => setQty((q) => Math.min(srcQty, q + 1))} className="w-9 h-9 rounded-xl border border-border bg-muted/40 text-xl leading-none flex items-center justify-center hover:bg-muted">+</button>
+          </div>
+          <p className="text-center font-mono text-[11px] text-muted-foreground mt-2">{from} has <b className="text-foreground">{srcQty}</b> · can move up to {srcQty}</p>
+
+          <div className="mt-4">
+            <label className="field-label">Received by <span className="font-normal normal-case tracking-normal text-muted-foreground/70">· who collected at {to || 'destination'}</span></label>
+            <Input value={receivedBy} onChange={(e) => setReceivedBy(e.target.value)} placeholder={currentUserName || 'name…'} className="h-9" />
+            {recent.length > 0 && <div className="flex flex-wrap gap-1.5 mt-1.5">{recent.map((nm) => <button key={nm} type="button" onClick={() => setReceivedBy(nm)} className="text-[12px] border border-border rounded-full px-2.5 py-1 hover:bg-muted">{nm}</button>)}</div>}
+          </div>
         </div>
         <div className="flex items-center gap-2 px-5 py-3 border-t border-border">
           <Button variant="ghost" size="sm" className="ml-auto" onClick={onClose}>Cancel</Button>
@@ -726,7 +804,7 @@ function StockDialog({ row, onClose, onRaise, onTransfer, onDuplicate }: {
           <div className="col-span-2"><label className="field-label">Notes</label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="text-sm resize-none" /></div>
         </div>
         <div className="flex flex-wrap items-center gap-2 px-5 py-3 border-t border-border">
-          {isEdit && row && row.branch !== WAREHOUSE && <button onClick={() => { onTransfer(row); onClose() }} className="inline-flex items-center gap-1.5 text-sm text-[#5B6470] border border-[#5B6470] rounded-md px-3 h-9 hover:bg-[#5B6470]/10"><Package className="w-4 h-4" /> From warehouse</button>}
+          {isEdit && row && <button onClick={() => { onTransfer(row); onClose() }} className="inline-flex items-center gap-1.5 text-sm text-[#5B6470] border border-[#5B6470] rounded-md px-3 h-9 hover:bg-[#5B6470]/10"><Package className="w-4 h-4" /> Move stock</button>}
           {isEdit && row && <button onClick={() => { onRaise(row.item, row.branch, row.stock_id); onClose() }} className="inline-flex items-center gap-1.5 text-sm text-[#7A5AA5] border border-[#7A5AA5] rounded-md px-3 h-9 hover:bg-[#7A5AA5]/10"><ShoppingCart className="w-4 h-4" /> Raise order</button>}
           <Button variant="ghost" size="sm" className="ml-auto" onClick={onClose}>Cancel</Button>
           <Button size="sm" className="bg-[#7A5AA5] hover:opacity-90 text-white" onClick={save} disabled={!item.trim()}>{isEdit ? 'Save' : 'Add item'}</Button>
