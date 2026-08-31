@@ -803,11 +803,17 @@ function StockDialog({ row, onClose, onRaise, onTransfer, onDuplicate }: {
 
           <div className="col-span-2"><label className="field-label">Notes</label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="text-sm resize-none" /></div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 px-5 py-3 border-t border-border">
-          {isEdit && row && <button onClick={() => { onTransfer(row); onClose() }} className="inline-flex items-center gap-1.5 text-sm text-[#5B6470] border border-[#5B6470] rounded-md px-3 h-9 hover:bg-[#5B6470]/10"><Package className="w-4 h-4" /> Move stock</button>}
-          {isEdit && row && <button onClick={() => { onRaise(row.item, row.branch, row.stock_id); onClose() }} className="inline-flex items-center gap-1.5 text-sm text-[#7A5AA5] border border-[#7A5AA5] rounded-md px-3 h-9 hover:bg-[#7A5AA5]/10"><ShoppingCart className="w-4 h-4" /> Raise order</button>}
-          <Button variant="ghost" size="sm" className="ml-auto" onClick={onClose}>Cancel</Button>
-          <Button size="sm" className="bg-[#7A5AA5] hover:opacity-90 text-white" onClick={save} disabled={!item.trim()}>{isEdit ? 'Save' : 'Add item'}</Button>
+        <div className="border-t border-border">
+          {isEdit && row && (
+            <div className="flex flex-wrap gap-2 px-5 pt-3 pb-1">
+              <button onClick={() => { onTransfer(row); onClose() }} className="inline-flex items-center gap-1.5 text-sm text-[#5B6470] border border-[#5B6470] rounded-md px-3 h-9 hover:bg-[#5B6470]/10"><Package className="w-4 h-4" /> Move stock</button>
+              <button onClick={() => { onRaise(row.item, row.branch, row.stock_id); onClose() }} className="inline-flex items-center gap-1.5 text-sm text-[#7A5AA5] border border-[#7A5AA5] rounded-md px-3 h-9 hover:bg-[#7A5AA5]/10"><ShoppingCart className="w-4 h-4" /> Raise order</button>
+            </div>
+          )}
+          <div className="flex justify-end items-center gap-2 px-5 py-3">
+            <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+            <Button size="sm" className="bg-[#7A5AA5] hover:opacity-90 text-white" onClick={save} disabled={!item.trim()}>{isEdit ? 'Save' : 'Add item'}</Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
