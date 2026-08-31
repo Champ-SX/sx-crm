@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
 import { UserAvatar } from '@/components/shared/user-avatar'
@@ -28,8 +29,9 @@ export interface OrderPrefill {
 }
 
 export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | null; prefill?: OrderPrefill; onClose: () => void }) {
-  const { anfOrders, anfStock, teamMembers, activeBoardId, addAnfOrder, updateAnfOrder, deleteAnfOrder } = useCRMStore()
+  const { anfOrders, anfStock, teamMembers, activeBoardId, addAnfOrder, updateAnfOrder, deleteAnfOrder, setFocusAnfOrder } = useCRMStore()
   const { user } = useAuth()
+  const router = useRouter()
   const isEdit = !!order
 
   // Default "Requested by" to the logged-in user (name matched to the roster;
@@ -90,14 +92,19 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
     }
     if (isEdit && order) {
       void updateAnfOrder(order.order_id, { ...base, remind_notified_at: null })
+      onClose()
     } else {
       const now = new Date().toISOString()
+      const newId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `anf-${Date.now()}`
       void addAnfOrder({
-        order_id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `anf-${Date.now()}`,
+        order_id: newId,
         board_id: activeBoardId ?? 'anf-order', ...base, remind_notified_at: null, created_at: now, updated_at: now,
       })
+      // Jump to the Orders board and anchor on the row we just created.
+      setFocusAnfOrder(newId)
+      onClose()
+      router.push('/anf-order')
     }
-    onClose()
   }
   function remove() {
     if (order && window.confirm(`Delete order “${order.item}”?`)) { void deleteAnfOrder(order.order_id); onClose() }

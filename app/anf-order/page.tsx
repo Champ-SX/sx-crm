@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
 import { useHydrated } from '@/hooks/use-hydrated'
@@ -25,6 +25,17 @@ export default function AnfOrderPage() {
   const anfOrders = useCRMStore((s) => s.anfOrders)
   const updateAnfOrder = useCRMStore((s) => s.updateAnfOrder)
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
+  const focusAnfOrderId = useCRMStore((s) => s.focusAnfOrderId)
+  const setFocusAnfOrder = useCRMStore((s) => s.setFocusAnfOrder)
+
+  // After a new order is created, scroll to it and let the highlight fade (~1.8s).
+  useEffect(() => {
+    if (!focusAnfOrderId) return
+    if (!anfOrders.some((o) => o.order_id === focusAnfOrderId)) return
+    const t1 = setTimeout(() => document.getElementById(`order-${focusAnfOrderId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80)
+    const t2 = setTimeout(() => setFocusAnfOrder(null), 1800)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
+  }, [focusAnfOrderId, anfOrders, setFocusAnfOrder])
   const [statusFilter, setStatusFilter] = useState<AnfOrderStatus | 'all'>('all')
   const [branchFilter, setBranchFilter] = useState<string>('all')
   const [assigneeFilter, setAssigneeFilter] = useState<string>(ASSIGNEE_FILTER_ALL)
@@ -145,7 +156,7 @@ export default function AnfOrderPage() {
                 </thead>
                 <tbody>
                   {groups.map(([branch, rows]) => (
-                    <DesktopBranch key={branch} branch={branch} rows={rows} onOpen={setEditing} onReceive={setReceiveOrder} />
+                    <DesktopBranch key={branch} branch={branch} rows={rows} onOpen={setEditing} onReceive={setReceiveOrder} focusId={focusAnfOrderId} />
                   ))}
                 </tbody>
               </table>
@@ -160,7 +171,7 @@ export default function AnfOrderPage() {
                     <span className="font-mono text-[10px] text-muted-foreground">— {rows.length}</span>
                   </div>
                   {rows.map((o) => (
-                    <button key={o.order_id} onClick={() => setEditing(o)} className={`w-full grid grid-cols-[auto_1fr_auto] gap-3 items-center px-3 py-3 border-b border-border/50 last:border-0 text-left active:bg-muted/40 ${o.archived_at ? 'opacity-55' : ''}`}>
+                    <button key={o.order_id} id={`order-${o.order_id}`} onClick={() => setEditing(o)} className={`w-full grid grid-cols-[auto_1fr_auto] gap-3 items-center px-3 py-3 border-b border-border/50 last:border-0 text-left transition-colors duration-700 ${focusAnfOrderId === o.order_id ? 'bg-[#7A5AA5]/15 [box-shadow:inset_3px_0_0_#7A5AA5]' : 'active:bg-muted/40'} ${o.archived_at ? 'opacity-55' : ''}`}>
                       <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${statusMeta(o.status).dot}`} />
                       <span className="min-w-0">
                         <span className="block font-semibold text-[13.5px] leading-tight truncate">{o.item}</span>
@@ -276,7 +287,7 @@ function StatusInline({ order, onReceive }: { order: AnfOrder; onReceive: (o: An
   )
 }
 
-function DesktopBranch({ branch, rows, onOpen, onReceive }: { branch: string; rows: AnfOrder[]; onOpen: (o: AnfOrder) => void; onReceive: (o: AnfOrder) => void }) {
+function DesktopBranch({ branch, rows, onOpen, onReceive, focusId }: { branch: string; rows: AnfOrder[]; onOpen: (o: AnfOrder) => void; onReceive: (o: AnfOrder) => void; focusId?: string | null }) {
   const teamMembers = useCRMStore((s) => s.teamMembers)
   const today = new Date()
   const color = branchColor(branch)
@@ -292,7 +303,7 @@ function DesktopBranch({ branch, rows, onOpen, onReceive }: { branch: string; ro
         const assignees = teamMembers.filter((m) => assigneesOf(o).includes(m.id))
         const dueSoon = o.needed_by && o.status !== 'received' && new Date(o.needed_by + 'T00:00:00').getTime() - today.getTime() < 3 * 864e5
         return (
-          <tr key={o.order_id} className={`border-b border-border/50 last:border-0 hover:bg-muted/40 cursor-pointer ${o.archived_at ? 'opacity-55' : ''}`} onClick={() => onOpen(o)}>
+          <tr key={o.order_id} id={`order-${o.order_id}`} className={`border-b border-border/50 last:border-0 cursor-pointer transition-colors duration-700 ${focusId === o.order_id ? 'bg-[#7A5AA5]/15 [box-shadow:inset_3px_0_0_#7A5AA5]' : 'hover:bg-muted/40'} ${o.archived_at ? 'opacity-55' : ''}`} onClick={() => onOpen(o)}>
             <td className="px-4 py-3"><StatusInline order={o} onReceive={onReceive} /></td>
             <td className="px-4 py-3 min-w-0"><div className="font-semibold truncate">{o.item}</div>{o.description && <div className="text-[12.5px] text-muted-foreground truncate mt-0.5">{o.description}</div>}</td>
             <td className="px-4 py-3 text-right font-mono tabular-nums">{o.quantity}</td>

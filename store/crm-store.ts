@@ -217,6 +217,8 @@ interface CRMStore {
   addAnfOrder: (order: AnfOrder) => Promise<void>
   updateAnfOrder: (id: string, updates: Partial<AnfOrder>) => Promise<void>
   deleteAnfOrder: (id: string) => Promise<void>
+  focusAnfOrderId: string | null   // set on create → Orders board scrolls to + highlights it
+  setFocusAnfOrder: (id: string | null) => void
 
   // ── ANF Stock (per-branch inventory; shares item catalog with orders) ───────
   anfStock: AnfStock[]
@@ -356,6 +358,8 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
 
       // ── ANF Order board ─────────────────────────────────────────────────────────
       anfOrders: [],
+      focusAnfOrderId: null,
+      setFocusAnfOrder: (id) => set({ focusAnfOrderId: id }),
       addAnfOrder: async (order) => {
         set((s) => ({ anfOrders: [order, ...s.anfOrders] }))
         notifyAnfAssignees(get, set, order, `New order · ${order.quantity}×`)
