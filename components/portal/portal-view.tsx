@@ -4,11 +4,13 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useAuth } from '@/components/auth-provider'
 import {
-  type PortalCompany, type PortalResource, type PortalTier,
+  type PortalCompany, type PortalResource, type PortalTier, type PortalDetailBlock,
   fetchPortal, updateCompany, uploadLogo, logoUrl,
 } from '@/lib/supabase/portal'
 import { ResourceDialog, type ResourceDraft } from './resource-dialog'
 import { ProfileDialog } from './profile-dialog'
+import { CopyBlock, CopyBtn } from './copy-block'
+import { BlockDialog, type BlockDraft } from './block-dialog'
 import { PORTAL_CSS } from './portal-css'
 
 // Per-company accent theme (fill / text-on-fill / accent-as-text on cream).
@@ -40,11 +42,13 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
   const signedIn = !!session
   const [companies, setCompanies] = useState<PortalCompany[]>([])
   const [resources, setResources] = useState<PortalResource[]>([])
+  const [blocks, setBlocks] = useState<PortalDetailBlock[]>([])
   const [loading, setLoading] = useState(true)
   const [active, setActive] = useState(initialCompany)
   const [mode, setMode] = useState<'public' | 'internal'>('internal')
   const [theme, setTheme] = useState<'light' | 'dark' | null>(null)
   const [resourceDraft, setResourceDraft] = useState<ResourceDraft | null>(null)
+  const [blockDraft, setBlockDraft] = useState<BlockDraft | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
 
   // Default view follows auth: signed-in → internal (all + edit), signed-out → public.
@@ -52,9 +56,10 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
   useEffect(() => { setMode(signedIn ? 'internal' : 'public') }, [signedIn])
 
   const reload = useCallback(async () => {
-    const { companies, resources } = await fetchPortal()
+    const { companies, resources, blocks } = await fetchPortal()
     setCompanies(companies.sort((a, b) => a.sort - b.sort))
     setResources(resources)
+    setBlocks(blocks)
     setLoading(false)
   }, [])
   useEffect(() => { void reload() }, [reload])
@@ -88,6 +93,10 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
     }))
     // Public visitors never see internal sections at all.
     .filter((g) => mode === 'internal' || g.tier === 'public')
+
+  const companyBlocks = blocks
+    .filter((b) => b.company === company.key && (mode === 'internal' || b.tier === 'public'))
+    .sort((a, b) => a.sort - b.sort)
 
   return (
     <div className="pscope" style={themeVars(active)} data-theme={theme ?? undefined}>
@@ -166,6 +175,16 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
           </div>
         </section>
 
+        {/* Copyable detail blocks (document-header address, shipping, bank, …) */}
+        {companyBlocks.map((b) => (
+          <CopyBlock key={b.id} block={b} canEdit={canEdit} onEdit={() => setBlockDraft({ block: b, company: company.key })} />
+        ))}
+        {canEdit && (
+          <button className="add-block" onClick={() => setBlockDraft({ company: company.key })}>
+            <span className="plus">+</span> Add detail block
+          </button>
+        )}
+
         {/* Sections */}
         {sections.map((g, gi) => {
           const rows = mode === 'public' ? g.rows.filter((r) => !!r.url) : g.rows
@@ -219,6 +238,7 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
       </footer>
 
       {resourceDraft && <ResourceDialog draft={resourceDraft} onClose={() => setResourceDraft(null)} onSaved={() => { setResourceDraft(null); void reload() }} />}
+      {blockDraft && <BlockDialog draft={blockDraft} onClose={() => setBlockDraft(null)} onSaved={() => { setBlockDraft(null); void reload() }} />}
       {profileOpen && <ProfileDialog company={company} onClose={() => setProfileOpen(false)} onSaved={() => { setProfileOpen(false); void reload() }} />}
     </div>
   )
@@ -243,6 +263,7 @@ function ResRow({ it, i, canEdit, onEdit }: { it: PortalResource; i: number; can
           <span className="sep">·</span>
           {it.status === 'to add' ? <span className="empty">awaiting link</span> : <span>{it.status}</span>}
         </div>
+        {hasUrl && <div className="rurl"><span className="urltext">{it.url}</span><CopyBtn text={it.url!} className="cpbtn cpsm" label="Copy link" /></div>}
       </div>
       <div className="right">
         <span className={`pill ${it.tier}`}><span className="pd" />{it.tier === 'internal' ? 'Internal' : 'Public'}</span>

@@ -33,6 +33,21 @@ export interface PortalResource {
   updated_at?: string
 }
 
+export interface PortalDetailLine { label: string; value: string }
+export interface PortalDetailBlock {
+  id: string
+  company: string
+  tier: PortalTier
+  title: string
+  th: string | null
+  icon: string | null
+  heading: string | null
+  subheading: string | null
+  lines: PortalDetailLine[]
+  sort: number
+  updated_at?: string
+}
+
 export const PORTAL_LOGOS_BUCKET = 'portal-logos'
 
 // ── Mock data (local dev / mock mode) — mirrors the seed migration ─────────────
@@ -68,22 +83,46 @@ const MOCK_RESOURCES: PortalResource[] = [
   M('sxtech', 'Operations', 'internal', 'Code Repository', 'Git / repo', null, null, 'Tech', 'to add', 1),
 ]
 
+const MOCK_BLOCKS: PortalDetailBlock[] = [
+  {
+    id: uid(), company: 'sixsheet', tier: 'public', title: 'Document-header address',
+    th: 'ที่อยู่ออกหัวเอกสาร · ใบเสนอราคา, ใบกำกับภาษี', icon: 'file-invoice',
+    heading: 'บริษัท ซิกซีท กรุ๊ป จำกัด', subheading: 'SIXSHEET GROUP COMPANY LIMITED',
+    lines: [
+      { label: 'Tax ID · ภาษี', value: '0105559003122' },
+      { label: 'Address · ที่อยู่', value: '15 ห้องเลขที่ A124 ซอย ประดิพัทธ์ 17 ถนนประดิพัทธ์ แขวงพญาไท เขตพญาไท กรุงเทพมหานคร 10400' },
+      { label: 'Phone · โทร', value: '080-268-6632' },
+    ], sort: 0,
+  },
+]
+
 // Mutable in-memory copies so the edit UI is exercisable in mock mode.
 const mockCompanies = MOCK_COMPANIES.map((c) => ({ ...c }))
 let mockResources = MOCK_RESOURCES.map((r) => ({ ...r }))
+let mockBlocks = MOCK_BLOCKS.map((b) => ({ ...b }))
 
 // ── Reads ──────────────────────────────────────────────────────────────────
-export async function fetchPortal(): Promise<{ companies: PortalCompany[]; resources: PortalResource[] }> {
+export async function fetchPortal(): Promise<{ companies: PortalCompany[]; resources: PortalResource[]; blocks: PortalDetailBlock[] }> {
   if (!isSupabaseConfigured) {
-    return { companies: mockCompanies.map((c) => ({ ...c })), resources: mockResources.map((r) => ({ ...r })) }
+    return {
+      companies: mockCompanies.map((c) => ({ ...c })),
+      resources: mockResources.map((r) => ({ ...r })),
+      blocks: mockBlocks.map((b) => ({ ...b, lines: b.lines.map((l) => ({ ...l })) })),
+    }
   }
-  const [c, r] = await Promise.all([
+  const [c, r, b] = await Promise.all([
     supabase.from('portal_companies').select('*').order('sort'),
     supabase.from('portal_resources').select('*').order('sort'),
+    supabase.from('portal_detail_blocks').select('*').order('sort'),
   ])
   if (c.error) throw c.error
   if (r.error) throw r.error
-  return { companies: (c.data ?? []) as PortalCompany[], resources: (r.data ?? []) as PortalResource[] }
+  if (b.error) throw b.error
+  return {
+    companies: (c.data ?? []) as PortalCompany[],
+    resources: (r.data ?? []) as PortalResource[],
+    blocks: (b.data ?? []) as PortalDetailBlock[],
+  }
 }
 
 // ── Company writes ───────────────────────────────────────────────────────────
@@ -125,6 +164,36 @@ export async function deleteResource(id: string): Promise<void> {
     return
   }
   const { error } = await supabase.from('portal_resources').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ── Detail block writes ──────────────────────────────────────────────────────
+export async function createBlock(row: Omit<PortalDetailBlock, 'id'>): Promise<PortalDetailBlock> {
+  if (!isSupabaseConfigured) {
+    const created = { ...row, id: uid() } as PortalDetailBlock
+    mockBlocks = [...mockBlocks, created]
+    return created
+  }
+  const { data, error } = await supabase.from('portal_detail_blocks').insert(row).select().single()
+  if (error) throw error
+  return data as PortalDetailBlock
+}
+
+export async function updateBlock(id: string, patch: Partial<PortalDetailBlock>): Promise<void> {
+  if (!isSupabaseConfigured) {
+    mockBlocks = mockBlocks.map((b) => b.id === id ? { ...b, ...patch } : b)
+    return
+  }
+  const { error } = await supabase.from('portal_detail_blocks').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id)
+  if (error) throw error
+}
+
+export async function deleteBlock(id: string): Promise<void> {
+  if (!isSupabaseConfigured) {
+    mockBlocks = mockBlocks.filter((b) => b.id !== id)
+    return
+  }
+  const { error } = await supabase.from('portal_detail_blocks').delete().eq('id', id)
   if (error) throw error
 }
 
