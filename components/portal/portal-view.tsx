@@ -2,6 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
+import { Share2, Copy, Check } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
 import {
   type PortalCompany, type PortalResource, type PortalTier, type PortalDetailBlock,
@@ -122,30 +123,31 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
         </div>
       </div>
 
-      {/* Session strip */}
-      <div className="session">
-        <div className="session-inner">
-          {mode === 'internal'
-            ? <span className="chip"><span className="live" /> Signed in via <b>SX‑CRM</b></span>
-            : <span className="chip"><span className="live" style={{ background: 'var(--faint)', boxShadow: 'none' }} /> Public link · <b>safe to share with clients</b></span>}
-          <span className="mline">{mode === 'internal' ? 'Showing all resources — public + internal' : 'Showing public resources only — client-safe'}</span>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <nav className="tabs" aria-label="Companies">
-        <div className="tabs-inner">
-          {companies.map((c) => (
-            <button key={c.key} className="tab" role="tab" aria-selected={c.key === company.key} onClick={() => selectCompany(c.key)}>
-              <span className="tname"><AstName name={c.name} /></span>
-              <span className="tmeta">{c.tabmeta}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
+      {/* Session strip + company tabs — admin only. The client (public) view is clean. */}
+      {mode === 'internal' && (
+        <>
+          <div className="session">
+            <div className="session-inner">
+              <span className="chip"><span className="live" /> Signed in via <b>SX‑CRM</b></span>
+              <span className="mline">Showing all resources — public + internal</span>
+            </div>
+          </div>
+          <nav className="tabs" aria-label="Companies">
+            <div className="tabs-inner">
+              {companies.map((c) => (
+                <button key={c.key} className="tab" role="tab" aria-selected={c.key === company.key} onClick={() => selectCompany(c.key)}>
+                  <span className="tname"><AstName name={c.name} /></span>
+                  <span className="tmeta">{c.tabmeta}</span>
+                </button>
+              ))}
+            </div>
+          </nav>
+        </>
+      )}
 
       {/* Stage */}
       <main className="wrap portal-main">
+        {canEdit && <ShareBar company={company.key} name={company.name} />}
         {/* Cover */}
         <section className="cover">
           <div className="cover-grid">
@@ -177,7 +179,7 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
 
         {/* Copyable detail blocks (document-header address, shipping, bank, …) */}
         {companyBlocks.map((b) => (
-          <CopyBlock key={b.id} block={b} canEdit={canEdit} onEdit={() => setBlockDraft({ block: b, company: company.key })} />
+          <CopyBlock key={b.id} block={b} canEdit={canEdit} showPills={mode === 'internal'} onEdit={() => setBlockDraft({ block: b, company: company.key })} />
         ))}
         {canEdit && (
           <button className="add-block" onClick={() => setBlockDraft({ company: company.key })}>
@@ -199,11 +201,11 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
                     <div className="desc">{SECTION_DESC[g.section] ?? ''}</div>
                   </div>
                 </div>
-                <span className={`pill ${g.tier}`}><span className="pd" />{g.tier === 'internal' ? 'Internal' : 'Public'}</span>
+                {mode === 'internal' && <span className={`pill ${g.tier}`}><span className="pd" />{g.tier === 'internal' ? 'Internal' : 'Public'}</span>}
               </div>
               <div className="ledger">
                 {rows.map((it, i) => (
-                  <ResRow key={it.id} it={it} i={i} canEdit={canEdit}
+                  <ResRow key={it.id} it={it} i={i} canEdit={canEdit} showPills={mode === 'internal'}
                     onEdit={() => setResourceDraft({ resource: it, company: company.key, section: it.section, tier: it.tier })} />
                 ))}
                 {rows.length === 0 && <div className="empty-note">No public links published yet.</div>}
@@ -244,12 +246,36 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
   )
 }
 
+function ShareBar({ company, name }: { company: string; name: string }) {
+  const [copied, setCopied] = useState(false)
+  const url = typeof window !== 'undefined' ? `${window.location.origin}/portal?company=${company}` : `/portal?company=${company}`
+  async function copy() {
+    try { await navigator.clipboard.writeText(url) } catch { /* clipboard blocked (needs https) */ }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+  return (
+    <div className="sharebar">
+      <span className="sb-ic"><Share2 className="w-4 h-4" /></span>
+      <div className="sb-u">
+        <b>Share public page — {name}</b>
+        <code>{url.replace(/^https?:\/\//, '')}</code>
+      </div>
+      <a className="sb-open" href={`/portal?company=${company}`} target="_blank" rel="noopener noreferrer">Open</a>
+      <button type="button" className={`sb-cta${copied ? ' done' : ''}`} onClick={copy}>
+        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+        {copied ? 'Copied' : 'Copy link'}
+      </button>
+    </div>
+  )
+}
+
 function themeVars(key: string): React.CSSProperties {
   const t = THEMES[key] ?? THEMES.sixsheet
   return { '--accent': t.accent, '--on-accent': t.on, '--accent-text': t.text } as React.CSSProperties
 }
 
-function ResRow({ it, i, canEdit, onEdit }: { it: PortalResource; i: number; canEdit: boolean; onEdit: () => void }) {
+function ResRow({ it, i, canEdit, showPills, onEdit }: { it: PortalResource; i: number; canEdit: boolean; showPills: boolean; onEdit: () => void }) {
   const hasUrl = !!it.url
   return (
     <div className="res">
@@ -266,7 +292,7 @@ function ResRow({ it, i, canEdit, onEdit }: { it: PortalResource; i: number; can
         {hasUrl && <div className="rurl"><span className="urltext">{it.url}</span><CopyBtn text={it.url!} className="cpbtn cpsm" label="Copy link" /></div>}
       </div>
       <div className="right">
-        <span className={`pill ${it.tier}`}><span className="pd" />{it.tier === 'internal' ? 'Internal' : 'Public'}</span>
+        {showPills && <span className={`pill ${it.tier}`}><span className="pd" />{it.tier === 'internal' ? 'Internal' : 'Public'}</span>}
         {hasUrl
           ? <a className="open" href={it.url!} target="_blank" rel="noopener noreferrer">Open <span className="arw">→</span></a>
           : canEdit

@@ -24,7 +24,7 @@ export function CopyBtn({ text, className = 'cpbtn', label = 'Copy' }: { text: s
   )
 }
 
-export function CopyBlock({ block, canEdit, onEdit }: { block: PortalDetailBlock; canEdit: boolean; onEdit: () => void }) {
+export function CopyBlock({ block, canEdit, showPills, onEdit }: { block: PortalDetailBlock; canEdit: boolean; showPills: boolean; onEdit: () => void }) {
   const Icon = (block.icon && ICONS[block.icon]) || FileText
   const allText = [block.heading, block.subheading, ...block.lines.map((l) => l.value)].filter(Boolean).join('\n')
   const [allDone, setAllDone] = useState(false)
@@ -45,7 +45,7 @@ export function CopyBlock({ block, canEdit, onEdit }: { block: PortalDetailBlock
           </div>
         </div>
         <div className="dblock-meta">
-          <span className={`pill ${block.tier}`}><span className="pd" />{block.tier === 'internal' ? 'Internal' : 'Public'}</span>
+          {showPills && <span className={`pill ${block.tier}`}><span className="pd" />{block.tier === 'internal' ? 'Internal' : 'Public'}</span>}
           {canEdit && <button className="edit" onClick={onEdit}>Edit</button>}
         </div>
       </div>

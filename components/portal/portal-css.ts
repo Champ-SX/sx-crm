@@ -94,7 +94,7 @@ export const PORTAL_CSS = `
 .pscope .tab[aria-selected="true"] .tmeta{color:var(--accent)}
 
 .pscope .portal-main{padding-top:18px;padding-bottom:20px}
-.pscope .ast{color:var(--accent-text)}
+.pscope .ast{color:var(--accent-soft-ink)}
 
 .pscope .cover{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--shadow-md);padding:clamp(20px,3vw,34px);margin-bottom:16px}
 .pscope .cover-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:clamp(20px,3vw,40px);align-items:center}
@@ -123,8 +123,8 @@ export const PORTAL_CSS = `
 .pscope .section-head .desc{font-size:12.5px;color:var(--faint);margin-top:2px}
 
 .pscope .pill{display:inline-flex;align-items:center;gap:6px;border-radius:var(--r-pill);font-size:11px;font-weight:600;letter-spacing:.04em;padding:5px 11px;white-space:nowrap}
-.pscope .pill.public{background:var(--neutral-soft);color:var(--neutral-soft-ink)}
-.pscope .pill.internal{background:var(--accent-soft);color:var(--accent-soft-ink)}
+.pscope .pill.public{background:var(--accent-soft);color:var(--accent-soft-ink)}
+.pscope .pill.internal{background:var(--neutral-soft);color:var(--neutral-soft-ink)}
 .pscope .pill .pd{width:6px;height:6px;border-radius:50%;background:currentColor}
 
 .pscope .ledger{display:flex;flex-direction:column;gap:6px}
@@ -145,7 +145,7 @@ export const PORTAL_CSS = `
 .pscope .open.disabled{color:var(--faint);background:transparent;border-style:dashed;pointer-events:none}
 .pscope .open.add{color:var(--accent-soft-ink);background:var(--accent-soft);border-color:transparent}
 .pscope .open.add:hover{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
-.pscope .edit{font-size:12px;font-weight:600;color:var(--faint);padding:8px 4px;border-radius:8px}
+.pscope .edit{font-size:12px;font-weight:600;color:var(--ink-soft);padding:8px 4px;border-radius:8px}
 .pscope .edit:hover{color:var(--accent)}
 .pscope .empty-note{padding:12px;color:var(--faint);font-size:13px;font-style:italic}
 
@@ -166,6 +166,18 @@ export const PORTAL_CSS = `
 .pscope .how-cell code{font-family:var(--mono);font-size:11.5px;color:var(--accent);background:color-mix(in srgb,var(--accent) 13%,transparent);padding:1px 6px;border-radius:5px}
 
 .pscope footer{max-width:var(--max);margin:20px auto 0;padding:22px var(--pad-x) 34px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--faint);border-top:1px solid var(--line)}
+
+/* ---------- share bar (admin) ---------- */
+.pscope .sharebar{display:flex;align-items:center;gap:13px;flex-wrap:wrap;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 45%,var(--card));border-radius:16px;padding:14px 16px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
+.pscope .sb-ic{width:36px;height:36px;border-radius:10px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pscope .sb-u{flex:1;min-width:140px}
+.pscope .sb-u b{display:block;font-size:13.5px;font-weight:600;color:var(--ink)}
+.pscope .sb-u code{display:block;font-family:var(--mono);font-size:12px;color:var(--accent-soft-ink);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pscope .sb-open{font-size:12.5px;font-weight:600;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:9px;padding:9px 14px;transition:all .15s}
+.pscope .sb-open:hover{border-color:var(--line-2)}
+.pscope .sb-cta{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--on-accent);background:var(--accent);border:none;border-radius:9px;padding:10px 16px;transition:all .15s}
+.pscope .sb-cta:hover{filter:brightness(.95)}
+.pscope .sb-cta.done{background:var(--ink);color:var(--card)}
 
 /* ---------- copyable detail blocks ---------- */
 .pscope .dblock-ic{width:42px;height:42px;border-radius:11px;background:var(--accent-soft);color:var(--accent-soft-ink);display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -190,7 +202,7 @@ export const PORTAL_CSS = `
 
 /* ---------- resource url line ---------- */
 .pscope .res .rurl{display:flex;align-items:center;gap:8px;margin-top:6px}
-.pscope .res .urltext{font-family:var(--mono);font-size:11.5px;color:var(--accent-text);background:var(--accent-soft);border-radius:6px;padding:3px 8px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pscope .res .urltext{font-family:var(--mono);font-size:11.5px;color:var(--accent-soft-ink);background:var(--accent-soft);border-radius:6px;padding:3px 8px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 @media (max-width:820px){
   .pscope .dline{flex-wrap:wrap}
