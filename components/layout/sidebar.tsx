@@ -271,6 +271,10 @@ function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?
 
 export function Sidebar() {
   const { open, setOpen } = useMobileNav()
+  const pathname = usePathname()
+
+  // The public /portal route is full-bleed with its own chrome — no CRM sidebar.
+  if (pathname?.startsWith('/portal')) return null
 
   return (
     <>

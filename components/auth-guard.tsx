@@ -18,7 +18,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth()
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/auth']
+  const publicRoutes = ['/login', '/auth', '/portal']
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route))
 
   useEffect(() => {

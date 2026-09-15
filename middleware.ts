@@ -36,10 +36,11 @@ export async function middleware(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession()
 
-  // Allow login and auth routes without authentication
+  // Allow login, auth, and the public company portal without authentication
   if (
     request.nextUrl.pathname.startsWith('/login') ||
-    request.nextUrl.pathname.startsWith('/auth')
+    request.nextUrl.pathname.startsWith('/auth') ||
+    request.nextUrl.pathname.startsWith('/portal')
   ) {
     return response
   }
@@ -60,8 +61,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - login and auth routes
+     * - login, auth, and portal (public) routes
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|login|auth).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|login|auth|portal).*)',
   ],
 }
