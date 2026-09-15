@@ -284,7 +284,6 @@ function ResRow({ it, i, canEdit, showPills, onEdit }: { it: PortalResource; i: 
         <div className="rname"><AstName name={it.name} /></div>
         <div className="rsub">
           <span>{it.type}</span>
-          {it.th && <><span className="sep">·</span><span className="th">{it.th}</span></>}
           <span className="sep">·</span><span>owner {it.owner || '—'}</span>
           <span className="sep">·</span>
           {it.status === 'to add' ? <span className="empty">awaiting link</span> : <span>{it.status}</span>}

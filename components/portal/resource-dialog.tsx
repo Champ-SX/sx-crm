@@ -12,7 +12,6 @@ import { type PortalResource, type PortalTier, createResource, updateResource, d
 const schema = z.object({
   name: z.string().trim().min(1, 'Name is required'),
   type: z.string().trim().optional(),
-  th: z.string().trim().optional(),
   url: z.string().trim().url('Enter a valid URL').or(z.literal('')).optional(),
   owner: z.string().trim().optional(),
   tier: z.enum(['public', 'internal']),
@@ -35,7 +34,6 @@ export function ResourceDialog({ draft, onClose, onSaved }: { draft: ResourceDra
     defaultValues: {
       name: editing?.name ?? draft.name ?? '',
       type: editing?.type ?? '',
-      th: editing?.th ?? '',
       url: editing?.url ?? '',
       owner: editing?.owner ?? '',
       tier: editing?.tier ?? draft.tier,
@@ -47,7 +45,7 @@ export function ResourceDialog({ draft, onClose, onSaved }: { draft: ResourceDra
   async function onSubmit(v: FormValues) {
     const base = {
       company: draft.company, section: draft.section, tier: v.tier,
-      name: v.name.trim(), type: v.type?.trim() || null, th: v.th?.trim() || null,
+      name: v.name.trim(), type: v.type?.trim() || null, th: null,
       url: v.url?.trim() || null, owner: v.owner?.trim() || null,
       status: v.status?.trim() || (v.url?.trim() ? 'active' : 'to add'),
       sort: editing?.sort ?? 99,
@@ -88,10 +86,6 @@ export function ResourceDialog({ draft, onClose, onSaved }: { draft: ResourceDra
             <label className={label}>URL</label>
             <Input {...register('url')} placeholder="https://…" className="h-9" />
             {errors.url && <p className="text-[12px] text-destructive mt-1">{errors.url.message}</p>}
-          </div>
-          <div>
-            <label className={label}>Thai gloss <span className="normal-case font-normal text-muted-foreground/70">· optional</span></label>
-            <Input {...register('th')} placeholder="เอกสาร บริษัท" className="h-9" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
