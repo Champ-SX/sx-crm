@@ -32,12 +32,17 @@ export function AdhocCard({ summary, onOpen }: { summary: { paid: number; total:
         </div>
         <p className="text-[12px] text-muted-foreground">Temporary staff payments · not tied to a job</p>
       </div>
-      {summary.total > 0 && (
+      {summary.total > 0 ? (
         <div className={`px-3 py-1.5 border-t flex items-center gap-2 ${allPaid ? 'border-emerald-200 dark:border-emerald-500/30' : 'border-red-200 dark:border-red-500/30'}`}>
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${allPaid ? 'bg-emerald-500' : 'bg-red-500'}`} />
           <span className={`font-mono text-[12px] font-medium ${allPaid ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'}`}>
             จ่ายแล้ว {summary.paid}/{summary.total} · ฿{summary.fee.toLocaleString()}
           </span>
+          <span className="ml-auto text-[11px] font-medium text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-0.5"><Plus className="w-3 h-3" />เพิ่ม</span>
+        </div>
+      ) : (
+        <div className="px-3 py-2 border-t border-emerald-200 dark:border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-500/10">
+          <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-emerald-700 dark:text-emerald-300"><Plus className="w-3.5 h-3.5" /> เพิ่มการจ่าย · Add payment</span>
         </div>
       )}
     </div>
@@ -55,7 +60,9 @@ export function AdhocSheet({ list, onClose, onChanged }: {
   const active = list.find((a) => a.month === cur && !a.archived)
   const [selectedId, setSelectedId] = useState<string | null>(active?.id ?? list[0]?.id ?? null)
   const viewing = list.find((a) => a.id === selectedId) ?? active ?? list[0]
-  const editable = !!viewing && !viewing.archived && viewing.month === cur
+  // Editable when viewing the (non-archived) current month — or when there's no
+  // card yet at all, in which case the first "Add" lazily creates this month.
+  const editable = viewing ? (!viewing.archived && viewing.month === cur) : true
 
   // Persist a change to the viewing card's jobs (creates the current month lazily).
   async function saveJobs(jobs: AdhocJob[], id = viewing?.id) {
