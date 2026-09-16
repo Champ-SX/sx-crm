@@ -254,18 +254,26 @@ function ShareBar({ company, name }: { company: string; name: string }) {
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
   }
+  async function share() {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try { await navigator.share({ title: `${name} — Company Portal`, url }); return } catch { /* cancelled / unsupported */ }
+    }
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
   return (
     <div className="sharebar">
-      <span className="sb-ic"><Share2 className="w-4 h-4" /></span>
+      <span className="sb-ic"><Share2 className="w-5 h-5" /></span>
       <div className="sb-u">
-        <b>Share public page — {name}</b>
-        <code>{url.replace(/^https?:\/\//, '')}</code>
+        <b>Share public page</b>
+        <span className="sb-th">ส่งหน้าข้อมูลให้ลูกค้า · {name}</span>
       </div>
-      <a className="sb-open" href={`/portal?company=${company}`} target="_blank" rel="noopener noreferrer">Open</a>
-      <button type="button" className={`sb-cta${copied ? ' done' : ''}`} onClick={copy}>
-        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-        {copied ? 'Copied' : 'Copy link'}
-      </button>
+      <div className="sb-acts">
+        <button type="button" className="sb-share" onClick={share}><Share2 className="w-4 h-4" /> Share</button>
+        <button type="button" className={`sb-cta${copied ? ' done' : ''}`} onClick={copy}>
+          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+          {copied ? 'Copied' : 'Copy link'}
+        </button>
+      </div>
     </div>
   )
 }

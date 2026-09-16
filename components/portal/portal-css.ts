@@ -168,14 +168,15 @@ export const PORTAL_CSS = `
 .pscope footer{max-width:var(--max);margin:20px auto 0;padding:22px var(--pad-x) 34px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--faint);border-top:1px solid var(--line)}
 
 /* ---------- share bar (admin) ---------- */
-.pscope .sharebar{display:flex;align-items:center;gap:13px;flex-wrap:wrap;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 45%,var(--card));border-radius:16px;padding:14px 16px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
-.pscope .sb-ic{width:36px;height:36px;border-radius:10px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.pscope .sb-u{flex:1;min-width:140px}
-.pscope .sb-u b{display:block;font-size:13.5px;font-weight:600;color:var(--ink)}
-.pscope .sb-u code{display:block;font-family:var(--mono);font-size:12px;color:var(--accent-soft-ink);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pscope .sb-open{font-size:12.5px;font-weight:600;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:9px;padding:9px 14px;transition:all .15s}
-.pscope .sb-open:hover{border-color:var(--line-2)}
-.pscope .sb-cta{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--on-accent);background:var(--accent);border:none;border-radius:9px;padding:10px 16px;transition:all .15s}
+.pscope .sharebar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 40%,var(--card));border-radius:16px;padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
+.pscope .sb-ic{width:48px;height:48px;border-radius:13px;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pscope .sb-u{flex:1;min-width:150px}
+.pscope .sb-u b{display:block;font-size:16px;font-weight:600;color:var(--ink)}
+.pscope .sb-th{display:block;font-size:13px;color:var(--ink-soft);margin-top:2px}
+.pscope .sb-acts{display:flex;gap:10px;flex-wrap:wrap}
+.pscope .sb-share{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 22px;transition:all .15s}
+.pscope .sb-share:hover{border-color:var(--line-2)}
+.pscope .sb-cta{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--on-accent);background:var(--accent);border:none;border-radius:12px;padding:13px 22px;transition:all .15s}
 .pscope .sb-cta:hover{filter:brightness(.95)}
 .pscope .sb-cta.done{background:var(--ink);color:var(--card)}
 
