@@ -22,7 +22,7 @@ export function AdhocCard({ summary, onOpen }: { summary: { paid: number; total:
   return (
     <div
       onClick={(e) => { e.stopPropagation(); onOpen() }}
-      className="bg-card rounded-xl border border-emerald-500 border-l-[4px] overflow-hidden cursor-pointer hover:shadow-md transition-all select-none shadow-[0_2px_10px_-4px_rgba(16,160,101,0.4)]"
+      className="bg-card rounded-xl border-[3px] border-emerald-500 overflow-hidden cursor-pointer hover:shadow-md transition-all select-none shadow-[0_2px_10px_-4px_rgba(16,160,101,0.4)]"
     >
       <div className="p-3">
         <div className="flex items-center gap-1.5 mb-1">
