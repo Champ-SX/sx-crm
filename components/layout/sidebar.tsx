@@ -15,6 +15,7 @@ import {
   LogOut,
   Package,
   Boxes,
+  Building2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCRMStore } from '@/store/crm-store'
@@ -44,6 +45,7 @@ function navForBoard(boardId: string | null) {
 }
 
 const bottomItems = [
+  { href: '/portal', label: 'Company Portal', icon: Building2 },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
