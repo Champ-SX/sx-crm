@@ -70,12 +70,17 @@ export async function updateAdhoc(id: string, patch: Partial<AdhocPayment>): Pro
   if (error) throw error
 }
 
-// Aggregate paid/total staff + total fee across all temp jobs (board-face status).
-export function adhocSummary(a: AdhocPayment | undefined): { paid: number; total: number; fee: number } {
-  if (!a) return { paid: 0, total: 0, fee: 0 }
-  let paid = 0, total = 0, fee = 0
+export interface AdhocSummary { paid: number; total: number; fee: number; paidFee: number; unpaidFee: number; unpaidCount: number; jobCount: number }
+
+// Aggregate paid/unpaid staff + fees across all temp jobs (board-face dashboard).
+export function adhocSummary(a: AdhocPayment | undefined): AdhocSummary {
+  if (!a) return { paid: 0, total: 0, fee: 0, paidFee: 0, unpaidFee: 0, unpaidCount: 0, jobCount: 0 }
+  let paid = 0, total = 0, fee = 0, paidFee = 0
   for (const j of a.jobs) for (const s of j.staff_list) {
-    total++; if (s.paid) paid++; fee += s.fee_thb || 0
+    total++
+    const f = s.fee_thb || 0
+    fee += f
+    if (s.paid) { paid++; paidFee += f }
   }
-  return { paid, total, fee }
+  return { paid, total, fee, paidFee, unpaidFee: fee - paidFee, unpaidCount: total - paid, jobCount: a.jobs.length }
 }

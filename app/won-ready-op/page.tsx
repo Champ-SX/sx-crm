@@ -1753,7 +1753,7 @@ export default function WonReadyOpPage() {
                   opStages={opStages}
                   isMobile={isMobile}
                   pinnedCard={stage === 'OP_WAIT_STAFF_PAYMENT_DOC_TERR'
-                    ? <AdhocCard summary={adhocSum} onOpen={() => setAdhocOpen(true)} />
+                    ? <AdhocCard summary={adhocSum} month={adhocActive?.month} onOpen={() => setAdhocOpen(true)} />
                     : undefined}
                 />
               ))}

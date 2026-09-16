@@ -10,33 +10,50 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { useCRMStore } from '@/store/crm-store'
 import type { StaffMember } from '@/types'
 import {
-  type AdhocPayment, type AdhocJob, currentMonth, fetchAdhoc, createAdhocMonth, updateAdhoc, adhocSummary,
+  type AdhocPayment, type AdhocJob, type AdhocSummary, currentMonth, fetchAdhoc, createAdhocMonth, updateAdhoc, adhocSummary,
 } from '@/lib/supabase/adhoc'
 
 const monthLabel = (m: string) => { try { return format(parseISO(`${m}-01T00:00:00`), 'MMM yyyy') } catch { return m } }
 const mkId = () => (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `id-${Date.now()}-${Math.round(Math.random() * 1e6)}`
 
 // ── Pinned board card (unmovable, green edge) ─────────────────────────────────
-export function AdhocCard({ summary, onOpen }: { summary: { paid: number; total: number; fee: number }; onOpen: () => void }) {
-  const allPaid = summary.total > 0 && summary.paid === summary.total
+export function AdhocCard({ summary, month, onOpen }: { summary: AdhocSummary; month?: string; onOpen: () => void }) {
+  const allPaid = summary.total > 0 && summary.unpaidCount === 0
   return (
     <div
       onClick={(e) => { e.stopPropagation(); onOpen() }}
       className="bg-card rounded-xl border-[3px] border-emerald-500 overflow-hidden cursor-pointer hover:shadow-md transition-all select-none shadow-[0_2px_10px_-4px_rgba(16,160,101,0.4)]"
     >
       <div className="p-3">
-        <div className="flex items-center gap-1.5 mb-1">
+        <div className="flex items-center gap-1.5 mb-2">
           <Pin className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600" />
           <span className="text-[14px] font-bold text-foreground">Adhoc Payment</span>
           <span className="ml-auto text-[10px] font-semibold text-emerald-700 bg-emerald-50 dark:bg-emerald-500/15 dark:text-emerald-300 px-2 py-0.5 rounded-full">PINNED</span>
         </div>
-        <p className="text-[12px] text-muted-foreground">Temporary staff payments · not tied to a job</p>
+
+        {summary.total > 0 ? (
+          <div className="grid grid-cols-2 gap-1.5">
+            <div className="rounded-lg bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1.5">
+              <div className="text-[9.5px] font-semibold uppercase tracking-wide text-emerald-700/80 dark:text-emerald-300/80">จ่ายแล้ว · paid</div>
+              <div className="font-mono text-[14px] font-bold text-emerald-700 dark:text-emerald-300 leading-tight">฿{summary.paidFee.toLocaleString()}</div>
+              <div className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80">{summary.paid} คน</div>
+            </div>
+            <div className={`rounded-lg px-2.5 py-1.5 ${summary.unpaidCount > 0 ? 'bg-red-50 dark:bg-red-500/10' : 'bg-muted/50'}`}>
+              <div className={`text-[9.5px] font-semibold uppercase tracking-wide ${summary.unpaidCount > 0 ? 'text-red-700/80 dark:text-red-300/80' : 'text-muted-foreground'}`}>ค้างจ่าย · unpaid</div>
+              <div className={`font-mono text-[14px] font-bold leading-tight ${summary.unpaidCount > 0 ? 'text-red-700 dark:text-red-300' : 'text-muted-foreground'}`}>฿{summary.unpaidFee.toLocaleString()}</div>
+              <div className={`text-[10px] ${summary.unpaidCount > 0 ? 'text-red-600/80 dark:text-red-400/80' : 'text-muted-foreground'}`}>{summary.unpaidCount} คน</div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-[12px] text-muted-foreground">ยังไม่มีการจ่ายเดือนนี้ · No payments yet</p>
+        )}
       </div>
+
       {summary.total > 0 ? (
         <div className={`px-3 py-1.5 border-t flex items-center gap-2 ${allPaid ? 'border-emerald-200 dark:border-emerald-500/30' : 'border-red-200 dark:border-red-500/30'}`}>
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${allPaid ? 'bg-emerald-500' : 'bg-red-500'}`} />
-          <span className={`font-mono text-[12px] font-medium ${allPaid ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'}`}>
-            จ่ายแล้ว {summary.paid}/{summary.total} · ฿{summary.fee.toLocaleString()}
+          <span className={`font-mono text-[11.5px] font-medium ${allPaid ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'}`}>
+            จ่ายแล้ว {summary.paid}/{summary.total}{month ? ` · ${monthLabel(month)}` : ''}
           </span>
           <span className="ml-auto text-[11px] font-medium text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-0.5"><Plus className="w-3 h-3" />เพิ่ม</span>
         </div>
@@ -176,7 +193,11 @@ function AdhocJobBlock({ job, editable, allStaff, addStaff, onPatch, onRemove }:
     <div className="border border-border rounded-xl overflow-hidden">
       <div className="flex items-center gap-2 px-3 py-2 bg-muted/40">
         {editable
-          ? <input value={job.title} onChange={(e) => onPatch({ title: e.target.value })} className="flex-1 bg-transparent text-[13.5px] font-bold outline-none" />
+          ? <input
+              defaultValue={job.title}
+              onBlur={(e) => { const v = e.target.value.trim() || 'Untitled'; if (v !== job.title) onPatch({ title: v }) }}
+              className="flex-1 bg-transparent text-[13.5px] font-bold outline-none"
+            />
           : <span className="flex-1 text-[13.5px] font-bold">{job.title}</span>}
         <span className="font-mono text-[11px] text-muted-foreground">฿{jobFee.toLocaleString()}</span>
         {editable && <button onClick={onRemove} className="text-muted-foreground hover:text-destructive" title="Remove job"><Trash2 className="w-3.5 h-3.5" /></button>}
@@ -191,7 +212,7 @@ function AdhocJobBlock({ job, editable, allStaff, addStaff, onPatch, onRemove }:
               <p className="text-[11px] text-muted-foreground truncate">{s.bank_name} {s.bank_account_number}</p>
             </div>
             {editable
-              ? <div className="flex items-center gap-0.5"><span className="text-[11px] text-muted-foreground">฿</span><input type="number" value={s.fee_thb ?? 0} onChange={(e) => setRow(s.staff_id, { fee_thb: parseInt(e.target.value, 10) || 0 })} className="w-16 h-7 text-[12px] font-mono text-right bg-transparent border border-border rounded px-1 outline-none" /></div>
+              ? <div className="flex items-center gap-0.5"><span className="text-[11px] text-muted-foreground">฿</span><input type="number" defaultValue={s.fee_thb ?? 0} onBlur={(e) => { const v = parseInt(e.target.value, 10) || 0; if (v !== (s.fee_thb ?? 0)) setRow(s.staff_id, { fee_thb: v }) }} className="w-16 h-7 text-[12px] font-mono text-right bg-transparent border border-border rounded px-1 outline-none" /></div>
               : <span className="font-mono text-[12px] font-semibold">฿{(s.fee_thb || 0).toLocaleString()}</span>}
             <button
               disabled={!editable}
