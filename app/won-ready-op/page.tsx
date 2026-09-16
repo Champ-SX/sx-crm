@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback, type ReactNode } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -28,6 +28,8 @@ import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { OP_STAGES, OP_STAGE_LABELS } from '@/types'
 import type { WonJob, OPStage, StaffMember } from '@/types'
 import { formatJobMeta, jobDisplayTitle, jobCardName, jobCanonicalTitle } from '@/lib/jobs'
+import { AdhocCard, AdhocSheet } from '@/components/won/adhoc-payment'
+import { type AdhocPayment, fetchAdhoc, adhocSummary, currentMonth } from '@/lib/supabase/adhoc'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
@@ -306,6 +308,7 @@ function KanbanColumn({
   onAddStage,
   opStages,
   isMobile = false,
+  pinnedCard,
 }: {
   stage: string
   jobs: WonJob[]
@@ -316,6 +319,7 @@ function KanbanColumn({
   onAddStage?: () => void
   opStages: any[]
   isMobile?: boolean
+  pinnedCard?: ReactNode
 }) {
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({ id: stage })
   const { setNodeRef: setSortableRef, isDragging, attributes, listeners, transform } = useSortable({ id: stage })
@@ -471,6 +475,7 @@ function KanbanColumn({
       {/* Cards */}
       <SortableContext items={sortedJobs.map(j => j.job_id)} strategy={verticalListSortingStrategy}>
         <div className="flex-1 px-2.5 pb-3 pt-2 space-y-2 overflow-y-auto overflow-x-hidden min-h-0">
+          {pinnedCard}
           {sortedJobs.map((job) => (
             <JobCard
               key={job.job_id}
@@ -1462,6 +1467,14 @@ export default function WonReadyOpPage() {
     (id) => wonJobs.some((j) => j.job_id === id),
     setSelectedId,
   )
+  // Adhoc Payment — pinned card in the wait-staff-payment column (one per month).
+  const [adhocList, setAdhocList] = useState<AdhocPayment[]>([])
+  const [adhocOpen, setAdhocOpen] = useState(false)
+  const reloadAdhoc = useCallback(async () => { try { setAdhocList(await fetchAdhoc('won')) } catch { /* table may not exist yet */ } }, [])
+  useEffect(() => { void reloadAdhoc() }, [reloadAdhoc])
+  const adhocActive = adhocList.find((a) => a.month === currentMonth() && !a.archived)
+  const adhocSum = adhocSummary(adhocActive)
+
   const [stageToDelete, setStageToDelete] = useState<string | null>(null)
   const [stageToColorize, setStageToColorize] = useState<string | null>(null)
   const [jobToDelete, setJobToDelete] = useState<string | null>(null)
@@ -1739,6 +1752,9 @@ export default function WonReadyOpPage() {
                   onAddStage={() => setShowAddStageDialog(true)}
                   opStages={opStages}
                   isMobile={isMobile}
+                  pinnedCard={stage === 'OP_WAIT_STAFF_PAYMENT_DOC_TERR'
+                    ? <AdhocCard summary={adhocSum} onOpen={() => setAdhocOpen(true)} />
+                    : undefined}
                 />
               ))}
             </div>
@@ -1792,6 +1808,7 @@ export default function WonReadyOpPage() {
       </DndContext>
 
       {selectedId && <JobDetail jobId={selectedId} onClose={() => setSelectedId(null)} onDelete={handleDeleteCard} />}
+      {adhocOpen && <AdhocSheet list={adhocList} onClose={() => setAdhocOpen(false)} onChanged={reloadAdhoc} />}
 
       {/* Delete Stage Confirmation Dialog */}
       <Dialog open={!!stageToDelete} onOpenChange={(open) => !open && setStageToDelete(null)}>
