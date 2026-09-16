@@ -59,9 +59,13 @@ export const PORTAL_CSS = `
 
 .pscope .topbar{position:sticky;top:0;z-index:60;background:color-mix(in srgb,var(--bg) 78%, transparent);backdrop-filter:saturate(140%) blur(12px);border-bottom:1px solid var(--line)}
 .pscope .topbar-inner{max-width:var(--max);margin:0 auto;padding:13px var(--pad-x);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.pscope .brandmark{display:flex;align-items:center;gap:11px}
-.pscope .brandmark .dotm{width:22px;height:22px;border-radius:7px;background:var(--ink);display:flex;align-items:center;justify-content:center}
-.pscope .brandmark .dotm::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.pscope .brandwrap{display:flex;flex-direction:column;gap:3px}
+.pscope .backlink{font-size:11.5px;font-weight:600;color:var(--accent-soft-ink);padding-left:33px;transition:color .15s;width:fit-content}
+.pscope .backlink:hover{color:var(--accent)}
+.pscope .brandmark{display:flex;align-items:center;gap:10px}
+.pscope .brand-logo{width:28px;height:28px;object-fit:contain;flex-shrink:0}
+.pscope[data-theme="dark"] .brand-logo{filter:invert(1)}
+@media (prefers-color-scheme:dark){.pscope:not([data-theme="light"]) .brand-logo{filter:invert(1)}}
 .pscope .brandmark .wm{font-weight:800;font-size:17px;letter-spacing:-.02em}
 .pscope .brandmark .sub{font-size:11px;font-weight:500;color:var(--ink-soft);border-left:1px solid var(--line-2);padding-left:11px;margin-left:1px}
 .pscope .topbar-right{display:flex;align-items:center;gap:9px;flex-wrap:wrap}

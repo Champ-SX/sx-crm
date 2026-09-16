@@ -106,10 +106,14 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
       {/* Top bar */}
       <div className="topbar">
         <div className="topbar-inner">
-          <div className="brandmark">
-            <span className="dotm" />
-            <span className="wm">SIXSHEET</span>
-            <span className="sub">Brand CI · Company Portal</span>
+          <div className="brandwrap">
+            <div className="brandmark">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="SIXSHEET" className="brand-logo" />
+              <span className="wm">SIXSHEET</span>
+              <span className="sub">Brand CI · Company Portal</span>
+            </div>
+            <a className="backlink" href="/dashboard">← Back to SX‑CRM</a>
           </div>
           <div className="topbar-right">
             {signedIn && (
