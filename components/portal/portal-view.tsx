@@ -118,7 +118,6 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo.png" alt="SIXSHEET" className="brand-logo" />
               <span className="wm">SIXSHEET</span>
-              <span className="sub">Brand CI · Company Portal</span>
             </div>
             <a className="backlink" href="/dashboard">← Back to SX‑CRM</a>
           </div>
@@ -133,26 +132,18 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
         </div>
       </div>
 
-      {/* Session strip + company tabs — admin only. The client (public) view is clean. */}
+      {/* Company index — admin only. The client (public) view is clean. */}
       {mode === 'internal' && (
-        <>
-          <div className="session">
-            <div className="session-inner">
-              <span className="chip"><span className="live" /> Signed in via <b>SX‑CRM</b></span>
-              <span className="mline">Showing all resources — public + internal</span>
-            </div>
+        <nav className="tabs" aria-label="Companies">
+          <div className="tabs-inner">
+            {companies.map((c) => (
+              <button key={c.key} className="tab" role="tab" aria-selected={c.key === company.key} onClick={() => selectCompany(c.key)}>
+                <span className="tname"><AstName name={c.name} /></span>
+                <span className="tmeta">{c.tabmeta}</span>
+              </button>
+            ))}
           </div>
-          <nav className="tabs" aria-label="Companies">
-            <div className="tabs-inner">
-              {companies.map((c) => (
-                <button key={c.key} className="tab" role="tab" aria-selected={c.key === company.key} onClick={() => selectCompany(c.key)}>
-                  <span className="tname"><AstName name={c.name} /></span>
-                  <span className="tmeta">{c.tabmeta}</span>
-                </button>
-              ))}
-            </div>
-          </nav>
-        </>
+        </nav>
       )}
 
       {/* Stage */}

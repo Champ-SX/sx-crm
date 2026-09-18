@@ -83,10 +83,10 @@ export const PORTAL_CSS = `
 .pscope .cover{padding-top:clamp(22px,3vw,34px)}
 .pscope .hero{display:grid;grid-template-columns:1fr;gap:18px}
 .pscope .hero.has-logo{grid-template-columns:1fr minmax(130px,168px);align-items:center}
-.pscope .eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:10px}
-.pscope .eyebrow .th{letter-spacing:0;text-transform:none;font-weight:400}
+.pscope .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:10px}
+.pscope .eyebrow .th{letter-spacing:0;text-transform:none;font-weight:400;font-size:13px}
 .pscope .cover h1{font-weight:500;font-size:clamp(38px,5vw,56px);line-height:.98;letter-spacing:-.035em;margin:0;text-wrap:balance}
-.pscope .tagline{font-size:clamp(14px,1.2vw,16px);line-height:1.45;color:var(--soft);max-width:46ch;margin-top:12px}
+.pscope .tagline{font-size:clamp(16px,1.4vw,18px);line-height:1.55;color:var(--soft);max-width:52ch;margin-top:13px}
 .pscope .editlink{display:inline-block;margin-top:12px;font-size:12.5px;font-weight:500;color:var(--accent-text);border-bottom:1px solid var(--accent-text);padding-bottom:1px}
 .pscope .logo-ph{aspect-ratio:16/9;border:1px dashed var(--line);border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);transition:border-color .18s}
 .pscope a.logo-ph:hover,.pscope div.logo-ph[tabindex]:hover{border-color:var(--accent)}
@@ -97,11 +97,11 @@ export const PORTAL_CSS = `
 .pscope .lc{display:grid;grid-template-columns:200px 1fr;gap:16px;padding:9px 0;border-top:1px solid var(--line);align-items:baseline}
 .pscope .lc:first-child{border-top:none}
 .pscope .meta .lc:first-child{border-top:1px solid var(--line)}
-.pscope .lc .k{font-size:12px;color:var(--soft)}
+.pscope .lc .k{font-size:13.5px;color:var(--soft)}
 .pscope .lc .kth{color:var(--faint)}
-.pscope .lc .v{font-size:14.5px;font-weight:500;text-align:left}
+.pscope .lc .v{font-size:16px;font-weight:500;text-align:left}
 .pscope .lc .v.empty{color:var(--faint);font-weight:400}
-.pscope .lc .addv{font-size:13.5px;font-weight:500;color:var(--accent-text)}
+.pscope .lc .addv{font-size:15px;font-weight:500;color:var(--accent-text)}
 
 /* ---------- documents (download cards) ---------- */
 .pscope .docs{margin-top:clamp(30px,5vw,48px)}
@@ -127,7 +127,7 @@ export const PORTAL_CSS = `
 .pscope .section-head .lead{display:flex;align-items:baseline;gap:15px;flex:1;min-width:0}
 .pscope .snum{font-size:19px;font-weight:600;color:var(--accent-text);font-variant-numeric:tabular-nums}
 .pscope .section-head h2{font-weight:500;font-size:clamp(22px,3vw,28px);letter-spacing:-.02em;line-height:1}
-.pscope .th-title{font-size:13px;font-weight:400;color:var(--faint);margin-top:2px}
+.pscope .th-title{font-size:14px;font-weight:400;color:var(--faint);margin-top:3px}
 .pscope .section-head .desc{display:none}
 .pscope .pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:3px;white-space:nowrap;align-self:center}
 .pscope .pill .pd{display:none}
@@ -140,19 +140,19 @@ export const PORTAL_CSS = `
 .pscope .res:hover{padding-left:6px}
 .pscope .res .idx{font-family:var(--mono);font-size:12px;color:var(--faint)}
 .pscope .res .main{min-width:0}
-.pscope .res .rname{font-size:clamp(18px,2.4vw,22px);font-weight:500;letter-spacing:-.01em;line-height:1.1}
-.pscope .res .rsub{font-size:13.5px;color:var(--soft);margin-top:4px;display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.pscope .res .rname{font-size:clamp(19px,2.4vw,23px);font-weight:500;letter-spacing:-.01em;line-height:1.15}
+.pscope .res .rsub{font-size:14.5px;color:var(--soft);margin-top:5px;display:flex;gap:7px;flex-wrap:wrap;align-items:center}
 .pscope .res .rsub .sep{color:var(--faint)}
 .pscope .res .rsub .empty{color:var(--faint)}
 .pscope .rurl{display:flex;align-items:center;gap:8px;margin-top:7px}
-.pscope .urltext{font-family:var(--mono);font-size:12px;color:var(--soft);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pscope .urltext{font-family:var(--mono);font-size:13px;color:var(--soft);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pscope .res .right{display:flex;align-items:center;gap:16px;justify-self:end;align-self:center}
-.pscope .open{font-size:14px;font-weight:500;color:var(--ink);white-space:nowrap;border-bottom:1px solid currentColor;padding-bottom:2px;transition:opacity .18s}
+.pscope .open{font-size:15px;font-weight:500;color:var(--ink);white-space:nowrap;border-bottom:1px solid currentColor;padding-bottom:2px;transition:opacity .18s}
 .pscope .open:hover{opacity:.6}
 .pscope .open .arw{color:inherit}
 .pscope .open.add{color:var(--accent-text);border-bottom-color:var(--accent-text)}
 .pscope .open.disabled{color:var(--faint);pointer-events:none;border-bottom-color:transparent}
-.pscope .edit{font-size:13px;font-weight:400;color:var(--soft);transition:color .18s}
+.pscope .edit{font-size:14px;font-weight:400;color:var(--soft);transition:color .18s}
 .pscope .edit:hover{color:var(--ink)}
 .pscope .empty-note{padding:16px 0;color:var(--faint);font-size:14px;border-top:1px solid var(--line)}
 .pscope .res.ghost{grid-template-columns:30px 1fr;cursor:pointer}
@@ -175,8 +175,8 @@ export const PORTAL_CSS = `
 .pscope .dblock-name b{display:block;font-size:17px;font-weight:500}
 .pscope .dblock-name span{display:block;font-size:13.5px;color:var(--soft);margin-top:2px}
 .pscope .dline{display:grid;grid-template-columns:150px 1fr auto;gap:16px;align-items:baseline;padding:14px 0;border-top:1px solid var(--line)}
-.pscope .dlk{font-size:12px;color:var(--soft)}
-.pscope .dlv{font-size:16px;font-weight:500;line-height:1.5;word-break:break-word}
+.pscope .dlk{font-size:13px;color:var(--soft)}
+.pscope .dlv{font-size:17px;font-weight:500;line-height:1.55;word-break:break-word}
 .pscope .copyall{display:inline-flex;align-items:center;gap:8px;margin-top:16px;font-size:13.5px;font-weight:600;color:var(--on-accent);background:var(--accent);border-radius:4px;padding:11px 18px;transition:filter .18s}
 .pscope .copyall:hover{filter:brightness(.94)}
 .pscope .copyall.done{background:var(--ink);color:var(--paper)}
