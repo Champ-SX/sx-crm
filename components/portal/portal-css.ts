@@ -3,7 +3,7 @@
 // functional work (~20%). Scoped under `.pscope`; injected via <style>.
 export const PORTAL_CSS = `
 .pscope{
-  --paper:#F7F7F4; --ink:#111111; --soft:#666666; --faint:#A3A099; --line:#DADADA; --line-soft:#E6E5E1;
+  --paper:#F7F7F4; --panel:#FFFFFF; --ink:#111111; --soft:#666666; --faint:#A3A099; --line:#DADADA; --line-soft:#E6E5E1;
   --accent:#FF5B3F; --on-accent:#ffffff; --accent-text-light:#C6462A;
   --accent-text:var(--accent-text-light);
   --sans:'Inter','Noto Sans Thai',-apple-system,BlinkMacSystemFont,sans-serif;
@@ -13,11 +13,11 @@ export const PORTAL_CSS = `
   background:var(--paper); min-height:100vh; -webkit-font-smoothing:antialiased;
 }
 @media (prefers-color-scheme:dark){ .pscope:not([data-theme="light"]){
-  --paper:#0D0D0D; --ink:#F4F4F1; --soft:#9A9A95; --faint:#6A6A64; --line:#282826; --line-soft:#1E1E1C;
+  --paper:#0D0D0D; --panel:#161513; --ink:#F4F4F1; --soft:#9A9A95; --faint:#6A6A64; --line:#282826; --line-soft:#1E1E1C;
   --accent-text:color-mix(in srgb, var(--accent) 88%, #ffffff);
 }}
 .pscope[data-theme="dark"]{
-  --paper:#0D0D0D; --ink:#F4F4F1; --soft:#9A9A95; --faint:#6A6A64; --line:#282826; --line-soft:#1E1E1C;
+  --paper:#0D0D0D; --panel:#161513; --ink:#F4F4F1; --soft:#9A9A95; --faint:#6A6A64; --line:#282826; --line-soft:#1E1E1C;
   --accent-text:color-mix(in srgb, var(--accent) 88%, #ffffff);
 }
 
@@ -83,28 +83,29 @@ export const PORTAL_CSS = `
 .pscope .sb-cta.done{background:var(--ink);color:var(--paper)}
 
 /* ---------- cover / hero ---------- */
-.pscope .cover{padding-top:clamp(22px,3vw,34px)}
+/* masthead — the header plane */
+.pscope .masthead{background:var(--panel);border:1px solid var(--line);border-radius:16px;margin-top:22px;padding:0 clamp(18px,3vw,28px);overflow:hidden}
+.pscope .masthead .sharebar{padding:18px 0;margin-bottom:0}
+.pscope .mast-body{padding:22px 0}
 .pscope .hero{display:grid;grid-template-columns:1fr;gap:18px}
 .pscope .hero.has-logo{grid-template-columns:1fr minmax(130px,168px);align-items:center}
 .pscope .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:10px}
 .pscope .eyebrow .th{letter-spacing:0;text-transform:none;font-weight:400;font-size:13px}
-.pscope .cover h1{font-weight:500;font-size:clamp(38px,5vw,56px);line-height:.98;letter-spacing:-.035em;margin:0;text-wrap:balance}
+.pscope .masthead h1{font-weight:500;font-size:clamp(38px,5vw,56px);line-height:.98;letter-spacing:-.035em;margin:0;text-wrap:balance}
 .pscope .tagline{font-size:clamp(16px,1.4vw,18px);line-height:1.55;color:var(--soft);max-width:52ch;margin-top:13px}
 .pscope .editlink{display:inline-block;margin-top:12px;font-size:12.5px;font-weight:500;color:var(--accent-text);border-bottom:1px solid var(--accent-text);padding-bottom:1px}
 .pscope .logo-ph{aspect-ratio:16/9;border:1px dashed var(--line);border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);transition:border-color .18s}
 .pscope a.logo-ph:hover,.pscope div.logo-ph[tabindex]:hover{border-color:var(--accent)}
-.pscope .accrule{border-top:3px solid var(--accent);margin-top:clamp(18px,2.5vw,26px)}
+.pscope .accrule{border-top:3px solid var(--accent);margin-top:clamp(16px,2.2vw,22px)}
 
-/* meta — label / content rows (compact; this is metadata, not the main event) */
-.pscope .meta{margin-top:0}
-.pscope .lc{display:grid;grid-template-columns:200px 1fr;gap:16px;padding:9px 0;border-top:1px solid var(--line);align-items:baseline}
-.pscope .lc:first-child{border-top:none}
-.pscope .meta .lc:first-child{border-top:1px solid var(--line)}
-.pscope .lc .k{font-size:13.5px;color:var(--soft)}
-.pscope .lc .kth{color:var(--faint)}
-.pscope .lc .v{font-size:16px;font-weight:500;text-align:left}
-.pscope .lc .v.empty{color:var(--faint);font-weight:400}
-.pscope .lc .addv{font-size:15px;font-weight:500;color:var(--accent-text)}
+/* meta — inline columns along the bottom of the masthead */
+.pscope .meta-inline{display:flex;flex-wrap:wrap;gap:16px 44px;margin-top:16px}
+.pscope .mi{display:flex;flex-direction:column;gap:3px}
+.pscope .mi .k{font-size:12px;color:var(--soft)}
+.pscope .mi .kth{color:var(--faint)}
+.pscope .mi .v{font-size:16px;font-weight:500}
+.pscope .mi .v.empty{color:var(--faint);font-weight:400}
+.pscope .mi .addv{font-size:15px;font-weight:500;color:var(--accent-text);text-align:left}
 
 /* ---------- documents (download cards) ---------- */
 .pscope .docs{margin-top:clamp(30px,5vw,48px)}

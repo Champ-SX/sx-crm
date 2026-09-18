@@ -149,34 +149,36 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
 
       {/* Stage */}
       <main className="wrap portal-main">
-        {canEdit && <ShareBar company={company.key} name={company.name} />}
-        {/* Cover / hero */}
-        <section className="cover">
-          <div className={`hero${(canEdit || logoUrl(company.logo_path)) ? ' has-logo' : ''}`}>
-            <div className="hero-main">
-              <div className="eyebrow">{company.tag} · Company profile · <span className="th">ข้อมูลบริษัท</span></div>
-              <h1><AstName name={company.name} /></h1>
-              <p className="tagline">{company.tagline}</p>
-              {canEdit && <button className="editlink" onClick={() => setProfileOpen(true)}>Edit profile ↗</button>}
+        {/* Masthead — the header plane: share/copy + company identity + meta */}
+        <header className="masthead">
+          {canEdit && <ShareBar company={company.key} name={company.name} />}
+          <div className="mast-body">
+            <div className={`hero${(canEdit || logoUrl(company.logo_path)) ? ' has-logo' : ''}`}>
+              <div className="hero-main">
+                <div className="eyebrow">{company.tag} · Company profile · <span className="th">ข้อมูลบริษัท</span></div>
+                <h1><AstName name={company.name} /></h1>
+                <p className="tagline">{company.tagline}</p>
+                {canEdit && <button className="editlink" onClick={() => setProfileOpen(true)}>Edit profile ↗</button>}
+              </div>
+              {(canEdit || logoUrl(company.logo_path)) && <LogoSlot company={company} canEdit={canEdit} onSaved={reload} />}
             </div>
-            {(canEdit || logoUrl(company.logo_path)) && <LogoSlot company={company} canEdit={canEdit} onSaved={reload} />}
+            <div className="accrule" />
+            <div className="meta-inline">
+              {META_FIELDS.map((f) => {
+                const val = company[f.key] as string | null
+                if (!val && !canEdit) return null   // public view hides empty fields
+                return (
+                  <div className="mi" key={f.key}>
+                    <span className="k">{f.label} <span className="kth">{f.th}</span></span>
+                    {!val && canEdit
+                      ? <button className="addv" onClick={() => setProfileOpen(true)}>+ add</button>
+                      : <span className={`v ${!val ? 'empty' : ''}`}>{val || '—'}</span>}
+                  </div>
+                )
+              })}
+            </div>
           </div>
-          <div className="accrule" />
-          <div className="meta">
-            {META_FIELDS.map((f) => {
-              const val = company[f.key] as string | null
-              if (!val && !canEdit) return null   // public view hides empty fields
-              return (
-                <div className="lc" key={f.key}>
-                  <span className="k">{f.label} <span className="kth">{f.th}</span></span>
-                  {!val && canEdit
-                    ? <button className="addv" onClick={() => setProfileOpen(true)}>+ add</button>
-                    : <span className={`v ${!val ? 'empty' : ''}`}>{val || '—'}</span>}
-                </div>
-              )
-            })}
-          </div>
-        </section>
+        </header>
 
         {/* Copyable detail blocks (document-header address, shipping, bank, …) */}
         {companyBlocks.map((b) => (
