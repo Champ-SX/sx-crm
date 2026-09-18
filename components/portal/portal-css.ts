@@ -57,12 +57,15 @@ export const PORTAL_CSS = `
 
 /* ---------- company index (admin only) ---------- */
 .pscope .tabs{border-bottom:1px solid var(--line)}
-.pscope .tabs-inner{max-width:var(--max);margin:0 auto;padding:11px var(--padx);display:flex;gap:10px;align-items:center;overflow-x:auto}
-.pscope .tab{flex-shrink:0;font-size:13px;font-weight:400;color:var(--soft);padding:5px 4px;transition:color .18s;white-space:nowrap}
-.pscope .tab:hover{color:var(--ink)}
+.pscope .tabs-inner{max-width:var(--max);margin:0 auto;padding:13px var(--padx);display:flex;gap:8px;align-items:center;overflow-x:auto}
+.pscope .tabs-label{flex-shrink:0;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-right:6px}
+.pscope .tab{flex-shrink:0;display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:500;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:7px 15px;transition:border-color .18s,background .18s;white-space:nowrap}
+.pscope .tab:hover{border-color:var(--soft)}
+.pscope .tab .tdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .pscope .tab .tmeta{display:none}
-.pscope .tab[aria-selected="true"]{background:var(--accent);color:var(--on-accent);font-weight:600;padding:5px 13px;border-radius:3px}
+.pscope .tab[aria-selected="true"]{background:var(--accent);color:var(--on-accent);border-color:transparent;font-weight:600}
 .pscope .tab[aria-selected="true"] .tname{color:var(--on-accent)}
+.pscope .tab[aria-selected="true"] .tdot{display:none}
 
 .pscope .portal-main{max-width:var(--max);margin:0 auto;padding:0 var(--padx) 40px}
 

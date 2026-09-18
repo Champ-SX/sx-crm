@@ -136,10 +136,11 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
       {mode === 'internal' && (
         <nav className="tabs" aria-label="Companies">
           <div className="tabs-inner">
+            <span className="tabs-label">Companies</span>
             {companies.map((c) => (
               <button key={c.key} className="tab" role="tab" aria-selected={c.key === company.key} onClick={() => selectCompany(c.key)}>
+                <span className="tdot" style={{ backgroundColor: (THEMES[c.key] ?? THEMES.sixsheet).accent }} />
                 <span className="tname"><AstName name={c.name} /></span>
-                <span className="tmeta">{c.tabmeta}</span>
               </button>
             ))}
           </div>
