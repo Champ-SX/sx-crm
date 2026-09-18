@@ -11,7 +11,6 @@ import { type PortalCompany, updateCompany } from '@/lib/supabase/portal'
 
 const schema = z.object({
   tagline: z.string().trim().optional(),
-  legal_entity: z.string().trim().optional(),
   established: z.string().trim().optional(),
   sector: z.string().trim().optional(),
   hq: z.string().trim().optional(),
@@ -22,7 +21,7 @@ export function ProfileDialog({ company, onClose, onSaved }: { company: PortalCo
   const { register, handleSubmit, formState: { isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      tagline: company.tagline ?? '', legal_entity: company.legal_entity ?? '',
+      tagline: company.tagline ?? '',
       established: company.established ?? '', sector: company.sector ?? '', hq: company.hq ?? '',
     },
   })
@@ -30,7 +29,6 @@ export function ProfileDialog({ company, onClose, onSaved }: { company: PortalCo
   async function onSubmit(v: FormValues) {
     await updateCompany(company.key, {
       tagline: v.tagline?.trim() || null,
-      legal_entity: v.legal_entity?.trim() || null,
       established: v.established?.trim() || null,
       sector: v.sector?.trim() || null,
       hq: v.hq?.trim() || null,
@@ -54,7 +52,6 @@ export function ProfileDialog({ company, onClose, onSaved }: { company: PortalCo
             <Textarea {...register('tagline')} rows={2} className="text-sm resize-none" />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className={label}>Legal entity · นิติบุคคล</label><Input {...register('legal_entity')} className="h-9" /></div>
             <div><label className={label}>Established · ก่อตั้งเมื่อ</label><Input {...register('established')} className="h-9" /></div>
             <div><label className={label}>Sector · ประเภทธุรกิจ</label><Input {...register('sector')} className="h-9" /></div>
             <div><label className={label}>HQ · สำนักงานใหญ่</label><Input {...register('hq')} className="h-9" /></div>

@@ -48,7 +48,19 @@ export interface PortalDetailBlock {
   updated_at?: string
 }
 
+export interface PortalDocument {
+  id: string
+  company: string
+  tier: PortalTier
+  name: string
+  file_path: string | null
+  file_name: string | null
+  sort: number
+  updated_at?: string
+}
+
 export const PORTAL_LOGOS_BUCKET = 'portal-logos'
+export const PORTAL_DOCS_BUCKET = 'portal-docs'
 
 // ── Mock data (local dev / mock mode) — mirrors the seed migration ─────────────
 const uid = () => (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `pr-${Date.now()}-${Math.random()}`
@@ -96,32 +108,44 @@ const MOCK_BLOCKS: PortalDetailBlock[] = [
   },
 ]
 
+const MOCK_DOCUMENTS: PortalDocument[] = [
+  { id: uid(), company: 'sixsheet', tier: 'public', name: 'หนังสือรับรองบริษัทล่าสุด 2569', file_path: 'demo/cert.pdf', file_name: 'cert-2569.pdf', sort: 0 },
+  { id: uid(), company: 'sixsheet', tier: 'public', name: 'ภ.พ. 20', file_path: 'demo/pp20.pdf', file_name: 'pp20.pdf', sort: 1 },
+  { id: uid(), company: 'sixsheet', tier: 'internal', name: 'สมุดบัญชีธนาคาร Bookbank', file_path: 'demo/bookbank.pdf', file_name: 'bookbank.pdf', sort: 2 },
+  { id: uid(), company: 'sixsheet', tier: 'internal', name: 'แบบ บอจ. 4', file_path: 'demo/boj4.pdf', file_name: 'boj4.pdf', sort: 3 },
+]
+
 // Mutable in-memory copies so the edit UI is exercisable in mock mode.
 const mockCompanies = MOCK_COMPANIES.map((c) => ({ ...c }))
 let mockResources = MOCK_RESOURCES.map((r) => ({ ...r }))
 let mockBlocks = MOCK_BLOCKS.map((b) => ({ ...b }))
+let mockDocuments = MOCK_DOCUMENTS.map((d) => ({ ...d }))
 
 // ── Reads ──────────────────────────────────────────────────────────────────
-export async function fetchPortal(): Promise<{ companies: PortalCompany[]; resources: PortalResource[]; blocks: PortalDetailBlock[] }> {
+export async function fetchPortal(): Promise<{ companies: PortalCompany[]; resources: PortalResource[]; blocks: PortalDetailBlock[]; documents: PortalDocument[] }> {
   if (!isSupabaseConfigured) {
     return {
       companies: mockCompanies.map((c) => ({ ...c })),
       resources: mockResources.map((r) => ({ ...r })),
       blocks: mockBlocks.map((b) => ({ ...b, lines: b.lines.map((l) => ({ ...l })) })),
+      documents: mockDocuments.map((d) => ({ ...d })),
     }
   }
-  const [c, r, b] = await Promise.all([
+  const [c, r, b, d] = await Promise.all([
     supabase.from('portal_companies').select('*').order('sort'),
     supabase.from('portal_resources').select('*').order('sort'),
     supabase.from('portal_detail_blocks').select('*').order('sort'),
+    supabase.from('portal_documents').select('*').order('sort'),
   ])
   if (c.error) throw c.error
   if (r.error) throw r.error
   if (b.error) throw b.error
+  if (d.error) throw d.error
   return {
     companies: (c.data ?? []) as PortalCompany[],
     resources: (r.data ?? []) as PortalResource[],
     blocks: (b.data ?? []) as PortalDetailBlock[],
+    documents: (d.data ?? []) as PortalDocument[],
   }
 }
 
@@ -195,6 +219,51 @@ export async function deleteBlock(id: string): Promise<void> {
   }
   const { error } = await supabase.from('portal_detail_blocks').delete().eq('id', id)
   if (error) throw error
+}
+
+// ── Document writes ──────────────────────────────────────────────────────────
+export async function createDocument(row: Omit<PortalDocument, 'id'>): Promise<PortalDocument> {
+  if (!isSupabaseConfigured) {
+    const created = { ...row, id: uid() } as PortalDocument
+    mockDocuments = [...mockDocuments, created]
+    return created
+  }
+  const { data, error } = await supabase.from('portal_documents').insert(row).select().single()
+  if (error) throw error
+  return data as PortalDocument
+}
+
+export async function updateDocument(id: string, patch: Partial<PortalDocument>): Promise<void> {
+  if (!isSupabaseConfigured) {
+    mockDocuments = mockDocuments.map((d) => d.id === id ? { ...d, ...patch } : d)
+    return
+  }
+  const { error } = await supabase.from('portal_documents').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id)
+  if (error) throw error
+}
+
+export async function deleteDocument(id: string): Promise<void> {
+  if (!isSupabaseConfigured) {
+    mockDocuments = mockDocuments.filter((d) => d.id !== id)
+    return
+  }
+  const { error } = await supabase.from('portal_documents').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function uploadDoc(companyKey: string, file: File): Promise<{ path: string; fileName: string }> {
+  const safe = file.name.replace(/[^\w.\-]+/g, '_')
+  const path = `${companyKey}/${crypto.randomUUID()}-${safe}`
+  if (!isSupabaseConfigured) return { path, fileName: file.name }
+  const { error } = await supabase.storage.from(PORTAL_DOCS_BUCKET).upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false })
+  if (error) throw error
+  return { path, fileName: file.name }
+}
+
+export function docUrl(path: string | null | undefined): string | null {
+  if (!path) return null
+  if (!isSupabaseConfigured) return null
+  return supabase.storage.from(PORTAL_DOCS_BUCKET).getPublicUrl(path).data.publicUrl
 }
 
 // ── Logo upload ──────────────────────────────────────────────────────────────

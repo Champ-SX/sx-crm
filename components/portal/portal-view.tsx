@@ -5,13 +5,15 @@ import { useDropzone } from 'react-dropzone'
 import { Share2, Copy, Check } from 'lucide-react'
 import { useAuth } from '@/components/auth-provider'
 import {
-  type PortalCompany, type PortalResource, type PortalTier, type PortalDetailBlock,
+  type PortalCompany, type PortalResource, type PortalTier, type PortalDetailBlock, type PortalDocument,
   fetchPortal, updateCompany, uploadLogo, logoUrl,
 } from '@/lib/supabase/portal'
 import { ResourceDialog, type ResourceDraft } from './resource-dialog'
 import { ProfileDialog } from './profile-dialog'
 import { CopyBlock, CopyBtn } from './copy-block'
 import { BlockDialog, type BlockDraft } from './block-dialog'
+import { DocsSection } from './doc-section'
+import { DocDialog, type DocDraft } from './doc-dialog'
 import { PORTAL_CSS } from './portal-css'
 
 // Per-company accent theme (fill / text-on-fill / accent-as-text on cream).
@@ -27,7 +29,6 @@ const SECTION_DESC: Record<string, string> = { 'Brand & Web': 'Client-facing ide
 const SECTION_ORDER = ['Brand & Web', 'Operations', 'Finance & People', 'Company Docs']
 
 const META_FIELDS: { key: keyof PortalCompany; label: string; th: string }[] = [
-  { key: 'legal_entity', label: 'Legal entity', th: 'นิติบุคคล' },
   { key: 'established', label: 'Established', th: 'ก่อตั้งเมื่อ' },
   { key: 'sector', label: 'Sector', th: 'ประเภทธุรกิจ' },
   { key: 'hq', label: 'HQ', th: 'สำนักงานใหญ่' },
@@ -44,12 +45,13 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
   const [companies, setCompanies] = useState<PortalCompany[]>([])
   const [resources, setResources] = useState<PortalResource[]>([])
   const [blocks, setBlocks] = useState<PortalDetailBlock[]>([])
+  const [documents, setDocuments] = useState<PortalDocument[]>([])
   const [loading, setLoading] = useState(true)
   const [active, setActive] = useState(initialCompany)
   const [mode, setMode] = useState<'public' | 'internal'>('internal')
-  const [theme, setTheme] = useState<'light' | 'dark' | null>(null)
   const [resourceDraft, setResourceDraft] = useState<ResourceDraft | null>(null)
   const [blockDraft, setBlockDraft] = useState<BlockDraft | null>(null)
+  const [docDraft, setDocDraft] = useState<DocDraft | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
 
   // Default view follows auth: signed-in → internal (all + edit), signed-out → public.
@@ -57,10 +59,11 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
   useEffect(() => { setMode(signedIn ? 'internal' : 'public') }, [signedIn])
 
   const reload = useCallback(async () => {
-    const { companies, resources, blocks } = await fetchPortal()
+    const { companies, resources, blocks, documents } = await fetchPortal()
     setCompanies(companies.sort((a, b) => a.sort - b.sort))
     setResources(resources)
     setBlocks(blocks)
+    setDocuments(documents)
     setLoading(false)
   }, [])
   useEffect(() => { void reload() }, [reload])
@@ -76,7 +79,7 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
 
   if (loading || !company) {
     return (
-      <div className="pscope" style={themeVars(active)} data-theme={theme ?? undefined}>
+      <div className="pscope" style={themeVars(active)} data-theme="dark">
         <style dangerouslySetInnerHTML={{ __html: PORTAL_CSS }} />
         <div style={{ padding: '80px 20px', textAlign: 'center', color: 'var(--faint)' }}>Loading portal…</div>
       </div>
@@ -99,8 +102,12 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
     .filter((b) => b.company === company.key && (mode === 'internal' || b.tier === 'public'))
     .sort((a, b) => a.sort - b.sort)
 
+  const companyDocs = documents
+    .filter((d) => d.company === company.key && (mode === 'internal' || d.tier === 'public'))
+    .sort((a, b) => a.sort - b.sort)
+
   return (
-    <div className="pscope" style={themeVars(active)} data-theme={theme ?? undefined}>
+    <div className="pscope" style={themeVars(active)} data-theme="dark">
       <style dangerouslySetInnerHTML={{ __html: PORTAL_CSS }} />
 
       {/* Top bar */}
@@ -122,7 +129,6 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
                 <button data-mode="internal" aria-pressed={mode === 'internal'} onClick={() => setMode('internal')}><span className="dot" />Internal</button>
               </div>
             )}
-            <button className="ghost-btn" onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}>Theme</button>
           </div>
         </div>
       </div>
@@ -152,32 +158,31 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
       {/* Stage */}
       <main className="wrap portal-main">
         {canEdit && <ShareBar company={company.key} name={company.name} />}
-        {/* Cover */}
+        {/* Cover / hero */}
         <section className="cover">
-          <div className="cover-grid">
-            <div>
+          <div className={`hero${(canEdit || logoUrl(company.logo_path)) ? ' has-logo' : ''}`}>
+            <div className="hero-main">
               <div className="eyebrow">{company.tag} · Company profile · <span className="th">ข้อมูลบริษัท</span></div>
               <h1><AstName name={company.name} /></h1>
               <p className="tagline">{company.tagline}</p>
-              {canEdit && <button className="manage" onClick={() => setProfileOpen(true)}>Manage profile in SX‑CRM ↗</button>}
+              {canEdit && <button className="editlink" onClick={() => setProfileOpen(true)}>Edit profile ↗</button>}
             </div>
-            <div>
-              <LogoSlot company={company} canEdit={canEdit} onSaved={reload} />
-              <div className="cover-meta">
-                {META_FIELDS.map((f) => {
-                  const val = company[f.key] as string | null
-                  const empty = !val
-                  return (
-                    <div className="row" key={f.key}>
-                      <span className="k">{f.label}<span className="kth">{f.th}</span></span>
-                      {empty && canEdit
-                        ? <button className="v addv" onClick={() => setProfileOpen(true)}>+ add</button>
-                        : <span className={`v ${empty ? 'empty' : ''}`}>{val || '—'}</span>}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+            {(canEdit || logoUrl(company.logo_path)) && <LogoSlot company={company} canEdit={canEdit} onSaved={reload} />}
+          </div>
+          <div className="accrule" />
+          <div className="meta">
+            {META_FIELDS.map((f) => {
+              const val = company[f.key] as string | null
+              if (!val && !canEdit) return null   // public view hides empty fields
+              return (
+                <div className="lc" key={f.key}>
+                  <span className="k">{f.label} <span className="kth">{f.th}</span></span>
+                  {!val && canEdit
+                    ? <button className="addv" onClick={() => setProfileOpen(true)}>+ add</button>
+                    : <span className={`v ${!val ? 'empty' : ''}`}>{val || '—'}</span>}
+                </div>
+              )
+            })}
           </div>
         </section>
 
@@ -190,6 +195,10 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
             <span className="plus">+</span> Add detail block
           </button>
         )}
+
+        {/* Downloadable company documents — before the resource sections */}
+        <DocsSection docs={companyDocs} canEdit={canEdit} showPills={mode === 'internal'}
+          onAdd={() => setDocDraft({ company: company.key })} onEdit={(d) => setDocDraft({ doc: d, company: company.key })} />
 
         {/* Sections */}
         {sections.map((g, gi) => {
@@ -225,17 +234,6 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
         })}
       </main>
 
-      {/* How it works */}
-      <section className="how">
-        <div className="how-card">
-          <h3>One template, filled in <em>SX‑CRM</em>, shared two ways.</h3>
-          <div className="how-grid">
-            <div className="how-cell"><div className="cn">01 — Template</div><h4>Structure fixed, content live</h4><p>Every company inherits the same sections and fields. Team members add resources here — each entry drops into the right section.</p></div>
-            <div className="how-cell"><div className="cn">02 — Visibility</div><h4>Each resource is Public or Internal</h4><p>One flag per resource decides who sees it. <code>Public</code> = brand &amp; web, safe for clients. <code>Internal</code> = ops, finance, docs.</p></div>
-            <div className="how-cell"><div className="cn">03 — Sharing</div><h4>Two links, one source of truth</h4><p>Send the <b>public link</b> to a client and internal sections never render. Open it signed in and the full stack appears.</p></div>
-          </div>
-        </div>
-      </section>
 
       <footer>
         <span>SIXSHEET Group · CAP*TURES · Andy &amp; Fine. · SX TECH</span>
@@ -245,6 +243,7 @@ export function PortalView({ initialCompany }: { initialCompany: string }) {
 
       {resourceDraft && <ResourceDialog draft={resourceDraft} onClose={() => setResourceDraft(null)} onSaved={() => { setResourceDraft(null); void reload() }} />}
       {blockDraft && <BlockDialog draft={blockDraft} onClose={() => setBlockDraft(null)} onSaved={() => { setBlockDraft(null); void reload() }} />}
+      {docDraft && <DocDialog draft={docDraft} onClose={() => setDocDraft(null)} onSaved={() => { setDocDraft(null); void reload() }} />}
       {profileOpen && <ProfileDialog company={company} onClose={() => setProfileOpen(false)} onSaved={() => { setProfileOpen(false); void reload() }} />}
     </div>
   )
@@ -284,7 +283,9 @@ function ShareBar({ company, name }: { company: string; name: string }) {
 
 function themeVars(key: string): React.CSSProperties {
   const t = THEMES[key] ?? THEMES.sixsheet
-  return { '--accent': t.accent, '--on-accent': t.on, '--accent-text': t.text } as React.CSSProperties
+  // Inject the light accent-text as a base; the stylesheet derives a brighter
+  // one for dark mode from --accent so it stays readable on near-black.
+  return { '--accent': t.accent, '--on-accent': t.on, '--accent-text-light': t.text } as React.CSSProperties
 }
 
 function ResRow({ it, i, canEdit, showPills, onEdit }: { it: PortalResource; i: number; canEdit: boolean; showPills: boolean; onEdit: () => void }) {
@@ -305,7 +306,7 @@ function ResRow({ it, i, canEdit, showPills, onEdit }: { it: PortalResource; i: 
       <div className="right">
         {showPills && <span className={`pill ${it.tier}`}><span className="pd" />{it.tier === 'internal' ? 'Internal' : 'Public'}</span>}
         {hasUrl
-          ? <a className="open" href={it.url!} target="_blank" rel="noopener noreferrer">Open <span className="arw">→</span></a>
+          ? <a className="open" href={it.url!} target="_blank" rel="noopener noreferrer">Open <span className="arw">↗</span></a>
           : canEdit
             ? <button className="open add" onClick={onEdit}>+ Add link</button>
             : <span className="open disabled">Not set</span>}
