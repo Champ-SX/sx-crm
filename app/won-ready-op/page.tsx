@@ -28,7 +28,7 @@ import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { OP_STAGES, OP_STAGE_LABELS } from '@/types'
 import type { WonJob, OPStage, StaffMember } from '@/types'
 import { formatJobMeta, jobDisplayTitle, jobCardName, jobCanonicalTitle } from '@/lib/jobs'
-import { AdhocCard, AdhocSheet } from '@/components/won/adhoc-payment'
+import { AdhocCard, AdhocSheet, PAYMENT_CARDS } from '@/components/won/adhoc-payment'
 import { type AdhocPayment, fetchAdhoc, adhocSummary, currentMonth } from '@/lib/supabase/adhoc'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
@@ -1478,11 +1478,9 @@ export default function WonReadyOpPage() {
   )
   // Adhoc Payment — pinned card in the wait-staff-payment column (one per month).
   const [adhocList, setAdhocList] = useState<AdhocPayment[]>([])
-  const [adhocOpen, setAdhocOpen] = useState(false)
+  const [adhocOpenKind, setAdhocOpenKind] = useState<string | null>(null)
   const reloadAdhoc = useCallback(async () => { try { setAdhocList(await fetchAdhoc('won')) } catch { /* table may not exist yet */ } }, [])
   useEffect(() => { void reloadAdhoc() }, [reloadAdhoc])
-  const adhocActive = adhocList.find((a) => a.month === currentMonth() && !a.archived)
-  const adhocSum = adhocSummary(adhocActive)
 
   const [stageToDelete, setStageToDelete] = useState<string | null>(null)
   const [stageToColorize, setStageToColorize] = useState<string | null>(null)
@@ -1794,9 +1792,14 @@ export default function WonReadyOpPage() {
                   opStages={opStages}
                   isMobile={isMobile}
                   searching={searchActive}
-                  pinnedCard={stage === 'OP_WAIT_STAFF_PAYMENT_DOC_TERR' && !searchActive
-                    ? <AdhocCard summary={adhocSum} month={adhocActive?.month} onOpen={() => setAdhocOpen(true)} />
-                    : undefined}
+                  pinnedCard={stage === 'OP_WAIT_STAFF_PAYMENT_DOC_TERR' && !searchActive ? (
+                    <div className="space-y-2">
+                      {PAYMENT_CARDS.map((pc) => {
+                        const active = adhocList.find((a) => (a.kind ?? 'adhoc') === pc.kind && a.month === currentMonth() && !a.archived)
+                        return <AdhocCard key={pc.kind} title={pc.title} theme={pc.theme} summary={adhocSummary(active)} month={active?.month} onOpen={() => setAdhocOpenKind(pc.kind)} />
+                      })}
+                    </div>
+                  ) : undefined}
                 />
               ))}
             </div>
@@ -1850,7 +1853,13 @@ export default function WonReadyOpPage() {
       </DndContext>
 
       {selectedId && <JobDetail jobId={selectedId} onClose={() => setSelectedId(null)} onDelete={handleDeleteCard} />}
-      {adhocOpen && <AdhocSheet list={adhocList} onClose={() => setAdhocOpen(false)} onChanged={reloadAdhoc} />}
+      {adhocOpenKind && (() => {
+        const pc = PAYMENT_CARDS.find((p) => p.kind === adhocOpenKind)
+        if (!pc) return null
+        return <AdhocSheet key={pc.kind} kind={pc.kind} title={pc.title} theme={pc.theme}
+          list={adhocList.filter((a) => (a.kind ?? 'adhoc') === pc.kind)}
+          onClose={() => setAdhocOpenKind(null)} onChanged={reloadAdhoc} />
+      })()}
 
       {/* Delete Stage Confirmation Dialog */}
       <Dialog open={!!stageToDelete} onOpenChange={(open) => !open && setStageToDelete(null)}>

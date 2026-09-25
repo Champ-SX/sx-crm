@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { Pin, X, Plus, Trash2, Check, Clock, Archive, ChevronDown } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
@@ -10,25 +10,59 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { useCRMStore } from '@/store/crm-store'
 import type { StaffMember } from '@/types'
 import {
-  type AdhocPayment, type AdhocJob, type AdhocSummary, currentMonth, fetchAdhoc, createAdhocMonth, updateAdhoc, adhocSummary,
+  type AdhocPayment, type AdhocJob, type AdhocSummary, currentMonth, createAdhocMonth, updateAdhoc, adhocSummary,
 } from '@/lib/supabase/adhoc'
 
 const monthLabel = (m: string) => { try { return format(parseISO(`${m}-01T00:00:00`), 'MMM yyyy') } catch { return m } }
 const mkId = () => (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `id-${Date.now()}-${Math.round(Math.random() * 1e6)}`
 
-// ── Pinned board card (unmovable, green edge) ─────────────────────────────────
-export function AdhocCard({ summary, month, onOpen }: { summary: AdhocSummary; month?: string; onOpen: () => void }) {
+// ── Per-card identity accent (paid=green / unpaid=red stay semantic everywhere) ─
+export interface CardTheme {
+  edge: string; pin: string; tag: string; link: string; btn: string; headerBg: string; switcher: string; emptyCTA: string; shadow: string
+}
+const GREEN: CardTheme = {
+  edge: 'border-emerald-500',
+  pin: 'text-emerald-600 fill-emerald-600',
+  tag: 'text-emerald-700 bg-emerald-50 dark:bg-emerald-500/15 dark:text-emerald-300',
+  link: 'text-emerald-700 dark:text-emerald-400',
+  btn: 'bg-emerald-600 hover:bg-emerald-700',
+  headerBg: 'bg-emerald-50/70 dark:bg-emerald-500/10',
+  switcher: 'text-emerald-800 dark:text-emerald-200 border-emerald-200 dark:border-emerald-500/30',
+  emptyCTA: 'border-emerald-200 dark:border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+  shadow: 'shadow-[0_2px_10px_-4px_rgba(16,160,101,0.4)]',
+}
+const PINK: CardTheme = {
+  edge: 'border-[#FF809E]',
+  pin: 'text-[#FF809E] fill-[#FF809E]',
+  tag: 'text-[#D6456A] bg-[#FF809E]/15 dark:text-[#FF9DB4]',
+  link: 'text-[#D6456A] dark:text-[#FF9DB4]',
+  btn: 'bg-[#FF809E] hover:bg-[#f86a8c]',
+  headerBg: 'bg-[#FF809E]/10',
+  switcher: 'text-[#D6456A] dark:text-[#FF9DB4] border-[#FF809E]/40',
+  emptyCTA: 'border-[#FF809E]/40 bg-[#FF809E]/10 text-[#D6456A] dark:text-[#FF9DB4]',
+  shadow: 'shadow-[0_2px_10px_-4px_rgba(255,128,158,0.5)]',
+}
+
+// The payment cards pinned in the wait-staff-payment column. Same behavior;
+// each has its own kind, title, colour and independent monthly cycle.
+export const PAYMENT_CARDS: { kind: string; title: string; theme: CardTheme }[] = [
+  { kind: 'adhoc', title: 'Adhoc Payment', theme: GREEN },
+  { kind: 'anf_parttime', title: 'Part-time Andy & Fine.', theme: PINK },
+]
+
+// ── Pinned board card (unmovable, coloured edge) ──────────────────────────────
+export function AdhocCard({ title, theme, summary, month, onOpen }: { title: string; theme: CardTheme; summary: AdhocSummary; month?: string; onOpen: () => void }) {
   const allPaid = summary.total > 0 && summary.unpaidCount === 0
   return (
     <div
       onClick={(e) => { e.stopPropagation(); onOpen() }}
-      className="bg-card rounded-xl border-[3px] border-emerald-500 overflow-hidden cursor-pointer hover:shadow-md transition-all select-none shadow-[0_2px_10px_-4px_rgba(16,160,101,0.4)]"
+      className={`bg-card rounded-xl border-[3px] ${theme.edge} overflow-hidden cursor-pointer hover:shadow-md transition-all select-none ${theme.shadow}`}
     >
       <div className="p-3">
         <div className="flex items-center gap-1.5 mb-2">
-          <Pin className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600" />
-          <span className="text-[14px] font-bold text-foreground">Adhoc Payment</span>
-          <span className="ml-auto text-[10px] font-semibold text-emerald-700 bg-emerald-50 dark:bg-emerald-500/15 dark:text-emerald-300 px-2 py-0.5 rounded-full">PINNED</span>
+          <Pin className={`w-3.5 h-3.5 ${theme.pin}`} />
+          <span className="text-[14px] font-bold text-foreground">{title}</span>
+          <span className={`ml-auto text-[10px] font-semibold px-2 py-0.5 rounded-full ${theme.tag}`}>PINNED</span>
         </div>
 
         {summary.total > 0 ? (
@@ -55,11 +89,11 @@ export function AdhocCard({ summary, month, onOpen }: { summary: AdhocSummary; m
           <span className={`font-mono text-[11.5px] font-medium ${allPaid ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'}`}>
             จ่ายแล้ว {summary.paid}/{summary.total}{month ? ` · ${monthLabel(month)}` : ''}
           </span>
-          <span className="ml-auto text-[11px] font-medium text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-0.5"><Plus className="w-3 h-3" />เพิ่ม</span>
+          <span className={`ml-auto text-[11px] font-medium inline-flex items-center gap-0.5 ${theme.link}`}><Plus className="w-3 h-3" />เพิ่ม</span>
         </div>
       ) : (
-        <div className="px-3 py-2 border-t border-emerald-200 dark:border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-500/10">
-          <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-emerald-700 dark:text-emerald-300"><Plus className="w-3.5 h-3.5" /> เพิ่มการจ่าย · Add payment</span>
+        <div className={`px-3 py-2 border-t ${theme.emptyCTA}`}>
+          <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold"><Plus className="w-3.5 h-3.5" /> เพิ่มการจ่าย · Add payment</span>
         </div>
       )}
     </div>
@@ -67,8 +101,8 @@ export function AdhocCard({ summary, month, onOpen }: { summary: AdhocSummary; m
 }
 
 // ── The modal sheet ───────────────────────────────────────────────────────────
-export function AdhocSheet({ list, onClose, onChanged }: {
-  list: AdhocPayment[]; onClose: () => void; onChanged: () => void
+export function AdhocSheet({ kind, title, theme, list, onClose, onChanged }: {
+  kind: string; title: string; theme: CardTheme; list: AdhocPayment[]; onClose: () => void; onChanged: () => void
 }) {
   const allStaff = useCRMStore((s) => s.staff)
   const addStaff = useCRMStore((s) => s.addStaff)
@@ -77,11 +111,8 @@ export function AdhocSheet({ list, onClose, onChanged }: {
   const active = list.find((a) => a.month === cur && !a.archived)
   const [selectedId, setSelectedId] = useState<string | null>(active?.id ?? list[0]?.id ?? null)
   const viewing = list.find((a) => a.id === selectedId) ?? active ?? list[0]
-  // Editable when viewing the (non-archived) current month — or when there's no
-  // card yet at all, in which case the first "Add" lazily creates this month.
   const editable = viewing ? (!viewing.archived && viewing.month === cur) : true
 
-  // Persist a change to the viewing card's jobs (creates the current month lazily).
   async function saveJobs(jobs: AdhocJob[], id = viewing?.id) {
     if (!id) return
     await updateAdhoc(id, { jobs })
@@ -89,7 +120,7 @@ export function AdhocSheet({ list, onClose, onChanged }: {
   }
   async function ensureActive(): Promise<AdhocPayment> {
     if (active) return active
-    const created = await createAdhocMonth(cur)
+    const created = await createAdhocMonth(cur, kind)
     setSelectedId(created.id)
     onChanged()
     return created
@@ -97,7 +128,8 @@ export function AdhocSheet({ list, onClose, onChanged }: {
 
   async function addJob() {
     const target = await ensureActive()
-    const jobs = [...target.jobs, { id: mkId(), title: 'New task', staff_list: [] }]
+    // Newest first — prepend the new temp job to the top of the list.
+    const jobs = [{ id: mkId(), title: 'New task', staff_list: [] }, ...target.jobs]
     await saveJobs(jobs, target.id)
   }
   async function patchJob(jobId: string, patch: Partial<AdhocJob>) {
@@ -122,12 +154,12 @@ export function AdhocSheet({ list, onClose, onChanged }: {
     <Dialog open onOpenChange={onClose}>
       <DialogContent showCloseButton={false} className="w-[520px] max-w-[92vw] sm:max-w-[520px] top-[6vh] translate-y-0 p-0 gap-0 max-h-[86vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="px-5 py-3.5 border-b bg-emerald-50/70 dark:bg-emerald-500/10 flex items-center gap-2.5 shrink-0">
-          <Pin className="w-4 h-4 text-emerald-600 fill-emerald-600" />
-          <DialogTitle className="text-[15px] font-bold">Adhoc Payment</DialogTitle>
+        <div className={`px-5 py-3.5 border-b flex items-center gap-2.5 shrink-0 ${theme.headerBg}`}>
+          <Pin className={`w-4 h-4 ${theme.pin}`} />
+          <DialogTitle className="text-[15px] font-bold">{title}</DialogTitle>
           {/* Month switcher */}
           <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex items-center gap-1 text-[12px] font-medium text-emerald-800 dark:text-emerald-200 bg-white/70 dark:bg-white/5 border border-emerald-200 dark:border-emerald-500/30 rounded-md px-2 py-1 hover:bg-white">
+            <DropdownMenuTrigger className={`inline-flex items-center gap-1 text-[12px] font-medium bg-white/70 dark:bg-white/5 border rounded-md px-2 py-1 hover:bg-white ${theme.switcher}`}>
               {viewing ? monthLabel(viewing.month) : monthLabel(cur)}{viewing?.archived ? ' · archived' : ''}<ChevronDown className="w-3 h-3" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="text-xs">
@@ -139,7 +171,7 @@ export function AdhocSheet({ list, onClose, onChanged }: {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <span className="ml-auto font-mono text-[12.5px] font-semibold text-emerald-700 dark:text-emerald-300">จ่ายแล้ว {summary.paid}/{summary.total} · ฿{summary.fee.toLocaleString()}</span>
+          <span className="ml-auto font-mono text-[12.5px] font-semibold">จ่ายแล้ว {summary.paid}/{summary.total} · ฿{summary.fee.toLocaleString()}</span>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
         </div>
 
@@ -149,7 +181,7 @@ export function AdhocSheet({ list, onClose, onChanged }: {
             <p className="text-[13px] text-muted-foreground text-center py-8">No temp jobs yet.{editable && ' Add one below.'}</p>
           ) : (
             viewing.jobs.map((job) => (
-              <AdhocJobBlock key={job.id} job={job} editable={editable} allStaff={allStaff} addStaff={addStaff}
+              <AdhocJobBlock key={job.id} job={job} editable={editable} allStaff={allStaff} addStaff={addStaff} linkClass={theme.link}
                 onPatch={(p) => patchJob(job.id, p)} onRemove={() => removeJob(job.id)} />
             ))
           )}
@@ -160,7 +192,7 @@ export function AdhocSheet({ list, onClose, onChanged }: {
           {editable
             ? <button onClick={archive} className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground"><Archive className="w-4 h-4" /> Archive month</button>
             : <span className="text-[12px] text-muted-foreground italic">Archived — read-only</span>}
-          {editable && <Button size="sm" className="ml-auto bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5" onClick={addJob}><Plus className="w-4 h-4" /> เพิ่มงานชั่วคราว · Add temp job</Button>}
+          {editable && <Button size="sm" className={`ml-auto text-white gap-1.5 ${theme.btn}`} onClick={addJob}><Plus className="w-4 h-4" /> เพิ่มงานชั่วคราว · Add temp job</Button>}
         </div>
       </DialogContent>
     </Dialog>
@@ -168,8 +200,8 @@ export function AdhocSheet({ list, onClose, onChanged }: {
 }
 
 // ── One temp job: title + staff payment rows ──────────────────────────────────
-function AdhocJobBlock({ job, editable, allStaff, addStaff, onPatch, onRemove }: {
-  job: AdhocJob; editable: boolean; allStaff: StaffMember[]; addStaff: (s: StaffMember) => void
+function AdhocJobBlock({ job, editable, allStaff, addStaff, linkClass, onPatch, onRemove }: {
+  job: AdhocJob; editable: boolean; allStaff: StaffMember[]; addStaff: (s: StaffMember) => void; linkClass: string
   onPatch: (p: Partial<AdhocJob>) => void; onRemove: () => void
 }) {
   const [adding, setAdding] = useState(false)
@@ -229,7 +261,7 @@ function AdhocJobBlock({ job, editable, allStaff, addStaff, onPatch, onRemove }:
       {editable && (
         <div className="px-3 py-2 border-t border-border/60">
           {!adding
-            ? <button onClick={() => setAdding(true)} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-emerald-700 dark:text-emerald-400"><Plus className="w-3.5 h-3.5" /> เพิ่มน้อง · add staff</button>
+            ? <button onClick={() => setAdding(true)} className={`inline-flex items-center gap-1.5 text-[12px] font-medium ${linkClass}`}><Plus className="w-3.5 h-3.5" /> เพิ่มน้อง · add staff</button>
             : (
               <div>
                 <Input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search or type a new name…" className="h-8 text-sm" />
@@ -241,7 +273,7 @@ function AdhocJobBlock({ job, editable, allStaff, addStaff, onPatch, onRemove }:
                   </ul>
                 )}
                 <div className="flex items-center gap-2 mt-2">
-                  {search.trim() && <button onClick={createNew} className="text-[12px] font-medium text-emerald-700 dark:text-emerald-400">＋ New “{search.trim()}”</button>}
+                  {search.trim() && <button onClick={createNew} className={`text-[12px] font-medium ${linkClass}`}>＋ New “{search.trim()}”</button>}
                   <button onClick={() => { setAdding(false); setSearch('') }} className="ml-auto text-[12px] text-muted-foreground">Cancel</button>
                 </div>
               </div>

@@ -11,6 +11,7 @@ export interface AdhocJob {
 export interface AdhocPayment {
   id: string
   board_id?: string
+  kind: string             // 'adhoc' | 'anf_parttime' — which pinned card
   month: string            // 'YYYY-MM'
   jobs: AdhocJob[]
   archived: boolean
@@ -24,7 +25,7 @@ const mkId = () => (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto
 // ── Mock data (local dev) ─────────────────────────────────────────────────────
 let mockAdhoc: AdhocPayment[] = [
   {
-    id: mkId(), board_id: 'won', month: currentMonth(), archived: false,
+    id: mkId(), board_id: 'won', kind: 'adhoc', month: currentMonth(), archived: false,
     jobs: [
       {
         id: mkId(), title: 'Setup — ANF popup booth',
@@ -53,8 +54,8 @@ export async function fetchAdhoc(boardId = 'won'): Promise<AdhocPayment[]> {
 }
 
 // ── Writes ────────────────────────────────────────────────────────────────────
-export async function createAdhocMonth(month: string, boardId = 'won'): Promise<AdhocPayment> {
-  const row: AdhocPayment = { id: mkId(), board_id: boardId, month, jobs: [], archived: false }
+export async function createAdhocMonth(month: string, kind = 'adhoc', boardId = 'won'): Promise<AdhocPayment> {
+  const row: AdhocPayment = { id: mkId(), board_id: boardId, kind, month, jobs: [], archived: false }
   if (!isSupabaseConfigured) { mockAdhoc = [row, ...mockAdhoc]; return structuredClone(row) }
   const { data, error } = await supabase.from('adhoc_payments').insert(row).select().single()
   if (error) throw error
