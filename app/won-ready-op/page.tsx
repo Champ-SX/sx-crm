@@ -44,7 +44,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import {
-  Calendar, User,
+  Calendar, User, Search,
   Pencil, Check, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
   ClipboardList, Truck, CreditCard,
   Users, Banknote, ArrowUpDown, GripVertical,
@@ -200,11 +200,13 @@ function JobCard({
   onClick,
   isDragging,
   isMobile = false,
+  dragDisabled = false,
 }: {
   job: WonJob
   onClick: () => void
   isDragging?: boolean
   isMobile?: boolean
+  dragDisabled?: boolean
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging: isSortableDragging } = useSortable({ id: job.job_id })
   const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined
@@ -212,7 +214,9 @@ function JobCard({
   // Cards are draggable on desktop only. On mobile the board is a pager; tap a
   // card to open it and change its stage via the detail drawer. Withholding the
   // listeners here means no drag can start on touch (was crashing the page).
-  const dragProps = isMobile ? {} : { ...attributes, ...listeners }
+  // Dragging is also withheld while a search filter is active, since reorder
+  // positions are computed against visible cards only.
+  const dragProps = (isMobile || dragDisabled) ? {} : { ...attributes, ...listeners }
 
   const teamMembers = useCRMStore((s) => s.teamMembers)
 
@@ -308,6 +312,7 @@ function KanbanColumn({
   onAddStage,
   opStages,
   isMobile = false,
+  searching = false,
   pinnedCard,
 }: {
   stage: string
@@ -319,6 +324,7 @@ function KanbanColumn({
   onAddStage?: () => void
   opStages: any[]
   isMobile?: boolean
+  searching?: boolean
   pinnedCard?: ReactNode
 }) {
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({ id: stage })
@@ -483,6 +489,7 @@ function KanbanColumn({
               onClick={() => onCardClick(job)}
               isDragging={activeId === job.job_id}
               isMobile={isMobile}
+              dragDisabled={searching}
             />
           ))}
           {jobs.length === 0 && (
@@ -1453,6 +1460,8 @@ export default function WonReadyOpPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState(false)
   const [assigneeFilter, setAssigneeFilter] = useState<string>(ASSIGNEE_FILTER_ALL)
+  const [search, setSearch] = useState('')
+  const teamMembers = useCRMStore((s) => s.teamMembers)
   const { user } = useAuth()
   // Open a specific card from a notification deep-link signal.
   useOpenDeepLink(
@@ -1642,10 +1651,25 @@ export default function WonReadyOpPage() {
   const inBoard = (j: typeof wonJobs[number]) => matchesBoard(j.board_id, activeBoardId)
   // Archived cards are hidden from the board unless the user toggles them on.
   const archivedCount = wonJobs.filter((j) => inBoard(j) && j.is_archived).length
+  // Free-text search across the fuller card set. Respects the archived toggle
+  // (it filters before this). Empty query → matches everything.
+  const q = search.trim().toLowerCase()
+  const searchActive = q.length > 0
+  function matchesSearch(j: WonJob): boolean {
+    if (!q) return true
+    const assignees = teamMembers.filter((m) => (j.assignee_ids ?? []).includes(m.id)).map((m) => m.name || m.email)
+    const hay = [
+      j.job_number, jobCardName(j), j.event_display_name, j.customer_name,
+      j.product_type, j.product_cat, j.owner, ...assignees, String(j.estimated_value ?? ''),
+    ].filter(Boolean).join(' ').toLowerCase()
+    return hay.includes(q)
+  }
+
   const boardJobs = wonJobs
     .filter(inBoard)
     .filter((j) => (showArchived ? j.is_archived : !j.is_archived))
     .filter((j) => matchesAssigneeFilter(j.assignee_ids, assigneeFilter, user?.id))
+    .filter(matchesSearch)
   const activeCount = boardJobs.filter((j) => j.op_stage !== 'OP_DONE_PAYMENT').length
   const totalValue = boardJobs
     .filter((j) => j.op_stage !== 'OP_DONE_PAYMENT')
@@ -1676,11 +1700,28 @@ export default function WonReadyOpPage() {
     <div className="flex flex-col h-[100dvh]">
       {/* Top bar */}
       <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <MobileMenuButton />
-          <div>
+          <div className="shrink-0">
             <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight">Won &amp; Ready for OP</h1>
-            <p className="text-[12px] sm:text-[12px] text-muted-foreground mt-0.5 hidden sm:block">{activeCount} active jobs · {formatCurrency(totalValue)} in pipeline</p>
+            <p className="text-[12px] sm:text-[12px] text-muted-foreground mt-0.5 hidden sm:block">
+              {searchActive ? `${boardJobs.length} match${boardJobs.length === 1 ? '' : 'es'} for “${search.trim()}”` : `${activeCount} active jobs · ${formatCurrency(totalValue)} in pipeline`}
+            </p>
+          </div>
+          {/* Search — filters cards across all columns */}
+          <div className="relative w-40 sm:w-56">
+            <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search cards…"
+              className="h-8 w-full rounded-lg border border-border bg-background pl-8 pr-7 text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
+            />
+            {searchActive && (
+              <button type="button" onClick={() => setSearch('')} aria-label="Clear search" className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-1.5">
@@ -1752,7 +1793,8 @@ export default function WonReadyOpPage() {
                   onAddStage={() => setShowAddStageDialog(true)}
                   opStages={opStages}
                   isMobile={isMobile}
-                  pinnedCard={stage === 'OP_WAIT_STAFF_PAYMENT_DOC_TERR'
+                  searching={searchActive}
+                  pinnedCard={stage === 'OP_WAIT_STAFF_PAYMENT_DOC_TERR' && !searchActive
                     ? <AdhocCard summary={adhocSum} month={adhocActive?.month} onOpen={() => setAdhocOpen(true)} />
                     : undefined}
                 />
