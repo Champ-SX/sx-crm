@@ -95,6 +95,77 @@ export function parseJobNumber(title: string | null | undefined): string {
   return seg ?? ''
 }
 
+// ─── Event dates from the title ──────────────────────────────────────────────
+// Everything before the job number is date(s):
+//   "2026.09.26 - 120 - …"                → single day
+//   "2026.09.26 - 10.04 - 120 - …"        → range (end = MM.DD, same year; rolls
+//                                            into next year if the month is earlier)
+//   "2026.09.26, 10.03, 10.10 - 120 - …"  → multiple separate days (commas)
+// Returns ISO dates ("2026-09-26"). Empty when the title has no leading date.
+export function parseJobDates(title: string | null | undefined): { start: string | null; end: string | null; dates: string[] } {
+  const none = { start: null, end: null, dates: [] as string[] }
+  if (!title) return none
+  const parts = title.split(' - ').map((s) => s.trim())
+  const numIdx = parts.findIndex((p) => /^\d{2,4}$/.test(p))
+  const dateSegs = numIdx === -1 ? parts.slice(0, 1) : parts.slice(0, numIdx)
+  const first = dateSegs[0]?.split(',').map((s) => s.trim()).filter(Boolean) ?? []
+  const m = /^(\d{4})\.(\d{2})\.(\d{2})$/.exec(first[0] ?? '')
+  if (!m) return none
+  const year = Number(m[1])
+  const start = `${m[1]}-${m[2]}-${m[3]}`
+  // Resolve "MM.DD" (or a full "YYYY.MM.DD") relative to the start date.
+  const resolve = (s: string): string | null => {
+    const full = /^(\d{4})\.(\d{2})\.(\d{2})$/.exec(s)
+    if (full) return `${full[1]}-${full[2]}-${full[3]}`
+    const md = /^(\d{1,2})\.(\d{1,2})$/.exec(s)
+    if (!md) return null
+    const mm = md[1].padStart(2, '0'), dd = md[2].padStart(2, '0')
+    const y = Number(mm) < Number(m[2]) ? year + 1 : year
+    return `${y}-${mm}-${dd}`
+  }
+  if (first.length > 1) {                          // comma list → multiple days
+    const dates = [start, ...first.slice(1).map(resolve).filter((d): d is string => !!d)]
+    return { start, end: null, dates }
+  }
+  const endRaw = dateSegs[1]
+  const end = endRaw ? resolve(endRaw) : null      // second segment → range end
+  return { start, end: end && end > start ? end : null, dates: [start] }
+}
+
+// Compact date label for the small Won card:
+//   one day   → "26 Sep 26"
+//   range     → "26 Sep – 04 Oct 26"   (year once when both in the same year)
+//   multi-day → "26 Sep 26 · +2"
+export function formatEventDateShort(job: Pick<WonJob, 'event_date' | 'event_end_date' | 'event_display_name' | 'product_name'>): string {
+  const parsed = parseJobDates(job.event_display_name || job.product_name)
+  const start = job.event_date || parsed.start
+  if (!start) return ''
+  const end = job.event_end_date || parsed.end
+  const d = (iso: string, pat: string) => format(parseISO(iso + 'T00:00:00'), pat)
+  if (end && end > start) {
+    return start.slice(0, 4) === end.slice(0, 4)
+      ? `${d(start, 'dd MMM')} – ${d(end, 'dd MMM yy')}`
+      : `${d(start, 'dd MMM yy')} – ${d(end, 'dd MMM yy')}`
+  }
+  if (parsed.dates.length > 1) return `${d(start, 'dd MMM yy')} · +${parsed.dates.length - 1}`
+  return d(start, 'dd MMM yy')
+}
+
+// Full label for tooltips / the detail drawer, e.g. "26 Sep 26 – 04 Oct 26 (9 days)".
+export function formatEventDateLong(job: Pick<WonJob, 'event_date' | 'event_end_date' | 'event_display_name' | 'product_name'>): string {
+  const parsed = parseJobDates(job.event_display_name || job.product_name)
+  const start = job.event_date || parsed.start
+  if (!start) return ''
+  const end = job.event_end_date || parsed.end
+  const d = (iso: string) => format(parseISO(iso + 'T00:00:00'), 'dd MMM yy')
+  if (end && end > start) {
+    const days = Math.round((parseISO(end).getTime() - parseISO(start).getTime()) / 864e5) + 1
+    return `${d(start)} – ${d(end)} (${days} days)`
+  }
+  if (parsed.dates.length > 1) return parsed.dates.map(d).join(', ')
+  return d(start)
+}
+
 export function parseJobTitle(title: string): Partial<WonJob> {
   if (!title) return {}
   // " - " separated; note "LCA + Film" can contain " + " inside one segment.
@@ -107,7 +178,7 @@ export function parseJobTitle(title: string): Partial<WonJob> {
   if (numIdx === -1) return {}   // no number → let display fall back to fields
 
   const jobNumber   = parts[numIdx]
-  const rawDate     = parts[0]                                   // "2026.05.21"
+  const rawDate     = parts[0].split(',')[0].trim()              // "2026.05.21" (first of a comma list)
   const productType = parts[numIdx + 1] ?? ''
   const productCat  = parts[numIdx + 2] ?? ''
   const rest        = parts.slice(numIdx + 3).join(' - ').trim() // "Sephora@EastinGrand"

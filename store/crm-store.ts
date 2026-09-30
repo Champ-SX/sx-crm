@@ -19,7 +19,7 @@ import {
   mockStaff,
   mockTeamMembers,
 } from '@/lib/mock-data'
-import { blankWonJobFields, companyToAccount, customerToAccount, parseJobNumber } from '@/lib/jobs'
+import { blankWonJobFields, companyToAccount, customerToAccount, parseJobNumber, parseJobDates } from '@/lib/jobs'
 import { WAREHOUSE, inferCategory } from '@/lib/anf'
 import * as db from '@/lib/supabase/db'
 
@@ -900,14 +900,17 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
     // NULL when the title has no number — flagged in the UI, editable later.
     // (NULL, not '', so the unique constraint allows many number-less jobs.)
     const newJobNumber = parseJobNumber(lop.name) || null
+    // Multi-day events: "2026.09.26 - 10.04 - …" → end date 2026-10-04.
+    const titleDates = parseJobDates(lop.name)
 
     const newJob: WonJob = {
       ...blankWonJobFields(),
       job_id: crypto.randomUUID(),
       job_number: newJobNumber,
+      ...(titleDates.end ? { event_end_date: titleDates.end } : {}),
       board_id: lop.board_id ?? get().activeBoardId ?? undefined,  // carry the lead's board
       // Map lead fields → WonJob title components
-      event_date: lop.event_date || null,       // Send null for invalid dates, not empty string
+      event_date: lop.event_date || titleDates.start || null,  // null for invalid dates, not empty string
       product_type: lop.service_type,            // e.g. "CAP*TURES"
       product_name: lop.name,                    // lead name as working title
       place: lop.venue ?? '',                    // lead venue → place
