@@ -245,7 +245,9 @@ function JobCard({
       <div className="p-3">
         {/* Job # + compact date */}
         <div className="flex items-center justify-between gap-2 mb-2">
-          <span className="font-mono text-[12px] font-semibold text-foreground tracking-wide">#{job.job_number}</span>
+          {job.job_number
+            ? <span className="font-mono text-[12px] font-semibold text-foreground tracking-wide">#{job.job_number}</span>
+            : <span className="font-mono text-[11px] font-semibold text-amber-700 bg-amber-100 dark:bg-amber-500/20 dark:text-amber-300 px-1.5 py-0.5 rounded" title="No job number in the title — open to set it">set #</span>}
           {job.event_date && (
             <span className="font-mono text-[12px] text-muted-foreground shrink-0">
               {format(parseISO(job.event_date + 'T00:00:00'), 'dd MMM yy')}
@@ -1098,6 +1100,7 @@ function JobDetail({
                     <FieldRow label="Event Date" value={job.event_date || ''} placeholder="YYYY-MM-DD" dateInput onSave={(v) => u({ event_date: v })} />
                     <FieldRow label="Event Time" value={job.event_time || ''} placeholder="e.g. 17.00-23.00" onSave={(v) => u({ event_time: v })} />
                   </div>
+                  <FieldRow label="Job Number" value={job.job_number || ''} placeholder="from the event name, e.g. 122" onSave={(v) => u({ job_number: v.trim() })} />
                   <FieldRow label="Event Display Name" value={job.event_display_name || ''} placeholder="e.g. Sephora Staff Party 2026" onSave={(v) => u({ event_display_name: v })} />
                   <FieldRow label="Venue" value={job.venue || ''} placeholder="e.g. Eastin Grand Hotel Phayathai" onSave={(v) => u({ venue: v })} />
                   <div className="grid grid-cols-2 gap-4">
@@ -1282,6 +1285,7 @@ function JobDetail({
                           <FieldRow label="Event Date" value={job.event_date || ''} placeholder="YYYY-MM-DD" dateInput onSave={(v) => u({ event_date: v })} />
                           <FieldRow label="Event Time" value={job.event_time || ''} placeholder="e.g. 17.00-23.00" onSave={(v) => u({ event_time: v })} />
                         </div>
+                        <FieldRow label="Job Number" value={job.job_number || ''} placeholder="from the event name, e.g. 122" onSave={(v) => u({ job_number: v.trim() })} />
                         <FieldRow label="Event Display Name" value={job.event_display_name || ''} placeholder="e.g. Sephora Staff Party 2026" onSave={(v) => u({ event_display_name: v })} />
                         <FieldRow label="Venue" value={job.venue || ''} placeholder="e.g. Eastin Grand Hotel Phayathai" onSave={(v) => u({ venue: v })} />
                         <div className="grid grid-cols-2 gap-4">

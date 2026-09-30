@@ -85,26 +85,40 @@ function joinNameAndPlace(name: string, place: string): string {
 // Parses: "2026.05.21 - 041 - LCA + Film - Event - Sephora@EastinGrand"
 // Returns partial WonJob fields; caller merges with existing data.
 
+// The job number is the FIRST stand-alone integer segment (2–4 digits). Dates
+// always contain a dot ("2026.09.18", "10.08"), so a bare number can't be a
+// date — this locates the number even when the title has extra date segments
+// (e.g. "2026.09.18 - 10.08 - 098 - …" → 098). Blank when the title has none.
+export function parseJobNumber(title: string | null | undefined): string {
+  if (!title) return ''
+  const seg = title.split(' - ').map((s) => s.trim()).find((p) => /^\d{2,4}$/.test(p))
+  return seg ?? ''
+}
+
 export function parseJobTitle(title: string): Partial<WonJob> {
   if (!title) return {}
-  // Split on " - " but LCA + Film can have " + " inside — we limit splits
-  const parts = title.split(' - ')
-  if (parts.length < 5) return {}
+  // " - " separated; note "LCA + Film" can contain " + " inside one segment.
+  const parts = title.split(' - ').map((s) => s.trim())
+  if (parts.length < 3) return {}
 
-  const rawDate   = parts[0].trim()                        // "2026.05.21"
-  const jobNumber = parts[1].trim()                        // "041"
-  const productType = parts[2].trim()                      // "LCA + Film"
-  const productCat  = parts[3].trim()                      // "Event"
-  const rest        = parts.slice(4).join(' - ').trim()    // "Sephora@EastinGrand"
+  // Anchor on the job number (first bare 2–4 digit segment), not on position —
+  // titles may carry one or two leading date segments before it.
+  const numIdx = parts.findIndex((p) => /^\d{2,4}$/.test(p))
+  if (numIdx === -1) return {}   // no number → let display fall back to fields
+
+  const jobNumber   = parts[numIdx]
+  const rawDate     = parts[0]                                   // "2026.05.21"
+  const productType = parts[numIdx + 1] ?? ''
+  const productCat  = parts[numIdx + 2] ?? ''
+  const rest        = parts.slice(numIdx + 3).join(' - ').trim() // "Sephora@EastinGrand"
 
   const atIdx = rest.lastIndexOf('@')
-  const productName = atIdx > -1 ? rest.substring(0, atIdx) : rest
-  const place       = atIdx > -1 ? rest.substring(atIdx + 1) : ''
+  const productName = atIdx > -1 ? rest.substring(0, atIdx).trim() : rest
+  const place       = atIdx > -1 ? rest.substring(atIdx + 1).trim() : ''
 
-  // "2026.05.21" → "2026-05-21"
-  const eventDate = rawDate.replace(/\./g, '-')
-
-  return { event_date: eventDate, job_number: jobNumber, product_type: productType, product_cat: productCat, product_name: productName, place }
+  const out: Partial<WonJob> = { job_number: jobNumber, product_type: productType, product_cat: productCat, product_name: productName, place }
+  if (/^\d{4}\.\d{2}\.\d{2}$/.test(rawDate)) out.event_date = rawDate.replace(/\./g, '-')  // "2026.05.21" → "2026-05-21"
+  return out
 }
 
 // ─── Company → CompanyAccount bridge ─────────────────────────────────────────

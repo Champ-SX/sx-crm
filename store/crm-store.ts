@@ -19,7 +19,7 @@ import {
   mockStaff,
   mockTeamMembers,
 } from '@/lib/mock-data'
-import { blankWonJobFields, companyToAccount, customerToAccount } from '@/lib/jobs'
+import { blankWonJobFields, companyToAccount, customerToAccount, parseJobNumber } from '@/lib/jobs'
 import { WAREHOUSE, inferCategory } from '@/lib/anf'
 import * as db from '@/lib/supabase/db'
 
@@ -896,12 +896,9 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
     if (!lop) throw new Error('Lead/Opportunity not found')
     const now = new Date().toISOString()
 
-    // Auto-generate job number (last job_number + 1)
-    const lastJobNum = state.wonJobs
-      .map((j) => parseInt(j.job_number, 10))
-      .filter((n) => !isNaN(n))
-      .sort((a, b) => b - a)[0] ?? 0
-    const newJobNumber = String(lastJobNum + 1).padStart(3, '0')
+    // Job number comes from the event name (planning sheet), not a counter.
+    // Blank when the title has no number — flagged in the UI, editable later.
+    const newJobNumber = parseJobNumber(lop.name)
 
     const newJob: WonJob = {
       ...blankWonJobFields(),
@@ -1218,17 +1215,12 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
     const now = new Date().toISOString()
 
-    // Fresh job_number = highest existing + 1 (jobs are unique per number).
-    const lastJobNum = state.wonJobs
-      .map((j) => parseInt(j.job_number, 10))
-      .filter((n) => !isNaN(n))
-      .sort((a, b) => b - a)[0] ?? 0
-    const newJobNumber = String(lastJobNum + 1).padStart(3, '0')
-
+    // A duplicate has no new planning number yet — leave it blank (flagged) so
+    // it's assigned by hand, rather than colliding with the original's number.
     const copy: WonJob = {
       ...original,
       job_id: newId,
-      job_number: newJobNumber,
+      job_number: '',
       product_name: original.product_name ? `${original.product_name} (copy)` : original.product_name,
       op_stage: 'WON_JOB_LIST',
       position: 0,
