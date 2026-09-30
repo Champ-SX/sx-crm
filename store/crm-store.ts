@@ -897,8 +897,9 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
     const now = new Date().toISOString()
 
     // Job number comes from the event name (planning sheet), not a counter.
-    // Blank when the title has no number — flagged in the UI, editable later.
-    const newJobNumber = parseJobNumber(lop.name)
+    // NULL when the title has no number — flagged in the UI, editable later.
+    // (NULL, not '', so the unique constraint allows many number-less jobs.)
+    const newJobNumber = parseJobNumber(lop.name) || null
 
     const newJob: WonJob = {
       ...blankWonJobFields(),
@@ -1215,12 +1216,12 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
     const now = new Date().toISOString()
 
-    // A duplicate has no new planning number yet — leave it blank (flagged) so
-    // it's assigned by hand, rather than colliding with the original's number.
+    // A duplicate has no new planning number yet — NULL (flagged) so it's
+    // assigned by hand, rather than colliding with the original's number.
     const copy: WonJob = {
       ...original,
       job_id: newId,
-      job_number: '',
+      job_number: null,
       product_name: original.product_name ? `${original.product_name} (copy)` : original.product_name,
       op_stage: 'WON_JOB_LIST',
       position: 0,

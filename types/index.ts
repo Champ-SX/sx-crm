@@ -306,7 +306,7 @@ export interface WonJob {
 
   // ── Title components (generate display title from these) ──
   event_date: string | null  // ISO "2026-05-21" → displayed as "2026.05.21" (nullable if not provided)
-  job_number: string         // "041"
+  job_number: string | null  // "041"; NULL when the title has no number (unique-safe)
   product_type: string | null       // "LCA + Film" | "LCA" | "Pop Up" | "K15" | "SX Portable"
   product_cat: string | null        // "Event" | "Roadshow" | "Rental" | "Campaign"
   product_name: string | null       // short name for title, e.g. "Sephora"
