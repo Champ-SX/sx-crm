@@ -10,8 +10,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { EmptyState } from '@/components/shared/empty-state'
 import { CreateQuotationModal } from '@/components/shared/create-quotation-modal'
-import { ActivityTimeline } from '@/components/shared/activity-timeline'
-import { AddActivityForm } from '@/components/shared/add-activity-form'
+import { ActivityPanel } from '@/components/shared/activity-panel'
 import { LinkifyText } from '@/components/shared/linkify-text'
 import { MobileCardView } from '@/components/shared/mobile-card-view'
 import { OwnerSelectItems } from '@/components/shared/owner-select-items'
@@ -499,7 +498,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
           </div>
 
           {/* ── Body: two columns (desktop only) ── */}
-          <div className="hidden sm:flex flex-col sm:flex-row flex-1 overflow-hidden">
+          <div className="relative hidden sm:flex flex-col sm:flex-row flex-1 overflow-hidden">
 
             {/* Left: Details */}
             <div className="flex-1 overflow-y-auto px-4 sm:px-7 py-4 sm:py-5 space-y-5 border-b sm:border-b-0 sm:border-r">
@@ -722,21 +721,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
             </div>
 
             {/* Right: Activity + History (desktop only) */}
-            <div className="hidden sm:flex flex-col w-[340px] shrink-0 overflow-y-auto px-6 py-4 space-y-5 bg-muted/20">
-              {/* Log Activity */}
-              <div>
-                <p className="field-label mb-3">Log Activity</p>
-                <AddActivityForm entityType="lead_opportunity" entityId={item.lead_op_id} owner={item.owner} entityName={item.name} />
-              </div>
-
-              <Separator />
-
-              {/* History */}
-              <div>
-                <p className="field-label mb-3">History</p>
-                <ActivityTimeline entityType="lead_opportunity" entityId={item.lead_op_id} entityName={item.name} />
-              </div>
-            </div>
+            <ActivityPanel entityType="lead_opportunity" entityId={item.lead_op_id} owner={item.owner} entityName={item.name} />
           </div>
 
           {/* Mobile: Trello-style single-scroll card with sticky comment bar */}

@@ -31,8 +31,7 @@ import { formatJobMeta, jobDisplayTitle, jobCardName, jobCanonicalTitle, formatE
 import { AdhocCard, AdhocSheet, PAYMENT_CARDS } from '@/components/won/adhoc-payment'
 import { type AdhocPayment, fetchAdhoc, adhocSummary, currentMonth } from '@/lib/supabase/adhoc'
 import { UserAvatar } from '@/components/shared/user-avatar'
-import { ActivityTimeline } from '@/components/shared/activity-timeline'
-import { AddActivityForm } from '@/components/shared/add-activity-form'
+import { ActivityPanel } from '@/components/shared/activity-panel'
 import { LinkifyText } from '@/components/shared/linkify-text'
 import { MobileCardView } from '@/components/shared/mobile-card-view'
 import { DetailHeader } from '@/components/shared/detail-header'
@@ -1079,7 +1078,7 @@ function JobDetail({
 
           {/* ── Body: Responsive layout ── */}
           {/* Desktop only: Two-panel layout */}
-          <div className="hidden sm:flex flex-col sm:flex-row flex-1 overflow-hidden">
+          <div className="relative hidden sm:flex flex-col sm:flex-row flex-1 overflow-hidden">
 
             {/* ── LEFT: Sections A + B + C + OP Stage (scrollable) ── */}
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5 sm:border-r border-border/60">
@@ -1251,22 +1250,7 @@ function JobDetail({
             </div>
 
             {/* ── RIGHT: Activity + History (desktop only, fixed width, scrollable) ── */}
-            <div className="hidden sm:flex flex-col w-[320px] shrink-0 overflow-y-auto px-5 py-5 space-y-5 bg-muted/60">
-
-              {/* Log Activity */}
-              <div>
-                <p className="field-label mb-3">Log Activity</p>
-                <AddActivityForm entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} owner={job.owner || ''} entityName={job.event_display_name || job.product_name || `#${job.job_number}`} />
-              </div>
-
-              <Separator />
-
-              {/* History */}
-              <div>
-                <p className="field-label mb-3">History</p>
-                <ActivityTimeline entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} entityName={job.event_display_name || job.product_name || `#${job.job_number}`} />
-              </div>
-            </div>
+            <ActivityPanel entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} owner={job.owner || ''} entityName={job.event_display_name || job.product_name || `#${job.job_number}`} />
 
           </div>
 

@@ -10,8 +10,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { PageHeader } from '@/components/shared/page-header'
 import { EmptyState } from '@/components/shared/empty-state'
-import { ActivityTimeline } from '@/components/shared/activity-timeline'
-import { AddActivityForm } from '@/components/shared/add-activity-form'
+import { ActivityPanel } from '@/components/shared/activity-panel'
 import { MobileCardView } from '@/components/shared/mobile-card-view'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { AddLeadOpForm } from '@/components/shared/add-lead-op-form'
@@ -476,7 +475,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
         </div>
 
         {/* Two-column body (desktop only) */}
-        <div className="hidden sm:flex flex-col sm:flex-row flex-1 overflow-hidden">
+        <div className="relative hidden sm:flex flex-col sm:flex-row flex-1 overflow-hidden">
 
           {/* Left: Customer details */}
           <div className="flex-1 overflow-y-auto px-4 sm:px-7 py-4 sm:py-5 space-y-4 sm:space-y-5 border-b sm:border-b-0 sm:border-r border-border/60">
@@ -719,21 +718,7 @@ function CustomerDetail({ customerId, onClose }: { customerId: string; onClose: 
           </div>
 
           {/* Right: Activity + History (desktop only) */}
-          <div className="hidden sm:flex flex-col w-[320px] shrink-0 overflow-y-auto px-5 py-5 space-y-5 bg-muted/30">
-            {/* Log Activity */}
-            <div>
-              <p className="field-label mb-3">Log Activity</p>
-              <AddActivityForm entityType="customer" entityId={customer.customer_id} owner="Vitta" entityName={customer.company_name} />
-            </div>
-
-            <Separator />
-
-            {/* History */}
-            <div>
-              <p className="field-label mb-3">History</p>
-              <ActivityTimeline entityType="customer" entityId={customer.customer_id} entityName={customer.company_name} />
-            </div>
-          </div>
+          <ActivityPanel entityType="customer" entityId={customer.customer_id} owner="Vitta" entityName={customer.company_name} />
         </div>
 
         {/* Mobile: Trello-style single-scroll card with sticky comment bar */}

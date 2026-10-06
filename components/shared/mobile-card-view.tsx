@@ -5,12 +5,9 @@ import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
 import { ActivityTimeline } from './activity-timeline'
 import { MentionTextarea } from './mention-textarea'
-import type { ActivityAttachment } from '@/types'
-import { isSupabaseConfigured } from '@/lib/supabase/client'
-import { uploadAttachmentFile, deleteAttachmentFiles } from '@/lib/supabase/storage'
-import { ListChecks, Paperclip, ArrowUp, X } from 'lucide-react'
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+import { useAttachmentUploader, ACCEPT_ATTR } from './use-attachment-uploader'
+import { UploadTiles, UploadNotice } from './attachment-gallery'
+import { ListChecks, Paperclip, ArrowUp, Loader2 } from 'lucide-react'
 
 function initialsFor(name?: string | null, email?: string | null): string {
   if (name) {
@@ -23,15 +20,6 @@ function initialsFor(name?: string | null, email?: string | null): string {
       .toUpperCase()
   }
   return email?.[0]?.toUpperCase() ?? '?'
-}
-
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve((reader.result as string).split(',')[1])
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
 }
 
 /**
@@ -57,70 +45,39 @@ export function MobileCardView({
   const { addActivity, notifyMentions } = useCRMStore()
   const { user } = useAuth()
   const [comment, setComment] = useState('')
-  const [attachments, setAttachments] = useState<ActivityAttachment[]>([])
-  const [error, setError] = useState<string | null>(null)
+  const up = useAttachmentUploader()
   const [dragOver, setDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const initials = initialsFor(user?.user_metadata?.full_name, user?.email)
+  const author = user?.user_metadata?.full_name ?? user?.email ?? owner
 
-  // Validate + read each file, appending so multiple files all stick.
-  // Shared by the file picker and drag-and-drop.
-  async function processFiles(fileList: FileList | File[]) {
-    setError(null)
-    for (const file of Array.from(fileList)) {
-      if (file.size > MAX_FILE_SIZE) {
-        setError(`"${file.name}" is over 5MB.`)
-        continue
-      }
-      try {
-        if (isSupabaseConfigured) {
-          // Phase 2.8: bytes go to Storage; the activity row keeps a small reference
-          const storage_path = await uploadAttachmentFile(file)
-          setAttachments((prev) => [...prev, { filename: file.name, size: file.size, type: file.type, storage_path }])
-        } else {
-          const data = await fileToBase64(file)
-          setAttachments((prev) => [...prev, { filename: file.name, size: file.size, type: file.type, data }])
-        }
-      } catch {
-        setError(`Couldn't attach "${file.name}".`)
-      }
-    }
-  }
-
-  async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.files) await processFiles(e.target.files)
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }
-
-  async function handleDrop(e: React.DragEvent) {
+  function handleDrop(e: React.DragEvent) {
     e.preventDefault()
     setDragOver(false)
-    if (e.dataTransfer.files?.length) await processFiles(e.dataTransfer.files)
+    if (e.dataTransfer.files?.length) up.add(e.dataTransfer.files)
   }
 
+  const canSend = (comment.trim().length > 0 || up.attachments.length > 0) && up.uploading === 0 && up.failed === 0
+
   function submit() {
-    if (!comment.trim() && attachments.length === 0) return
-    addActivity({
+    if (!canSend) return
+    const note = comment.trim()
+    void addActivity({
       activity_id: `act-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       entity_type: entityType,
       entity_id: entityId,
       activity_type: 'note',
-      title: comment.trim() || (attachments.length > 0 ? 'Attachment added' : 'Note added'),
-      description: comment.trim() || (attachments.length > 0 ? `[${attachments.length} file(s)]` : '[Note]'),
-      created_by: user?.user_metadata?.full_name ?? user?.email ?? owner,
+      title: 'Note',
+      description: note,
+      created_by: author,
       created_at: new Date().toISOString(),
-      attachments: attachments.length > 0 ? attachments : undefined,
+      attachments: up.attachments.length > 0 ? up.attachments : undefined,
     })
-    if (comment.trim()) {
-      notifyMentions({ text: comment, actor: user?.user_metadata?.full_name ?? user?.email ?? owner, entityType, entityId, entityName: entityName || '' })
-    }
+    if (note) notifyMentions({ text: note, actor: author, entityType, entityId, entityName: entityName || '' })
     setComment('')
-    setAttachments([])
-    setError(null)
+    up.reset()
   }
-
-  const canSend = comment.trim().length > 0 || attachments.length > 0
 
   return (
     <div className="sm:hidden flex flex-col flex-1 overflow-hidden">
@@ -147,6 +104,7 @@ export function MobileCardView({
         onDragOver={(e) => { e.preventDefault(); if (!dragOver) setDragOver(true) }}
         onDragLeave={(e) => { e.preventDefault(); if (e.currentTarget === e.target) setDragOver(false) }}
         onDrop={handleDrop}
+        onPaste={(e) => { up.addFromPaste(e) }}
       >
         {dragOver && (
           <div className="absolute inset-0 z-20 flex items-center justify-center border-2 border-dashed border-primary bg-primary/5 pointer-events-none">
@@ -158,28 +116,10 @@ export function MobileCardView({
         <p className="px-3 pt-2 text-[12px] font-semibold text-muted-foreground uppercase tracking-widest">
           Log activity
         </p>
-        {error && (
-          <p className="px-3 pt-1 text-[12px] text-red-500">{error}</p>
-        )}
-        {attachments.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 px-3 pt-2">
-            {attachments.map((a, i) => (
-              <span key={i} className="inline-flex items-center gap-1 bg-muted text-foreground text-[12px] rounded-full pl-2.5 pr-1 py-0.5">
-                <span className="truncate max-w-[120px]">{a.filename}</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    // Free the already-uploaded Storage object so un-sent files don't orphan
-                    if (a.storage_path) void deleteAttachmentFiles([a])
-                    setAttachments((prev) => prev.filter((_, j) => j !== i))
-                  }}
-                  className="rounded-full hover:bg-background/60 p-0.5"
-                  aria-label={`Remove ${a.filename}`}
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
+        {(up.items.length > 0 || up.notice) && (
+          <div className="px-3 pt-2 space-y-1.5">
+            <UploadTiles items={up.items} onRemove={up.remove} onRetry={up.retry} size="sm" />
+            <UploadNotice text={up.notice} />
           </div>
         )}
         <div className="flex items-center gap-2 px-3 py-2.5">
@@ -203,8 +143,8 @@ export function MobileCardView({
               ref={fileInputRef}
               type="file"
               multiple
-              onChange={handleFiles}
-              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
+              onChange={(e) => { if (e.target.files?.length) up.add(e.target.files); e.target.value = '' }}
+              accept={ACCEPT_ATTR}
               className="hidden"
             />
             <button
@@ -222,7 +162,7 @@ export function MobileCardView({
               className="shrink-0 w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center disabled:opacity-30 transition-opacity"
               aria-label="Send comment"
             >
-              <ArrowUp className="w-4 h-4" />
+              {up.uploading > 0 ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
             </button>
           </div>
         </div>
