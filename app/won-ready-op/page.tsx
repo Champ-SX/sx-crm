@@ -51,7 +51,7 @@ import {
   Link2, Share2, Copy, Archive, ArchiveRestore,
   LayoutGrid, CalendarDays,
 } from 'lucide-react'
-import { OpCalendar, InventoryPill, NeedStepper } from '@/components/won/op-calendar'
+import { OpCalendar, InventoryPill, NeedStepper, NoStaffToggle } from '@/components/won/op-calendar'
 import { format as fmtDate } from 'date-fns'
 import { useOpenFromUrl } from '@/hooks/use-open-from-url'
 import { copyCardLink, shareCardLink } from '@/lib/card-links'
@@ -918,12 +918,13 @@ function JobDetail({
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: count > 0 && paidCount === count ? '#3f9d5b' : '#FF5B3F' }} />
           <span className="text-[13px] font-bold text-foreground flex-1 leading-none">จ่ายเงินน้องออกงาน</span>
           {/* Headcount lives with the staff list (Operation calendar reads the same number) */}
-          {job.staff_needed != null && (
+          {job.staff_needed != null && job.staff_needed > 0 && (
             <span className={`rounded px-1.5 py-px text-[11px] font-medium tabular-nums ${count >= job.staff_needed ? 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300' : count === 0 ? 'bg-red-500/12 text-red-700 dark:text-red-300' : 'bg-amber-500/15 text-amber-700 dark:text-amber-300'}`}>
               {count}/{job.staff_needed} assigned
             </span>
           )}
-          <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground">Need <NeedStepper job={job} /></span>
+          {job.staff_needed !== 0 && <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground">Need <NeedStepper job={job} /></span>}
+          <NoStaffToggle job={job} />
           {count > 0 && (
             <span className="font-mono text-[12px] font-medium text-muted-foreground">
               จ่ายแล้ว {paidCount}/{count} · ฿{total.toLocaleString()}
@@ -932,7 +933,7 @@ function JobDetail({
         </div>
         <div className="bg-card px-4 py-3 space-y-2">
           {list.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic">No staff assigned yet.</p>
+            <p className="text-xs text-muted-foreground italic">{job.staff_needed === 0 ? 'This job runs without staff — no payments to track.' : 'No staff assigned yet.'}</p>
           ) : (
             <ul className="space-y-2">
               {list.map((s) => (
@@ -990,11 +991,14 @@ function JobDetail({
               ))}
             </ul>
           )}
-          <Button size="sm" variant="outline" className="w-full h-8 text-xs mt-1 border-border text-muted-foreground hover:bg-muted hover:text-foreground" onClick={() => setStaffSheetOpen(true)}>
+          {job.staff_needed === 0 && list.length > 0 && (
+            <p className="text-[12px] text-amber-700 dark:text-amber-400">{list.length} staff still listed — remove them if not needed.</p>
+          )}
+          {job.staff_needed !== 0 && <Button size="sm" variant="outline" className="w-full h-8 text-xs mt-1 border-border text-muted-foreground hover:bg-muted hover:text-foreground" onClick={() => setStaffSheetOpen(true)}>
             {job.staff_needed != null && job.staff_needed > count
               ? `${job.staff_needed - count} open slot${job.staff_needed - count > 1 ? 's' : ''} · + Add Staff`
               : '+ Add Staff'}
-          </Button>
+          </Button>}
         </div>
       </div>
     )

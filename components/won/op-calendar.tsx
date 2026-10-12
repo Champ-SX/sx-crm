@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { addDays, format, isToday, isWeekend, parseISO, differenceInCalendarDays } from 'date-fns'
-import { ChevronLeft, ChevronRight, Users, Palette, Package, Check, CircleCheck, ArrowRight, Minus, Plus, UserPlus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Users, Palette, Package, Check, CircleCheck, ArrowRight, Minus, Plus, UserPlus, UserX, TriangleAlert } from 'lucide-react'
 import { OP_STAGES, type WonJob, type InventoryStatus, type TeamMember } from '@/types'
 import { parseJobDates, jobCardName } from '@/lib/jobs'
 import { cn, parseDbDate } from '@/lib/utils'
@@ -65,10 +65,10 @@ const toneCls: Record<Staffing['tone'], string> = {
 export function NeedStepper({ job }: { job: WonJob }) {
   const updateWonJob = useCRMStore((s) => s.updateWonJob)
   const need = job.staff_needed ?? 0
-  const set = (n: number) => updateWonJob(job.job_id, { staff_needed: Math.max(0, Math.min(99, n)) })
+  const set = (n: number) => updateWonJob(job.job_id, { staff_needed: Math.max(1, Math.min(99, n)) })
   return (
     <span className="inline-flex items-center rounded-md border border-border bg-card overflow-hidden" onClick={(e) => e.stopPropagation()}>
-      <button type="button" aria-label="Fewer staff needed" onClick={() => set(need - 1)} disabled={need <= 0}
+      <button type="button" aria-label="Fewer staff needed" onClick={() => set(need - 1)} disabled={need <= 1}
         className="w-7 h-7 inline-flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-40"><Minus className="w-3.5 h-3.5" /></button>
       <span className="min-w-7 text-center text-[13px] font-semibold tabular-nums">{job.staff_needed ?? '–'}</span>
       <button type="button" aria-label="More staff needed" onClick={() => set(need + 1)}
@@ -77,37 +77,57 @@ export function NeedStepper({ job }: { job: WonJob }) {
   )
 }
 
+/** "No staff needed" = staff_needed 0. Unticking clears it so the headcount is asked again. */
+export function NoStaffToggle({ job }: { job: WonJob }) {
+  const updateWonJob = useCRMStore((s) => s.updateWonJob)
+  const on = job.staff_needed === 0
+  return (
+    <label className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground cursor-pointer select-none" onClick={(e) => e.stopPropagation()}>
+      <input type="checkbox" checked={on} onChange={() => updateWonJob(job.job_id, { staff_needed: on ? null : 0 })}
+        className="w-3.5 h-3.5 accent-foreground" />
+      No staff needed
+    </label>
+  )
+}
+
 /** Staff pill → popover: set headcount, see who's on, fill open slots. */
 function StaffPill({ job, long, onAddStaff }: { job: WonJob; long?: boolean; onAddStaff?: (jobId: string) => void }) {
   const updateWonJob = useCRMStore((st) => st.updateWonJob)
   const s = staffing(job)
   const list = job.staff_list ?? []
-  const label = s.needed == null ? `${s.assigned}${s.assigned > 0 ? ' · set need' : ' staff'}` : `${long ? 'Staff ' : ''}${s.assigned}/${s.needed}`
+  const none = s.needed === 0
+  const label = none ? 'No staff' : s.needed == null ? `${s.assigned}${s.assigned > 0 ? ' · set need' : ' staff'}` : `${long ? 'Staff ' : ''}${s.assigned}/${s.needed}`
   const open = s.needed == null ? 0 : Math.max(0, s.needed - s.assigned)
   return (
     <Popover>
       <PopoverTrigger onClick={(e) => e.stopPropagation()}
         className={cn('inline-flex items-center gap-1 rounded px-1.5 py-px text-[11px] font-medium tabular-nums hover:ring-1 hover:ring-foreground/20', toneCls[s.tone])}
         title="Staff — click to set headcount or add staff">
-        <Users className="w-3 h-3" />{label}
+        {none ? <UserX className="w-3 h-3" /> : <Users className="w-3 h-3" />}{label}
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[280px] p-3" onClick={(e) => e.stopPropagation()}>
         {s.needed == null ? (
           <div>
             <p className="text-[13px] font-semibold">How many staff does this event need?</p>
             <div className="flex gap-1.5 mt-2.5">
-              {[1, 2, 3, 4, 5].map((n) => (
+              {[0, 1, 2, 3, 4, 5].map((n) => (
                 <button key={n} type="button" onClick={() => updateWonJob(job.job_id, { staff_needed: n })}
-                  className="h-8 min-w-9 px-2 rounded-md border border-border text-[13px] font-medium hover:bg-foreground hover:text-background">{n === 5 ? '5+' : n}</button>
+                  className="h-8 min-w-9 px-2 rounded-md border border-border text-[13px] font-medium hover:bg-foreground hover:text-background">{n === 0 ? 'None' : n === 5 ? '5+' : n}</button>
               ))}
             </div>
-            <p className="text-[12px] text-muted-foreground mt-2">{s.assigned} already assigned</p>
+            <p className="text-[12px] text-muted-foreground mt-2">None = runs without staff (delivery, rental, self-run…) · {s.assigned} assigned</p>
+          </div>
+        ) : none ? (
+          <div>
+            <div className="flex items-center justify-between"><span className="text-[13px] font-semibold">Staff</span><NoStaffToggle job={job} /></div>
+            <p className="text-[12px] text-emerald-700 dark:text-emerald-400 mt-2.5 flex items-center gap-1.5"><CircleCheck className="w-3.5 h-3.5" />Counts as staffed for the ready check</p>
+            {s.assigned > 0 && <p className="text-[12px] text-amber-700 dark:text-amber-400 mt-1.5 flex items-center gap-1.5"><TriangleAlert className="w-3.5 h-3.5" />{s.assigned} staff still listed — remove them in the job if not needed</p>}
           </div>
         ) : (
           <>
             <div className="flex items-center justify-between">
-              <span className="text-[13px] font-semibold">Staff</span>
               <span className="flex items-center gap-2 text-[12px] text-muted-foreground">Need <NeedStepper job={job} /></span>
+              <NoStaffToggle job={job} />
             </div>
             <div className="flex gap-0.5 h-1.5 rounded-full overflow-hidden bg-muted my-2.5">
               {Array.from({ length: Math.max(s.needed, s.assigned, 1) }, (_, i) => (
@@ -130,7 +150,7 @@ function StaffPill({ job, long, onAddStaff }: { job: WonJob; long?: boolean; onA
             ))}
           </ul>
         )}
-        {onAddStaff && (
+        {onAddStaff && !none && (
           <button type="button" onClick={() => onAddStaff(job.job_id)}
             className="mt-2 w-full flex items-center gap-2 rounded-md border border-dashed border-muted-foreground/40 px-2.5 py-1.5 text-[13px] text-muted-foreground hover:text-foreground hover:border-foreground/40">
             <UserPlus className="w-4 h-4" />{open > 0 ? `Add staff to open slot${open > 1 ? 's' : ''}` : 'Add staff'}
