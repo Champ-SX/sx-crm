@@ -49,7 +49,10 @@ import {
   Users, Banknote, ArrowUpDown, GripVertical,
   Trash2,
   Link2, Share2, Copy, Archive, ArchiveRestore,
+  LayoutGrid, CalendarDays,
 } from 'lucide-react'
+import { OpCalendar } from '@/components/won/op-calendar'
+import { format as fmtDate } from 'date-fns'
 import { useOpenFromUrl } from '@/hooks/use-open-from-url'
 import { copyCardLink, shareCardLink } from '@/lib/card-links'
 import { AssigneePicker, AssigneeFilter, ASSIGNEE_FILTER_ALL, matchesAssigneeFilter } from '@/components/shared/assignee-picker'
@@ -1123,7 +1126,10 @@ function JobDetail({
                   </div>
                   <FieldRow label="Line ID" value={job.onsite_line_id || ''} placeholder="Line ID ผู้ติดต่อหน้างาน" onSave={(v) => u({ onsite_line_id: v })} />
                   <FieldRow label="Install Point" value={job.install_point || ''} placeholder="จุดติดตั้ง / Backdrop location" multiline onSave={(v) => u({ install_point: v })} />
-                  <FieldRow label="Team Meeting Time" value={job.team_meeting_time || ''} placeholder="e.g. 15.00" onSave={(v) => u({ team_meeting_time: v })} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FieldRow label="Team Meeting Time" value={job.team_meeting_time || ''} placeholder="e.g. 15.00" onSave={(v) => u({ team_meeting_time: v })} />
+                    <FieldRow label="Staff Needed" value={job.staff_needed != null ? String(job.staff_needed) : ''} placeholder="e.g. 3" onSave={(v) => { const n = parseInt(v, 10); u({ staff_needed: Number.isFinite(n) && n >= 0 ? n : null }) }} />
+                  </div>
                   <FieldRow label="Onsite Notes" value={job.onsite_notes || ''} placeholder="หมายเหตุหน้างาน (parking, loading, etc.)" multiline onSave={(v) => u({ onsite_notes: v })} />
 
                   {/* Staff payment section (non-collapsible) */}
@@ -1250,12 +1256,12 @@ function JobDetail({
             </div>
 
             {/* ── RIGHT: Activity + History (desktop only, fixed width, scrollable) ── */}
-            <ActivityPanel entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} owner={job.owner || ''} entityName={job.event_display_name || job.product_name || `#${job.job_number}`} />
+            <ActivityPanel entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} altEntityId={job.job_id} owner={job.owner || ''} entityName={job.event_display_name || job.product_name || `#${job.job_number}`} />
 
           </div>
 
           {/* ── Mobile: Trello-style single-scroll card with sticky comment bar ── */}
-          <MobileCardView entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} owner={job.owner || ''} entityName={job.event_display_name || job.product_name || `#${job.job_number}`}>
+          <MobileCardView entityType="lead_opportunity" entityId={job.lead_op_id || job.job_id} altEntityId={job.job_id} owner={job.owner || ''} entityName={job.event_display_name || job.product_name || `#${job.job_number}`}>
                   <div className="px-6 py-5 space-y-5">
                     {/* Customer Insights — shared from the linked customer */}
                     {linkedCustomer && (
@@ -1296,7 +1302,10 @@ function JobDetail({
                         </div>
                         <FieldRow label="Line ID" value={job.onsite_line_id || ''} placeholder="Line ID ผู้ติดต่อหน้างาน" onSave={(v) => u({ onsite_line_id: v })} />
                         <FieldRow label="Install Point" value={job.install_point || ''} placeholder="จุดติดตั้ง / Backdrop location" multiline onSave={(v) => u({ install_point: v })} />
-                        <FieldRow label="Team Meeting Time" value={job.team_meeting_time || ''} placeholder="e.g. 15.00" onSave={(v) => u({ team_meeting_time: v })} />
+                        <div className="grid grid-cols-2 gap-4">
+                          <FieldRow label="Team Meeting Time" value={job.team_meeting_time || ''} placeholder="e.g. 15.00" onSave={(v) => u({ team_meeting_time: v })} />
+                          <FieldRow label="Staff Needed" value={job.staff_needed != null ? String(job.staff_needed) : ''} placeholder="e.g. 3" onSave={(v) => { const n = parseInt(v, 10); u({ staff_needed: Number.isFinite(n) && n >= 0 ? n : null }) }} />
+                        </div>
                         <FieldRow label="Onsite Notes" value={job.onsite_notes || ''} placeholder="หมายเหตุหน้างาน (parking, loading, etc.)" multiline onSave={(v) => u({ onsite_notes: v })} />
 
                         {/* Staff payment section (non-collapsible) */}
@@ -1456,7 +1465,22 @@ export default function WonReadyOpPage() {
   const [assigneeFilter, setAssigneeFilter] = useState<string>(ASSIGNEE_FILTER_ALL)
   const [search, setSearch] = useState('')
   const teamMembers = useCRMStore((s) => s.teamMembers)
-  const { user } = useAuth()
+  const { user, role } = useAuth()
+  // Board (Sales) vs Calendar (Operation). Default by role; then whatever this
+  // user last picked is remembered on this device.
+  const viewKey = `won-view:${user?.id ?? 'anon'}`
+  const [viewPicks, setViewPicks] = useState<Record<string, 'board' | 'calendar'>>({})
+  const storedView = (() => {
+    if (viewPicks[viewKey]) return viewPicks[viewKey]
+    if (typeof window === 'undefined') return null
+    try { const v = localStorage.getItem(viewKey); return v === 'board' || v === 'calendar' ? v : null } catch { return null }
+  })()
+  const view: 'board' | 'calendar' = storedView ?? (role === 'operation' ? 'calendar' : 'board')
+  const pickView = (v: 'board' | 'calendar') => {
+    setViewPicks((p) => ({ ...p, [viewKey]: v }))
+    try { localStorage.setItem(viewKey, v) } catch { /* private mode */ }
+  }
+  const [calStart, setCalStart] = useState(() => fmtDate(new Date(), 'yyyy-MM-dd'))
   // Open a specific card from a notification deep-link signal.
   useOpenDeepLink(
     isHydrated && wonJobs.length > 0,
@@ -1691,8 +1715,8 @@ export default function WonReadyOpPage() {
   return (
     <div className="flex flex-col h-[100dvh]">
       {/* Top bar */}
-      <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex items-center justify-between">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex items-start sm:items-center justify-between gap-2">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-2 min-w-0 flex-1">
           <MobileMenuButton />
           <div className="shrink-0">
             <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight">Won &amp; Ready for OP</h1>
@@ -1700,8 +1724,17 @@ export default function WonReadyOpPage() {
               {searchActive ? `${boardJobs.length} match${boardJobs.length === 1 ? '' : 'es'} for “${search.trim()}”` : `${activeCount} active jobs · ${formatCurrency(totalValue)} in pipeline`}
             </p>
           </div>
+          {/* Board ↔ Calendar */}
+          <div className="inline-flex shrink-0 rounded-lg border border-border bg-card p-0.5" role="tablist" aria-label="View">
+            {([['board', 'Board', LayoutGrid], ['calendar', 'Calendar', CalendarDays]] as const).map(([v, label, Icon]) => (
+              <button key={v} type="button" role="tab" aria-selected={view === v} aria-label={label} onClick={() => pickView(v)}
+                className={`h-7 px-2 sm:px-2.5 rounded-md inline-flex items-center gap-1.5 text-[12px] font-medium transition-colors ${view === v ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}>
+                <Icon className="w-3.5 h-3.5" /><span className="hidden sm:inline">{label}</span>
+              </button>
+            ))}
+          </div>
           {/* Search — filters cards across all columns */}
-          <div className="relative w-40 sm:w-56">
+          <div className="relative flex-1 min-w-[150px] sm:flex-none sm:w-56">
             <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               value={search}
@@ -1734,7 +1767,7 @@ export default function WonReadyOpPage() {
             </button>
           )}
         {/* Scroll the board sideways one stage at a time (desktop) */}
-        <div className="hidden sm:flex items-center gap-1.5">
+        <div className={`${view === 'board' ? 'hidden sm:flex' : 'hidden'} items-center gap-1.5`}>
           <button
             type="button"
             onClick={() => scrollBoard(-1)}
@@ -1755,6 +1788,9 @@ export default function WonReadyOpPage() {
         </div>
       </div>
 
+      {view === 'calendar' ? (
+        <OpCalendar jobs={boardJobs} start={calStart} onStart={setCalStart} onOpen={setSelectedId} />
+      ) : (
       <DndContext
         sensors={sensors}
         collisionDetection={collisionDetection}
@@ -1845,6 +1881,7 @@ export default function WonReadyOpPage() {
           )}
         </DragOverlay>
       </DndContext>
+      )}
 
       {selectedId && <JobDetail jobId={selectedId} onClose={() => setSelectedId(null)} onDelete={handleDeleteCard} />}
       {adhocOpenKind && (() => {

@@ -327,6 +327,7 @@ export interface WonJob {
   team_meeting_time: string | null     // เวลานัดหมายทีม
   onsite_notes: string | null          // หมายเหตุหน้างาน
   staff_list: StaffMember[] | null     // Staff assigned to this job
+  staff_needed?: number | null         // headcount the event needs (Operation calendar: assigned / needed)
 
   // ── C: Company Account ──
   company_account: CompanyAccount

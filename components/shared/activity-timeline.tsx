@@ -17,16 +17,16 @@ type EntityType = 'customer' | 'lead_opportunity' | 'won_job'
 
 /** Activities for one record, newest first. A lead's history carries over once
  *  it becomes a won job (and vice versa), so match both entity types by id. */
-export function useRecordActivities(entityType: EntityType, entityId: string): Activity[] {
+export function useRecordActivities(entityType: EntityType, entityId: string, altEntityId?: string): Activity[] {
   const all = useCRMStore((s) => s.activities)
   return useMemo(() => all
-    .filter((a) => a.entity_id === entityId && (
+    .filter((a) => (a.entity_id === entityId || (!!altEntityId && a.entity_id === altEntityId)) && (
       a.entity_type === entityType ||
       (entityType === 'lead_opportunity' && a.entity_type === 'won_job') ||
       (entityType === 'won_job' && a.entity_type === 'lead_opportunity')
     ))
     .sort((a, b) => parseDbDate(b.created_at).getTime() - parseDbDate(a.created_at).getTime()),
-  [all, entityType, entityId])
+  [all, entityType, entityId, altEntityId])
 }
 
 function dayLabel(d: Date): string {
@@ -41,10 +41,11 @@ interface ActivityTimelineProps {
   className?: string
   entityName?: string                       // for reply @mention notification context
   onOpenPhoto?: (key: string) => void       // when hosted in ActivityPanel (shared lightbox)
+  altEntityId?: string                      // WON job's own id — older notes/stage changes live there
 }
 
-export function ActivityTimeline({ entityType, entityId, className, entityName, onOpenPhoto }: ActivityTimelineProps) {
-  const activities = useRecordActivities(entityType, entityId)
+export function ActivityTimeline({ entityType, entityId, className, entityName, onOpenPhoto, altEntityId }: ActivityTimelineProps) {
+  const activities = useRecordActivities(entityType, entityId, altEntityId)
   const { removeActivityAttachment, addActivity, deleteActivity, notifyMentions, loadActivityAttachments } = useCRMStore()
   const { user } = useAuth()
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
@@ -56,8 +57,9 @@ export function ActivityTimeline({ entityType, entityId, className, entityName, 
   // attachments once its timeline mounts so thumbnails/files appear.
   useEffect(() => {
     void loadActivityAttachments(entityId)
+    if (altEntityId && altEntityId !== entityId) void loadActivityAttachments(altEntityId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entityId])
+  }, [entityId, altEntityId])
 
   const allPhotos = useMemo(() => collectPhotos(activities), [activities])
   const openPhoto = (p: GalleryPhoto) => (onOpenPhoto ? onOpenPhoto(p.key) : setOwnLightboxKey(p.key))

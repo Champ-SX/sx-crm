@@ -537,13 +537,23 @@ export const activityQueries = {
   // Metadata only — excludes the `attachments` JSONB blob (base64 file data).
   // Used by the frequent realtime/poll refresh AND startup so we never bulk-pull
   // file data. Callers merge to preserve already-loaded attachments.
+  // Paged: PostgREST caps a response at 1000 rows, which silently dropped the
+  // oldest activities once the table grew past that.
   async getAllLite() {
-    const { data, error } = await supabase
-      .from('activities')
-      .select('activity_id, entity_type, entity_id, activity_type, title, description, created_by, created_at')
-      .order('created_at', { ascending: false })
-    if (error) throw error
-    return (data || []) as Omit<Activity, 'attachments'>[]
+    const PAGE = 1000
+    const out: Omit<Activity, 'attachments'>[] = []
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase
+        .from('activities')
+        .select('activity_id, entity_type, entity_id, activity_type, title, description, created_by, created_at')
+        .order('created_at', { ascending: false })
+        .order('activity_id', { ascending: true })
+        .range(from, from + PAGE - 1)
+      if (error) throw error
+      out.push(...((data || []) as Omit<Activity, 'attachments'>[]))
+      if (!data || data.length < PAGE) break
+    }
+    return out
   },
 
   async getForEntity(entityType: string, entityId: string) {

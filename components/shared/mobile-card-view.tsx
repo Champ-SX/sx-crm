@@ -34,12 +34,14 @@ export function MobileCardView({
   entityId,
   owner,
   entityName,
+  altEntityId,
   children,
 }: {
   entityType: 'customer' | 'lead_opportunity' | 'won_job'
   entityId: string
   owner: string
   entityName?: string
+  altEntityId?: string
   children: React.ReactNode
 }) {
   const { addActivity, notifyMentions } = useCRMStore()
@@ -94,7 +96,7 @@ export function MobileCardView({
 
         {/* Activity feed */}
         <div className="px-4 pb-4">
-          <ActivityTimeline entityType={entityType} entityId={entityId} entityName={entityName} />
+          <ActivityTimeline entityType={entityType} entityId={entityId} entityName={entityName} altEntityId={altEntityId} />
         </div>
       </div>
 

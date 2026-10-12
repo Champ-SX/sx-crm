@@ -18,6 +18,7 @@ interface ActivityPanelProps {
   entityId: string
   owner: string
   entityName?: string
+  altEntityId?: string   // WON job's own id (older notes were stored under it)
 }
 
 /**
@@ -25,8 +26,8 @@ interface ActivityPanelProps {
  * Photos and Files tabs. Expand overlays the whole drawer for heavy photo work —
  * the parent row must be `relative`.
  */
-export function ActivityPanel({ entityType, entityId, owner, entityName }: ActivityPanelProps) {
-  const activities = useRecordActivities(entityType, entityId)
+export function ActivityPanel({ entityType, entityId, owner, entityName, altEntityId }: ActivityPanelProps) {
+  const activities = useRecordActivities(entityType, entityId, altEntityId)
   const removeActivityAttachment = useCRMStore((s) => s.removeActivityAttachment)
   const [tab, setTab] = useState<Tab>('activity')
   const [expanded, setExpanded] = useState(false)
@@ -66,7 +67,7 @@ export function ActivityPanel({ entityType, entityId, owner, entityName }: Activ
         {tab === 'activity' && (
           <div className={cn('space-y-5', expanded && 'max-w-3xl mx-auto')}>
             <AddActivityForm entityType={entityType} entityId={entityId} owner={owner} entityName={entityName} />
-            <ActivityTimeline entityType={entityType} entityId={entityId} entityName={entityName} onOpenPhoto={setOpenKey} />
+            <ActivityTimeline entityType={entityType} entityId={entityId} entityName={entityName} onOpenPhoto={setOpenKey} altEntityId={altEntityId} />
           </div>
         )}
 
