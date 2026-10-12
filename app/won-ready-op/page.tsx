@@ -1715,8 +1715,9 @@ export default function WonReadyOpPage() {
   return (
     <div className="flex flex-col h-[100dvh]">
       {/* Top bar */}
-      <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex items-start sm:items-center justify-between gap-2">
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-2 min-w-0 flex-1">
+      <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-3 gap-y-2">
+        {/* Mobile: children join the bar's own wrap so switch + search get a full row */}
+        <div className="contents sm:flex items-center gap-3 min-w-0 flex-1">
           <MobileMenuButton />
           <div className="shrink-0">
             <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight">Won &amp; Ready for OP</h1>
@@ -1724,6 +1725,7 @@ export default function WonReadyOpPage() {
               {searchActive ? `${boardJobs.length} match${boardJobs.length === 1 ? '' : 'es'} for “${search.trim()}”` : `${activeCount} active jobs · ${formatCurrency(totalValue)} in pipeline`}
             </p>
           </div>
+          <div className="order-last sm:order-none w-full sm:w-auto flex items-center gap-2 sm:gap-3">
           {/* Board ↔ Calendar */}
           <div className="inline-flex shrink-0 rounded-lg border border-border bg-card p-0.5" role="tablist" aria-label="View">
             {([['board', 'Board', LayoutGrid], ['calendar', 'Calendar', CalendarDays]] as const).map(([v, label, Icon]) => (
@@ -1734,7 +1736,7 @@ export default function WonReadyOpPage() {
             ))}
           </div>
           {/* Search — filters cards across all columns */}
-          <div className="relative flex-1 min-w-[150px] sm:flex-none sm:w-56">
+          <div className="relative flex-1 sm:flex-none sm:w-56">
             <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               value={search}
@@ -1748,8 +1750,9 @@ export default function WonReadyOpPage() {
               </button>
             )}
           </div>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 ml-auto">
           <AssigneeFilter value={assigneeFilter} onChange={setAssigneeFilter} meId={user?.id} />
           {(showArchived || archivedCount > 0) && (
             <button
