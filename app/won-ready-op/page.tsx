@@ -51,7 +51,7 @@ import {
   Link2, Share2, Copy, Archive, ArchiveRestore,
   LayoutGrid, CalendarDays,
 } from 'lucide-react'
-import { OpCalendar } from '@/components/won/op-calendar'
+import { OpCalendar, InventoryPill } from '@/components/won/op-calendar'
 import { format as fmtDate } from 'date-fns'
 import { useOpenFromUrl } from '@/hooks/use-open-from-url'
 import { copyCardLink, shareCardLink } from '@/lib/card-links'
@@ -1130,6 +1130,11 @@ function JobDetail({
                     <FieldRow label="Team Meeting Time" value={job.team_meeting_time || ''} placeholder="e.g. 15.00" onSave={(v) => u({ team_meeting_time: v })} />
                     <FieldRow label="Staff Needed" value={job.staff_needed != null ? String(job.staff_needed) : ''} placeholder="e.g. 3" onSave={(v) => { const n = parseInt(v, 10); u({ staff_needed: Number.isFinite(n) && n >= 0 ? n : null }) }} />
                   </div>
+                  <div>
+                    <Label className="field-label">Inventory</Label>
+                    <div className="mt-1"><InventoryPill job={job} size="md" /></div>
+                  </div>
+                  <FieldRow label="Inventory Note" value={job.inventory_note || ''} placeholder="e.g. printer #2 + backdrop A" multiline onSave={(v) => u({ inventory_note: v || null })} />
                   <FieldRow label="Onsite Notes" value={job.onsite_notes || ''} placeholder="หมายเหตุหน้างาน (parking, loading, etc.)" multiline onSave={(v) => u({ onsite_notes: v })} />
 
                   {/* Staff payment section (non-collapsible) */}
@@ -1306,6 +1311,11 @@ function JobDetail({
                           <FieldRow label="Team Meeting Time" value={job.team_meeting_time || ''} placeholder="e.g. 15.00" onSave={(v) => u({ team_meeting_time: v })} />
                           <FieldRow label="Staff Needed" value={job.staff_needed != null ? String(job.staff_needed) : ''} placeholder="e.g. 3" onSave={(v) => { const n = parseInt(v, 10); u({ staff_needed: Number.isFinite(n) && n >= 0 ? n : null }) }} />
                         </div>
+                        <div>
+                          <Label className="field-label">Inventory</Label>
+                          <div className="mt-1"><InventoryPill job={job} size="md" /></div>
+                        </div>
+                        <FieldRow label="Inventory Note" value={job.inventory_note || ''} placeholder="e.g. printer #2 + backdrop A" multiline onSave={(v) => u({ inventory_note: v || null })} />
                         <FieldRow label="Onsite Notes" value={job.onsite_notes || ''} placeholder="หมายเหตุหน้างาน (parking, loading, etc.)" multiline onSave={(v) => u({ onsite_notes: v })} />
 
                         {/* Staff payment section (non-collapsible) */}
@@ -1792,7 +1802,7 @@ export default function WonReadyOpPage() {
       </div>
 
       {view === 'calendar' ? (
-        <OpCalendar jobs={boardJobs} start={calStart} onStart={setCalStart} onOpen={setSelectedId} />
+        <OpCalendar jobs={boardJobs} stages={sortedStages.map((id) => ({ id, dot: opStages.find((st) => st.id === id)?.dotColor || stageConfig[id as OPStage]?.dot || 'bg-purple-500' }))} start={calStart} onStart={setCalStart} onOpen={setSelectedId} />
       ) : (
       <DndContext
         sensors={sensors}

@@ -2,19 +2,30 @@
 
 import { useMemo } from 'react'
 import { addDays, format, isToday, isWeekend, parseISO, differenceInCalendarDays } from 'date-fns'
-import { ChevronLeft, ChevronRight, Users } from 'lucide-react'
-import type { WonJob } from '@/types'
+import { ChevronLeft, ChevronRight, Users, Palette, Package, Check } from 'lucide-react'
+import type { WonJob, InventoryStatus, TeamMember } from '@/types'
 import { parseJobDates, jobCardName } from '@/lib/jobs'
-import { cn } from '@/lib/utils'
+import { cn, parseDbDate } from '@/lib/utils'
+import { useCRMStore } from '@/store/crm-store'
+import { useAuth } from '@/components/auth-provider'
+import { UserAvatar } from '@/components/shared/user-avatar'
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 
 export const CAL_DAYS = 9
 
 const toISO = (d: Date) => format(d, 'yyyy-MM-dd')
 const fromISO = (s: string) => parseISO(s + 'T00:00:00')
 
-/** Brand edge — Andy & Fine pink, everything else CAP*TURES blue. */
-function brandEdge(job: WonJob): string {
-  return /andy|a&f|anf/i.test(`${job.product_type ?? ''} ${job.product_name ?? ''}`) ? '#FF809E' : '#378ADD'
+// Stage colour = the column's dot colour on the Board (bg-<name>-<shade>).
+const TW_HEX: Record<string, string> = {
+  slate: '#94a3b8', gray: '#9ca3af', zinc: '#a1a1aa', red: '#ef4444', rose: '#f43f5e', pink: '#ec4899',
+  orange: '#f97316', amber: '#f59e0b', yellow: '#eab308', lime: '#84cc16', green: '#22c55e', emerald: '#10b981',
+  teal: '#14b8a6', cyan: '#06b6d4', sky: '#0ea5e9', blue: '#3b82f6', indigo: '#6366f1', violet: '#8b5cf6', purple: '#a855f7',
+}
+export function stageHex(dotClass: string | undefined): string {
+  if (dotClass?.startsWith('#')) return dotClass
+  const name = /bg-([a-z]+)-/.exec(dotClass ?? '')?.[1] ?? ''
+  return TW_HEX[name] ?? TW_HEX.slate
 }
 
 /** The days a job occupies: a start–end range, or a comma list of dates from the title. */
@@ -35,7 +46,7 @@ interface Staffing { assigned: number; needed: number | null; tone: 'ok' | 'shor
 function staffing(job: WonJob): Staffing {
   const assigned = (job.staff_list ?? []).length
   const needed = job.staff_needed ?? null
-  if (needed == null) return { assigned, needed, tone: 'unset' }
+  if (needed == null) return { assigned, needed, tone: assigned > 0 ? 'ok' : 'none' }
   if (needed === 0 || assigned >= needed) return { assigned, needed, tone: 'ok' }
   return { assigned, needed, tone: assigned === 0 ? 'none' : 'short' }
 }
@@ -58,20 +69,112 @@ function StaffChip({ job, long }: { job: WonJob; long?: boolean }) {
   )
 }
 
+// ── Inventory ─────────────────────────────────────────────────────────────────
+export const INVENTORY: Record<InventoryStatus, { label: string; th: string; cls: string }> = {
+  none:    { label: 'None',    th: 'ยังไม่เตรียม',   cls: toneCls.none },
+  partial: { label: 'Partial', th: 'เตรียมบางส่วน', cls: toneCls.short },
+  ready:   { label: 'Ready',   th: 'พร้อมแล้ว',      cls: toneCls.ok },
+}
+
+/** Pill that opens a 3-step picker. Used on the calendar and in the job drawer. */
+export function InventoryPill({ job, size = 'sm' }: { job: WonJob; size?: 'sm' | 'md' }) {
+  const updateWonJob = useCRMStore((s) => s.updateWonJob)
+  const { user } = useAuth()
+  const cur: InventoryStatus = job.inventory_status ?? 'none'
+  const set = (v: InventoryStatus) => {
+    if (v === cur) return
+    void updateWonJob(job.job_id, {
+      inventory_status: v,
+      inventory_updated_by: user?.user_metadata?.full_name ?? user?.email ?? null,
+      inventory_updated_at: new Date().toISOString(),
+    })
+  }
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger onClick={(e) => e.stopPropagation()}
+        className={cn('inline-flex items-center gap-1 rounded font-medium hover:ring-1 hover:ring-foreground/20', size === 'md' ? 'px-2 py-1 text-[12px]' : 'px-1.5 py-px text-[11px]', INVENTORY[cur].cls)}
+        title="Inventory — click to change">
+        <Package className="w-3 h-3" />{size === 'md' ? `${INVENTORY[cur].label} · ${INVENTORY[cur].th}` : INVENTORY[cur].label}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[200px]" onClick={(e) => e.stopPropagation()}>
+        {(Object.keys(INVENTORY) as InventoryStatus[]).map((k) => (
+          <DropdownMenuItem key={k} onClick={() => set(k)} className="gap-2">
+            <span className={cn('rounded px-1.5 py-px text-[11px] font-medium', INVENTORY[k].cls)}>{INVENTORY[k].label}</span>
+            <span className="text-[13px]">{INVENTORY[k].th}</span>
+            {k === cur && <Check className="w-3.5 h-3.5 ml-auto" />}
+          </DropdownMenuItem>
+        ))}
+        {job.inventory_updated_at && (
+          <div className="border-t border-border mt-1 px-2 pt-1.5 pb-1 text-[11px] text-muted-foreground">
+            {job.inventory_updated_by ? `${job.inventory_updated_by} · ` : ''}{format(parseDbDate(job.inventory_updated_at), 'd MMM HH:mm')}
+          </div>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function AwPill({ done }: { done: boolean }) {
+  return (
+    <span className={cn('inline-flex items-center gap-1 rounded px-1.5 py-px text-[11px] font-medium', done ? toneCls.ok : 'bg-muted text-muted-foreground')}
+      title={done ? 'Artwork done' : 'Artwork not done yet'}>
+      <Palette className="w-3 h-3" />AW
+    </span>
+  )
+}
+
+/** Operation-role assignees only — max 3 avatars, then +N. */
+function OpsAvatars({ job, ops }: { job: WonJob; ops: TeamMember[] }) {
+  const people = ops.filter((m) => (job.assignee_ids ?? []).includes(m.id))
+  if (people.length === 0) {
+    return <span className="inline-flex w-5 h-5 rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground text-[11px] items-center justify-center" title="No Operation assignee">+</span>
+  }
+  return (
+    <span className="inline-flex items-center" title={people.map((p) => p.name || p.email).join(', ')}>
+      {people.slice(0, 3).map((p, i) => (
+        <span key={p.id} className={cn('rounded-full ring-2 ring-card', i > 0 && '-ml-1.5')}><UserAvatar name={p.name || p.email} size={20} /></span>
+      ))}
+      {people.length > 3 && <span className="-ml-1.5 w-5 h-5 rounded-full ring-2 ring-card bg-muted text-[10px] font-medium inline-flex items-center justify-center">+{people.length - 3}</span>}
+    </span>
+  )
+}
+
+function Pills({ job, awDone, long }: { job: WonJob; awDone: boolean; long?: boolean }) {
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1">
+      <StaffChip job={job} long={long} /><AwPill done={awDone} /><InventoryPill job={job} />
+    </span>
+  )
+}
+
 function JobNo({ job }: { job: WonJob }) {
   return job.job_number ? <span className="font-mono text-muted-foreground mr-1">#{job.job_number}</span> : null
 }
 
 interface OpCalendarProps {
   jobs: WonJob[]
+  stages: { id: string; dot: string }[]   // board columns in order, with their dot colour
   start: string                       // ISO first day of the window
   onStart: (iso: string) => void
   onOpen: (jobId: string) => void
 }
 
-export function OpCalendar({ jobs, start, onStart, onOpen }: OpCalendarProps) {
+export function OpCalendar({ jobs, stages, start, onStart, onOpen }: OpCalendarProps) {
   const days = useMemo(() => Array.from({ length: CAL_DAYS }, (_, i) => toISO(addDays(fromISO(start), i))), [start])
   const first = days[0], last = days[CAL_DAYS - 1]
+
+  // Stage colour + "AW done" (= at or past the AW-done column in board order).
+  const teamMembers = useCRMStore((s) => s.teamMembers)
+  const ops = useMemo(() => teamMembers.filter((m) => m.role === 'operation'), [teamMembers])
+  const stageOf = useMemo(() => new Map(stages.map((st, i) => [st.id, { ...st, index: i }])), [stages])
+  const awIndex = stageOf.get('OP_PREPARING_AW_DONE')?.index ?? Infinity
+  const edge = (job: WonJob) => stageHex(stageOf.get(job.op_stage)?.dot)
+  const awDone = (job: WonJob) => (stageOf.get(job.op_stage)?.index ?? -1) >= awIndex
+  const open = (id: string) => onOpen(id)
+  const cardProps = (id: string) => ({
+    role: 'button' as const, tabIndex: 0, onClick: () => open(id),
+    onKeyDown: (e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(id) } },
+  })
 
   // Every job that touches the window, with its days clipped to it.
   const placed = useMemo(() => jobs
@@ -138,18 +241,18 @@ export function OpCalendar({ jobs, start, onStart, onOpen }: OpCalendarProps) {
               const col = days.indexOf(inWin[0]) + 1
               const contL = all[0] < first, contR = all[all.length - 1] > last
               return (
-                <button key={job.job_id} type="button" onClick={() => onOpen(job.job_id)}
-                  style={{ gridColumn: `${col} / span ${inWin.length}`, borderLeftColor: brandEdge(job) }}
-                  className={cn('text-left rounded-md border border-border border-l-[3px] bg-card px-2 py-1.5 hover:border-foreground/30 transition-colors min-w-0', contL && 'rounded-l-none', contR && 'rounded-r-none')}>
+                <div key={job.job_id} {...cardProps(job.job_id)}
+                  style={{ gridColumn: `${col} / span ${inWin.length}`, borderLeftColor: edge(job) }}
+                  className={cn('text-left rounded-md border border-border border-l-4 cursor-pointer bg-card px-2 py-1.5 hover:border-foreground/30 transition-colors min-w-0', contL && 'rounded-l-none', contR && 'rounded-r-none')}>
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-[12px] font-semibold truncate"><JobNo job={job} />{jobCardName(job)}</span>
-                    <StaffChip job={job} long />
+                    <Pills job={job} awDone={awDone(job)} long /><OpsAvatars job={job} ops={ops} />
                   </div>
                   <div className="text-[11px] text-muted-foreground truncate">
                     {contL && '← '}{format(fromISO(all[0]), 'd MMM')} – {format(fromISO(all[all.length - 1]), 'd MMM')}{contR && ' →'}
                     {job.venue && <> · {job.venue}</>}{job.event_time && <> · {job.event_time}</>}
                   </div>
-                </button>
+                </div>
               )
             })}
           </div>
@@ -161,14 +264,15 @@ export function OpCalendar({ jobs, start, onStart, onOpen }: OpCalendarProps) {
             return (
               <div key={d} className={cn('flex flex-col gap-1.5 rounded-md min-h-[200px] p-0.5', isWeekend(fromISO(d)) && 'bg-muted/40')}>
                 {items.map(({ job }) => (
-                  <button key={job.job_id} type="button" onClick={() => onOpen(job.job_id)}
-                    style={{ borderLeftColor: brandEdge(job) }}
-                    className="text-left rounded-md border border-border border-l-[3px] bg-card p-1.5 hover:border-foreground/30 transition-colors min-w-0">
+                  <div key={job.job_id} {...cardProps(job.job_id)}
+                    style={{ borderLeftColor: edge(job) }}
+                    className="text-left rounded-md border border-border border-l-4 cursor-pointer bg-card p-1.5 hover:border-foreground/30 transition-colors min-w-0">
                     <div className="text-[12px] font-semibold leading-snug line-clamp-3 [overflow-wrap:anywhere]"><JobNo job={job} />{jobCardName(job)}</div>
                     {job.venue && <div className="text-[11px] text-muted-foreground truncate">{job.venue}</div>}
                     {job.event_time && <div className="text-[11px] text-muted-foreground truncate">{job.event_time}</div>}
-                    <div className="mt-1"><StaffChip job={job} /></div>
-                  </button>
+                    <div className="mt-1"><Pills job={job} awDone={awDone(job)} /></div>
+                    <div className="mt-1"><OpsAvatars job={job} ops={ops} /></div>
+                  </div>
                 ))}
               </div>
             )
@@ -192,13 +296,13 @@ export function OpCalendar({ jobs, start, onStart, onOpen }: OpCalendarProps) {
                 {items.map(({ job, all }) => {
                   const k = all.indexOf(d)
                   return (
-                    <button key={job.job_id} type="button" onClick={() => onOpen(job.job_id)}
-                      style={{ borderLeftColor: brandEdge(job) }}
-                      className="text-left rounded-md border border-border border-l-[3px] bg-card px-2.5 py-2 min-w-0">
+                    <div key={job.job_id} {...cardProps(job.job_id)}
+                      style={{ borderLeftColor: edge(job) }}
+                      className="text-left rounded-md border border-border border-l-4 cursor-pointer bg-card px-2.5 py-2 min-w-0">
                       <div className="text-[13px] font-semibold truncate"><JobNo job={job} />{jobCardName(job)}{all.length > 1 && <span className="font-normal text-muted-foreground"> · day {k + 1}/{all.length}</span>}</div>
                       <div className="text-[12px] text-muted-foreground truncate">{[job.venue, job.event_time].filter(Boolean).join(' · ')}</div>
-                      <div className="mt-1"><StaffChip job={job} long /></div>
-                    </button>
+                      <div className="mt-1 flex items-center justify-between gap-2"><Pills job={job} awDone={awDone(job)} long /><OpsAvatars job={job} ops={ops} /></div>
+                    </div>
                   )
                 })}
               </div>
