@@ -51,7 +51,7 @@ import {
   Link2, Share2, Copy, Archive, ArchiveRestore,
   LayoutGrid, CalendarDays,
 } from 'lucide-react'
-import { OpCalendar, InventoryPill } from '@/components/won/op-calendar'
+import { OpCalendar, InventoryPill, NeedStepper } from '@/components/won/op-calendar'
 import { format as fmtDate } from 'date-fns'
 import { useOpenFromUrl } from '@/hooks/use-open-from-url'
 import { copyCardLink, shareCardLink } from '@/lib/card-links'
@@ -917,6 +917,13 @@ function JobDetail({
           <Users className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
           <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: count > 0 && paidCount === count ? '#3f9d5b' : '#FF5B3F' }} />
           <span className="text-[13px] font-bold text-foreground flex-1 leading-none">จ่ายเงินน้องออกงาน</span>
+          {/* Headcount lives with the staff list (Operation calendar reads the same number) */}
+          {job.staff_needed != null && (
+            <span className={`rounded px-1.5 py-px text-[11px] font-medium tabular-nums ${count >= job.staff_needed ? 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300' : count === 0 ? 'bg-red-500/12 text-red-700 dark:text-red-300' : 'bg-amber-500/15 text-amber-700 dark:text-amber-300'}`}>
+              {count}/{job.staff_needed} assigned
+            </span>
+          )}
+          <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground">Need <NeedStepper job={job} /></span>
           {count > 0 && (
             <span className="font-mono text-[12px] font-medium text-muted-foreground">
               จ่ายแล้ว {paidCount}/{count} · ฿{total.toLocaleString()}
@@ -984,7 +991,9 @@ function JobDetail({
             </ul>
           )}
           <Button size="sm" variant="outline" className="w-full h-8 text-xs mt-1 border-border text-muted-foreground hover:bg-muted hover:text-foreground" onClick={() => setStaffSheetOpen(true)}>
-            + Add Staff
+            {job.staff_needed != null && job.staff_needed > count
+              ? `${job.staff_needed - count} open slot${job.staff_needed - count > 1 ? 's' : ''} · + Add Staff`
+              : '+ Add Staff'}
           </Button>
         </div>
       </div>
@@ -1128,7 +1137,6 @@ function JobDetail({
                   <FieldRow label="Install Point" value={job.install_point || ''} placeholder="จุดติดตั้ง / Backdrop location" multiline onSave={(v) => u({ install_point: v })} />
                   <div className="grid grid-cols-2 gap-4">
                     <FieldRow label="Team Meeting Time" value={job.team_meeting_time || ''} placeholder="e.g. 15.00" onSave={(v) => u({ team_meeting_time: v })} />
-                    <FieldRow label="Staff Needed" value={job.staff_needed != null ? String(job.staff_needed) : ''} placeholder="e.g. 3" onSave={(v) => { const n = parseInt(v, 10); u({ staff_needed: Number.isFinite(n) && n >= 0 ? n : null }) }} />
                   </div>
                   <div>
                     <Label className="field-label">Inventory</Label>
@@ -1309,7 +1317,6 @@ function JobDetail({
                         <FieldRow label="Install Point" value={job.install_point || ''} placeholder="จุดติดตั้ง / Backdrop location" multiline onSave={(v) => u({ install_point: v })} />
                         <div className="grid grid-cols-2 gap-4">
                           <FieldRow label="Team Meeting Time" value={job.team_meeting_time || ''} placeholder="e.g. 15.00" onSave={(v) => u({ team_meeting_time: v })} />
-                          <FieldRow label="Staff Needed" value={job.staff_needed != null ? String(job.staff_needed) : ''} placeholder="e.g. 3" onSave={(v) => { const n = parseInt(v, 10); u({ staff_needed: Number.isFinite(n) && n >= 0 ? n : null }) }} />
                         </div>
                         <div>
                           <Label className="field-label">Inventory</Label>
@@ -1491,6 +1498,7 @@ export default function WonReadyOpPage() {
     try { localStorage.setItem(viewKey, v) } catch { /* private mode */ }
   }
   const [calStart, setCalStart] = useState(() => fmtDate(new Date(), 'yyyy-MM-dd'))
+  const [calStaffFor, setCalStaffFor] = useState<string | null>(null)
   // Open a specific card from a notification deep-link signal.
   useOpenDeepLink(
     isHydrated && wonJobs.length > 0,
@@ -1802,7 +1810,7 @@ export default function WonReadyOpPage() {
       </div>
 
       {view === 'calendar' ? (
-        <OpCalendar jobs={boardJobs} stages={sortedStages.map((id) => ({ id, dot: opStages.find((st) => st.id === id)?.dotColor || stageConfig[id as OPStage]?.dot || 'bg-purple-500' }))} start={calStart} onStart={setCalStart} onOpen={setSelectedId} />
+        <OpCalendar jobs={boardJobs} stages={sortedStages.map((id) => { const st = opStages.find((x) => x.id === id); return { id, label: st?.label, dot: st?.dotColor || stageConfig[id as OPStage]?.dot || 'bg-purple-500' } })} start={calStart} onStart={setCalStart} onOpen={setSelectedId} onMove={(id, stage) => void moveWonJobStage(id, stage as OPStage)} paused={!!selectedId || !!calStaffFor} onAddStaff={setCalStaffFor} />
       ) : (
       <DndContext
         sensors={sensors}
@@ -1896,6 +1904,7 @@ export default function WonReadyOpPage() {
       </DndContext>
       )}
 
+      {calStaffFor && <StaffSheet jobId={calStaffFor} onClose={() => setCalStaffFor(null)} />}
       {selectedId && <JobDetail jobId={selectedId} onClose={() => setSelectedId(null)} onDelete={handleDeleteCard} />}
       {adhocOpenKind && (() => {
         const pc = PAYMENT_CARDS.find((p) => p.kind === adhocOpenKind)
