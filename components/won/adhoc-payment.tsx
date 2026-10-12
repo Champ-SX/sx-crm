@@ -79,7 +79,7 @@ export function AdhocCard({ title, theme, summary, month, onOpen }: { title: str
             </div>
           </div>
         ) : (
-          <p className="text-[12px] text-muted-foreground">ยังไม่มีการจ่ายเดือนนี้ · No payments yet</p>
+          <p className="text-[12px] text-muted-foreground">ยังไม่มีการจ่ายเดือนนี้ · No payments yet{month ? ` · ${monthLabel(month)}` : ''}</p>
         )}
       </div>
 
@@ -109,9 +109,13 @@ export function AdhocSheet({ kind, title, theme, list, onClose, onChanged }: {
 
   const cur = currentMonth()
   const active = list.find((a) => a.month === cur && !a.archived)
-  const [selectedId, setSelectedId] = useState<string | null>(active?.id ?? list[0]?.id ?? null)
-  const viewing = list.find((a) => a.id === selectedId) ?? active ?? list[0]
-  const editable = viewing ? (!viewing.archived && viewing.month === cur) : true
+  // 'current' = this month, even before its row exists (created on first Add).
+  // Opening on an old month made the sheet read-only with no way to start a new one.
+  const [selectedId, setSelectedId] = useState<string>(active?.id ?? 'current')
+  const viewing = selectedId === 'current' ? active : list.find((a) => a.id === selectedId)
+  const isCurrent = selectedId === 'current' || viewing?.month === cur
+  const editable = isCurrent && !viewing?.archived
+  const canArchive = !!viewing && !viewing.archived
 
   async function saveJobs(jobs: AdhocJob[], id = viewing?.id) {
     if (!id) return
@@ -143,8 +147,9 @@ export function AdhocSheet({ kind, title, theme, list, onClose, onChanged }: {
   }
   async function archive() {
     if (!viewing) return
-    if (!window.confirm(`Archive ${monthLabel(viewing.month)}? It becomes read-only and a fresh card starts for this month.`)) return
+    if (!window.confirm(`Archive ${monthLabel(viewing.month)}? It becomes read-only${viewing.month === cur ? ' and a fresh card starts for this month' : ''}.`)) return
     await updateAdhoc(viewing.id, { archived: true })
+    if (viewing.month === cur) setSelectedId('current')
     onChanged()
   }
 
@@ -160,13 +165,19 @@ export function AdhocSheet({ kind, title, theme, list, onClose, onChanged }: {
           {/* Month switcher */}
           <DropdownMenu>
             <DropdownMenuTrigger className={`inline-flex items-center gap-1 text-[12px] font-medium bg-white/70 dark:bg-white/5 border rounded-md px-2 py-1 hover:bg-white ${theme.switcher}`}>
-              {viewing ? monthLabel(viewing.month) : monthLabel(cur)}{viewing?.archived ? ' · archived' : ''}<ChevronDown className="w-3 h-3" />
+              {viewing ? monthLabel(viewing.month) : `${monthLabel(cur)} · new`}{viewing?.archived ? ' · archived' : ''}<ChevronDown className="w-3 h-3" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="text-xs">
-              {list.length === 0 && <DropdownMenuItem disabled>{monthLabel(cur)} (empty)</DropdownMenuItem>}
+              {!active && (
+                <DropdownMenuItem onClick={() => setSelectedId('current')} className="gap-2">
+                  {monthLabel(cur)} <span className="text-emerald-600">· new</span>
+                </DropdownMenuItem>
+              )}
               {list.map((a) => (
                 <DropdownMenuItem key={a.id} onClick={() => setSelectedId(a.id)} className="gap-2">
-                  {monthLabel(a.month)}{a.archived ? <span className="text-muted-foreground">· archived</span> : <span className="text-emerald-600">· current</span>}
+                  {monthLabel(a.month)}{a.archived
+                    ? <span className="text-muted-foreground">· archived</span>
+                    : a.month === cur ? <span className="text-emerald-600">· current</span> : <span className="text-amber-600">· not archived</span>}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -189,9 +200,8 @@ export function AdhocSheet({ kind, title, theme, list, onClose, onChanged }: {
 
         {/* Footer */}
         <div className="px-5 py-3 border-t flex items-center gap-2 shrink-0">
-          {editable
-            ? <button onClick={archive} className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground"><Archive className="w-4 h-4" /> Archive month</button>
-            : <span className="text-[12px] text-muted-foreground italic">Archived — read-only</span>}
+          {canArchive && <button onClick={archive} className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground"><Archive className="w-4 h-4" /> Archive {isCurrent ? 'month' : monthLabel(viewing.month)}</button>}
+          {!editable && <span className="text-[12px] text-muted-foreground italic">{viewing?.archived ? 'Archived' : 'Past month'} — read-only</span>}
           {editable && <Button size="sm" className={`ml-auto text-white gap-1.5 ${theme.btn}`} onClick={addJob}><Plus className="w-4 h-4" /> เพิ่มงานชั่วคราว · Add temp job</Button>}
         </div>
       </DialogContent>

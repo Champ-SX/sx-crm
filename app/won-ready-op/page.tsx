@@ -1829,7 +1829,7 @@ export default function WonReadyOpPage() {
                     <div className="space-y-2">
                       {PAYMENT_CARDS.map((pc) => {
                         const active = adhocList.find((a) => (a.kind ?? 'adhoc') === pc.kind && a.month === currentMonth() && !a.archived)
-                        return <AdhocCard key={pc.kind} title={pc.title} theme={pc.theme} summary={adhocSummary(active)} month={active?.month} onOpen={() => setAdhocOpenKind(pc.kind)} />
+                        return <AdhocCard key={pc.kind} title={pc.title} theme={pc.theme} summary={adhocSummary(active)} month={currentMonth()} onOpen={() => setAdhocOpenKind(pc.kind)} />
                       })}
                     </div>
                   ) : undefined}

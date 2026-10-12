@@ -19,7 +19,8 @@ export interface AdhocPayment {
   updated_at?: string
 }
 
-export const currentMonth = () => new Date().toISOString().slice(0, 7)
+// Thai time (UTC+7) — a UTC month would still read as last month until 07:00 on the 1st.
+export const currentMonth = () => new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 7)
 const mkId = () => (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `ah-${Date.now()}-${Math.round(Math.random() * 1e6)}`
 
 // ── Mock data (local dev) ─────────────────────────────────────────────────────
