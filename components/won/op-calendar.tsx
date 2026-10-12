@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { addDays, format, isToday, isWeekend, parseISO, differenceInCalendarDays } from 'date-fns'
-import { ChevronLeft, ChevronRight, Users, Palette, Package, Check, CircleCheck, ArrowRight, Minus, Plus, UserPlus, UserX, TriangleAlert } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Users, Palette, Package, Check, CircleCheck, ArrowRight, Minus, Plus, UserPlus, UserX, TriangleAlert, ChevronDown } from 'lucide-react'
 import { OP_STAGES, type WonJob, type InventoryStatus, type TeamMember } from '@/types'
 import { parseJobDates, jobCardName } from '@/lib/jobs'
 import { cn, parseDbDate } from '@/lib/utils'
@@ -365,8 +365,21 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
 
   // Contiguous multi-day ranges render as spanning bars; the rest sit in their day column.
   const isRange = (p: typeof placed[number]) => p.all.length > 1 && differenceInCalendarDays(fromISO(p.all[p.all.length - 1]), fromISO(p.all[0])) === p.all.length - 1
-  const bars = placed.filter(isRange)
-  const singles = placed.filter((p) => !isRange(p))
+  // "Ongoing" = past staff payment (wait payment / done) but the event is still running.
+  // These fold to slim bars (or hide) so the days with real prep work stay readable.
+  const payIndex = stageOf.get('OP_WAIT_STAFF_PAYMENT_DOC_TERR')?.index ?? Infinity
+  const isOngoing = (job: WonJob) => idx(job.op_stage) >= payIndex
+  const [ongoingMode, setOngoingMode] = useState<'compact' | 'full' | 'hide'>(() => {
+    if (typeof window === 'undefined') return 'compact'
+    try { const v = localStorage.getItem('won-cal-ongoing'); return v === 'full' || v === 'hide' ? v : 'compact' } catch { return 'compact' }
+  })
+  const pickOngoing = (v: 'compact' | 'full' | 'hide') => { setOngoingMode(v); try { localStorage.setItem('won-cal-ongoing', v) } catch { /* private mode */ } }
+  const [openDays, setOpenDays] = useState<string[]>([])   // mobile: days whose folded ongoing rows are expanded
+  const staffPaid = (job: WonJob) => (job.staff_list ?? []).length > 0 && (job.staff_list ?? []).every((m) => m.paid)
+  const slim = ongoingMode !== 'full' ? placed.filter((p) => isOngoing(p.job)) : []
+  const live = ongoingMode !== 'full' ? placed.filter((p) => !isOngoing(p.job)) : placed
+  const bars = live.filter(isRange)
+  const singles = live.filter((p) => !isRange(p))
 
   const totals = placed.reduce((t, p) => {
     const s = staffing(p.job)
@@ -388,6 +401,16 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
           <button type="button" onClick={() => shift(CAL_DAYS)} aria-label="Next 9 days" className="w-8 h-8 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-center"><ChevronRight className="w-4 h-4" /></button>
         </div>
         <span className="text-[14px] font-semibold text-foreground">{rangeLabel}</span>
+        <label className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
+          Ongoing
+          <span className="relative">
+            <select value={ongoingMode} onChange={(e) => pickOngoing(e.target.value as 'compact' | 'full' | 'hide')}
+              className="h-7 appearance-none rounded-md border border-border bg-card pl-2 pr-6 text-[12px] text-foreground">
+              <option value="compact">compact</option><option value="full">full</option><option value="hide">hide</option>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </span>
+        </label>
         <span className="ml-auto text-[12px] text-muted-foreground">
           {totals.events} event{totals.events === 1 ? '' : 's'}
           {totals.needed > 0 && <> · {totals.needed} staff needed</>}
@@ -410,6 +433,26 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
             )
           })}
         </div>
+
+        {ongoingMode === 'compact' && slim.length > 0 && (
+          <div className="grid grid-cols-9 gap-1 pt-1.5 [grid-auto-flow:row_dense]">
+            {slim.map(({ job, all, inWin }) => {
+              const contL = all[0] < first, contR = all[all.length - 1] > last
+              const span = Math.max(1, days.indexOf(inWin[inWin.length - 1]) - days.indexOf(inWin[0]) + 1)
+              return (
+                <div key={job.job_id} {...cardProps(job.job_id)}
+                  title={`${job.job_number ? `#${job.job_number} ` : ''}${jobCardName(job)} · ${format(fromISO(all[0]), 'd MMM')} – ${format(fromISO(all[all.length - 1]), 'd MMM')}`}
+                  style={{ gridColumn: `${days.indexOf(inWin[0]) + 1} / span ${span}`, borderLeftColor: edge(job) }}
+                  className={cn('h-[22px] flex items-center gap-1.5 min-w-0 rounded-md border border-border border-l-4 bg-muted/50 px-2 text-[11px] text-muted-foreground cursor-pointer hover:bg-muted whitespace-nowrap overflow-hidden', contL && 'rounded-l-none', contR && 'rounded-r-none')}>
+                  {job.job_number && <span className="font-mono">#{job.job_number}</span>}
+                  <span className="font-semibold text-foreground truncate">{jobCardName(job)}</span>
+                  <span className="shrink-0">· {all.length > 1 ? `until ${format(fromISO(all[all.length - 1]), 'd MMM')}` : 'ongoing'}{contR && ' →'}</span>
+                  {staffPaid(job) && <span className="ml-auto shrink-0 inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400"><CircleCheck className="w-3 h-3" />staff paid</span>}
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         {bars.length > 0 && (
           <div className="grid grid-cols-9 gap-1.5 pt-1.5 [grid-auto-flow:row_dense]">
@@ -461,7 +504,20 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
       <div className="sm:hidden flex-1 min-h-0 overflow-y-auto px-4 pb-6">
         {days.map((d) => {
           const dt = fromISO(d)
-          const items = placed.filter((p) => p.inWin.includes(d))
+          const items = live.filter((p) => p.inWin.includes(d))
+          const ong = ongoingMode === 'compact' ? slim.filter((p) => p.inWin.includes(d)) : []
+          // Each ongoing job shows on its first day in the window; later days fold into "N ongoing".
+          const ongFirst = ong.filter((p) => p.inWin[0] === d)
+          const ongRest = ong.filter((p) => p.inWin[0] !== d)
+          const expanded = openDays.includes(d)
+          const slimRow = ({ job, all }: typeof placed[number]) => (
+            <div key={job.job_id} {...cardProps(job.job_id)} style={{ borderLeftColor: edge(job) }}
+              className="h-[26px] flex items-center gap-1.5 rounded-md border border-border border-l-4 bg-card px-2 text-[12px] text-muted-foreground whitespace-nowrap overflow-hidden cursor-pointer">
+              <span className="font-semibold text-foreground truncate"><JobNo job={job} />{jobCardName(job)}</span>
+              {all.length > 1 && <span className="shrink-0">· day {all.indexOf(d) + 1}/{all.length}</span>}
+              {staffPaid(job) && <CircleCheck className="w-3.5 h-3.5 ml-auto shrink-0 text-emerald-600" />}
+            </div>
+          )
           return (
             <div key={d} className={cn('grid grid-cols-[44px_1fr] gap-2 py-2.5 border-t border-border', isWeekend(dt) && 'bg-muted/30 -mx-4 px-4')}>
               <div className="text-center">
@@ -469,7 +525,14 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
                 <div className={cn('text-[18px] font-semibold leading-tight', isToday(dt) ? 'text-primary' : 'text-foreground')}>{format(dt, 'd')}</div>
               </div>
               <div className="flex flex-col gap-1.5 min-w-0">
-                {items.length === 0 && <span className="text-[12px] text-muted-foreground pt-2">—</span>}
+                {ongFirst.map(slimRow)}
+                {ongRest.length > 0 && (expanded ? ongRest.map(slimRow) : (
+                  <button type="button" onClick={() => setOpenDays((o) => [...o, d])}
+                    className="h-[26px] flex items-center rounded-md border border-dashed border-border px-2 text-[12px] text-muted-foreground">
+                    {ongRest.length} ongoing<ChevronDown className="w-3.5 h-3.5 ml-auto" />
+                  </button>
+                ))}
+                {items.length === 0 && ong.length === 0 && <span className="text-[12px] text-muted-foreground pt-2">—</span>}
                 {items.map(({ job, all }) => {
                   const k = all.indexOf(d)
                   return (
