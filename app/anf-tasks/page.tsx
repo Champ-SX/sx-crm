@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { addDays, differenceInCalendarDays, format, isToday, isWeekend, parseISO } from 'date-fns'
-import { CalendarDays, ChevronLeft, ChevronRight, LayoutGrid, Plus, Search, X, CheckSquare, Archive, Settings2, Repeat } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, LayoutGrid, Plus, Search, X, Archive, Settings2 } from 'lucide-react'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { useAuth } from '@/components/auth-provider'
 import { useCRMStore } from '@/store/crm-store'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
-import { UserAvatar } from '@/components/shared/user-avatar'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,8 +18,11 @@ import {
 } from '@/lib/supabase/anf-tasks'
 import { AddTaskDialog } from '@/components/anf/add-task-dialog'
 import { TaskDrawer } from '@/components/anf/task-drawer'
-import { TypePill, LevelPill, placeLine, typeOf } from '@/components/anf/task-ui'
+import { placeLine, typeOf } from '@/components/anf/task-ui'
 import { AnfSettings } from '@/components/anf/anf-settings'
+import { TaskCard, SortableTask, DropColumn } from '@/components/anf/task-card'
+import { DndContext, DragOverlay, MouseSensor, TouchSensor, pointerWithin, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 
 const CAL_DAYS = 9
 const iso = (d: Date) => format(d, 'yyyy-MM-dd')
@@ -63,9 +65,8 @@ export default function AnfTasksPage() {
   const [showArchived, setShowArchived] = useState(false)
   const [adding, setAdding] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)
-  const [waitFor, setWaitFor] = useState<{ id: string; reason: string; note: string } | null>(null)
+  const [waitFor, setWaitFor] = useState<{ id: string; reason: string; note: string; position?: number } | null>(null)
   const [dragId, setDragId] = useState<string | null>(null)
-  const [overCol, setOverCol] = useState<AnfColumn | null>(null)
   const [calStart, setCalStart] = useState(() => iso(new Date()))
 
   // ── Writes (optimistic) ──
@@ -82,12 +83,12 @@ export default function AnfTasksPage() {
     updateAnfTask(id, p).catch((e) => { toast(`Couldn't save — ${e instanceof Error ? e.message : 'error'}`); reload() })
   }
   /** Column moves record who took / finished the task; Waiting asks why first. */
-  const move = (id: string, col: AnfColumn, waiting?: { reason: string; note: string }) => {
+  const move = (id: string, col: AnfColumn, waiting?: { reason: string; note: string }, position = -1) => {
     const t = tasks.find((x) => x.task_id === id)
     if (!t || t.column_id === col) return
-    if (col === 'waiting' && !waiting) { setWaitFor({ id, reason: '', note: '' }); return }
+    if (col === 'waiting' && !waiting) { setWaitFor({ id, reason: '', note: '', position }); return }
     const now = new Date().toISOString()
-    const p: Partial<AnfTask> = { column_id: col, position: -1 }
+    const p: Partial<AnfTask> = { column_id: col, position }
     if (col === 'progress' && !t.taken_by) Object.assign(p, { taken_by: author, taken_at: now })
     if (col === 'solved') Object.assign(p, { solved_by: author, solved_at: now })
     if (col !== 'solved' && t.solved_by) Object.assign(p, { solved_by: null, solved_at: null })
@@ -120,34 +121,37 @@ export default function AnfTasksPage() {
   const branches = places.filter((p) => p.kind === 'branch')
   const people = (ids: string[]) => teamMembers.filter((m) => ids.includes(m.id))
 
+  // ── Drag & drop (same feel as the Won board: mouse after 5px, touch after a hold) ──
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 8 } }),
+  )
+  const dragTask = dragId ? tasks.find((t) => t.task_id === dragId) : undefined
+  function onDragEnd(e: DragEndEvent) {
+    setDragId(null)
+    const id = String(e.active.id)
+    const overId = e.over ? String(e.over.id) : null
+    const task = tasks.find((t) => t.task_id === id)
+    if (!task || !overId || overId === id) return
+    const overTask = tasks.find((t) => t.task_id === overId)
+    const col = (overTask ? overTask.column_id : overId) as AnfColumn
+    if (!ANF_COLUMNS.some((c) => c.id === col)) return
+    // Re-number the target column with the card dropped at the hovered slot.
+    const list = byCol(col).filter((t) => t.task_id !== id)
+    const at = overTask ? list.findIndex((t) => t.task_id === overId) : list.length
+    list.splice(at < 0 ? list.length : at, 0, task)
+    const order = new Map(list.map((t, i) => [t.task_id, i]))
+    setTasks((ts) => ts.map((t) => (order.has(t.task_id) && t.task_id !== id ? { ...t, position: order.get(t.task_id)! } : t)))
+    list.forEach((t, i) => { if (t.task_id !== id && t.position !== i) void updateAnfTask(t.task_id, { position: i }) })
+    if (col !== task.column_id) move(id, col, undefined, order.get(id))
+    else patch(id, { position: order.get(id)! })
+  }
+
   if (!hydrated) return null
 
-  const Card = ({ t, compact }: { t: AnfTask; compact?: boolean }) => {
-    const type = typeOf(types, t.type_id)
-    const prog = checklistProgress(t)
-    const overdue = t.due_date && t.column_id !== 'solved' && t.due_date < iso(new Date())
-    return (
-      <div draggable={!compact} onDragStart={() => setDragId(t.task_id)} onDragEnd={() => { setDragId(null); setOverCol(null) }}
-        role="button" tabIndex={0} onClick={() => setOpenId(t.task_id)} onKeyDown={(e) => e.key === 'Enter' && setOpenId(t.task_id)}
-        style={{ borderLeftColor: type?.color ?? '#888780' }}
-        className={cn('rounded-lg border border-border border-l-4 bg-card p-2.5 cursor-pointer hover:border-foreground/25 transition-colors text-left min-w-0',
-          dragId === t.task_id && 'opacity-40', t.column_id === 'solved' && 'opacity-80')}>
-        <div className="flex flex-wrap gap-1"><TypePill type={type} /><LevelPill level={t.issue_level} />{t.tags.includes('Repeating') && <span className="inline-flex items-center gap-0.5 rounded bg-amber-500/15 px-1.5 py-px text-[11px] font-medium text-amber-800 dark:text-amber-300" title="Repeat issue"><Repeat className="w-3 h-3" />Repeat</span>}</div>
-        <div className={cn('font-semibold leading-snug mt-1 [overflow-wrap:anywhere]', compact ? 'text-[12px] line-clamp-2' : 'text-[13px]')}>{t.name}</div>
-        {placeLine(t) && <div className="text-[11px] text-muted-foreground truncate">{placeLine(t)}</div>}
-        {t.column_id === 'waiting' && t.waiting_reason && (
-          <div className="text-[11px] text-blue-700 dark:text-blue-400 truncate">⏳ {WAITING_REASONS.find((r) => r.id === t.waiting_reason)?.label}{t.waiting_note && ` · ${t.waiting_note}`}</div>
-        )}
-        <div className="flex items-center gap-2 mt-1.5 text-[11px] text-muted-foreground">
-          {t.due_date && <span className={cn(overdue && 'text-red-600 font-semibold')}>{t.column_id === 'solved' ? '✓ ' : 'due '}{format(fromISO(t.due_date), 'd MMM')}</span>}
-          {prog.total > 0 && <span className={cn('inline-flex items-center gap-0.5', prog.done === prog.total && 'text-emerald-600')}><CheckSquare className="w-3 h-3" />{prog.done}/{prog.total}</span>}
-          <span className="ml-auto flex -space-x-1.5">
-            {people(t.assignee_ids).slice(0, 3).map((m) => <span key={m.id} className="rounded-full ring-2 ring-card"><UserAvatar name={m.name || m.email} size={18} /></span>)}
-          </span>
-        </div>
-      </div>
-    )
-  }
+  const card = (t: AnfTask, compact?: boolean) => (
+    <TaskCard key={t.task_id} t={t} compact={compact} types={types} people={people(t.assignee_ids)} onOpen={() => setOpenId(t.task_id)} />
+  )
 
   // ── Calendar ──
   const days = Array.from({ length: CAL_DAYS }, (_, i) => iso(addDays(fromISO(calStart), i)))
@@ -210,26 +214,37 @@ export default function AnfTasksPage() {
       {view === 'board' ? (
         <div className="flex-1 min-h-0 overflow-x-auto bg-background">
           <div className="flex gap-3 p-4 sm:p-6 h-full min-w-max items-start">
-            {ANF_COLUMNS.map((c) => {
-              const list = byCol(c.id)
-              return (
-                <div key={c.id}
-                  onDragOver={(e) => { e.preventDefault(); if (overCol !== c.id) setOverCol(c.id) }}
-                  onDrop={(e) => { e.preventDefault(); if (dragId) move(dragId, c.id); setDragId(null); setOverCol(null) }}
-                  className={cn('w-[84vw] sm:w-[280px] shrink-0 rounded-2xl bg-muted/50 p-2.5 max-h-full flex flex-col transition-colors', overCol === c.id && 'ring-2 ring-[#FF809E]/50 bg-muted')}>
-                  <div className="flex items-center gap-2 px-1.5 pb-2">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.dot }} />
-                    <span className="text-[13px] font-semibold">{c.label}</span>
-                    <span className="text-[12px] text-muted-foreground">{c.th}</span>
-                    <span className="ml-auto text-[12px] text-muted-foreground tabular-nums">{list.length}</span>
-                  </div>
-                  <div className="flex flex-col gap-2 overflow-y-auto min-h-[60px]">
-                    {list.map((t) => <Card key={t.task_id} t={t} />)}
-                    {list.length === 0 && <p className="text-[12px] text-muted-foreground text-center py-6">Drop tasks here</p>}
-                  </div>
-                </div>
-              )
-            })}
+            <DndContext sensors={sensors} collisionDetection={pointerWithin}
+              onDragStart={(e) => setDragId(String(e.active.id))}
+              onDragCancel={() => setDragId(null)}
+              onDragEnd={onDragEnd}>
+              {ANF_COLUMNS.map((c) => {
+                const list = byCol(c.id)
+                return (
+                  <DropColumn key={c.id} id={c.id}>
+                    <div className="flex items-center gap-2 px-1.5 pb-2">
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.dot }} />
+                      <span className="text-[13px] font-semibold">{c.label}</span>
+                      <span className="text-[12px] text-muted-foreground">{c.th}</span>
+                      <span className="ml-auto text-[12px] text-muted-foreground tabular-nums">{list.length}</span>
+                    </div>
+                    <SortableContext items={list.map((t) => t.task_id)} strategy={verticalListSortingStrategy}>
+                      <div className="flex flex-col gap-2 overflow-y-auto min-h-[60px]">
+                        {list.map((t) => (
+                          <SortableTask key={t.task_id} id={t.task_id}>
+                            {card(t)}
+                          </SortableTask>
+                        ))}
+                        {list.length === 0 && <p className="text-[12px] text-muted-foreground text-center py-6">Drop tasks here</p>}
+                      </div>
+                    </SortableContext>
+                  </DropColumn>
+                )
+              })}
+              <DragOverlay dropAnimation={null}>
+                {dragTask && <div className="w-[260px] rotate-2 shadow-xl rounded-lg">{card(dragTask)}</div>}
+              </DragOverlay>
+            </DndContext>
           </div>
         </div>
       ) : (
@@ -271,14 +286,14 @@ export default function AnfTasksPage() {
             <div className="grid grid-cols-9 gap-1.5 pt-1.5 flex-1">
               {days.map((d) => (
                 <div key={d} className={cn('flex flex-col gap-1.5 rounded-md min-h-[180px] p-0.5', isWeekend(fromISO(d)) && 'bg-muted/40')}>
-                  {singles.filter((x) => x.end === d).map(({ t }) => <Card key={t.task_id} t={t} compact />)}
+                  {singles.filter((x) => x.end === d).map(({ t }) => card(t, true))}
                 </div>
               ))}
             </div>
             {noDate.length > 0 && (
               <div className="mt-4">
                 <p className="text-[12px] font-semibold text-muted-foreground mb-1.5">No due date ({noDate.length})</p>
-                <div className="grid grid-cols-4 lg:grid-cols-6 gap-1.5">{noDate.map((t) => <Card key={t.task_id} t={t} compact />)}</div>
+                <div className="grid grid-cols-4 lg:grid-cols-6 gap-1.5">{noDate.map((t) => card(t, true))}</div>
               </div>
             )}
           </div>
@@ -291,12 +306,12 @@ export default function AnfTasksPage() {
                 <div key={d} className="grid grid-cols-[40px_1fr] gap-2 py-2.5 border-t border-border">
                   <div className="text-center"><div className="text-[11px] text-muted-foreground">{format(fromISO(d), 'EEE')}</div><div className={cn('text-[18px] font-semibold', isToday(fromISO(d)) && 'text-primary')}>{format(fromISO(d), 'd')}</div></div>
                   <div className="flex flex-col gap-1.5 min-w-0">
-                    {items.length === 0 ? <span className="text-[12px] text-muted-foreground pt-2">—</span> : items.map(({ t }) => <Card key={t.task_id} t={t} compact />)}
+                    {items.length === 0 ? <span className="text-[12px] text-muted-foreground pt-2">—</span> : items.map(({ t }) => card(t, true))}
                   </div>
                 </div>
               )
             })}
-            {noDate.length > 0 && <div className="border-t border-border pt-3"><p className="text-[12px] font-semibold text-muted-foreground mb-1.5">No due date ({noDate.length})</p><div className="flex flex-col gap-1.5">{noDate.map((t) => <Card key={t.task_id} t={t} compact />)}</div></div>}
+            {noDate.length > 0 && <div className="border-t border-border pt-3"><p className="text-[12px] font-semibold text-muted-foreground mb-1.5">No due date ({noDate.length})</p><div className="flex flex-col gap-1.5">{noDate.map((t) => card(t, true))}</div></div>}
           </div>
         </div>
       )}
@@ -323,7 +338,7 @@ export default function AnfTasksPage() {
             <Input value={waitFor.note} onChange={(e) => setWaitFor({ ...waitFor, note: e.target.value })} placeholder="Note — e.g. TRUE technician booked Thu" className="text-[13px]" />
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => setWaitFor(null)}>Cancel</Button>
-              <Button size="sm" disabled={!waitFor.reason} onClick={() => { move(waitFor.id, 'waiting', { reason: waitFor.reason, note: waitFor.note }); setWaitFor(null) }}>Move to Waiting</Button>
+              <Button size="sm" disabled={!waitFor.reason} onClick={() => { move(waitFor.id, 'waiting', { reason: waitFor.reason, note: waitFor.note }, waitFor.position); setWaitFor(null) }}>Move to Waiting</Button>
             </div>
           </DialogContent>
         </Dialog>
