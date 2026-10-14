@@ -10,7 +10,7 @@ import { ActivityTimeline, RecordLightbox, useRecordActivities } from './activit
 import { attachmentUrl } from '@/lib/supabase/storage'
 import { collectPhotos, DocRow, isImageAtt } from './attachment-gallery'
 
-type EntityType = 'customer' | 'lead_opportunity' | 'won_job'
+type EntityType = 'customer' | 'lead_opportunity' | 'won_job' | 'anf_task'
 type Tab = 'activity' | 'photos' | 'files'
 
 interface ActivityPanelProps {

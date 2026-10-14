@@ -196,6 +196,7 @@ export interface Board {
   slug: string
   color: string
   sort_order: number
+  restricted?: boolean   // listed only for board_members (+ admins)
   created_at?: string
 }
 
@@ -387,7 +388,7 @@ export type ActivityType =
 
 export interface Activity {
   activity_id: string
-  entity_type: 'customer' | 'lead_opportunity' | 'won_job' | 'company' | 'contact_person'
+  entity_type: 'customer' | 'lead_opportunity' | 'won_job' | 'company' | 'contact_person' | 'anf_task'
   entity_id: string
   activity_type: ActivityType
   title: string
@@ -406,7 +407,7 @@ export interface Notification {
   recipient_id: string       // TeamMember.id of who is notified
   recipient_name: string     // denormalized for matching/display
   actor: string              // who wrote the note (display name)
-  entity_type: 'customer' | 'lead_opportunity' | 'won_job' | 'anf_order'
+  entity_type: 'customer' | 'lead_opportunity' | 'won_job' | 'anf_order' | 'anf_task'
   entity_id: string
   entity_name: string        // e.g. lead/customer/job title for context
   message: string            // short preview of the note

@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { CornerDownRight, Trash2, Trophy, XCircle } from 'lucide-react'
 import { collectPhotos, cleanNote, isImageAtt, NotePhotoGrid, DocRow, Lightbox, type GalleryPhoto } from './attachment-gallery'
 
-type EntityType = 'customer' | 'lead_opportunity' | 'won_job'
+type EntityType = 'customer' | 'lead_opportunity' | 'won_job' | 'anf_task'
 
 /** Activities for one record, newest first. A lead's history carries over once
  *  it becomes a won job (and vice versa), so match both entity types by id. */

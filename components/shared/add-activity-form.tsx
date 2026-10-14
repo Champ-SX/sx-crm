@@ -11,7 +11,7 @@ import { useAttachmentUploader, ACCEPT_ATTR } from './use-attachment-uploader'
 import { UploadTiles, UploadNotice } from './attachment-gallery'
 
 interface AddActivityFormProps {
-  entityType: 'customer' | 'lead_opportunity' | 'won_job'
+  entityType: 'customer' | 'lead_opportunity' | 'won_job' | 'anf_task'
   entityId: string
   owner: string
   entityName?: string  // record title, for @mention notification context

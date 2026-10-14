@@ -113,7 +113,8 @@ console.log('[CRM Store] USE_SUPABASE =', USE_SUPABASE, {
 // fallback if the boards table can't be read.
 const SEED_BOARDS: Board[] = [
   { board_id: 'captures', name: 'CAP*TURES', slug: 'captures', color: '#FF5B3F', sort_order: 0 },
-  { board_id: 'anf-order', name: 'ANF Order', slug: 'anf-order', color: '#7A5AA5', sort_order: 1 },
+  { board_id: 'anf', name: 'Andy & Fine.', slug: 'anf', color: '#FF809E', sort_order: 1, restricted: true },
+  { board_id: 'anf-order', name: 'ANF Order', slug: 'anf-order', color: '#7A5AA5', sort_order: 2 },
 ]
 const ACTIVE_BOARD_KEY = 'sx-active-board'
 
@@ -309,7 +310,7 @@ interface CRMStore {
   notifyMentions: (opts: {
     text: string
     actor: string
-    entityType: 'customer' | 'lead_opportunity' | 'won_job'
+    entityType: 'customer' | 'lead_opportunity' | 'won_job' | 'anf_task'
     entityId: string
     entityName: string
   }) => void
@@ -1592,7 +1593,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       ? (get().leadOpportunities.find((l) => l.lead_op_id === entityId)?.board_id ?? 'captures')
       : entityType === 'won_job'
         ? (get().wonJobs.find((j) => j.job_id === entityId)?.board_id ?? 'captures')
-        : 'captures'
+        : entityType === 'anf_task' ? 'anf' : 'captures'
     const newNotifications: Notification[] = mentioned.map((m) => ({
       id: `notif-${Date.now()}-${m.id}`,
       recipient_id: m.id,
@@ -1632,7 +1633,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
             recipientId: n.recipient_id,
             title: `${actor} mentioned you`,
             body: truncated,
-            url: `/${entityType === 'customer' ? 'customers' : entityType === 'lead_opportunity' ? 'leads-opportunities' : 'won-ready-op'}`,
+            url: `/${entityType === 'customer' ? 'customers' : entityType === 'lead_opportunity' ? 'leads-opportunities' : entityType === 'anf_task' ? 'anf-tasks' : 'won-ready-op'}`,
           }),
         }).catch((err) => console.warn('[push] send failed:', err))
       }

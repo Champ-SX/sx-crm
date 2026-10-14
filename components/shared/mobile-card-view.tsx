@@ -37,7 +37,7 @@ export function MobileCardView({
   altEntityId,
   children,
 }: {
-  entityType: 'customer' | 'lead_opportunity' | 'won_job'
+  entityType: 'customer' | 'lead_opportunity' | 'won_job' | 'anf_task'
   entityId: string
   owner: string
   entityName?: string

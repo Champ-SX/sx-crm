@@ -1,6 +1,9 @@
 'use client'
 
-import { Check, ChevronDown } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Check, ChevronDown, Lock } from 'lucide-react'
+import { useAuth } from '@/components/auth-provider'
+import { fetchBoardMembers } from '@/lib/supabase/anf-tasks'
 import { useRouter } from 'next/navigation'
 import { useCRMStore } from '@/store/crm-store'
 import {
@@ -20,11 +23,24 @@ export function BoardSwitcher() {
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
   const setActiveBoard = useCRMStore((s) => s.setActiveBoard)
 
-  if (boards.length === 0) return null
-  const active = boards.find((b) => b.board_id === activeBoardId) ?? boards[0]
+  const { user, role } = useAuth()
+  // Restricted boards (e.g. Andy & Fine.) are listed only for members + admins.
+  const [memberOf, setMemberOf] = useState<Record<string, string[]>>({})
+  const restrictedKey = boards.filter((b) => b.restricted).map((b) => b.board_id).join(',')
+  useEffect(() => {
+    if (!restrictedKey) return
+    let alive = true
+    void Promise.all(restrictedKey.split(',').map(async (id) => [id, await fetchBoardMembers(id)] as const))
+      .then((pairs) => { if (alive) setMemberOf(Object.fromEntries(pairs)) })
+    return () => { alive = false }
+  }, [restrictedKey])
+  const visible = boards.filter((b) => !b.restricted || role === 'admin' || (!!user && (memberOf[b.board_id] ?? []).includes(user.id)))
+
+  if (visible.length === 0) return null
+  const active = visible.find((b) => b.board_id === activeBoardId) ?? visible[0]
 
   // Each board opens at its own home (structures differ).
-  const homeFor = (boardId: string) => (boardId === 'anf-order' ? '/anf-order' : '/dashboard')
+  const homeFor = (boardId: string) => (boardId === 'anf-order' ? '/anf-order' : boardId === 'anf' ? '/anf-tasks' : '/dashboard')
   function pick(boardId: string) {
     setActiveBoard(boardId)
     router.push(homeFor(boardId))
@@ -41,7 +57,7 @@ export function BoardSwitcher() {
         <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-[200px]">
-        {boards.map((b) => (
+        {visible.map((b) => (
           <DropdownMenuItem
             key={b.board_id}
             onClick={() => pick(b.board_id)}
@@ -49,6 +65,7 @@ export function BoardSwitcher() {
           >
             <span className="w-3.5 h-3.5 rounded-[5px] shrink-0" style={{ backgroundColor: b.color }} />
             <span className="flex-1 min-w-0 truncate">{b.name}</span>
+            {b.restricted && <Lock className="w-3 h-3 text-muted-foreground shrink-0" />}
             {b.board_id === active.board_id && <Check className="w-4 h-4 text-foreground shrink-0" />}
           </DropdownMenuItem>
         ))}

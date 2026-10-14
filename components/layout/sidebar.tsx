@@ -40,8 +40,11 @@ const anfNav = [
   { href: '/anf-order', label: 'Orders', icon: Package },
   { href: '/anf-order/stock', label: 'Stock', icon: Boxes },
 ]
+const anfTasksNav = [
+  { href: '/anf-tasks', label: 'Tasks', icon: Kanban },
+]
 function navForBoard(boardId: string | null) {
-  return boardId === 'anf-order' ? anfNav : capturesNav
+  return boardId === 'anf-order' ? anfNav : boardId === 'anf' ? anfTasksNav : capturesNav
 }
 
 const bottomItems = [

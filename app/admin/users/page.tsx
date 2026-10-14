@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { Trash2 } from 'lucide-react'
 import { UserAvatar } from '@/components/shared/user-avatar'
+import { fetchBoardMembers, setBoardMember, ANF_BOARD } from '@/lib/supabase/anf-tasks'
 
 interface User {
   id: string
@@ -31,6 +32,14 @@ export default function AdminUsersPage() {
   const [addEmail, setAddEmail] = useState('')
   const [addRole, setAddRole] = useState('operation')
   const [adding, setAdding] = useState(false)
+  // Andy & Fine. board access (restricted board → listed only for members)
+  const [anfMembers, setAnfMembers] = useState<string[]>([])
+  useEffect(() => { let alive = true; void fetchBoardMembers(ANF_BOARD).then((m) => { if (alive) setAnfMembers(m) }); return () => { alive = false } }, [])
+  async function toggleAnf(userId: string) {
+    const on = !anfMembers.includes(userId)
+    setAnfMembers((m) => (on ? [...m, userId] : m.filter((x) => x !== userId)))
+    try { await setBoardMember(ANF_BOARD, userId, on) } catch { setAnfMembers((m) => (on ? m.filter((x) => x !== userId) : [...m, userId])) }
+  }
 
   async function handleAddMember(e: React.FormEvent) {
     e.preventDefault()
@@ -217,6 +226,9 @@ export default function AdminUsersPage() {
                 <th className="px-4 py-3 text-left font-semibold text-foreground">
                   Current Role
                 </th>
+                <th className="px-4 py-3 text-left font-semibold text-foreground" title="Can see the Andy & Fine. board (admins always can)">
+                  Andy &amp; Fine.
+                </th>
                 <th className="px-4 py-3 text-left font-semibold text-foreground">
                   Actions
                 </th>
@@ -240,6 +252,13 @@ export default function AdminUsersPage() {
                     <span className="inline-block px-3 py-1 rounded-full bg-muted text-foreground text-xs font-semibold uppercase">
                       {u.role}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <label className="inline-flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                      <input type="checkbox" className="w-4 h-4 accent-[#FF809E]" checked={u.role === 'admin' || anfMembers.includes(u.id)}
+                        disabled={u.role === 'admin'} onChange={() => toggleAnf(u.id)} />
+                      {u.role === 'admin' ? 'admin' : anfMembers.includes(u.id) ? 'A&F staff' : ''}
+                    </label>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2 items-center flex-wrap">
