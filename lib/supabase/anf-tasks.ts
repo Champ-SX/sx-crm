@@ -87,7 +87,7 @@ const MOCK_TYPES: AnfTaskType[] = [
   { type_id: 'other', name: 'Other', color: '#888780', default_checklist: [], is_issue: false, sort_order: 9 },
 ]
 const MOCK_PLACES: AnfPlace[] = [
-  ...['BACC', 'BTT', 'True Alpha', 'CentralWorld'].map((n, i) => ({ place_id: n.toUpperCase().replace(' ', '-'), kind: 'branch' as const, name: n, branch_id: null, sort_order: i })),
+  ...['BACC', 'BTT', 'True Alpha', 'CentralWorld', 'Cloud11'].map((n, i) => ({ place_id: n.toUpperCase().replace(' ', '-'), kind: 'branch' as const, name: n, branch_id: null, sort_order: i })),
   ...['A60', 'A64', 'A65', 'A66', 'A80', 'Music room', 'Long Table'].map((n, i) => ({ place_id: n.toUpperCase(), kind: 'room' as const, name: n, branch_id: 'BACC', sort_order: 10 + i })),
   ...['K001', 'K05', 'K11'].map((n, i) => ({ place_id: n, kind: 'room' as const, name: n, branch_id: null, sort_order: 30 + i })),
 ]
@@ -165,3 +165,44 @@ export async function setBoardMember(boardId: string, userId: string, on: boolea
   const { error } = await q
   if (error) throw error
 }
+
+// ── Pick-list admin (types, branches, rooms) ──────────────────────────────────
+export async function updateAnfType(id: string, patch: Partial<AnfTaskType>): Promise<void> {
+  if (!isSupabaseConfigured) { const t = MOCK_TYPES.find((x) => x.type_id === id); if (t) Object.assign(t, patch); return }
+  const { error } = await supabase.from('anf_task_types').update(patch).eq('type_id', id)
+  if (error) throw error
+}
+export async function deleteAnfType(id: string): Promise<void> {
+  if (!isSupabaseConfigured) { const i = MOCK_TYPES.findIndex((x) => x.type_id === id); if (i >= 0) MOCK_TYPES.splice(i, 1); return }
+  const { error } = await supabase.from('anf_task_types').delete().eq('type_id', id)
+  if (error) throw error
+}
+export async function updateAnfPlace(id: string, patch: Partial<AnfPlace>): Promise<void> {
+  if (!isSupabaseConfigured) { const p = MOCK_PLACES.find((x) => x.place_id === id); if (p) Object.assign(p, patch); return }
+  const { error } = await supabase.from('anf_places').update(patch).eq('place_id', id)
+  if (error) throw error
+}
+export async function deleteAnfPlace(id: string): Promise<void> {
+  if (!isSupabaseConfigured) { const i = MOCK_PLACES.findIndex((x) => x.place_id === id); if (i >= 0) MOCK_PLACES.splice(i, 1); return }
+  const { error } = await supabase.from('anf_places').delete().eq('place_id', id)
+  if (error) throw error
+}
+
+// ── Critical issue → in-app notification + web push to the assignees ──────────
+export function notifyCritical(task: AnfTask, actor: string, people: { id: string; name: string; email: string }[]) {
+  if (!isSupabaseConfigured) return
+  const msg = `🚩 Critical · ${[task.branch, task.room].filter(Boolean).join(' ')} · ${task.name}`
+  for (const m of people) {
+    void supabase.from('notifications').insert({
+      recipient_id: m.id, recipient_name: m.name || m.email, actor, entity_type: 'anf_task', entity_id: task.task_id,
+      entity_name: task.name, message: msg, read: false, board_id: ANF_BOARD,
+    })
+    void fetch('/api/push/send', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recipientId: m.id, title: 'Critical issue — Andy & Fine.', body: msg, url: '/anf-tasks' }),
+    }).catch(() => { /* push is best-effort */ })
+  }
+}
+
+/** Solved tasks older than this are archived automatically. */
+export const AUTO_ARCHIVE_DAYS = 14

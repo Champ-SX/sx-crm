@@ -37,7 +37,7 @@ function typeFor(lbls, name) {
 }
 // Not real tasks: the colour-legend card and leftover template copies.
 const isJunk = (name) => /^\s*🟦/.test(name) || /\[\s*BoothID\s*\]/i.test(name)
-const BRANCHES = [[/BACC/i, 'BACC'], [/BTT|บรรทัดทอง/i, 'BTT'], [/TRUE[\s_-]*ALPHA/i, 'True Alpha'], [/CENTRAL\s*WORLD|WIMB/i, 'CentralWorld']]
+const BRANCHES = [[/BACC/i, 'BACC'], [/BTT|บรรทัดทอง/i, 'BTT'], [/TRUE[\s_-]*ALPHA/i, 'True Alpha'], [/CENTRAL\s*WORLD|WIMB/i, 'CentralWorld'], [/CLOUD\s*11|\bC11\b/i, 'Cloud11']]
 function placeFor(name) {
   const branch = BRANCHES.find(([re]) => re.test(name))?.[1] ?? null
   const room = name.match(/\b(A\d{2}|B\d{2}|K0?\d{2,3})\b/i)?.[1]?.toUpperCase()

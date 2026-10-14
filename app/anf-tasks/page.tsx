@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { addDays, differenceInCalendarDays, format, isToday, isWeekend, parseISO } from 'date-fns'
-import { CalendarDays, ChevronLeft, ChevronRight, LayoutGrid, Plus, Search, X, CheckSquare, Archive } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, LayoutGrid, Plus, Search, X, CheckSquare, Archive, Settings2, Repeat } from 'lucide-react'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { useAuth } from '@/components/auth-provider'
 import { useCRMStore } from '@/store/crm-store'
@@ -14,12 +14,13 @@ import { Input } from '@/components/ui/input'
 import { toast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
 import {
-  ANF_COLUMNS, WAITING_REASONS, checklistProgress, fetchAnf, createAnfTask, updateAnfTask, deleteAnfTask, createAnfType, uid,
+  ANF_COLUMNS, WAITING_REASONS, AUTO_ARCHIVE_DAYS, checklistProgress, fetchAnf, createAnfTask, updateAnfTask, deleteAnfTask, createAnfType, notifyCritical, uid,
   type AnfTask, type AnfTaskType, type AnfPlace, type AnfColumn,
 } from '@/lib/supabase/anf-tasks'
 import { AddTaskDialog } from '@/components/anf/add-task-dialog'
 import { TaskDrawer } from '@/components/anf/task-drawer'
 import { TypePill, LevelPill, placeLine, typeOf } from '@/components/anf/task-ui'
+import { AnfSettings } from '@/components/anf/anf-settings'
 
 const CAL_DAYS = 9
 const iso = (d: Date) => format(d, 'yyyy-MM-dd')
@@ -27,7 +28,8 @@ const fromISO = (s: string) => parseISO(s + 'T00:00:00')
 
 export default function AnfTasksPage() {
   const hydrated = useHydrated()
-  const { user } = useAuth()
+  const { user, role } = useAuth()
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const teamMembers = useCRMStore((s) => s.teamMembers)
   const author = user?.user_metadata?.full_name ?? user?.email ?? 'Someone'
 
@@ -40,7 +42,16 @@ export default function AnfTasksPage() {
   useEffect(() => {
     let alive = true
     fetchAnf()
-      .then((r) => { if (alive) { setTasks(r.tasks); setTypes(r.types); setPlaces(r.places); setLoadError(null) } })
+      .then((r) => {
+        if (!alive) return
+        // Solved for more than AUTO_ARCHIVE_DAYS → archive, so the Solved column stays short.
+        const cutoff = Date.now() - AUTO_ARCHIVE_DAYS * 86400000
+        const stale = r.tasks.filter((t) => t.column_id === 'solved' && !t.is_archived && new Date(t.solved_at ?? t.updated_at).getTime() < cutoff)
+        stale.forEach((t) => { void updateAnfTask(t.task_id, { is_archived: true }) })
+        const staleIds = new Set(stale.map((t) => t.task_id))
+        setTasks(r.tasks.map((t) => (staleIds.has(t.task_id) ? { ...t, is_archived: true } : t)))
+        setTypes(r.types); setPlaces(r.places); setLoadError(null)
+      })
       .catch((e) => { if (alive) setLoadError(e instanceof Error ? e.message : 'Could not load tasks') })
     return () => { alive = false }
   }, [loadKey])
@@ -59,6 +70,14 @@ export default function AnfTasksPage() {
 
   // ── Writes (optimistic) ──
   const patch = (id: string, p: Partial<AnfTask>) => {
+    const before = tasks.find((t) => t.task_id === id)
+    // Became critical (or critical task got new people) → alert the assignees.
+    if (before) {
+      const after = { ...before, ...p }
+      const newly = after.issue_level === 'critical' && before.issue_level !== 'critical' ? after.assignee_ids
+        : after.issue_level === 'critical' && p.assignee_ids ? p.assignee_ids.filter((x) => !before.assignee_ids.includes(x)) : []
+      if (newly.length) notifyCritical(after, author, teamMembers.filter((m) => newly.includes(m.id)))
+    }
     setTasks((ts) => ts.map((t) => (t.task_id === id ? { ...t, ...p } : t)))
     updateAnfTask(id, p).catch((e) => { toast(`Couldn't save — ${e instanceof Error ? e.message : 'error'}`); reload() })
   }
@@ -77,6 +96,7 @@ export default function AnfTasksPage() {
   }
   const create = (t: AnfTask) => {
     setTasks((ts) => [t, ...ts]); setAdding(false); setOpenId(t.task_id)
+    if (t.issue_level === 'critical') notifyCritical(t, author, teamMembers.filter((m) => t.assignee_ids.includes(m.id)))
     createAnfTask(t).catch((e) => { toast(`Couldn't create — ${e instanceof Error ? e.message : 'error'}`); reload() })
   }
   const addType = async (name: string) => {
@@ -112,7 +132,7 @@ export default function AnfTasksPage() {
         style={{ borderLeftColor: type?.color ?? '#888780' }}
         className={cn('rounded-lg border border-border border-l-4 bg-card p-2.5 cursor-pointer hover:border-foreground/25 transition-colors text-left min-w-0',
           dragId === t.task_id && 'opacity-40', t.column_id === 'solved' && 'opacity-80')}>
-        <div className="flex flex-wrap gap-1"><TypePill type={type} /><LevelPill level={t.issue_level} /></div>
+        <div className="flex flex-wrap gap-1"><TypePill type={type} /><LevelPill level={t.issue_level} />{t.tags.includes('Repeating') && <span className="inline-flex items-center gap-0.5 rounded bg-amber-500/15 px-1.5 py-px text-[11px] font-medium text-amber-800 dark:text-amber-300" title="Repeat issue"><Repeat className="w-3 h-3" />Repeat</span>}</div>
         <div className={cn('font-semibold leading-snug mt-1 [overflow-wrap:anywhere]', compact ? 'text-[12px] line-clamp-2' : 'text-[13px]')}>{t.name}</div>
         {placeLine(t) && <div className="text-[11px] text-muted-foreground truncate">{placeLine(t)}</div>}
         {t.column_id === 'waiting' && t.waiting_reason && (
@@ -176,7 +196,11 @@ export default function AnfTasksPage() {
             <Archive className="w-3.5 h-3.5" />{showArchived ? 'Archived' : `Archived (${archivedCount})`}
           </button>
         )}
-        <Button size="sm" onClick={() => setAdding(true)} className="ml-auto gap-1.5 bg-[#FF809E] hover:bg-[#f06d8d] text-white">
+        {role === 'admin' && (
+          <button type="button" onClick={() => setSettingsOpen(true)} title="Types, branches and rooms" aria-label="Board settings"
+            className="ml-auto h-8 w-8 rounded-lg border border-border bg-card inline-flex items-center justify-center text-muted-foreground hover:text-foreground"><Settings2 className="w-4 h-4" /></button>
+        )}
+        <Button size="sm" onClick={() => setAdding(true)} className={cn(role !== 'admin' && 'ml-auto', ' gap-1.5 bg-[#FF809E] hover:bg-[#f06d8d] text-white')}>
           <Plus className="w-4 h-4" /><span className="hidden sm:inline">Add task</span>
         </Button>
       </div>
@@ -277,7 +301,8 @@ export default function AnfTasksPage() {
         </div>
       )}
 
-      {adding && <AddTaskDialog types={types} places={places} author={author} onClose={() => setAdding(false)} onCreate={create} onAddType={addType} />}
+      {settingsOpen && <AnfSettings types={types} places={places} onClose={() => setSettingsOpen(false)} onChange={(t, p) => { setTypes(t); setPlaces(p) }} />}
+      {adding && <AddTaskDialog types={types} places={places} author={author} tasks={tasks} onClose={() => setAdding(false)} onCreate={create} onAddType={addType} />}
       {open && (
         <TaskDrawer key={open.task_id} task={open} types={types} places={places} onClose={() => setOpenId(null)}
           onPatch={(p) => patch(open.task_id, p)} onMove={(c) => move(open.task_id, c)}

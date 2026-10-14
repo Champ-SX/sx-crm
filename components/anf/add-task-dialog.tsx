@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { AssigneePicker } from '@/components/shared/assignee-picker'
-import { Plus } from 'lucide-react'
+import { Plus, Repeat } from 'lucide-react'
+import { format } from 'date-fns'
+import { parseDbDate } from '@/lib/utils'
 import {
   ISSUE_LEVELS, AREAS, ANF_BOARD, buildTaskTitle, uid,
   type AnfTask, type AnfTaskType, type AnfPlace, type IssueLevel,
@@ -17,8 +19,9 @@ import { Chip } from './task-ui'
  * + Add task — same idea as + Add Lead/Opp: a short form; the title builds
  * itself (YYMMDD-[BRANCH-ROOM] - task) and the type pre-fills its checklist.
  */
-export function AddTaskDialog({ types, places, author, onClose, onCreate, onAddType }: {
+export function AddTaskDialog({ types, places, author, tasks, onClose, onCreate, onAddType }: {
   types: AnfTaskType[]; places: AnfPlace[]; author: string
+  tasks: AnfTask[]   // for "this happened here before" (repeat detection)
   onClose: () => void
   onCreate: (t: AnfTask) => void
   onAddType: (name: string) => Promise<AnfTaskType | null>
@@ -34,12 +37,20 @@ export function AddTaskDialog({ types, places, author, onClose, onCreate, onAddT
   const [assignees, setAssignees] = useState<string[]>([])
   const [newType, setNewType] = useState<string | null>(null)
   const [tried, setTried] = useState(false)
+  const [repeatOf, setRepeatOf] = useState<string | null>(null)
+  const [since] = useState(() => Date.now() - 90 * 86400000)
 
   const type = types.find((t) => t.type_id === typeId)
   const branches = places.filter((p) => p.kind === 'branch')
   const branchId = branches.find((b) => b.name === branch)?.place_id
   const rooms = places.filter((p) => p.kind === 'room' && (!p.branch_id || !branchId || p.branch_id === branchId))
   const title = name.trim() ? buildTaskTitle(name, branch || null, room || null) : ''
+  // Same kind of issue at the same branch (and room, if picked) in the last 90 days.
+  const similar = type?.is_issue && branch
+    ? tasks.filter((t) => t.type_id === typeId && t.branch === branch && (!room || t.room === room) && parseDbDate(t.created_at).getTime() >= since)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 4)
+    : []
+  const repeat = similar.find((t) => t.task_id === repeatOf)
   const missing = !name.trim() ? 'Enter what the task is' : !typeId ? 'Pick a type of task' : null
 
   function create() {
@@ -51,7 +62,8 @@ export function AddTaskDialog({ types, places, author, onClose, onCreate, onAddT
       title, name: name.trim(), type_id: typeId,
       issue_level: type?.is_issue ? level : null, area: type?.is_issue ? area : null,
       branch: branch || null, room: room || null, start_date: null, due_date: due || null,
-      description: desc.trim() || null, assignee_ids: assignees, tags: [],
+      description: [repeat && `🔁 Repeat of: ${repeat.title}`, desc.trim()].filter(Boolean).join('\n\n') || null,
+      assignee_ids: assignees, tags: repeat ? ['Repeating'] : [],
       // Each type brings its own default checklist (ลงเฟรม → FRAME / GIF / PREVIEW / UI).
       checklists: type?.default_checklist.length
         ? [{ id: uid('c'), name: type.name, items: type.default_checklist.map((t) => ({ id: uid('i'), text: t, done: false })) }]
@@ -124,6 +136,25 @@ export function AddTaskDialog({ types, places, author, onClose, onCreate, onAddT
             <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} className="h-9 text-[13px]" />
           </div>
         </div>
+
+        {similar.length > 0 && (
+          <div className="rounded-lg border border-amber-400/50 bg-amber-500/8 p-3">
+            <p className="text-[13px] font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1.5"><Repeat className="w-3.5 h-3.5" />Happened here before ({similar.length} in 90 days)</p>
+            <div className="mt-2 space-y-1">
+              {similar.map((t) => (
+                <label key={t.task_id} className="flex items-center gap-2 text-[13px] cursor-pointer">
+                  <input type="radio" name="repeat" checked={repeatOf === t.task_id} onChange={() => setRepeatOf(t.task_id)} className="accent-foreground" />
+                  <span className="flex-1 truncate">{t.name}</span>
+                  <span className="text-[11px] text-muted-foreground shrink-0">{[t.room, format(parseDbDate(t.created_at), 'd MMM')].filter(Boolean).join(' · ')}</span>
+                </label>
+              ))}
+            </div>
+            <div className="flex items-center gap-3 mt-1.5">
+              <span className="text-[11px] text-muted-foreground">Pick one to mark this as a repeat (🔁).</span>
+              {repeatOf && <button type="button" onClick={() => setRepeatOf(null)} className="text-[11px] underline text-muted-foreground">Not a repeat</button>}
+            </div>
+          </div>
+        )}
 
         <div>
           <span className={label}>WHAT&apos;S THE TASK</span>
