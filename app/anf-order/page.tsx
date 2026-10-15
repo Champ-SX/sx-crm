@@ -90,7 +90,7 @@ export default function AnfOrderPage() {
         <MobileMenuButton />
         <span className="w-3.5 h-3.5 rounded-[5px] shrink-0" style={{ backgroundColor: '#7A5AA5' }} />
         <div>
-          <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight leading-none">ANF Order</h1>
+          <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight leading-none">Order</h1>
           <p className="font-mono text-[12px] text-muted-foreground mt-1">{openCount} open · {baht(toOrderValue)} to order</p>
         </div>
         <Button size="sm" className="ml-auto h-9 gap-1.5 bg-[#7A5AA5] hover:opacity-90 text-white" onClick={() => setCreating(true)}>
