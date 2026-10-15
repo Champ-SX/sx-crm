@@ -215,6 +215,9 @@ export interface LeadOpportunity {
   event_date?: string
   venue?: string
   estimated_value: number
+  value_type?: 'fixed' | 'gp_share'   // fixed price, or our % of the client's gross sales
+  gp_share_pct?: number | null        // our share, % of gross sales (gp_share only)
+  est_gross_sales?: number | null     // estimated gross sales (gp_share only)
   owner: string
   notes: string
   status: LeadOpStatus
@@ -341,6 +344,9 @@ export interface WonJob {
 
   // ── Operations ──
   estimated_value: number | null
+  value_type?: 'fixed' | 'gp_share'   // fixed price, or our % of the client's gross sales
+  gp_share_pct?: number | null        // our share, % of gross sales (gp_share only)
+  est_gross_sales?: number | null     // estimated gross sales (gp_share only)
   payment_status: PaymentStatus
   staff_status: StaffStatus
   doc_status: DocStatus

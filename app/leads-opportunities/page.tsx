@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { DealValueField, DealValueText } from '@/components/shared/deal-value'
 import { useRouter } from 'next/navigation'
 import { useCRMStore } from '@/store/crm-store'
 import { parseDbDate } from '@/lib/utils'
@@ -243,7 +244,7 @@ function LeadRow({
       {/* Value */}
       <td className="px-4 py-3.5">
         <p className="text-[13px] font-bold text-foreground">
-          {item.estimated_value && item.estimated_value > 0 ? `฿ ${item.estimated_value.toLocaleString()}` : <span className="text-muted-foreground/50 font-normal">—</span>}
+          <DealValueText deal={item} />
         </p>
       </td>
       {/* Owner */}
@@ -301,7 +302,7 @@ function LeadCard({
         <div className="flex items-center justify-between gap-2 mt-2">
           <span className="text-[12px] font-semibold bg-muted text-foreground/80 px-2 py-0.5 rounded-md">{item.service_type}</span>
           <span className="text-[13px] font-bold text-foreground">
-            {item.estimated_value && item.estimated_value > 0 ? `฿ ${item.estimated_value.toLocaleString()}` : <span className="text-muted-foreground/50 font-normal">—</span>}
+            <DealValueText deal={item} />
           </span>
         </div>
         <div className="flex items-center justify-between gap-2 mt-1.5 text-[12px] text-muted-foreground">
@@ -428,7 +429,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
               <>
                 <StatusDot status={item.status} />
                 <span className="text-muted-foreground">·</span>
-                <span className="font-mono text-[12px] text-foreground shrink-0">{item.estimated_value && item.estimated_value > 0 ? `฿${item.estimated_value.toLocaleString()}` : '฿—'}</span>
+                <DealValueText deal={item} compact empty="฿—" className="font-mono text-[12px] text-foreground shrink-0" />
                 <span className="text-muted-foreground">·</span>
                 <span className="text-[12px] text-foreground truncate">{item.owner}</span>
               </>
@@ -448,12 +449,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                 label: 'Value',
                 node: (
                   <span className="font-semibold">
-                    <InlineEdit
-                      value={item.estimated_value && item.estimated_value > 0 ? item.estimated_value.toString() : ''}
-                      placeholder="0"
-                      formatDisplay={(v) => `฿ ${(parseFloat(v) || 0).toLocaleString()}`}
-                      onSave={(v) => updateLeadOpportunity(item.lead_op_id, { estimated_value: parseFloat(v) || 0 })}
-                    />
+                    <DealValueField deal={item} onSave={(p) => updateLeadOpportunity(item.lead_op_id, p)} />
                   </span>
                 ),
               },

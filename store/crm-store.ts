@@ -928,6 +928,9 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       lead_op_id: leadOpId,
       // Operations
       estimated_value: lop.estimated_value,
+      value_type: lop.value_type ?? 'fixed',
+      gp_share_pct: lop.gp_share_pct ?? null,
+      est_gross_sales: lop.est_gross_sales ?? null,
       op_stage: 'WON_JOB_LIST',
       owner: lop.owner,
       created_at: now,

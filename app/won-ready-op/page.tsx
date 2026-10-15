@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useRef, useCallback, type ReactNode } from 'react'
+import { DealValueField, DealValueText } from '@/components/shared/deal-value'
 import {
   DndContext,
   DragOverlay,
@@ -277,7 +278,7 @@ function JobCard({
 
         {/* Value + assignees */}
         <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-border/60 min-w-0">
-          <span className="font-mono text-[13px] font-bold text-foreground shrink-0">{formatCurrency(job.estimated_value)}</span>
+          <DealValueText deal={job} compact className="font-mono text-[13px] font-bold text-foreground shrink-0" />
           {assigned.length > 0 ? (
             <div className="flex -space-x-1.5">
               {assigned.slice(0, 3).map((m) => (
@@ -1031,7 +1032,7 @@ function JobDetail({
                   {OP_STAGE_LABELS[job.op_stage as OPStage] ?? job.op_stage}
                 </span>
                 <span className="text-muted-foreground">·</span>
-                <span className="font-mono text-[12px] text-foreground shrink-0">{formatCurrency(job.estimated_value)}</span>
+                <DealValueText deal={job} compact className="font-mono text-[12px] text-foreground shrink-0" />
                 {job.owner && <><span className="text-muted-foreground">·</span><span className="text-[12px] text-foreground truncate">{job.owner}</span></>}
               </>
             }
@@ -1070,12 +1071,7 @@ function JobDetail({
                 label: 'Value',
                 node: (
                   <span className="font-semibold">
-                    <InlineEdit
-                      value={job.estimated_value ? job.estimated_value.toString() : ''}
-                      onSave={(v) => u({ estimated_value: parseFloat(v) || 0 })}
-                      placeholder="0"
-                      formatDisplay={(v) => `฿ ${(parseFloat(v) || 0).toLocaleString()}`}
-                    />
+                    <DealValueField deal={job} onSave={(p) => u(p)} />
                   </span>
                 ),
               },
