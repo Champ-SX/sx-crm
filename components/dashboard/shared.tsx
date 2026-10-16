@@ -9,6 +9,7 @@ export const stageConfig: Record<string, { label: string; dot: string; badge: st
   WON_JOB_LIST:                    { label: 'Won Job List',     dot: 'bg-slate-400',   badge: NEUTRAL_BADGE },
   OP_PREPARING_AW_DONE:            { label: 'OP Preparing',     dot: 'bg-blue-400',    badge: NEUTRAL_BADGE },
   OP_READY_FOR_EVENT:              { label: 'Ready for Event',  dot: 'bg-teal-400',    badge: NEUTRAL_BADGE },
+  OP_EVENT_DONE:                   { label: 'Event Done',       dot: 'bg-violet-400',  badge: NEUTRAL_BADGE },
   OP_WAIT_STAFF_PAYMENT_DOC_TERR:  { label: 'Wait Staff / Pay', dot: 'bg-amber-400',   badge: NEUTRAL_BADGE },
   OP_DONE_PAYMENT:                 { label: 'Done Payment',     dot: 'bg-purple-400',  badge: NEUTRAL_BADGE },
 }

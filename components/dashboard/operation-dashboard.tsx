@@ -55,7 +55,7 @@ export function OperationDashboard() {
   const pendingDocs = activeOPJobs.filter((j) => j.doc_status === 'pending')
   const eventSoonNotReady = activeOPJobs.filter(
     (j) => j.event_date && j.event_date >= todayStr && j.event_date <= in30Str
-      && j.op_stage !== 'OP_READY_FOR_EVENT'
+      && j.op_stage !== 'OP_READY_FOR_EVENT' && j.op_stage !== 'OP_EVENT_DONE'
   )
 
   const bottlenecks = [

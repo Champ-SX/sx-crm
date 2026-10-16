@@ -232,6 +232,7 @@ export type OPStage =
   | 'WON_JOB_LIST'
   | 'OP_PREPARING_AW_DONE'
   | 'OP_READY_FOR_EVENT'
+  | 'OP_EVENT_DONE'
   | 'OP_WAIT_STAFF_PAYMENT_DOC_TERR'
   | 'OP_DONE_PAYMENT'
 
@@ -239,6 +240,7 @@ export const OP_STAGE_LABELS: Record<OPStage, string> = {
   WON_JOB_LIST: 'Won Job List',
   OP_PREPARING_AW_DONE: 'OP Preparing - AW DONE',
   OP_READY_FOR_EVENT: 'OP - พร้อมออกงาน',
+  OP_EVENT_DONE: 'OP-จบงาน',
   OP_WAIT_STAFF_PAYMENT_DOC_TERR: 'OP - wait Staff / Payment / Doc [TERR]',
   OP_DONE_PAYMENT: 'OP - Done Payment',
 }
@@ -249,6 +251,7 @@ export const OP_STAGES: OPStage[] = [
   'WON_JOB_LIST',
   'OP_PREPARING_AW_DONE',
   'OP_READY_FOR_EVENT',
+  'OP_EVENT_DONE',
   'OP_WAIT_STAFF_PAYMENT_DOC_TERR',
   'OP_DONE_PAYMENT',
 ]

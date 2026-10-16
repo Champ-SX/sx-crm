@@ -66,6 +66,7 @@ const stageConfig: Record<OPStage, { accent: string; dot: string; headerBg: stri
   WON_JOB_LIST:                   { accent: 'border-t-slate-400',   dot: 'bg-slate-400',   headerBg: 'bg-muted',      colBg: 'bg-muted/60' },
   OP_PREPARING_AW_DONE:            { accent: 'border-t-blue-400',    dot: 'bg-blue-400',    headerBg: 'bg-blue-50/60',    colBg: 'bg-blue-50/30' },
   OP_READY_FOR_EVENT:              { accent: 'border-t-teal-500',    dot: 'bg-teal-500',    headerBg: 'bg-teal-50/60',    colBg: 'bg-teal-50/20' },
+  OP_EVENT_DONE:                   { accent: 'border-t-violet-400',  dot: 'bg-violet-400',  headerBg: 'bg-violet-50/60',  colBg: 'bg-violet-50/20' },
   OP_WAIT_STAFF_PAYMENT_DOC_TERR:  { accent: 'border-t-amber-400',   dot: 'bg-amber-400',   headerBg: 'bg-amber-50/60',   colBg: 'bg-amber-50/20' },
   OP_DONE_PAYMENT:                 { accent: 'border-t-purple-400',  dot: 'bg-purple-400',  headerBg: 'bg-purple-50/60',  colBg: 'bg-purple-50/20' },
 }
