@@ -55,6 +55,12 @@ Unified detail header and Phase 5 card actions are shipped. What's left:
    - Phased: (1) schema+backfill, (2) merge tool, (3) picker UI. (High — biggest ANF change)
 4. **ANF Order — archive received orders** — received orders pile up over time and clutter the board. Plan (approved, backlogged): **(A)** soft archive via a new `archived_at` on `anf_orders` — archived orders hidden from the board by default, a "Show archived" toggle restores them, and they still appear in each item's Stock order history; **(C)** nightly auto-archive of received orders older than N days (~90) via the existing `due-notify` cron. No hard delete. Note: safe because the loop already copies received date/qty/receiver onto the stock row, so archiving/deleting old orders never changes live stock. (Low-Med)
 
+9. **Customer DB de-dup** (approved plan, Tier A SQL ready — user runs later). Script: `supabase/manual/customer_dedupe_tier_a.sql`.
+   - **Tier A — exact import copies** (same cleaned name + same email): 321 groups, 524 rows removed, 0 with leads/jobs, 2276 → 1752. Backup to `customers_merge_backup`, keeper's empty fields filled from copies. **Risk: Low.**
+   - **Tier B — real customers with leads/jobs** (ทศภาค ×27, GMM/จีเอ็มเอ็ม ×9, Chubb, Adidas, เซทเลอร์ ×5, ดิ ออล เวย์, บอนดูบา/พีเพิล บีไฮนด์, Sixsheet group): needs per-group keep/merge checklist. (Med)
+   - **Tier C — do NOT merge:** generic names (คุณ, คุณแป้ง, Khun, admin, บริษัท), `#(ลูกค้าไม่แจ้ง)`, Central Pattana branches (separate tax entities), Chubb vs อัลฟ่า 51. vittavin@gmail.com test rows → delete.
+   - **Root cause fix (Step 4):** adding a lead creates a new customer each time → add duplicate warning / pick-existing in add forms, or dupes return. (Med)
+
 Email notifications were **dropped** (Web Push covers it). Full per-phase detail is in the sections below (all now marked ✅ Complete).
 
 ### Pending hand-offs (run in Supabase)
