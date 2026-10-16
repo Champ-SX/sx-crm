@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { addDays, format, isToday, isWeekend, parseISO, differenceInCalendarDays } from 'date-fns'
+import { addDays, format, isToday, isWeekend, parseISO, differenceInCalendarDays, startOfWeek } from 'date-fns'
 import { ChevronLeft, ChevronRight, Users, Palette, Package, Check, CircleCheck, ArrowRight, Minus, Plus, UserPlus, UserX, TriangleAlert, ChevronDown } from 'lucide-react'
 import { OP_STAGES, type WonJob, type InventoryStatus, type TeamMember } from '@/types'
 import { parseJobDates, jobCardName } from '@/lib/jobs'
@@ -15,6 +15,11 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 
 export const CAL_DAYS = 9
+
+/** Monday of the week containing `d` — the calendar always starts on a Monday (Mon → next Tue). */
+export function weekStart(d = new Date()): string {
+  return format(startOfWeek(d, { weekStartsOn: 1 }), 'yyyy-MM-dd')
+}
 
 const toISO = (d: Date) => format(d, 'yyyy-MM-dd')
 const fromISO = (s: string) => parseISO(s + 'T00:00:00')
@@ -389,16 +394,16 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
   }, { events: 0, needed: 0, open: 0 })
 
   const shift = (n: number) => onStart(toISO(addDays(fromISO(start), n)))
-  const rangeLabel = `${format(fromISO(first), 'd MMM')} – ${format(fromISO(last), 'd MMM yyyy')}`
+  const rangeLabel = `${format(fromISO(first), 'EEE d MMM')} – ${format(fromISO(last), 'EEE d MMM yyyy')}`
 
   return (
     <div className="flex-1 min-h-0 flex flex-col bg-background">
       {/* Window controls + what Operation needs to act on */}
       <div className="flex flex-wrap items-center gap-2 px-4 sm:px-6 pt-3 pb-2 shrink-0">
         <div className="flex items-center gap-1">
-          <button type="button" onClick={() => shift(-CAL_DAYS)} aria-label="Previous 9 days" className="w-8 h-8 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-center"><ChevronLeft className="w-4 h-4" /></button>
-          <button type="button" onClick={() => onStart(toISO(new Date()))} className="h-8 px-3 rounded-lg border border-border bg-card text-[12px] font-medium hover:bg-muted">Today</button>
-          <button type="button" onClick={() => shift(CAL_DAYS)} aria-label="Next 9 days" className="w-8 h-8 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-center"><ChevronRight className="w-4 h-4" /></button>
+          <button type="button" onClick={() => shift(-7)} aria-label="Previous week" className="w-8 h-8 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-center"><ChevronLeft className="w-4 h-4" /></button>
+          <button type="button" onClick={() => onStart(weekStart())} className="h-8 px-3 rounded-lg border border-border bg-card text-[12px] font-medium hover:bg-muted">Today</button>
+          <button type="button" onClick={() => shift(7)} aria-label="Next week" className="w-8 h-8 rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground flex items-center justify-center"><ChevronRight className="w-4 h-4" /></button>
         </div>
         <span className="text-[14px] font-semibold text-foreground">{rangeLabel}</span>
         <label className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">

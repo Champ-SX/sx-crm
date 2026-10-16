@@ -52,8 +52,7 @@ import {
   Link2, Share2, Copy, Archive, ArchiveRestore,
   LayoutGrid, CalendarDays,
 } from 'lucide-react'
-import { OpCalendar, InventoryPill, NeedStepper, NoStaffToggle } from '@/components/won/op-calendar'
-import { format as fmtDate } from 'date-fns'
+import { OpCalendar, InventoryPill, NeedStepper, NoStaffToggle, weekStart } from '@/components/won/op-calendar'
 import { useOpenFromUrl } from '@/hooks/use-open-from-url'
 import { copyCardLink, shareCardLink } from '@/lib/card-links'
 import { AssigneePicker, AssigneeFilter, ASSIGNEE_FILTER_ALL, matchesAssigneeFilter } from '@/components/shared/assignee-picker'
@@ -1497,7 +1496,7 @@ export default function WonReadyOpPage() {
     setViewPicks((p) => ({ ...p, [viewKey]: v }))
     try { localStorage.setItem(viewKey, v) } catch { /* private mode */ }
   }
-  const [calStart, setCalStart] = useState(() => fmtDate(new Date(), 'yyyy-MM-dd'))
+  const [calStart, setCalStart] = useState(() => weekStart())
   const [calStaffFor, setCalStaffFor] = useState<string | null>(null)
   // Open a specific card from a notification deep-link signal.
   useOpenDeepLink(
