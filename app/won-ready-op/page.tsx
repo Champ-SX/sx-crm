@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback, type ReactNode } from 'react'
 import { DealValueField, DealValueText } from '@/components/shared/deal-value'
+import { AddOpsJobDialog } from '@/components/won/add-ops-job-dialog'
 import {
   DndContext,
   DragOverlay,
@@ -50,7 +51,7 @@ import {
   Users, Banknote, ArrowUpDown, GripVertical,
   Trash2,
   Link2, Share2, Copy, Archive, ArchiveRestore,
-  LayoutGrid, CalendarDays,
+  LayoutGrid, CalendarDays, Plus,
 } from 'lucide-react'
 import { OpCalendar, InventoryPill, NeedStepper, NoStaffToggle, weekStart } from '@/components/won/op-calendar'
 import { useOpenFromUrl } from '@/hooks/use-open-from-url'
@@ -247,7 +248,9 @@ function JobCard({
       <div className="p-3">
         {/* Job # + compact date */}
         <div className="flex items-center justify-between gap-2 mb-2">
-          {job.job_number
+          {job.is_ops
+            ? <span className="inline-flex items-center gap-1.5"><span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-wider text-muted-foreground">OPS</span>{job.job_number && <span className="font-mono text-[12px] font-semibold text-foreground tracking-wide">{job.job_number}</span>}</span>
+            : job.job_number
             ? <span className="font-mono text-[12px] font-semibold text-foreground tracking-wide">#{job.job_number}</span>
             : <span className="font-mono text-[11px] font-semibold text-amber-700 bg-amber-100 dark:bg-amber-500/20 dark:text-amber-300 px-1.5 py-0.5 rounded" title="No job number in the title — open to set it">set #</span>}
           {formatEventDateShort(job) && (
@@ -277,7 +280,9 @@ function JobCard({
 
         {/* Value + assignees */}
         <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-border/60 min-w-0">
-          <DealValueText deal={job} compact className="font-mono text-[13px] font-bold text-foreground shrink-0" />
+          {job.is_ops
+            ? <span className="text-[12px] text-muted-foreground">Internal task</span>
+            : <DealValueText deal={job} compact className="font-mono text-[13px] font-bold text-foreground shrink-0" />}
           {assigned.length > 0 ? (
             <div className="flex -space-x-1.5">
               {assigned.slice(0, 3).map((m) => (
@@ -293,7 +298,7 @@ function JobCard({
       </div>
 
       {/* Staff-payment tab — orange dot while pending, green when fully paid */}
-      {staff.length > 0 && (
+      {staff.length > 0 && !job.is_ops && (
         <div className={`px-3 py-1.5 border-t flex items-center gap-2 ${allPaid ? 'border-emerald-200 dark:border-emerald-500/30' : 'border-red-200 dark:border-red-500/30'}`}>
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${allPaid ? 'bg-emerald-500' : 'bg-red-500'}`} />
           <span className={`font-mono text-[12px] font-medium ${allPaid ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'}`}>
@@ -911,12 +916,13 @@ function JobDetail({
   function renderStaffSection() {
     const list = job.staff_list || []
     const { count, paidCount, total } = staffPaySummary(list)
+    const ops = !!job.is_ops   // internal task: assignment only, no per-job pay
     return (
       <div className="rounded-xl border border-border overflow-hidden mt-1">
         <div className="bg-muted/40 px-4 py-2.5 flex items-center gap-2.5">
           <Users className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: count > 0 && paidCount === count ? '#3f9d5b' : '#FF5B3F' }} />
-          <span className="text-[13px] font-bold text-foreground flex-1 leading-none">จ่ายเงินน้องออกงาน</span>
+          {!ops && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: count > 0 && paidCount === count ? '#3f9d5b' : '#FF5B3F' }} />}
+          <span className="text-[13px] font-bold text-foreground flex-1 leading-none">{ops ? 'ทีมงาน · Staff' : 'จ่ายเงินน้องออกงาน'}</span>
           {/* Headcount lives with the staff list (Operation calendar reads the same number) */}
           {job.staff_needed != null && job.staff_needed > 0 && (
             <span className={`rounded px-1.5 py-px text-[11px] font-medium tabular-nums ${count >= job.staff_needed ? 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300' : count === 0 ? 'bg-red-500/12 text-red-700 dark:text-red-300' : 'bg-amber-500/15 text-amber-700 dark:text-amber-300'}`}>
@@ -925,13 +931,14 @@ function JobDetail({
           )}
           {job.staff_needed !== 0 && <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground">Need <NeedStepper job={job} /></span>}
           <NoStaffToggle job={job} />
-          {count > 0 && (
+          {count > 0 && !ops && (
             <span className="font-mono text-[12px] font-medium text-muted-foreground">
               จ่ายแล้ว {paidCount}/{count} · ฿{total.toLocaleString()}
             </span>
           )}
         </div>
         <div className="bg-card px-4 py-3 space-y-2">
+          {ops && <p className="text-[12px] text-muted-foreground">Internal task — no per-job payment.</p>}
           {list.length === 0 ? (
             <p className="text-xs text-muted-foreground italic">{job.staff_needed === 0 ? 'This job runs without staff — no payments to track.' : 'No staff assigned yet.'}</p>
           ) : (
@@ -939,14 +946,14 @@ function JobDetail({
               {list.map((s) => (
                 <li
                   key={s.staff_id}
-                  className={`flex items-start justify-between p-3 rounded-lg border ${s.paid ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-500/30 dark:bg-emerald-500/10' : 'border-border/60 bg-muted/20'}`}
+                  className={`flex items-start justify-between p-3 rounded-lg border ${s.paid && !ops ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-500/30 dark:bg-emerald-500/10' : 'border-border/60 bg-muted/20'}`}
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium">{s.name} <span className="text-muted-foreground">({s.nickname})</span></p>
                     <p className="text-xs text-muted-foreground">{s.phone}</p>
                     <p className="text-xs text-muted-foreground">{s.bank_name} · {s.bank_account_number} · {s.bank_account_name}</p>
                     {s.bank_branch && <p className="text-xs text-muted-foreground">สาขา: {s.bank_branch}</p>}
-                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    {!ops && <div className="flex items-center gap-2 mt-2 flex-wrap">
                       {/* ค่าจ้าง — per-job fee in THB (commits on blur) */}
                       <div className="flex items-center gap-1.5">
                         <label className="text-xs font-medium text-muted-foreground">ค่าจ้าง</label>
@@ -977,7 +984,7 @@ function JobDetail({
                       >
                         {s.paid ? <><Check className="w-3 h-3" /> จ่ายแล้ว</> : <>ยังไม่จ่าย</>}
                       </button>
-                    </div>
+                    </div>}
                   </div>
                   <div className="flex items-center gap-1 ml-2 shrink-0">
                     <button onClick={() => setEditingStaff(s)} className="text-muted-foreground hover:text-foreground transition-colors p-0.5" title="แก้ไขข้อมูล / Edit staff">
@@ -1031,7 +1038,7 @@ function JobDetail({
                   {OP_STAGE_LABELS[job.op_stage as OPStage] ?? job.op_stage}
                 </span>
                 <span className="text-muted-foreground">·</span>
-                <DealValueText deal={job} compact className="font-mono text-[12px] text-foreground shrink-0" />
+                {job.is_ops ? <span className="font-mono text-[11px] font-bold tracking-wider text-muted-foreground">OPS</span> : <DealValueText deal={job} compact className="font-mono text-[12px] text-foreground shrink-0" />}
                 {job.owner && <><span className="text-muted-foreground">·</span><span className="text-[12px] text-foreground truncate">{job.owner}</span></>}
               </>
             }
@@ -1066,14 +1073,14 @@ function JobDetail({
                 ),
               },
               { label: 'OP Stage', node: <JobStagePill job={job} /> },
-              {
+              ...(job.is_ops ? [{ label: 'Type', node: <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] font-bold tracking-wider text-muted-foreground">OPS · internal</span> }] : [{
                 label: 'Value',
                 node: (
                   <span className="font-semibold">
                     <DealValueField deal={job} onSave={(p) => u(p)} />
                   </span>
                 ),
-              },
+              }]),
               {
                 label: 'Due',
                 node: (
@@ -1498,6 +1505,8 @@ export default function WonReadyOpPage() {
   }
   const [calStart, setCalStart] = useState(() => weekStart())
   const [calStaffFor, setCalStaffFor] = useState<string | null>(null)
+  const [addingOps, setAddingOps] = useState(false)
+  const [kind, setKind] = useState<'all' | 'client' | 'ops'>('all')
   // Open a specific card from a notification deep-link signal.
   useOpenDeepLink(
     isHydrated && wonJobs.length > 0,
@@ -1703,9 +1712,10 @@ export default function WonReadyOpPage() {
     .filter((j) => (showArchived ? j.is_archived : !j.is_archived))
     .filter((j) => matchesAssigneeFilter(j.assignee_ids, assigneeFilter, user?.id))
     .filter(matchesSearch)
+    .filter((j) => kind === 'all' || (kind === 'ops' ? !!j.is_ops : !j.is_ops))
   const activeCount = boardJobs.filter((j) => j.op_stage !== 'OP_DONE_PAYMENT').length
   const totalValue = boardJobs
-    .filter((j) => j.op_stage !== 'OP_DONE_PAYMENT')
+    .filter((j) => j.op_stage !== 'OP_DONE_PAYMENT' && !j.is_ops)
     .reduce((s, j) => s + (j.estimated_value || 0), 0)
 
   // Sort stages based on their order property in the store, including custom stages
@@ -1770,7 +1780,14 @@ export default function WonReadyOpPage() {
           </div>
         </div>
         <div className="flex items-center gap-1.5 ml-auto">
+          <select value={kind} onChange={(e) => setKind(e.target.value as 'all' | 'client' | 'ops')} aria-label="Client or Ops jobs"
+            className="h-8 rounded-lg border border-border bg-card px-2 text-[12px] text-foreground">
+            <option value="all">All jobs</option><option value="client">Client</option><option value="ops">OPS</option>
+          </select>
           <AssigneeFilter value={assigneeFilter} onChange={setAssigneeFilter} meId={user?.id} />
+          <Button size="sm" onClick={() => setAddingOps(true)} className="h-8 gap-1.5 px-2.5" title="Add an internal Ops job (no lead)">
+            <Plus className="w-4 h-4" /><span className="hidden sm:inline">Add job</span>
+          </Button>
           {(showArchived || archivedCount > 0) && (
             <button
               type="button"
@@ -1903,6 +1920,10 @@ export default function WonReadyOpPage() {
       </DndContext>
       )}
 
+      {addingOps && (
+        <AddOpsJobDialog owner={user?.user_metadata?.full_name ?? user?.email ?? ''} onClose={() => setAddingOps(false)}
+          onCreated={(id) => { setAddingOps(false); setSelectedId(id) }} />
+      )}
       {calStaffFor && <StaffSheet jobId={calStaffFor} onClose={() => setCalStaffFor(null)} />}
       {selectedId && <JobDetail jobId={selectedId} onClose={() => setSelectedId(null)} onDelete={handleDeleteCard} />}
       {adhocOpenKind && (() => {

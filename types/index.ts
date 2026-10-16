@@ -333,6 +333,7 @@ export interface WonJob {
   team_meeting_time: string | null     // เวลานัดหมายทีม
   onsite_notes: string | null          // หมายเหตุหน้างาน
   staff_list: StaffMember[] | null     // Staff assigned to this job
+  is_ops?: boolean                     // internal Ops job: no lead, no value, no per-job staff pay
   staff_needed?: number | null         // headcount the event needs (Operation calendar: assigned / needed)
   inventory_status?: InventoryStatus | null  // prep status (Operation calendar pill)
   inventory_note?: string | null
