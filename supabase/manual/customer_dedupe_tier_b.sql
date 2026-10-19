@@ -1,14 +1,19 @@
 -- ============================================================================
 -- Customer de-dup — Tier B (real customers with leads/jobs). MANUAL, Supabase.
 -- Decisions confirmed by user 2026-10-19. Explicit IDs — run once.
--- Whole script = one transaction in the SQL editor; any error → nothing changes.
+-- Runs as ONE DO block (a single statement) — the Supabase editor does not keep
+-- helper tables between statements. Any error → nothing changes.
+-- Expected after: customers = 1719, backed_up = 558, dangling = 0.
 -- Leads / won jobs / activities are re-pointed to the keeper; customer_name
 -- text on leads/jobs is left as-is. Backup → customers_merge_backup.
 -- Expected: 32 rows merged + 2 test rows deleted → 1753 - 34 = 1719 customers.
 -- ============================================================================
 
+DO $merge$
+BEGIN
 DROP TABLE IF EXISTS customers_merge_map;
-CREATE TABLE customers_merge_map (dup_id text PRIMARY KEY, keeper_id text NOT NULL);
+
+CREATE TEMP TABLE customers_merge_map (dup_id text PRIMARY KEY, keeper_id text NOT NULL);
 INSERT INTO customers_merge_map (dup_id, keeper_id) VALUES
   -- 1. ทศภาค – คุณไอซ์ → บริษัท ทศภาค จำกัด
   ('cust-1780649281800','cust-1781498893374'), ('cust-1781498820562','cust-1781498893374'),
@@ -96,12 +101,15 @@ UPDATE activities         t SET entity_id   = m.keeper_id FROM customers_merge_m
 DELETE FROM customers c USING customers_merge_map m WHERE c.customer_id = m.dup_id;
 DELETE FROM customers WHERE customer_id IN ('cust-1780375456304','cust-1783421789007');
 
+DROP TABLE customers_merge_map;
+END
+$merge$;
+
 -- CHECK: dangling should be 0
 SELECT (SELECT count(*) FROM customers) AS customers,
-       (SELECT count(*) FROM customers_merge_map) AS merged,
+       (SELECT count(*) FROM customers_merge_backup) AS backed_up,
        (SELECT count(*) FROM lead_opportunities l WHERE l.customer_id <> '' AND l.customer_id IS NOT NULL
           AND NOT EXISTS (SELECT 1 FROM customers c WHERE c.customer_id = l.customer_id)) AS dangling_leads,
        (SELECT count(*) FROM won_jobs j WHERE j.customer_id <> '' AND j.customer_id IS NOT NULL
           AND NOT EXISTS (SELECT 1 FROM customers c WHERE c.customer_id = j.customer_id)) AS dangling_jobs;
 
-DROP TABLE customers_merge_map;
