@@ -57,7 +57,7 @@ Unified detail header and Phase 5 card actions are shipped. What's left:
 
 9. **Customer DB de-dup** (Tier A ✅ done 2026-10-19; Tier B/C + Step 4 pending). Script: `supabase/manual/customer_dedupe_tier_a.sql`.
    - **Tier A — exact import copies** (same cleaned name + same email): 321 groups, 524 rows removed, 0 with leads/jobs, 2276 → 1752. ✅ **Ran 2026-10-19:** 524 backed up to `customers_merge_backup`, 321 keepers, 0 left behind → 1753 customers.
-   - **Tier B — real customers with leads/jobs** (ทศภาค ×27, GMM/จีเอ็มเอ็ม ×9, Chubb, Adidas, เซทเลอร์ ×5, ดิ ออล เวย์, บอนดูบา/พีเพิล บีไฮนด์, Sixsheet group): needs per-group keep/merge checklist. (Med)
+   - **Tier B — real customers with leads/jobs** (ทศภาค ×27, GMM/จีเอ็มเอ็ม ×9, Chubb, Adidas, เซทเลอร์ ×5, ดิ ออล เวย์, บอนดูบา/พีเพิล บีไฮนด์, Sixsheet group): decisions confirmed 2026-10-19 → `supabase/manual/customer_dedupe_tier_b.sql` (32 merges + 2 test deletes, ready to run). Adidas → โซลโฟร์สตรีท, Aespa → SM True, GMM คุณแท๊บ renamed to บริษัท จีเอ็มเอ็ม แกรมมี่; พีเพิล บีไฮนด์ kept separate. (Med)
    - **Tier C — do NOT merge:** generic names (คุณ, คุณแป้ง, Khun, admin, บริษัท), `#(ลูกค้าไม่แจ้ง)`, Central Pattana branches (separate tax entities), Chubb vs อัลฟ่า 51. vittavin@gmail.com test rows → delete.
    - **Root cause fix (Step 4):** adding a lead creates a new customer each time → add duplicate warning / pick-existing in add forms, or dupes return. (Med)
 
