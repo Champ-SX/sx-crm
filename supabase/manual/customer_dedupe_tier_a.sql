@@ -5,15 +5,15 @@
 -- Scope: same cleaned company name AND same email. Preview (2026-10-16):
 --   321 groups · 524 rows removed · 0 removed rows have leads/jobs · 2276 → 1752
 --
--- HOW TO RUN: run everything down to the CHECK select (no COMMIT). Expect
---   backed_up = 524 (+ any earlier backup rows), customers = 1752 (minus new
---   customers added since). Then run COMMIT;  — or ROLLBACK; if it looks wrong.
+-- HOW TO RUN: paste the whole file and run once. The Supabase SQL editor runs
+--   the whole script as ONE transaction — any error = nothing changes.
+--   Expect backed_up = 524, customers = 1752 (adjusted for customers added since).
+--   (No TEMP table / BEGIN-COMMIT: the editor drops temp tables between statements.)
 -- Re-run the preview query first if lots of time has passed.
 -- UNDO: rows are in customers_merge_backup (merged_into = keeper id).
 -- ============================================================================
-BEGIN;
-
-CREATE TEMP TABLE merge_map ON COMMIT DROP AS
+DROP TABLE IF EXISTS customers_merge_map;
+CREATE TABLE customers_merge_map AS
 WITH c AS (
   SELECT cu.customer_id, cu.created_at,
     regexp_replace(regexp_replace(lower(coalesce(cu.company_name,'')),
@@ -34,7 +34,7 @@ SELECT customer_id AS dup_id, keeper_id FROM g WHERE rn > 1;
 CREATE TABLE IF NOT EXISTS customers_merge_backup AS
   SELECT c.*, now() AS merged_at, ''::text AS merged_into FROM customers c WHERE false;
 INSERT INTO customers_merge_backup
-  SELECT c.*, now(), m.keeper_id FROM customers c JOIN merge_map m ON m.dup_id = c.customer_id;
+  SELECT c.*, now(), m.keeper_id FROM customers c JOIN customers_merge_map m ON m.dup_id = c.customer_id;
 
 UPDATE customers k SET
   contact_person      = coalesce(nullif(k.contact_person,''),      d.contact_person),
@@ -58,20 +58,20 @@ FROM (
     max(nullif(c.branch,'')) branch, max(nullif(c.billing_contact,'')) billing_contact,
     max(nullif(c.bank_name,'')) bank_name, max(nullif(c.bank_account_number,'')) bank_account_number,
     max(nullif(c.bank_account_name,'')) bank_account_name, max(nullif(c.notes,'')) notes
-  FROM merge_map m JOIN customers c ON c.customer_id = m.dup_id
+  FROM customers_merge_map m JOIN customers c ON c.customer_id = m.dup_id
   GROUP BY m.keeper_id
 ) d
 WHERE k.customer_id = d.keeper_id;
 
-UPDATE lead_opportunities t SET customer_id = m.keeper_id FROM merge_map m WHERE t.customer_id = m.dup_id;
-UPDATE won_jobs           t SET customer_id = m.keeper_id FROM merge_map m WHERE t.customer_id = m.dup_id;
-UPDATE activities         t SET entity_id   = m.keeper_id FROM merge_map m
+UPDATE lead_opportunities t SET customer_id = m.keeper_id FROM customers_merge_map m WHERE t.customer_id = m.dup_id;
+UPDATE won_jobs           t SET customer_id = m.keeper_id FROM customers_merge_map m WHERE t.customer_id = m.dup_id;
+UPDATE activities         t SET entity_id   = m.keeper_id FROM customers_merge_map m
   WHERE t.entity_type = 'customer' AND t.entity_id = m.dup_id;
 
-DELETE FROM customers c USING merge_map m WHERE c.customer_id = m.dup_id;
+DELETE FROM customers c USING customers_merge_map m WHERE c.customer_id = m.dup_id;
 
 -- CHECK
 SELECT (SELECT count(*) FROM customers_merge_backup) AS backed_up,
        (SELECT count(*) FROM customers)              AS customers;
 
--- COMMIT;   ← run separately after checking
+DROP TABLE customers_merge_map;
