@@ -61,6 +61,13 @@ Unified detail header and Phase 5 card actions are shipped. What's left:
    - **Tier C — do NOT merge:** generic names (คุณ, คุณแป้ง, Khun, admin, บริษัท), `#(ลูกค้าไม่แจ้ง)`, Central Pattana branches (separate tax entities), Chubb vs อัลฟ่า 51. vittavin@gmail.com test rows deleted ✅.
    - **Root cause fix (Step 4):** adding a lead creates a new customer each time → add duplicate warning / pick-existing in add forms, or dupes return. (Med)
 
+10. **Order board — Supplies / Assets / Suppliers** (design approved 2026-10-20, not built). Mockup: `docs/mockups/orders-stock-assets.html`. Board = **Order** (ANF + CAP*TURES merged, grouped by branch: Phuket, BACC, Cloud11, CAP*TURES Event…).
+   - **Kind (fixed field, not a tag):** every product is `supply` or `asset`; Category stays underneath (Paper/Ink/Sleeve… vs Computer/Camera/Light/Router…, admin-editable). Board gets Supplies / Assets tabs — Supplies keeps today's qty/LOW/OUT/＋Order table; Assets = one row per physical unit.
+   - **Assets (new `anf_assets`, one row per unit):** ID = category prefix + running number (CAM-001, LGT-004, PC-003, RTR-002), never re-used. Fields: serial, purchase date, value, warranty, status. **Location** = R1–R3 + shelf A/B/C (rack layout to be revised physically first) · F factory · EV1–EV3 (+ add more) **linked to a Won job #** · states REPAIR / LOST / RETIRED. Every move logged (who/when/from→to) in a move-history table.
+   - **QR/barcode (later phase):** QR encodes `…/a/<ASSET-ID>`; phone scan opens the card with one-tap "Move to…". Print-label button.
+   - **Suppliers (new shared table):** name, contact person, phone, LINE, email, website/shop link, address, tax ID, payment terms, notes — no passwords/bank logins. Item ↔ supplier links (many-to-many) with one **preferred**, each with price, unit, lead time, min order, how to order, note. ＋Order pre-fills the preferred supplier; Call / LINE buttons. Admin edits, all staff view.
+   - Phases: (1) kind + categories, (2) assets + locations + move log + Won-job link, (3) suppliers, (4) QR scan + labels. (High)
+
 Email notifications were **dropped** (Web Push covers it). Full per-phase detail is in the sections below (all now marked ✅ Complete).
 
 ### Pending hand-offs (run in Supabase)

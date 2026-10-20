@@ -1,0 +1,71 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Duplicate Customer Warning</title>
+<style>
+:root{--bg:#f4f4f5;--card:#fff;--fg:#18181b;--mut:#71717a;--bd:#e4e4e7;--amber:#b45309;--amberbg:#fffbeb;--amberbd:#fcd34d;--pri:#18181b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#09090b;--card:#18181b;--fg:#fafafa;--mut:#a1a1aa;--bd:#27272a;--amber:#fbbf24;--amberbg:#2a1f05;--amberbd:#78530a;--pri:#fafafa}}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,sans-serif;padding:24px 16px}
+h1{font-size:18px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px;max-width:1120px}
+.cap{font-size:12px;font-weight:600;color:var(--mut);letter-spacing:.04em;margin-bottom:8px}
+.dlg{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:18px}
+.t{font-weight:600;margin-bottom:12px}
+.lbl{font-size:11px;font-weight:600;color:var(--mut);letter-spacing:.05em;margin:12px 0 5px}
+.in{border:1px solid var(--bd);border-radius:7px;padding:8px 10px;font-size:13px}
+.in.foc{border-color:var(--fg)}
+.dd{border:1px solid var(--bd);border-radius:8px;margin-top:4px;overflow:hidden;font-size:13px}
+.dd .h{font-size:11px;color:var(--mut);padding:5px 10px;border-bottom:1px solid var(--bd);background:color-mix(in srgb,var(--bd) 35%,transparent)}
+.dd .r{padding:7px 10px;display:flex;justify-content:space-between}.dd .r span{color:var(--mut);font-size:12px}
+.dd .new{padding:7px 10px;color:var(--mut);font-size:12px;border-top:1px solid var(--bd)}
+.warn{border:1px solid var(--amberbd);background:var(--amberbg);border-radius:9px;padding:10px 12px;margin-top:10px}
+.warn .wt{color:var(--amber);font-weight:600;font-size:13px}
+.m{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1px solid var(--bd);border-radius:7px;padding:8px 10px;margin-top:7px}
+.m b{font-size:13px}.m small{display:block;color:var(--mut);font-size:12px}
+.btn{border:1px solid var(--bd);background:var(--card);border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;white-space:nowrap;color:var(--fg)}
+.btn.p{background:var(--pri);color:var(--card);border-color:var(--pri)}
+.link{font-size:12px;color:var(--mut);margin-top:8px;text-decoration:underline}
+.why{font-size:11px;color:var(--amber);font-weight:600}
+.foot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+ul{color:var(--mut);font-size:13px;max-width:1120px;padding-left:18px}
+</style></head><body>
+<h1>Duplicate customer warning</h1>
+<p class="sub">Stops a new customer record being created when the person already exists (how ทศภาค ended up with 27 records).</p>
+<div class="grid">
+
+<div><div class="cap">1 · COMPANY SEARCH FINDS NAME VARIANTS</div>
+<div class="dlg"><div class="t">New Lead / Opportunity</div>
+<div class="lbl">COMPANY</div><div class="in foc">ทศภาค</div>
+<div class="dd"><div class="h">Existing companies</div>
+<div class="r">บริษัท ทศภาค จำกัด <span>2 contacts · 18 leads</span></div>
+<div class="new">+ Create “ทศภาค” as new company</div></div>
+<p class="link" style="text-decoration:none">Matching ignores บริษัท / จำกัด / (มหาชน) / Co., Ltd., spaces and punctuation, so “ทศภาค” finds “บริษัท ทศภาค จำกัด”.</p>
+</div></div>
+
+<div><div class="cap">2 · “+ NEW CONTACT” MATCHES AN EXISTING ONE</div>
+<div class="dlg"><div class="t">New Lead / Opportunity</div>
+<div class="lbl">NEW CONTACT NAME</div><div class="in">คุณไอซ์</div>
+<div class="lbl">PHONE</div><div class="in foc">081-429-6696</div>
+<div class="warn"><div class="wt">⚠ This contact may already exist</div>
+<div class="m"><div><b>คุณไอซ์ ทศภาค</b><small>บริษัท ทศภาค จำกัด · 081 429 6696 · 18 leads</small><span class="why">Same phone</span></div><button class="btn p">Use this</button></div>
+<div class="link">Not the same person — create new anyway</div></div>
+<div class="foot"><button class="btn">Cancel</button><button class="btn p">Create lead</button></div>
+</div></div>
+
+<div><div class="cap">3 · NEW CUSTOMER FORM (CUSTOMERS PAGE)</div>
+<div class="dlg"><div class="t">New Customer</div>
+<div class="lbl">COMPANY</div><div class="in">Chubb</div>
+<div class="lbl">CONTACT</div><div class="in">คุณณัฐ</div>
+<div class="warn"><div class="wt">⚠ 2 possible matches</div>
+<div class="m"><div><b>Chubb · คุณณัฐ</b><small>064 424 5354 · 2 leads</small><span class="why">Same company + name</span></div><button class="btn p">Open</button></div>
+<div class="m"><div><b>อัลฟ่า 51 · คุณณัฐ</b><small>064 424 5354 · 1 lead</small><span class="why">Same phone</span></div><button class="btn">Open</button></div>
+<div class="link">None of these — create new anyway</div></div>
+<div class="foot"><button class="btn">Cancel</button><button class="btn p" disabled style="opacity:.45">Create</button></div>
+</div></div>
+</div>
+<ul>
+<li><b>Matches on:</b> same cleaned company + contact name, or the same phone (digits only, +66 → 0), or the same email. Checked as you type, against customers already loaded — no extra server call.</li>
+<li><b>Lead form:</b> “Use this” links the lead to the existing record and closes the new-contact panel. Creating anyway is still allowed with one click — it's a warning, not a block.</li>
+<li><b>Customer form:</b> Create stays disabled until you either open a match or choose “create new anyway” (stronger, because this form only creates customers).</li>
+<li>Placeholders like “#(ลูกค้าไม่แจ้ง)” and phone “0” are ignored, so they never trigger a warning.</li>
+</ul>
+</body></html>

@@ -1,0 +1,170 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Supplies, Assets, Suppliers</title>
+<style>
+:root{--bg:#f6f4ee;--card:#fff;--fg:#18181b;--mut:#71717a;--bd:#e4e2da;--sub:#f1efe8;--lemon:#e8f25c;--org:#f08a24;--grn:#15803d;--red:#b91c1c;--blu:#2563eb}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c0c0d;--card:#18181b;--fg:#fafafa;--mut:#a1a1aa;--bd:#2a2a2e;--sub:#202024;--grn:#4ade80;--red:#f87171;--blu:#60a5fa}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,"Noto Sans Thai",sans-serif;padding:24px 16px}
+.mono{font-family:ui-monospace,"JetBrains Mono",monospace}
+h1{font-size:19px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 22px;max-width:900px}
+h2{font-size:12px;letter-spacing:.06em;color:var(--mut);margin:0 0 8px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:22px;max-width:1200px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px}
+.tabs{display:flex;gap:4px;border:1px solid var(--bd);border-radius:9px;padding:3px;width:max-content;margin-bottom:10px}
+.tabs span{padding:5px 12px;border-radius:6px;font-size:13px;font-weight:600;color:var(--mut)}
+.tabs .on{background:var(--fg);color:var(--card)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chip{font-size:11px;border:1px solid var(--bd);border-radius:999px;padding:2px 9px;color:var(--mut)}
+.chip.on{border-color:var(--fg);color:var(--fg);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:10px;letter-spacing:.06em;color:var(--mut);text-align:left;font-weight:700;padding:5px 4px;border-bottom:1px solid var(--bd)}
+td{padding:7px 4px;border-bottom:1px solid var(--bd);vertical-align:top}
+td small{display:block;color:var(--mut);font-size:11px}
+.kind{font-size:10px;font-weight:700;letter-spacing:.05em;border-radius:4px;padding:1px 6px}
+.k-s{background:var(--sub);color:var(--mut)}.k-a{background:var(--lemon);color:#18181b}
+.loc{font-size:11px;font-weight:700;border-radius:5px;padding:2px 7px;white-space:nowrap}
+.l-r{background:color-mix(in srgb,var(--blu) 14%,transparent);color:var(--blu)}
+.l-f{background:var(--sub);color:var(--fg)}
+.l-e{background:color-mix(in srgb,var(--org) 18%,transparent);color:var(--org)}
+.l-x{background:color-mix(in srgb,var(--red) 14%,transparent);color:var(--red)}
+.lbl{font-size:10px;letter-spacing:.06em;font-weight:700;color:var(--mut);margin:12px 0 5px}
+.row{display:flex;gap:10px;align-items:center}
+.qr{width:92px;height:92px;border:1px solid var(--bd);border-radius:8px;background:
+ repeating-linear-gradient(90deg,var(--fg) 0 6px,transparent 6px 10px),repeating-linear-gradient(0deg,var(--card) 0 5px,transparent 5px 11px);flex:none}
+.big{font-size:20px;font-weight:700}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.opt{border:1px solid var(--bd);border-radius:8px;padding:8px;text-align:center;font-size:12px}
+.opt b{display:block;font-size:15px}
+.opt.on{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg)}
+.pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.pills span{border:1px solid var(--bd);border-radius:6px;padding:3px 9px;font-size:12px}
+.pills .on{background:var(--fg);color:var(--card);border-color:var(--fg)}
+.hist{font-size:12px;color:var(--mut);border-left:2px solid var(--bd);padding-left:10px;margin-top:6px}
+.hist div{margin-bottom:4px}
+.sup{border:1px solid var(--bd);border-radius:9px;padding:10px 12px;margin-top:8px}
+.sup.pref{border-color:var(--fg)}
+.sup .top{display:flex;justify-content:space-between;align-items:center}
+.tag{font-size:10px;font-weight:700;background:var(--lemon);color:#18181b;border-radius:4px;padding:1px 6px}
+.kv{display:grid;grid-template-columns:90px 1fr;gap:3px 8px;font-size:12px;margin-top:6px}
+.kv span:nth-child(odd){color:var(--mut)}
+.btn{display:inline-block;border:1px solid var(--bd);border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;background:var(--card);color:var(--fg)}
+.btn.p{background:var(--fg);color:var(--card);border-color:var(--fg)}
+.note{max-width:1200px;margin-top:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:22px}
+.note .card p,.note .card li{font-size:13px;color:var(--mut)}
+.note b{color:var(--fg)}
+ul{padding-left:18px;margin:6px 0}
+</style></head><body>
+<h1>Orders &amp; Stock — Supplies, Assets, Suppliers</h1>
+<p class="sub">ANF Order / Stock board. Every item becomes either a <b>Supply</b> (counted, used up, re-ordered) or an <b>Asset</b> (one physical unit with its own ID, tracked by location). Suppliers are a shared contact list linked to items.</p>
+
+<div class="grid">
+
+<!-- 1. ITEMS LIST -->
+<div><h2>1 · ITEMS — SUPPLIES / ASSETS TABS</h2>
+<div class="card">
+ <div class="tabs"><span>All</span><span>Supplies 42</span><span class="on">Assets 18</span></div>
+ <div class="chips"><span class="chip on">All</span><span class="chip">Computer</span><span class="chip">Camera</span><span class="chip">Light</span><span class="chip">Router</span><span class="chip">+ category</span></div>
+ <table>
+  <tr><th>ID</th><th>ITEM</th><th>LOCATION</th><th>STATE</th></tr>
+  <tr><td class="mono">CAM-001</td><td>Canon R6 II<small>Camera · SN 0381…</small></td><td><span class="loc l-r mono">R1 · A</span></td><td>Ready</td></tr>
+  <tr><td class="mono">CAM-002</td><td>Canon R6 II<small>Camera</small></td><td><span class="loc l-e mono">EV2 · #112</span></td><td>On event</td></tr>
+  <tr><td class="mono">LGT-004</td><td>Godox AD200<small>Light</small></td><td><span class="loc l-f mono">F</span></td><td>Ready</td></tr>
+  <tr><td class="mono">PC-003</td><td>MacBook Air M2<small>Computer</small></td><td><span class="loc l-x mono">REPAIR</span></td><td>Repair</td></tr>
+  <tr><td class="mono">RTR-002</td><td>TP-Link 4G router<small>Router</small></td><td><span class="loc l-r mono">R3 · B</span></td><td>Ready</td></tr>
+ </table>
+ <p style="font-size:12px;color:var(--mut);margin:10px 0 0">Supplies tab keeps today's table (qty per branch, LOW/OUT, ＋Order). Assets tab shows one row per unit.</p>
+</div></div>
+
+<!-- 2. ASSET CARD + LOCATION -->
+<div><h2>2 · ASSET CARD — ID, QR, LOCATION</h2>
+<div class="card">
+ <div class="row"><div class="qr" aria-label="QR placeholder"></div>
+  <div><div class="mono big">CAM-002</div><div>Canon R6 II · Camera</div><div style="font-size:12px;color:var(--mut)">SN 0381-77A · bought 2025-11 · ฿ 79,900</div>
+  <div style="margin-top:6px"><span class="btn">Print label</span></div></div></div>
+ <div class="lbl">WHERE IS IT?</div>
+ <div class="seg">
+  <div class="opt"><b class="mono">R</b>Rack</div>
+  <div class="opt"><b class="mono">F</b>Factory</div>
+  <div class="opt on"><b class="mono">EV</b>On event</div>
+ </div>
+ <div class="lbl">EVENT SLOT</div>
+ <div class="pills"><span>EV1</span><span class="on">EV2</span><span>EV3</span><span>+ EV4</span></div>
+ <div class="lbl">LINKED JOB (optional)</div>
+ <div class="pills"><span class="on mono">#112 · 2026.10.24 GMM GFest @Impact</span></div>
+ <div class="lbl">HISTORY</div>
+ <div class="hist">
+  <div><b>→ EV2 · #112</b> — 20 Oct, by Champ</div>
+  <div>→ R1 · A — 12 Oct, by Fine</div>
+  <div>→ F (cleaning) — 10 Oct, by Andy</div>
+ </div>
+</div></div>
+
+<!-- 3. SUPPLIER ON ITEM -->
+<div><h2>3 · SUPPLIER ON THE ITEM</h2>
+<div class="card">
+ <div class="mono big" style="font-size:16px">RX1 Paper 4×6</div>
+ <div style="font-size:12px;color:var(--mut)">Supply · Paper · unit box</div>
+ <div class="sup pref">
+  <div class="top"><b>DNP Thailand</b><span class="tag">PREFERRED</span></div>
+  <div class="kv">
+   <span>Contact</span><span>คุณแนน · 08x-xxx-xxxx · LINE @dnpth</span>
+   <span>Price</span><span class="mono">฿ 2,450 / box</span>
+   <span>Lead time</span><span>3–5 days</span>
+   <span>Min order</span><span>2 boxes</span>
+   <span>Order via</span><span>LINE / email PO</span>
+   <span>Note</span><span>Order before 14:00 for next-day dispatch</span>
+  </div>
+  <div style="margin-top:8px;display:flex;gap:6px"><span class="btn p">＋ Order from DNP</span><span class="btn">Call</span><span class="btn">LINE</span></div>
+ </div>
+ <div class="sup">
+  <div class="top"><b>Shopee — PhotoSupply</b><span style="font-size:11px;color:var(--mut)">backup</span></div>
+  <div class="kv"><span>Price</span><span class="mono">฿ 2,690 / box</span><span>Link</span><span>shopee.co.th/…</span></div>
+ </div>
+ <div style="margin-top:8px"><span class="btn">＋ Link supplier</span></div>
+</div></div>
+
+<!-- 4. SUPPLIERS DIRECTORY -->
+<div><h2>4 · SUPPLIERS — SHARED CONTACT LIST</h2>
+<div class="card">
+ <table>
+  <tr><th>SUPPLIER</th><th>CONTACT</th><th>ITEMS</th></tr>
+  <tr><td><b>DNP Thailand</b><small>Paper · Ribbon</small></td><td>คุณแนน<small>LINE @dnpth</small></td><td class="mono">6</td></tr>
+  <tr><td><b>Big Camera</b><small>Camera · Light</small></td><td>B2B desk<small>02-xxx-xxxx</small></td><td class="mono">9</td></tr>
+  <tr><td><b>Advice IT</b><small>Computer · Router</small></td><td>คุณบอล<small>email</small></td><td class="mono">4</td></tr>
+ </table>
+ <div class="lbl">SUPPLIER FIELDS</div>
+ <div style="font-size:12px;color:var(--mut)">Name · contact person · phone · LINE · email · website / shop link · address · tax ID (for invoices) · payment terms (cash / credit 30) · notes. <b>No passwords or bank logins.</b></div>
+</div></div>
+
+</div>
+
+<div class="note">
+<div class="card"><h2>RECOMMENDATION · SUPPLIES vs ASSETS</h2>
+<ul>
+<li><b>A fixed “Kind” field, not a tag.</b> Supply and Asset behave differently (qty vs individual units, re-order vs location tracking), so the app needs one clear value it can rely on — tags can be missing, duplicated or misspelled.</li>
+<li>Keep <b>Category</b> underneath as today (Paper, Ink, Sleeve… / Computer, Camera, Light, Router…), editable by admin.</li>
+<li>Tags can still be added later for free-form labels (e.g. “fragile”, “CAP*TURES kit A”).</li>
+</ul></div>
+<div class="card"><h2>RECOMMENDATION · ASSET ID &amp; LOCATION</h2>
+<ul>
+<li><b>ID = category prefix + running number:</b> CAM-001, LGT-004, PC-003, RTR-002. Short, readable aloud, prints well as QR/barcode. Never re-used, even if the asset is retired.</li>
+<li><b>Location = zone + slot:</b> <span class="mono">R1–R3</span> (rack, optional shelf A/B/C) · <span class="mono">F</span> factory · <span class="mono">EV1–EV3</span> event kit slot, optionally linked to a Won job #. Plus states <span class="mono">REPAIR</span> / <span class="mono">LOST</span> / <span class="mono">RETIRED</span>.</li>
+<li>Every move is logged (who, when, from → to) so “where was CAM-002 last week?” has an answer.</li>
+<li><b>QR later:</b> the QR just encodes a link like <span class="mono">sx-crm.vercel.app/a/CAM-002</span>. Scanning opens the card with a one-tap “Move to…” — no extra hardware needed, any phone camera works.</li>
+</ul></div>
+<div class="card"><h2>RECOMMENDATION · SUPPLIERS</h2>
+<ul>
+<li><b>Separate Suppliers list</b>, linked to items (one supplier → many items; one item → several suppliers with one <b>preferred</b>).</li>
+<li>Per link: price, unit, lead time, min order, how to order, note. ＋Order pre-fills the preferred supplier.</li>
+<li>Admin edits suppliers; staff can see them so anyone can re-order.</li>
+</ul></div>
+<div class="card"><h2>QUESTIONS FOR YOU</h2>
+<ul>
+<li>Which board(s)? I assumed the <b>ANF Order/Stock</b> board — should CAP*TURES assets (booths, cameras for events) live here too?</li>
+<li>Rack shelves: just R1/R2/R3, or R1-A/B/C?</li>
+<li>EV slots: fixed EV1–EV3, or free to add more? Link to Won job — yes/no?</li>
+<li>Asset value / purchase date / warranty — track them?</li>
+</ul></div>
+</div>
+</body></html>
