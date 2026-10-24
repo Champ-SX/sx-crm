@@ -1,11 +1,11 @@
-# 📊 Current State - SX-CRM August 14, 2026
+# 📊 Current State - SX-CRM October 24, 2026
 
 ## 🎯 Project Status
 
 **Production URL:** https://sx-crm.vercel.app  
 **Build Status:** ✅ Passing  
-**Last Update:** August 17, 2026  
-**Current Phase:** Assign-to + board/detail redesign + CAP*TURES design system shipped ✅ — see backlog for what's left
+**Last Update:** October 24, 2026  
+**Current Phase:** Cosmo sync live ✅ · customer de-dup done ✅ — see backlog below
 
 ### Deployment History
 - **v1.0.0** (June 2, 2026) — Phase 1 Complete ✅
@@ -25,55 +25,43 @@
 - **Board + detail redesign** (Aug 17, 2026) — Won board card decomposed (name-first, mono #/date, tags, assignee avatars); Won single-card title = full canonical `formatJobTitle`; Leads kept original format + full names; per-person avatar colours ✅
 - **v6.0 — CAP*TURES design system, app-wide** (Aug 17, 2026) — cream surfaces, JetBrains Mono for data, mono micro-labels, status as dot + mono, decorative tints (blue/amber/indigo/violet/teal/purple/sky/pink/slate/zinc) → neutral tokens with lemon/orange accents; semantic green/red kept. Won stage-colours + image lightbox preserved. Verified light + dark ✅
 
+- **Multiple boards** (Sep–Oct 2026) — CAP*TURES + Andy & Fine. tasks board (Trello import, drag & drop, Cloud11); ANF Order/Stock merged into one **Order** board ✅
+- **ANF Stock/Order** (Aug–Sep 2026) — warehouse model + transfers, order archive, bilingual headers, product catalog (picker + management) ✅
+- **Won & Ready OP calendar** (Oct 2026) — 9-day Mon-start calendar, staff/AW/inventory pills, ready prompts, ongoing lane, Ops jobs (OPS-NN), new stage OP-จบงาน ✅
+- **Deal value** (Oct 2026) — fixed price or % GP share ✅ · Activity panel redesign ✅ · Adhoc payment month-rollover fix ✅
+- **Customer de-dup** (Oct 19, 2026) — 2,276 → 1,719 customers; backup in `customers_merge_backup` ✅
+- **Cosmo sync** (Oct 22–24, 2026) — setup/teardown/venue/site contact/team leads beside each Won card, 30-min pg_cron + Sync now, SU/TD calendar pills, responsive ✅
 ---
 
-## 🗂️ Remaining Backlog (nothing in-flight)
+## 🗂️ Remaining Backlog (updated Oct 24, 2026)
 
-Unified detail header and Phase 5 card actions are shipped. What's left:
+1. **Duplicate customer warning** — add lead / add customer forms warn when name, phone or email matches an existing customer ("Use this" / "create anyway"). Mockup: `docs/mockups/customer-dup-warning.html`. Stops ทศภาค-style copies. (Med)
+2. **Order board — Supplies / Assets / Suppliers** — design approved; see detail below. Racks R1–R3 + shelves A/B/C to be checked physically before phase 2. (High)
+3. **Cosmo "Open in Cosmo ↗" link** — waiting for Bestclus to add `jobUrl` (e.g. `/job/4SZs67Hy`) to `/api/public/installs`. (Low)
+4. **Cosmo phase 2 — crew & payment per phase** (setup / event / teardown; per-job vs long-term contractor vs contractor team). Open questions on fees. (Med-High)
+5. **GP-share deals — actual sales after the event.** (Low)
+6. **ANF product catalog — phase 2 merge tool** (human-reviewed duplicate products) — verify if still needed. (Med)
+7. **Server-side customer search / pagination.** (Med)
+8. **Permanent user lockout ("3.0-B")** — deleted user can't sign back in. (Med)
+9. **Code health** — 30 pre-existing lint errors in app code (13 `any` types, 12 setState-in-effect, 5 React-compiler) across ~15 files. Low-risk pass: `any` types only. (Low)
 
-0. **Multiple boards (CAP\*TURES + Andy & Fine)** — biggest planned feature; full spec in **Phase 4.0** below. (Med-High)
-1. ~~**Mobile @mention autocomplete**~~ ✅ done.
-2. **Permanent user lockout ("3.0-B")** — `is_active`/blocklist so a deleted user can't sign back in. (Med)
-3. **Server-side customer search/pagination** — client-side today; matters as data grows. (Med)
-5. **ANF Stock — "open a branch to edit" hint on TOTAL** — the TOTAL pivot is read-only, so users can't tell why rows aren't editable. Add a muted two-line hint between the tabs and the table, **TOTAL tab only** (`isTotal &&`): EN "Open a branch to add or edit stock." with Thai "เปิดสาขาเพื่อเพิ่มหรือแก้ไขสต็อก" stacked under it. Purely additive — **do not change the product cell format** (item name + description second line is already good). Design approved. (Low)
-6. **ANF — bilingual table column headers** — add a Thai line stacked under each English column title (mono EN small + lighter Thai under; right-aligned cols keep both lines right-aligned). **Header row only — do NOT change the product/row cell format.** Approved wording:
-   - **Orders:** STATUS สถานะ · ITEM รายการ · QTY จำนวน · UNIT PRICE ราคา/หน่วย · TOTAL ยอดรวม · NEEDED BY ต้องใช้ภายใน · RECEIVED รับแล้ว · ASSIGNEE ผู้รับผิดชอบ
-   - **Stock (branch):** PRODUCT สินค้า · ROOM สำหรับห้อง · ON HAND คงเหลือ · ALERT จุดแจ้งเตือน · STATE สถานะ · CHECKED ตรวจนับ · LAST IN รับเข้าล่าสุด
-   - **Stock (TOTAL pivot):** PRODUCT สินค้า · TOTAL ยอดรวม · STATE สถานะ (branch columns unchanged). (Low)
-7. **ANF Stock — warehouse-centric model** (approved). Central WAREHOUSE stock; branches are stocked by transferring out of it.
-   - **Rename OFFICE → WAREHOUSE** everywhere (tabs, TOTAL pivot column, branch color, seed) + migration renaming existing `branch = 'OFFICE'` stock rows → `'WAREHOUSE'`.
-   - **Stock-in → WAREHOUSE only:** when an order is marked Received, replenish the item's **WAREHOUSE** row (Last-in/received-by live there), even if the ＋Order was raised from a branch low row. If no WAREHOUSE row exists for that item, **auto-create one**.
-   - **Transfer = dedicated action** (NOT auto-deduct): branch rows get **↦ From warehouse** → prompt (qty stepper, shows Warehouse before→after and branch before→after) → branch +n, WAREHOUSE −n (total unchanged). **Block** if n exceeds warehouse on-hand. The plain On-hand count edit stays a pure correction — never touches the warehouse.
-   - **WAREHOUSE is a normal location for flags/reorder:** keeps its own LOW/OUT + ＋Order (that's what triggers restocking). No transfer button on the WAREHOUSE view itself (it's the source).
-   - **Tabs:** WAREHOUSE first, then branches; **TOTAL last, rendered as a plain text link** (not a pill/capsule).
-   - Confirmed decisions: dedicated transfer action ✓; receive→warehouse ✓; block over-transfer ✓; auto-create warehouse row ✓; warehouse keeps LOW/OUT+Order ✓. (Med)
-8. **ANF — product catalog (SKU) + de-dup merge** (approved, FULL). Root cause: item identity is free-text `item`, matched by name+branch, so the same product exists under many name variants (e.g. RX1 4*6 ×2, RX1 5*7/A60 ×2, sticker ×2, film ×2), fragmenting the pivot/loop/transfers.
-   - **New `anf_products`** (product_id=SKU, name, code/description, category, unit). `anf_stock` + `anf_orders` reference `product_id` (a stock row = product × branch); name/desc/category move to the product.
-   - **Warehouse + all branches share one product_id** → pivot/receive-loop/transfer align automatically; can't mistype a new SKU.
-   - **Guided merge tool (human-reviewed):** proposes candidate duplicate groups (fuzzy name + code), user confirms each group + picks canonical; on merge, sum qty per branch, re-point orders, reversible until commit. Ambiguous groups (e.g. "ใหญ่"/PLATINUM LAB, different codes) flagged for the user to decide — ASK per item.
-   - **UI:** item free-text → product picker (＋New product only when genuinely new); catalog management (rename/code once).
-   - Phased: (1) schema+backfill, (2) merge tool, (3) picker UI. (High — biggest ANF change)
-4. **ANF Order — archive received orders** — received orders pile up over time and clutter the board. Plan (approved, backlogged): **(A)** soft archive via a new `archived_at` on `anf_orders` — archived orders hidden from the board by default, a "Show archived" toggle restores them, and they still appear in each item's Stock order history; **(C)** nightly auto-archive of received orders older than N days (~90) via the existing `due-notify` cron. No hard delete. Note: safe because the loop already copies received date/qty/receiver onto the stock row, so archiving/deleting old orders never changes live stock. (Low-Med)
-
-9. **Customer DB de-dup** (Tier A + B ✅ done 2026-10-19; only Step 4 pending). Script: `supabase/manual/customer_dedupe_tier_a.sql`.
-   - **Tier A — exact import copies** (same cleaned name + same email): 321 groups, 524 rows removed, 0 with leads/jobs, 2276 → 1752. ✅ **Ran 2026-10-19:** 524 backed up to `customers_merge_backup`, 321 keepers, 0 left behind → 1753 customers.
-   - **Tier B — real customers with leads/jobs** (ทศภาค ×27, GMM/จีเอ็มเอ็ม ×9, Chubb, Adidas, เซทเลอร์ ×5, ดิ ออล เวย์, บอนดูบา/พีเพิล บีไฮนด์, Sixsheet group): decisions confirmed 2026-10-19 → `supabase/manual/customer_dedupe_tier_b.sql` ✅ **Ran 2026-10-19:** 32 merges + 2 test deletes → 1719 customers, backup 558, 0 dangling. Adidas → โซลโฟร์สตรีท, Aespa → SM True, GMM คุณแท๊บ renamed to บริษัท จีเอ็มเอ็ม แกรมมี่; พีเพิล บีไฮนด์ kept separate. (Med)
-   - **Tier C — do NOT merge:** generic names (คุณ, คุณแป้ง, Khun, admin, บริษัท), `#(ลูกค้าไม่แจ้ง)`, Central Pattana branches (separate tax entities), Chubb vs อัลฟ่า 51. vittavin@gmail.com test rows deleted ✅.
-   - **Root cause fix (Step 4):** adding a lead creates a new customer each time → add duplicate warning / pick-existing in add forms, or dupes return. (Med)
-
-10. **Order board — Supplies / Assets / Suppliers** (design approved 2026-10-20, not built). Mockup: `docs/mockups/orders-stock-assets.html`. Board = **Order** (ANF + CAP*TURES merged, grouped by branch: Phuket, BACC, Cloud11, CAP*TURES Event…).
+### Detail — Order board (item 2)
+**Order board — Supplies / Assets / Suppliers** (design approved 2026-10-20, not built). Mockup: `docs/mockups/orders-stock-assets.html`. Board = **Order** (ANF + CAP*TURES merged, grouped by branch: Phuket, BACC, Cloud11, CAP*TURES Event…).
    - **Kind (fixed field, not a tag):** every product is `supply` or `asset`; Category stays underneath (Paper/Ink/Sleeve… vs Computer/Camera/Light/Router…, admin-editable). Board gets Supplies / Assets tabs — Supplies keeps today's qty/LOW/OUT/＋Order table; Assets = one row per physical unit.
    - **Assets (new `anf_assets`, one row per unit):** ID = category prefix + running number (CAM-001, LGT-004, PC-003, RTR-002), never re-used. Fields: serial, purchase date, value, warranty, status. **Location** = R1–R3 + shelf A/B/C (rack layout to be revised physically first) · F factory · EV1–EV3 (+ add more) **linked to a Won job #** · states REPAIR / LOST / RETIRED. Every move logged (who/when/from→to) in a move-history table.
    - **QR/barcode (later phase):** QR encodes `…/a/<ASSET-ID>`; phone scan opens the card with one-tap "Move to…". Print-label button.
    - **Suppliers (new shared table):** name, contact person, phone, LINE, email, website/shop link, address, tax ID, payment terms, notes — no passwords/bank logins. Item ↔ supplier links (many-to-many) with one **preferred**, each with price, unit, lead time, min order, how to order, note. ＋Order pre-fills the preferred supplier; Call / LINE buttons. Admin edits, all staff view.
    - Phases: (1) kind + categories, (2) assets + locations + move log + Won-job link, (3) suppliers, (4) QR scan + labels. (High)
 
-Email notifications were **dropped** (Web Push covers it). Full per-phase detail is in the sections below (all now marked ✅ Complete).
+### Done from the previous list
+- Multiple boards ✅ · ANF bilingual headers / TOTAL hint / warehouse model / order archive ✅ · product catalog phases 1 + 3 ✅ · mobile @mention ✅ · Copy-from-lead notes ✅
+- Customer de-dup Tier A + B ✅ (scripts: `supabase/manual/customer_dedupe_tier_a.sql`, `_tier_b.sql`)
 
 ### Pending hand-offs (run in Supabase)
 - `20260813_card_archive.sql` — Phase 5 Archive (`is_archived`). ✅ done
 - `20260814_lead_assignees.sql` — assign-to on leads (`assignee_ids`). ✅ done
 - `20260714_users_email_unique.sql` — optional safety net (unique email); not blocking anything.
+- `20261022_cosmo_installs.sql` — Cosmo tables + 30-min schedule. ✅ done (schedule copied the existing cron secret)
 
 ---
 
