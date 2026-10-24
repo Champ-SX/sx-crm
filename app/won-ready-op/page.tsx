@@ -54,6 +54,7 @@ import {
   LayoutGrid, CalendarDays, Plus,
 } from 'lucide-react'
 import { OpCalendar, InventoryPill, NeedStepper, NoStaffToggle, weekStart } from '@/components/won/op-calendar'
+import { useCosmo, cosmoFor, CosmoSection, CosmoSyncControl, type CosmoState } from '@/components/won/cosmo'
 import { useOpenFromUrl } from '@/hooks/use-open-from-url'
 import { copyCardLink, shareCardLink } from '@/lib/card-links'
 import { AssigneePicker, AssigneeFilter, ASSIGNEE_FILTER_ALL, matchesAssigneeFilter } from '@/components/shared/assignee-picker'
@@ -848,10 +849,12 @@ function JobDetail({
   jobId,
   onClose,
   onDelete,
+  cz,
 }: {
   jobId: string
   onClose: () => void
   onDelete?: (jobId: string) => void
+  cz?: CosmoState
 }) {
   const { wonJobs, updateWonJob, moveWonJobStage, customers, updateCustomer, updateStaff, duplicateWonJob } = useCRMStore()
   const requestOpenEntity = useCRMStore((s) => s.requestOpenEntity)
@@ -1157,6 +1160,8 @@ function JobDetail({
                 </div>}
               </div>
 
+              {!job.is_ops && <CosmoSection job={job} rows={cosmoFor(cz, job)} onCopy={u} />}
+
               {/* Section C: Company Account */}
               <div className="rounded-xl border border-border overflow-hidden">
                 <SectionHeader letter="C" title="Company Account" icon={CreditCard} open={openSections.C} onToggle={() => toggleSection('C')} />
@@ -1337,6 +1342,8 @@ function JobDetail({
                       </div>}
                     </div>
 
+                    {!job.is_ops && <CosmoSection job={job} rows={cosmoFor(cz, job)} onCopy={u} />}
+
                     {/* Section C: Company Account & OP Stage */}
                     <div className="rounded-xl border border-border overflow-hidden">
                       <SectionHeader letter="C" title="Company Account" icon={CreditCard} open={openSections.C} onToggle={() => toggleSection('C')} />
@@ -1472,6 +1479,7 @@ function JobDetail({
 export default function WonReadyOpPage() {
   const isHydrated = useHydrated()
   const wonJobs = useCRMStore((s) => s.wonJobs)
+  const cosmo = useCosmo()
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
   const allOpStages = useCRMStore((s) => s.opStages)
   // Per-board OP stages (Phase 4.0): built-in stages show on every board;
@@ -1781,6 +1789,7 @@ export default function WonReadyOpPage() {
           </div>
         </div>
         <div className="flex items-center gap-1.5 ml-auto">
+          <CosmoSyncControl cz={cosmo} jobNumbers={wonJobs.map((j) => j.job_number)} />
           <select value={kind} onChange={(e) => setKind(e.target.value as 'all' | 'client' | 'ops')} aria-label="Client or Ops jobs"
             className="h-8 rounded-lg border border-border bg-card px-2 text-[12px] text-foreground">
             <option value="all">All jobs</option><option value="client">Client</option><option value="ops">OPS</option>
@@ -1827,7 +1836,7 @@ export default function WonReadyOpPage() {
       </div>
 
       {view === 'calendar' ? (
-        <OpCalendar jobs={boardJobs} stages={sortedStages.map((id) => { const st = opStages.find((x) => x.id === id); return { id, label: st?.label, dot: st?.dotColor || stageConfig[id as OPStage]?.dot || 'bg-purple-500' } })} start={calStart} onStart={setCalStart} onOpen={setSelectedId} onMove={(id, stage) => void moveWonJobStage(id, stage as OPStage)} paused={!!selectedId || !!calStaffFor} onAddStaff={setCalStaffFor} />
+        <OpCalendar jobs={boardJobs} stages={sortedStages.map((id) => { const st = opStages.find((x) => x.id === id); return { id, label: st?.label, dot: st?.dotColor || stageConfig[id as OPStage]?.dot || 'bg-purple-500' } })} start={calStart} onStart={setCalStart} onOpen={setSelectedId} onMove={(id, stage) => void moveWonJobStage(id, stage as OPStage)} paused={!!selectedId || !!calStaffFor} onAddStaff={setCalStaffFor} cosmo={cosmo} />
       ) : (
       <DndContext
         sensors={sensors}
@@ -1926,7 +1935,7 @@ export default function WonReadyOpPage() {
           onCreated={(id) => { setAddingOps(false); setSelectedId(id) }} />
       )}
       {calStaffFor && <StaffSheet jobId={calStaffFor} onClose={() => setCalStaffFor(null)} />}
-      {selectedId && <JobDetail jobId={selectedId} onClose={() => setSelectedId(null)} onDelete={handleDeleteCard} />}
+      {selectedId && <JobDetail jobId={selectedId} onClose={() => setSelectedId(null)} onDelete={handleDeleteCard} cz={cosmo} />}
       {adhocOpenKind && (() => {
         const pc = PAYMENT_CARDS.find((p) => p.kind === adhocOpenKind)
         if (!pc) return null

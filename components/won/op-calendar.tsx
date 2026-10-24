@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { cosmoFor, CosmoWarn, CosmoMarker, phasesOn, type CosmoState } from '@/components/won/cosmo'
 import { addDays, format, isToday, isWeekend, parseISO, differenceInCalendarDays, startOfWeek } from 'date-fns'
 import { ChevronLeft, ChevronRight, Users, Palette, Package, Check, CircleCheck, ArrowRight, Minus, Plus, UserPlus, UserX, TriangleAlert, ChevronDown } from 'lucide-react'
 import { OP_STAGES, type WonJob, type InventoryStatus, type TeamMember } from '@/types'
@@ -271,11 +272,16 @@ interface OpCalendarProps {
   onMove: (jobId: string, stage: string) => void
   paused?: boolean                    // a drawer is open — hold ready prompts until it closes
   onAddStaff?: (jobId: string) => void
+  cosmo?: CosmoState                  // Cosmo setup/teardown rows, by job #
 }
 
-export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, paused, onAddStaff }: OpCalendarProps) {
+export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, paused, onAddStaff, cosmo }: OpCalendarProps) {
   const days = useMemo(() => Array.from({ length: CAL_DAYS }, (_, i) => toISO(addDays(fromISO(start), i))), [start])
   const first = days[0], last = days[CAL_DAYS - 1]
+  // Cosmo setup / teardown markers per day, for the jobs on this board.
+  const markersOn = (day: string) => jobs.flatMap((job) => phasesOn(cosmoFor(cosmo, job), day).map((r) => ({ job, r })))
+  const marker = ({ job, r }: { job: WonJob; r: Parameters<typeof CosmoMarker>[0]['r'] }) =>
+    <CosmoMarker key={`${job.job_id}-${r.type}`} r={r} jobName={jobCardName(job)} onOpen={() => onOpen(job.job_id)} />
 
   // Stage colour + "AW done" (= at or past the AW-done column in board order).
   const teamMembers = useCRMStore((s) => s.teamMembers)
@@ -470,6 +476,7 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
                   className={cn('text-left rounded-md border border-border border-l-4 cursor-pointer bg-card px-2 py-1.5 hover:border-foreground/30 transition-colors min-w-0', contL && 'rounded-l-none', contR && 'rounded-r-none')}>
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-[12px] font-semibold truncate"><JobNo job={job} />{jobCardName(job)}</span>
+                    <CosmoWarn job={job} rows={cosmoFor(cosmo, job)} />
                     <Pills job={job} awDone={awDone(job)} long onMarkAw={markAw(job)} onAddStaff={onAddStaff} /><OpsAvatars job={job} ops={ops} /><ReadyChip job={job} />
                   </div>
                   <div className="text-[11px] text-muted-foreground truncate">
@@ -487,11 +494,13 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
             const items = singles.filter((p) => p.inWin.includes(d))
             return (
               <div key={d} className={cn('flex flex-col gap-1.5 rounded-md min-h-[200px] p-0.5', isWeekend(fromISO(d)) && 'bg-muted/40')}>
+                {markersOn(d).map(marker)}
                 {items.map(({ job }) => (
                   <div key={job.job_id} {...cardProps(job.job_id)}
                     style={{ borderLeftColor: edge(job) }}
                     className="text-left rounded-md border border-border border-l-4 cursor-pointer bg-card p-1.5 hover:border-foreground/30 transition-colors min-w-0">
                     <div className="text-[12px] font-semibold leading-snug line-clamp-3 [overflow-wrap:anywhere]"><JobNo job={job} />{jobCardName(job)}</div>
+                    <CosmoWarn job={job} rows={cosmoFor(cosmo, job)} />
                     {job.venue && <div className="text-[11px] text-muted-foreground truncate">{job.venue}</div>}
                     {job.event_time && <div className="text-[11px] text-muted-foreground truncate">{job.event_time}</div>}
                     <div className="mt-1"><Pills job={job} awDone={awDone(job)} onMarkAw={markAw(job)} onAddStaff={onAddStaff} /></div>
@@ -537,7 +546,8 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
                     {ongRest.length} ongoing<ChevronDown className="w-3.5 h-3.5 ml-auto" />
                   </button>
                 ))}
-                {items.length === 0 && ong.length === 0 && <span className="text-[12px] text-muted-foreground pt-2">—</span>}
+                {markersOn(d).map(marker)}
+                {items.length === 0 && ong.length === 0 && markersOn(d).length === 0 && <span className="text-[12px] text-muted-foreground pt-2">—</span>}
                 {items.map(({ job, all }) => {
                   const k = all.indexOf(d)
                   return (
@@ -545,6 +555,7 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
                       style={{ borderLeftColor: edge(job) }}
                       className="text-left rounded-md border border-border border-l-4 cursor-pointer bg-card px-2.5 py-2 min-w-0">
                       <div className="text-[13px] font-semibold truncate"><JobNo job={job} />{jobCardName(job)}{all.length > 1 && <span className="font-normal text-muted-foreground"> · day {k + 1}/{all.length}</span>}</div>
+                      <CosmoWarn job={job} rows={cosmoFor(cosmo, job)} />
                       <div className="text-[12px] text-muted-foreground truncate">{[job.venue, job.event_time].filter(Boolean).join(' · ')}</div>
                       <div className="mt-1 flex items-center justify-between gap-2"><Pills job={job} awDone={awDone(job)} long onMarkAw={markAw(job)} onAddStaff={onAddStaff} /><OpsAvatars job={job} ops={ops} /><ReadyChip job={job} /></div>
                     </div>

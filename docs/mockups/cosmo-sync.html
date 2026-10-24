@@ -1,0 +1,121 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cosmo Sync Design</title>
+<style>
+:root{--bg:#f6f4ee;--card:#fff;--fg:#18181b;--mut:#71717a;--bd:#e4e2da;--sub:#f1efe8;--lemon:#e8f25c;--org:#c2410c;--orgbg:#fff1e6;--grn:#15803d;--blu:#2563eb;--vio:#7c3aed}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c0c0d;--card:#18181b;--fg:#fafafa;--mut:#a1a1aa;--bd:#2a2a2e;--sub:#202024;--org:#fb923c;--orgbg:#2a1608;--grn:#4ade80;--blu:#60a5fa;--vio:#a78bfa}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,"Noto Sans Thai",sans-serif;padding:24px 16px}
+.mono{font-family:ui-monospace,"JetBrains Mono",monospace}
+h1{font-size:19px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 22px;max-width:920px}
+h2{font-size:12px;letter-spacing:.06em;color:var(--mut);margin:0 0 8px;font-weight:700}
+.wrap{max-width:1200px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:22px;margin-top:22px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:10px;letter-spacing:.06em;color:var(--mut);text-align:left;font-weight:700;padding:6px 6px;border-bottom:1px solid var(--bd)}
+td{padding:7px 6px;border-bottom:1px solid var(--bd);vertical-align:top}
+td small{color:var(--mut);font-size:11px;display:block}
+.y{color:var(--grn);font-weight:700}.n{color:var(--mut)}
+.cz{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;border-radius:4px;padding:1px 6px;background:color-mix(in srgb,var(--vio) 15%,transparent);color:var(--vio)}
+.warn{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:2px 7px;background:var(--orgbg);color:var(--org)}
+.hdr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{border:1px solid var(--bd);background:var(--card);border-radius:7px;padding:6px 11px;font-size:12px;font-weight:600;color:var(--fg)}
+.btn.p{background:var(--fg);color:var(--card);border-color:var(--fg)}
+.seg{display:inline-flex;border:1px solid var(--bd);border-radius:8px;padding:2px}.seg span{padding:4px 10px;font-size:12px;border-radius:6px;color:var(--mut)}.seg .on{background:var(--fg);color:var(--card)}
+.muted{color:var(--mut);font-size:12px}
+/* drawer */
+.sec{border:1px solid var(--bd);border-radius:10px;padding:12px;margin-top:10px}
+.sech{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.ph{display:grid;grid-template-columns:86px 1fr;gap:4px 10px;font-size:13px;padding:8px 0;border-top:1px dashed var(--bd)}
+.ph:first-of-type{border-top:0}
+.ph .k{color:var(--mut);font-size:12px}
+.pill{font-size:11px;border:1px solid var(--bd);border-radius:999px;padding:1px 8px;margin-right:4px}
+.cmp{display:grid;grid-template-columns:auto 1fr 1fr;gap:4px 10px;font-size:12px;margin-top:8px;background:var(--orgbg);border-radius:8px;padding:8px 10px}
+.cmp b{color:var(--org)}
+/* calendar */
+.cal{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:6px;font-size:12px}
+.day{background:var(--sub);border-radius:8px;padding:6px;min-height:150px}
+.dh{font-size:11px;color:var(--mut);font-weight:700;margin-bottom:6px}
+.job{background:var(--card);border:1px solid var(--bd);border-left:3px solid var(--blu);border-radius:6px;padding:5px 6px;margin-bottom:5px}
+.job b{font-size:12px}
+.mk{display:block;font-size:11px;margin-top:3px}
+.su{color:var(--grn)}.td{color:var(--org)}
+.foot{margin-top:22px}.foot li{font-size:13px;color:var(--mut);margin-bottom:4px}.foot b{color:var(--fg)}
+</style></head><body><div class="wrap">
+<h1>Cosmo → SX-CRM sync</h1>
+<p class="sub">What we take from Cosmo (Bestclus) and where it shows up. Matching is by <b>job #</b> (Cosmo <span class="mono">runningNumber</span> = our Won job #). Cosmo data is <b>shown beside ours — never overwrites</b>. HOLD bookings are hidden. Sync every 30 min + <b>Sync now</b>. Sample data below is made up.</p>
+
+<div class="card">
+<h2>1 · WHAT WE SYNC</h2>
+<table>
+<tr><th>COSMO FIELD</th><th>MEANING</th><th>SYNC?</th><th>WHERE IT SHOWS</th></tr>
+<tr><td class="mono">runningNumber</td><td>Job #</td><td class="y">✓ key</td><td>Links the row to our Won card</td></tr>
+<tr><td class="mono">type · date/time</td><td>Setup / Teardown arrival time</td><td class="y">✓</td><td>Drawer Cosmo section · calendar markers (▲ setup, ▼ teardown)</td></tr>
+<tr><td class="mono">eventStart · eventEnd</td><td>Event day window</td><td class="y">✓</td><td>Drawer · compared with our event date → ⚠ if different</td></tr>
+<tr><td class="mono">status</td><td>CONFIRMED / COMPLETED</td><td class="y">✓</td><td>Drawer badge</td></tr>
+<tr><td class="mono">installTeams</td><td>Team leads (names only)</td><td class="y">✓</td><td>Drawer, per phase · calendar marker tooltip</td></tr>
+<tr><td class="mono">venueName · venueAddress · mapUrl</td><td>Venue + Google Maps link</td><td class="y">✓</td><td>Drawer + <b>Map</b> button · ⚠ if venue differs</td></tr>
+<tr><td class="mono">siteContact</td><td>On-site contact name + phone</td><td class="y">✓</td><td>Drawer, tap-to-call</td></tr>
+<tr><td class="mono">skus · quantity · product</td><td>Booth IDs (e.g. K035) + count</td><td class="y">✓</td><td>Drawer, small line</td></tr>
+<tr><td class="mono">title · eventName · customerName</td><td>Their naming</td><td class="n">check only</td><td>Not displayed — used to flag "job # looks wrong"</td></tr>
+<tr><td class="mono">HOLD rows</td><td>Not yet confirmed, no job #</td><td class="n">✗ hidden</td><td>—</td></tr>
+<tr><td class="mono">crew list</td><td>Not in the API</td><td class="n">✗ n/a</td><td>Staff stays manual in our staff pill</td></tr>
+</table>
+</div>
+
+<div class="grid">
+
+<div><h2>2 · WON BOARD / CALENDAR HEADER</h2>
+<div class="card">
+ <div class="hdr"><b>Won &amp; Ready</b><span class="seg"><span>Board</span><span class="on">Calendar</span></span>
+ <span style="flex:1"></span><span class="muted"><span class="cz">COSMO</span> synced 12 min ago</span><button class="btn">⟳ Sync now</button></div>
+ <p class="muted" style="margin:10px 0 0">After a manual sync: “Cosmo · 28 rows · 2 differences”. If Cosmo fails: muted “Cosmo unavailable — last good sync 09:30”, board keeps working.</p>
+</div>
+
+<h2 style="margin-top:22px">3 · CALENDAR — SETUP / TEARDOWN MARKERS</h2>
+<div class="card">
+ <div class="cal">
+  <div class="day"><div class="dh">THU 23</div>
+   <div class="job"><b>#124 TikTok 11.11</b><span class="mk su">▲ Setup 20:00 · พี่หนุ่ย</span></div></div>
+  <div class="day"><div class="dh">FRI 24</div>
+   <div class="job"><b>#124 TikTok 11.11</b><span class="muted">Event 10:00–18:00</span></div>
+   <div class="job" style="border-left-color:var(--grn)"><b>#118 Brand Day</b> <span class="warn">⚠ date</span><span class="mk su">▲ Setup 07:00</span></div></div>
+  <div class="day"><div class="dh">SAT 25</div>
+   <div class="job"><b>#124 TikTok 11.11</b><span class="mk td">▼ Teardown 19:00 · พี่แบงค์</span></div></div>
+  <div class="day"><div class="dh">SUN 26</div>
+   <div class="job" style="border-left-color:var(--vio)"><b>#121 Pop-up</b><span class="muted">no Cosmo booking</span></div></div>
+ </div>
+ <p class="muted" style="margin:8px 0 0">Markers are added to the existing card on that day — no new cards. ⚠ only when Cosmo's event date or venue disagrees with ours.</p>
+</div></div>
+
+<div><h2>4 · WON DRAWER — NEW “COSMO” SECTION</h2>
+<div class="card">
+ <div style="font-weight:700">2026.10.24 - #124 - TikTok 11.11 @Impact Hall 5</div>
+ <div class="sec">
+  <div class="sech"><span><span class="cz">COSMO</span> &nbsp;<b>Booking BK-2291</b></span><span class="pill" style="color:var(--grn);border-color:var(--grn)">CONFIRMED</span></div>
+  <div class="ph"><span class="k">▲ Setup</span><span><b>Thu 23 Oct · 20:00</b><br><span class="muted">Team: พี่หนุ่ย, พี่แบงค์</span></span></div>
+  <div class="ph"><span class="k">● Event</span><span>Fri 24 Oct · 10:00–18:00</span></div>
+  <div class="ph"><span class="k">▼ Teardown</span><span><b>Sat 25 Oct · 19:00</b><br><span class="muted">Team: not set in Cosmo</span></span></div>
+  <div class="ph"><span class="k">Venue</span><span>Impact Hall 5, Muang Thong Thani <button class="btn" style="padding:2px 8px;margin-left:4px">Map ↗</button></span></div>
+  <div class="ph"><span class="k">Site contact</span><span>คุณเอ · 08x-xxx-xxxx <button class="btn" style="padding:2px 8px;margin-left:4px">Call</button></span></div>
+  <div class="ph"><span class="k">Booths</span><span class="mono">K035, K041 · ×2</span></div>
+  <div class="cmp"><span></span><b>Ours</b><b>Cosmo</b>
+   <span class="muted">Event date</span><span>2026-10-24</span><span>2026-10-24 ✓</span>
+   <span class="muted">Venue</span><span>Impact Hall 5</span><span>Impact Hall 5 ✓</span></div>
+  <p class="muted" style="margin:8px 0 0">Synced 12 min ago · read-only — edit in Cosmo</p>
+ </div>
+ <p class="muted">When something differs, the row turns orange with a one-tap <b>“Use Cosmo's”</b> to copy that value into our card (only when you choose).</p>
+ <p class="muted">No booking for this job # → section shows “Not in Cosmo (next 30 days)”.</p>
+</div></div>
+
+</div>
+
+<div class="card foot"><h2>RULES</h2><ul>
+<li><b>Never overwrites</b> our fields automatically. Differences are flagged; copying is a manual tap.</li>
+<li><b>Hidden:</b> HOLD bookings and any row without a job #. A Cosmo job # with no Won card in our CRM is listed in a small “Unmatched (n)” link next to Sync now.</li>
+<li><b>Window:</b> the API only returns today → +30 days; older jobs keep their last synced data.</li>
+<li><b>Security:</b> key stays server-only (<span class="mono">COSMO_API_KEY</span>); the browser only reads our own copy of the data.</li>
+<li><b>Not included:</b> crew list (Cosmo doesn't expose it) — staff assignment stays in our staff pill.</li>
+</ul></div>
+</div></body></html>
