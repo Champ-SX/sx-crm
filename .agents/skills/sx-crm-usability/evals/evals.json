@@ -1,0 +1,61 @@
+{
+  "skill_name": "sx-crm-usability",
+  "evals": [
+    {
+      "id": 1,
+      "eval_name": "large-list-findability",
+      "prompt": "A user has 50+ leads in their CRM and needs to find leads from Q2 2025. They want to search by quarter and see only those results. How should this UI work? What findability features are needed?",
+      "expected_output": "Description of search/filter UI pattern including search bar, date range filter, record count display, and optional sort/column selection. Should reference Rule 1.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "eval_name": "duplicate-lead-workflow",
+      "prompt": "A user is creating a new lead and types 'Acme Corp' as the name. They don't remember if they already have a record for this company. Describe the flow: What should happen to prevent duplicates? What should the UI show?",
+      "expected_output": "Step-by-step workflow showing: fuzzy match check on 'Acme Corp', display of existing record with option to link/create anyway/cancel, with reasoning about why this prevents duplicates. Should reference Rule 2.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "eval_name": "delete-confirmation-undo",
+      "prompt": "A user accidentally clicks delete on a lead called 'Acme Corp Q2' with 8 related events and 3 tasks. They realize the mistake 2 seconds later. What should the UI show, and how can they recover?",
+      "expected_output": "Description of confirmation modal showing what will be deleted (lead + related items count), destructive button styling, and undo option in success toast within 5 seconds. Should reference Rule 3.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "eval_name": "multi-line-text-preservation",
+      "prompt": "A user is logging notes on a lead: 'Called at 9am to discuss Q2 budget. Venue: Building A Room 302. Followup scheduled for Monday 10am.' They press Enter between each line. When they save and view the note later, what should it look like? Should the formatting be preserved?",
+      "expected_output": "Explanation that exact newlines and multi-line structure must be preserved exactly as entered (not collapsed to single line). Show display example with preserved formatting. Should reference Rule 11.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "eval_name": "editable-lead-fields",
+      "prompt": "A lead record shows: Name: 'Acme Corp', Owner: 'Sarah Chen', Amount: '$50,000', Status: 'Prospect'. Two weeks later the client changes their mind about budget (now $75,000) and Sarah hands off the lead to Mike. Which fields should be editable, and how should the edit interaction work?",
+      "expected_output": "List of editable fields (Name, Owner, Amount, Status per Rule 12) with non-editable examples (created date, record ID). Describe edit UX (inline or modal) and when fields should be locked. Should reference Rule 12.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "eval_name": "create-move-status-acknowledgment",
+      "prompt": "A user performs three actions in sequence: (1) Creates a new lead 'Acme Corp Q2', (2) Moves it from Prospect to Negotiation stage, (3) Marks an event as Complete. For each action, what feedback should the user see? Include toast message, visual feedback, and undo options.",
+      "expected_output": "Three examples with: (1) Toast 'Lead created: Acme Corp Q2' with highlight and undo; (2) Toast 'Moved to Negotiation' with card animation and undo; (3) Toast 'Marked complete' with visual change (strikethrough/dim). All with 5-second undo window. Should reference Rule 13.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "eval_name": "form-structure-validation",
+      "prompt": "Design a form to create a new event with fields: Event Name (required), Venue (required), Date (required), Time, Description, Attendees. How should the form be structured to guide the user? What happens if they try to save with missing fields?",
+      "expected_output": "Form layout with clear section grouping, required field markers, inline validation errors below each field, disabled submit button until all required fields filled, cancel option. Should reference Rule 4.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "eval_name": "empty-state-guidance",
+      "prompt": "A user navigates to the Events section and has no events created yet. The page is blank. How should this state be presented to help the user understand what to do?",
+      "expected_output": "Empty state design with explanatory message, optional icon/illustration, and direct CTA button to create first event. Tone should be encouraging. Should reference Rule 5.",
+      "files": []
+    }
+  ]
+}

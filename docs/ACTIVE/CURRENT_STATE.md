@@ -43,7 +43,7 @@
 6. **ANF product catalog — phase 2 merge tool** (human-reviewed duplicate products) — verify if still needed. (Med)
 7. **Server-side customer search / pagination.** (Med)
 8. **Permanent user lockout ("3.0-B")** — deleted user can't sign back in. (Med)
-9. **Code health** — 30 pre-existing lint errors in app code (13 `any` types, 12 setState-in-effect, 5 React-compiler) across ~15 files. Low-risk pass: `any` types only. (Low)
+9. **Code health** — 17 pre-existing React lint errors left (12 setState-in-effect, 5 React-compiler) — intentionally not fixed (touches data loading; low value). `any` types fixed ✅ Oct 24. (Low)
 
 ### Detail — Order board (item 2)
 **Order board — Supplies / Assets / Suppliers** (design approved 2026-10-20, not built). Mockup: `docs/mockups/orders-stock-assets.html`. Board = **Order** (ANF + CAP*TURES merged, grouped by branch: Phuket, BACC, Cloud11, CAP*TURES Event…).

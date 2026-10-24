@@ -979,7 +979,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
     if (USE_SUPABASE) {
       try {
         // Remove fields that don't exist in the database schema before sending
-        const { staff_list, ...jobToCreate } = newJob as any
+        const { staff_list: _staffList, ...jobToCreate } = newJob
 
         // Create wonJob FIRST - this is the critical operation
         await db.wonJobQueries.create(jobToCreate as WonJob)
@@ -1006,7 +1006,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
           errorMsg = error.message
         } else if (typeof error === 'object' && error !== null) {
           // Handle Supabase error objects
-          const err = error as any
+          const err = error as { message?: string; error_description?: string; msg?: string }
           errorMsg = err.message || err.error_description || err.msg || JSON.stringify(err)
         } else {
           errorMsg = String(error)

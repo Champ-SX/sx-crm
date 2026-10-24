@@ -28,7 +28,7 @@ import { useOpenDeepLink } from '@/hooks/use-open-deep-link'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { OP_STAGES, OP_STAGE_LABELS } from '@/types'
-import type { WonJob, OPStage, StaffMember } from '@/types'
+import type { WonJob, OPStage, StaffMember, DynamicOPStage } from '@/types'
 import { formatJobMeta, jobDisplayTitle, jobCardName, jobCanonicalTitle, formatEventDateShort, formatEventDateLong } from '@/lib/jobs'
 import { AdhocCard, AdhocSheet, PAYMENT_CARDS } from '@/components/won/adhoc-payment'
 import { type AdhocPayment, fetchAdhoc, adhocSummary, currentMonth } from '@/lib/supabase/adhoc'
@@ -333,7 +333,7 @@ function KanbanColumn({
   onDeleteStage?: (stage: string) => void
   onChangeColor?: (stage: string) => void
   onAddStage?: () => void
-  opStages: any[]
+  opStages: DynamicOPStage[]
   isMobile?: boolean
   searching?: boolean
   pinnedCard?: ReactNode

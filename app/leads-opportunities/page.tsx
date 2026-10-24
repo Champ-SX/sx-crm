@@ -341,7 +341,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
   const linkedCustomer = item.customer_id ? customers.find((c) => c.customer_id === item.customer_id) : null
   const displayItem = isEditing && editData ? editData : item
 
-  const handleFieldChange = (field: keyof LeadOpportunity, value: any) => {
+  const handleFieldChange = <K extends keyof LeadOpportunity>(field: K, value: LeadOpportunity[K]) => {
     if (editData) {
       setEditData({ ...editData, [field]: value })
     }

@@ -277,7 +277,7 @@ export default function ImportPage() {
       try {
         // For CSV files, read as text to preserve UTF-8 encoding (Thai, etc.)
         // For Excel files, read as binary
-        let wb: any
+        let wb: XLSX.WorkBook
 
         if (file.name.endsWith('.csv')) {
           // CSV: Read as text to preserve UTF-8
@@ -422,7 +422,7 @@ export default function ImportPage() {
         contact_person: ct.name,
         phone:          ct.phone || '',
         email:          ct.email || '',
-        customer_type:  inferCompanyType(ct.phone || '') as any, // Using phone field as placeholder for category
+        customer_type:  inferCompanyType(ct.phone || '') as Customer['customer_type'], // Using phone field as placeholder for category
         notes:          ct.notes || '',
         created_at:     now,
         updated_at:     now,

@@ -3,11 +3,11 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client'
 import { mockTeamMembers } from '@/lib/mock-data'
-import type { Session } from '@supabase/supabase-js'
+import type { Session, User } from '@supabase/supabase-js'
 
 interface AuthContextType {
   session: Session | null
-  user: any | null
+  user: User | null
   role: string | null
   loading: boolean
   signOut: () => Promise<void>
@@ -23,7 +23,7 @@ const AuthContext = createContext<AuthContextType>({
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [role, setRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: admin?.email ?? 'dev@localhost',
         user_metadata: { full_name: admin?.name ?? 'Dev User' },
       }
-      setUser(devUser)
+      setUser(devUser as unknown as User)
       setRole(admin?.role ?? 'admin')
       setSession({ user: devUser, access_token: 'mock', token_type: 'bearer' } as unknown as Session)
       setLoading(false)

@@ -480,7 +480,7 @@ export const opStageQueries = {
 
   async update(id: string, updates: Partial<DynamicOPStage>) {
     // Convert camelCase fields to snake_case for database update
-    const dbUpdates: any = {}
+    const dbUpdates: Record<string, unknown> = {}
     if (updates.label !== undefined) dbUpdates.label = updates.label
     if (updates.order !== undefined) dbUpdates.order = updates.order
     if (updates.accentColor !== undefined) dbUpdates.accent_color = updates.accentColor

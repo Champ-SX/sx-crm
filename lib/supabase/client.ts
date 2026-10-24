@@ -19,6 +19,7 @@ export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey)
  */
 function createStubClient(): SupabaseClient {
   const makeChain = () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- self-referencing mock chain, mock mode only
     const chain: any = {
       select: () => chain,
       insert: () => chain,
@@ -37,6 +38,7 @@ function createStubClient(): SupabaseClient {
     return chain
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- stub cast to SupabaseClient below, mock mode only
   const stub: any = {
     auth: {
       getSession: async () => ({ data: { session: null }, error: null }),
