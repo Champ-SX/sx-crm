@@ -32,7 +32,7 @@
 Unified detail header and Phase 5 card actions are shipped. What's left:
 
 0. **Multiple boards (CAP\*TURES + Andy & Fine)** — biggest planned feature; full spec in **Phase 4.0** below. (Med-High)
-1. **Mobile @mention autocomplete** — mobile comment box uses a plain `<input>`, not `MentionTextarea`. (Low)
+1. ~~**Mobile @mention autocomplete**~~ ✅ done.
 2. **Permanent user lockout ("3.0-B")** — `is_active`/blocklist so a deleted user can't sign back in. (Med)
 3. **Server-side customer search/pagination** — client-side today; matters as data grows. (Med)
 5. **ANF Stock — "open a branch to edit" hint on TOTAL** — the TOTAL pivot is read-only, so users can't tell why rows aren't editable. Add a muted two-line hint between the tabs and the table, **TOTAL tab only** (`isTotal &&`): EN "Open a branch to add or edit stock." with Thai "เปิดสาขาเพื่อเพิ่มหรือแก้ไขสต็อก" stacked under it. Purely additive — **do not change the product cell format** (item name + description second line is already good). Design approved. (Low)
@@ -581,7 +581,7 @@ and every list/dashboard query. Customers-shared avoids a full multi-tenant rebu
 ## 🚨 Known Issues
 
 ### Medium Priority
-- [ ] Mobile @mention autocomplete — mobile composer uses plain `<input>`, not `MentionTextarea`
+- [x] Mobile @mention autocomplete — mobile composer uses plain `<input>`, not `MentionTextarea`
 - [ ] Permanent user lockout ("3.0-B") — add `is_active`/blocklist so a removed user can't sign back in
 - [ ] Server-side customer search/pagination — current pagination is client-side (fine now; matters as data grows)
 - [ ] `activity_id` column name — verify Supabase `activities` table uses `activity_id` not `id` before delete is exercised in prod
