@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { formatDistanceToNow, format } from 'date-fns'
 import { RefreshCw, MapPin, Phone, TriangleAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import {
   getCosmoInstalls, getLastCosmoSync, syncCosmoNow, cosmoDiffs, isTeardown, bkkDate,
   type CosmoInstall, type CosmoSyncLog,
@@ -67,24 +68,38 @@ export const cosmoFor = (cz: CosmoState | undefined, job: Pick<WonJob, 'job_numb
   return (k && cz?.byJob.get(k)) || []
 }
 
-// ── Header: "COSMO synced 12 min ago  ⟳ Sync now" ────────────────────────────
+// ── Header: one Cosmo button (dot + age) → popover with status + Sync now ──
 export function CosmoSyncControl({ cz, jobNumbers }: { cz: CosmoState; jobNumbers: (string | null | undefined)[] }) {
   const ours = new Set(jobNumbers.map(cosmoKey).filter(Boolean))
   const unmatched = [...new Set(cz.rows.map((r) => String(r.running_number)))].filter((k) => !ours.has(k))
-  const label = cz.result
-    ?? (cz.last ? (cz.last.ok ? `${ago(cz.last.ran_at)} ago` : `unavailable — ${cz.last.message ?? 'error'}`) : 'not synced yet')
+  const failed = !!cz.last && !cz.last.ok
+  const age = cz.last ? ago(cz.last.ran_at) : '—'
+  const nextIn = cz.last ? 30 - (minsSince(cz.last.ran_at) % 30) : null
   return (
-    <div className="hidden lg:flex shrink-0 items-center gap-1.5 text-[12px] text-muted-foreground">
-      <span className="rounded px-1.5 py-px text-[10px] font-bold tracking-wide bg-violet-500/12 text-violet-700 dark:text-violet-300">COSMO</span>
-      <span className={cn('max-w-[150px] truncate', cz.last && !cz.last.ok && !cz.result && 'text-orange-700 dark:text-orange-400')} title={label}>{label}</span>
-      {unmatched.length > 0 && (
-        <span className="text-orange-700 dark:text-orange-400" title={`Cosmo job # not found here: ${unmatched.map((k) => `#${k}`).join(', ')}`}>· unmatched {unmatched.length}</span>
-      )}
-      <button type="button" onClick={cz.sync} disabled={cz.syncing}
-        className="h-8 px-2.5 rounded-lg border border-border bg-card inline-flex items-center gap-1.5 text-[12px] font-medium text-foreground hover:bg-muted disabled:opacity-60">
-        <RefreshCw className={cn('w-3.5 h-3.5', cz.syncing && 'animate-spin')} />Sync now
-      </button>
-    </div>
+    <Popover>
+      <PopoverTrigger aria-label="Cosmo sync" title="Cosmo sync"
+        className="h-8 shrink-0 rounded-lg border border-border bg-card px-2 inline-flex items-center gap-1.5 text-[12px] text-foreground hover:bg-muted">
+        <span className={cn('w-1.5 h-1.5 rounded-full', !cz.last ? 'bg-muted-foreground/50' : failed ? 'bg-orange-500' : 'bg-emerald-500')} />
+        <span className="hidden md:inline text-[10px] font-bold tracking-wide text-violet-700 dark:text-violet-300">COSMO</span>
+        <span className="hidden md:inline text-muted-foreground">{age}</span>
+        <RefreshCw className={cn('w-3.5 h-3.5', cz.syncing && 'animate-spin')} />
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-[260px] p-3 text-[12px]">
+        <div className="text-[13px] font-semibold mb-1.5">Cosmo sync</div>
+        <dl className="grid grid-cols-[1fr_auto] gap-y-1 text-muted-foreground">
+          <dt>Last sync</dt><dd className={cn('text-right font-medium', failed ? 'text-orange-700 dark:text-orange-400' : 'text-foreground')}>{cz.last ? `${age} ago · ${failed ? 'failed' : 'OK'}` : 'not yet'}</dd>
+          {failed && cz.last?.message && <dd className="col-span-2 text-orange-700 dark:text-orange-400 break-words">{cz.last.message}</dd>}
+          <dt>Rows</dt><dd className="text-right font-medium text-foreground">{cz.rows.length}</dd>
+          {nextIn != null && <><dt>Next auto-sync</dt><dd className="text-right font-medium text-foreground">in {nextIn} min</dd></>}
+          {unmatched.length > 0 && <><dt>Unmatched job #</dt><dd className="text-right font-medium text-orange-700 dark:text-orange-400">{unmatched.map((k) => `#${k}`).join(', ')}</dd></>}
+        </dl>
+        {cz.result && <p className="mt-2 text-muted-foreground">{cz.result}</p>}
+        <button type="button" onClick={cz.sync} disabled={cz.syncing}
+          className="mt-2.5 h-8 w-full rounded-md bg-foreground text-background inline-flex items-center justify-center gap-1.5 font-semibold disabled:opacity-60">
+          <RefreshCw className={cn('w-3.5 h-3.5', cz.syncing && 'animate-spin')} />{cz.syncing ? 'Syncing…' : 'Sync now'}
+        </button>
+      </PopoverContent>
+    </Popover>
   )
 }
 
@@ -100,8 +115,9 @@ export function CosmoWarn({ job, rows }: { job: WonJob; rows: CosmoInstall[] }) 
   )
 }
 
+function minsSince(iso: string) { return Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000)) }
 const ago = (iso: string) => {
-  const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000))
+  const m = minsSince(iso)
   return m < 60 ? `${m}m` : m < 1440 ? `${Math.round(m / 60)}h` : `${Math.round(m / 1440)}d`
 }
 const hhmm = (iso: string | null) => (iso ? format(new Date(iso), 'HH:mm') : '')
@@ -116,17 +132,17 @@ export function CosmoMarker({ r, onOpen, jobName }: { r: CosmoInstall; onOpen?: 
   const team = (r.install_teams ?? []).join(', ')
   return (
     <button type="button" onClick={onOpen}
-      title={`${down ? 'Teardown' : 'Setup'} ${hhmm(r.at)}${team ? ` · ${team}` : ''} · from Cosmo`}
-      className={cn('w-full text-left rounded-md border border-dashed px-1.5 py-1 text-[11px] leading-tight truncate bg-card',
+      title={`${down ? 'Teardown' : 'Setup'} ${hhmm(r.at)} · #${r.running_number}${jobName ? ` ${jobName}` : ''}${team ? ` · Team ${team}` : ''} · from Cosmo`}
+      className={cn('max-w-full text-left rounded-md border border-dashed px-1.5 py-1 text-[11px] font-semibold leading-tight truncate bg-card',
         down ? 'border-orange-400/60 text-orange-700 dark:text-orange-400' : 'border-emerald-500/60 text-emerald-700 dark:text-emerald-400')}>
-      {down ? '▼ Teardown' : '▲ Setup'} {hhmm(r.at)}
-      {jobName && <span className="text-muted-foreground"> · #{r.running_number} {jobName}</span>}
-      {team && <span className="text-muted-foreground"> · {team}</span>}
+      {down ? '▼ TD' : '▲ SU'} <span className="font-mono">#{r.running_number}</span> <span className="font-normal opacity-80">{hhmm(r.at)}</span>
     </button>
   )
 }
 
 // ── Drawer section ──────────────────────────────────────────────────────────
+const DT = 'text-muted-foreground text-[10px] sm:text-[12px] font-bold sm:font-normal tracking-wide uppercase sm:normal-case mt-2 sm:mt-0'
+const ACT = 'mt-1.5 sm:mt-0 sm:ml-2 flex sm:inline-flex w-full sm:w-auto h-9 sm:h-auto items-center justify-center gap-1 rounded-md sm:rounded border border-border px-1.5 text-[12px] sm:text-[11px] font-medium hover:bg-muted'
 const when = (iso: string | null) => (iso ? format(new Date(iso), 'EEE d MMM · HH:mm') : '—')
 
 export function CosmoSection({ job, rows, onCopy }: {
@@ -152,30 +168,27 @@ export function CosmoSection({ job, rows, onCopy }: {
         </p>
       ) : (
         <div className="bg-card px-4 py-3 text-[13px]">
-          <dl className="grid grid-cols-[92px_1fr] gap-x-3 gap-y-2">
+          <dl className="grid grid-cols-1 sm:grid-cols-[92px_1fr] gap-x-3 gap-y-0.5 sm:gap-y-2">
             {phases.filter((p) => !isTeardown(p)).map((p) => <Phase key={p.type} label="▲ Setup" r={p} />)}
-            {head.event_start && <><dt className="text-muted-foreground text-[12px]">● Event</dt><dd>{when(head.event_start)}{head.event_end && `–${hhmm(head.event_end)}`}</dd></>}
+            {head.event_start && <><dt className={DT}>● Event</dt><dd>{when(head.event_start)}{head.event_end && `–${hhmm(head.event_end)}`}</dd></>}
             {phases.filter(isTeardown).map((p) => <Phase key={p.type} label="▼ Teardown" r={p} />)}
-            {head.venue_name && <><dt className="text-muted-foreground text-[12px]">Venue</dt><dd>
+            {head.venue_name && <><dt className={DT}>Venue</dt><dd>
               {head.venue_name}{head.venue_address && <span className="text-muted-foreground"> · {head.venue_address}</span>}
-              {head.map_url && <a href={head.map_url} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center gap-1 rounded border border-border px-1.5 text-[11px] font-medium hover:bg-muted"><MapPin className="w-3 h-3" />Map</a>}
+              {head.map_url && <a href={head.map_url} target="_blank" rel="noreferrer" className={ACT}><MapPin className="w-3.5 h-3.5" />Map</a>}
             </dd></>}
-            {(head.site_contact_name || head.site_contact_phone) && <><dt className="text-muted-foreground text-[12px]">Site contact</dt><dd>
+            {(head.site_contact_name || head.site_contact_phone) && <><dt className={DT}>Site contact</dt><dd>
               {head.site_contact_name}{head.site_contact_phone && <> · {head.site_contact_phone}
-                <a href={`tel:${head.site_contact_phone.replace(/[^\d+]/g, '')}`} className="ml-2 inline-flex items-center gap-1 rounded border border-border px-1.5 text-[11px] font-medium hover:bg-muted"><Phone className="w-3 h-3" />Call</a></>}
+                <a href={`tel:${head.site_contact_phone.replace(/[^\d+]/g, '')}`} className={ACT}><Phone className="w-3.5 h-3.5" />Call</a></>}
             </dd></>}
-            {(head.skus?.length || head.quantity) ? <><dt className="text-muted-foreground text-[12px]">Booths</dt><dd className="font-mono text-[12px]">{(head.skus ?? []).join(', ')}{head.quantity ? ` · ×${head.quantity}` : ''}</dd></> : null}
+            {(head.skus?.length || head.quantity) ? <><dt className={DT}>Booths</dt><dd className="font-mono text-[12px]">{(head.skus ?? []).join(', ')}{head.quantity ? ` · ×${head.quantity}` : ''}</dd></> : null}
           </dl>
 
           {diffs.length > 0 && (
-            <div className="mt-3 rounded-lg bg-orange-500/10 px-3 py-2 text-[12px]">
-              <div className="grid grid-cols-[72px_1fr_1fr_auto] gap-x-3 gap-y-1 items-center">
-                <span /><b className="text-orange-700 dark:text-orange-400">Ours</b><b className="text-orange-700 dark:text-orange-400">Cosmo</b><span />
-                {diffs.map((d) => (
-                  <Row key={d.field} label={d.field === 'date' ? 'Event date' : 'Venue'} ours={d.ours} cosmo={d.cosmo}
-                    onUse={() => onCopy(d.field === 'date' ? { event_date: d.cosmo } : { venue: d.cosmo })} />
-                ))}
-              </div>
+            <div className="mt-3 space-y-2">
+              {diffs.map((d) => (
+                <Row key={d.field} label={d.field === 'date' ? 'Event date' : 'Venue'} ours={d.ours} cosmo={d.cosmo}
+                  onUse={() => onCopy(d.field === 'date' ? { event_date: d.cosmo } : { venue: d.cosmo })} />
+              ))}
             </div>
           )}
           <p className="mt-2 text-[11px] text-muted-foreground">Synced {formatDistanceToNow(new Date(head.synced_at))} ago · read-only — edit in Cosmo</p>
@@ -189,7 +202,7 @@ function Phase({ label, r }: { label: string; r: CosmoInstall }) {
   const team = (r.install_teams ?? []).join(', ')
   return (
     <>
-      <dt className="text-muted-foreground text-[12px]">{label}</dt>
+      <dt className={DT}>{label}</dt>
       <dd><b>{when(r.at)}</b><div className="text-[12px] text-muted-foreground">Team: {team || 'not set in Cosmo'}</div></dd>
     </>
   )
@@ -197,9 +210,13 @@ function Phase({ label, r }: { label: string; r: CosmoInstall }) {
 
 function Row({ label, ours, cosmo, onUse }: { label: string; ours: string; cosmo: string; onUse: () => void }) {
   return (
-    <>
-      <span className="text-muted-foreground">{label}</span><span className="truncate">{ours}</span><span className="truncate">{cosmo}</span>
-      <button type="button" onClick={onUse} className="rounded border border-border bg-card px-1.5 py-0.5 text-[11px] font-medium hover:bg-muted">Use Cosmo&apos;s</button>
-    </>
+    <div className="rounded-lg bg-orange-500/10 px-3 py-2 text-[12px]">
+      <div className="text-[11px] font-bold text-orange-700 dark:text-orange-400">⚠ {label} differs</div>
+      <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+        <div className="min-w-0"><div className="text-[10px] text-muted-foreground">OURS</div><div className="break-words">{ours}</div></div>
+        <div className="min-w-0"><div className="text-[10px] text-muted-foreground">COSMO</div><div className="break-words">{cosmo}</div></div>
+        <button type="button" onClick={onUse} className="col-span-2 sm:col-span-1 h-8 sm:h-7 rounded-md border border-border bg-card px-2 text-[12px] font-semibold hover:bg-muted">Use Cosmo&apos;s</button>
+      </div>
+    </div>
   )
 }

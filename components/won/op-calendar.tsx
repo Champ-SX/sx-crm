@@ -546,7 +546,7 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
                     {ongRest.length} ongoing<ChevronDown className="w-3.5 h-3.5 ml-auto" />
                   </button>
                 ))}
-                {markersOn(d).map(marker)}
+                {markersOn(d).length > 0 && <div className="flex flex-wrap gap-1.5">{markersOn(d).map(marker)}</div>}
                 {items.length === 0 && ong.length === 0 && markersOn(d).length === 0 && <span className="text-[12px] text-muted-foreground pt-2">—</span>}
                 {items.map(({ job, all }) => {
                   const k = all.indexOf(d)

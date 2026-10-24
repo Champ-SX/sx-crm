@@ -1751,9 +1751,9 @@ export default function WonReadyOpPage() {
   return (
     <div className="flex flex-col h-[100dvh]">
       {/* Top bar */}
-      <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-3 gap-y-2">
+      <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex flex-wrap xl:flex-nowrap items-center justify-between gap-x-3 gap-y-2">
         {/* Mobile: children join the bar's own wrap so switch + search get a full row */}
-        <div className="contents sm:flex items-center gap-3 min-w-0 flex-1">
+        <div className="contents sm:flex items-center gap-3 flex-1">
           <MobileMenuButton />
           <div className="shrink-0">
             <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight">Won &amp; Ready for OP</h1>
@@ -1772,7 +1772,7 @@ export default function WonReadyOpPage() {
             ))}
           </div>
           {/* Search — filters cards across all columns */}
-          <div className="relative flex-1 sm:flex-none sm:w-56">
+          <div className="relative flex-1 sm:flex-none sm:w-52">
             <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               value={search}
