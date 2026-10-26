@@ -37,7 +37,7 @@
 
 1. **Duplicate customer warning** — add lead / add customer forms warn when name, phone or email matches an existing customer ("Use this" / "create anyway"). Mockup: `docs/mockups/customer-dup-warning.html`. Stops ทศภาค-style copies. (Med)
 2. **Order board — Supplies / Assets / Suppliers** — design approved; see detail below. Racks R1–R3 + shelves A/B/C to be checked physically before phase 2. (High)
-3. **Cosmo "Open in Cosmo ↗" link** — waiting for Bestclus to add `jobUrl` (e.g. `/job/4SZs67Hy`) to `/api/public/installs`. (Low)
+3. ~~**Cosmo "Open in Cosmo ↗" link**~~ ✅ done Oct 26 (jobUrl synced, migration `20261026_cosmo_job_url.sql` run).
 4. **Cosmo phase 2 — crew & payment per phase** (setup / event / teardown; per-job vs long-term contractor vs contractor team). Open questions on fees. (Med-High)
 5. **GP-share deals — actual sales after the event.** (Low)
 6. **ANF product catalog — phase 2 merge tool** (human-reviewed duplicate products) — verify if still needed. (Med)
