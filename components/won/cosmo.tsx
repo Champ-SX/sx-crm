@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { formatDistanceToNow, format } from 'date-fns'
-import { RefreshCw, MapPin, Phone, TriangleAlert } from 'lucide-react'
+import { RefreshCw, MapPin, Phone, TriangleAlert, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import {
@@ -152,6 +152,7 @@ export function CosmoSection({ job, rows, onCopy }: {
 }) {
   const head = rows.find((r) => r.event_start) ?? rows[0]
   const diffs = cosmoDiffs(job, rows)
+  const jobUrl = rows.find((r) => r.job_url)?.job_url ?? null
   const phases = [...rows].sort((a, b) => (a.at ?? '').localeCompare(b.at ?? ''))
   return (
     <div className="rounded-xl border border-border overflow-hidden">
@@ -160,7 +161,11 @@ export function CosmoSection({ job, rows, onCopy }: {
           <span className="rounded px-1.5 py-px text-[10px] font-bold tracking-wide bg-violet-500/12 text-violet-700 dark:text-violet-300">COSMO</span>
           {head ? <span className="font-mono text-[12px] text-muted-foreground">{head.booking_id}</span> : null}
         </span>
-        {head?.status && <span className="rounded-full border border-emerald-500/50 px-2 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">{head.status}</span>}
+        <span className="flex items-center gap-2">
+          {head?.status && <span className="rounded-full border border-emerald-500/50 px-2 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">{head.status}</span>}
+          {jobUrl && <a href={jobUrl} target="_blank" rel="noreferrer"
+            className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 h-7 text-[12px] font-medium hover:bg-muted">Open in Cosmo<ExternalLink className="w-3 h-3" /></a>}
+        </span>
       </div>
       {!head ? (
         <p className="px-4 py-3 text-[12px] text-muted-foreground">

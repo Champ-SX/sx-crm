@@ -21,10 +21,12 @@ interface CosmoItem {
   status?: string; title?: string; eventName?: string; customerName?: string; product?: string
   skus?: unknown[]; quantity?: number; venueName?: string; venueAddress?: string; mapUrl?: string
   eventStart?: string; eventEnd?: string; siteContact?: { name?: string; phone?: string } | null
-  installTeams?: unknown[]
+  installTeams?: unknown[]; jobUrl?: string
 }
 
 const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null)
+// Only keep links that point at Cosmo itself.
+const cosmoLink = (v: unknown) => { const s = str(v); return s && s.startsWith('https://cosmo.bestclus.com/') ? s : null }
 const ts = (v: unknown) => { const s = str(v); return s && !Number.isNaN(Date.parse(s)) ? new Date(s).toISOString() : null }
 const names = (v: unknown[] | undefined) =>
   (v ?? []).map((x) => (typeof x === 'string' ? x : str((x as { name?: unknown })?.name) ?? str((x as { label?: unknown })?.label))).filter((x): x is string => !!x)
@@ -71,11 +73,15 @@ export async function POST(req: NextRequest) {
       venue_name: str(i.venueName), venue_address: str(i.venueAddress), map_url: str(i.mapUrl),
       event_start: ts(i.eventStart), event_end: ts(i.eventEnd),
       site_contact_name: str(i.siteContact?.name), site_contact_phone: str(i.siteContact?.phone),
-      install_teams: names(i.installTeams), synced_at: now,
+      install_teams: names(i.installTeams), job_url: cosmoLink(i.jobUrl), synced_at: now,
     }))
 
   if (rows.length) {
-    const { error } = await sb.from('cosmo_installs').upsert(rows, { onConflict: 'booking_id,type' })
+    let { error } = await sb.from('cosmo_installs').upsert(rows, { onConflict: 'booking_id,type' })
+    // job_url column not added yet (migration 20261026 pending) → save without it.
+    if (error && /job_url/.test(error.message)) {
+      ({ error } = await sb.from('cosmo_installs').upsert(rows.map(({ job_url: _j, ...r }) => r), { onConflict: 'booking_id,type' }))
+    }
     if (error) { await log(false, null, error.message); return NextResponse.json({ error: 'Save failed' }, { status: 500 }) }
   }
   // Rows inside Cosmo's window (today →) that disappeared or went back to HOLD → remove.

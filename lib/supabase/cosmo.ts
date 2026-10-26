@@ -24,6 +24,7 @@ export interface CosmoInstall {
   site_contact_name: string | null
   site_contact_phone: string | null
   install_teams: string[] | null
+  job_url?: string | null       // Cosmo job sheet link (https://cosmo.bestclus.com/job/…)
   synced_at: string
 }
 
@@ -35,7 +36,7 @@ export const isTeardown = (r: Pick<CosmoInstall, 'type' | 'type_label'>) =>
 // ── Mock data (local dev only, made-up) ─────────────────────────────────────
 function mockRows(): CosmoInstall[] {
   const d = (days: number, h: number) => { const t = new Date(); t.setHours(h, 0, 0, 0); t.setDate(t.getDate() + days); return t.toISOString() }
-  const base = { booking_id: 'BK-MOCK-1', running_number: 38, status: 'CONFIRMED', title: 'Mock booking', event_name: 'Mock event', customer_name: 'Mock', product: 'Photobooth', skus: ['K035', 'K041'], quantity: 2, venue_name: 'Impact Hall 5', venue_address: 'Muang Thong Thani', map_url: 'https://maps.google.com/?q=Impact+Hall+5', event_start: d(2, 10), event_end: d(2, 18), site_contact_name: 'คุณเอ', site_contact_phone: '080-000-0000', synced_at: new Date().toISOString() }
+  const base = { booking_id: 'BK-MOCK-1', running_number: 38, status: 'CONFIRMED', title: 'Mock booking', event_name: 'Mock event', customer_name: 'Mock', product: 'Photobooth', skus: ['K035', 'K041'], quantity: 2, venue_name: 'Impact Hall 5', venue_address: 'Muang Thong Thani', map_url: 'https://maps.google.com/?q=Impact+Hall+5', job_url: 'https://cosmo.bestclus.com/job/MOCK1234', event_start: d(2, 10), event_end: d(2, 18), site_contact_name: 'คุณเอ', site_contact_phone: '080-000-0000', synced_at: new Date().toISOString() }
   return [
     { ...base, type: 'setup', type_label: 'ติดตั้ง', at: d(1, 20), install_teams: ['พี่หนุ่ย'] },
     { ...base, type: 'teardown', type_label: 'รื้อถอน', at: d(2, 19), install_teams: [] },
