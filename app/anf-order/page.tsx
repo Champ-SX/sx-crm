@@ -1,320 +1,161 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import Link from 'next/link'
+import { ClipboardList, Plus, Upload, Search } from 'lucide-react'
 import { useCRMStore } from '@/store/crm-store'
-import { useAuth } from '@/components/auth-provider'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
-import { UserAvatar } from '@/components/shared/user-avatar'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
-import { type AnfOrder, type AnfOrderStatus } from '@/types'
-import { Plus, Bell, Package, ChevronDown, Check } from 'lucide-react'
 import { OrderDialog } from '@/components/anf/order-dialog'
-import { AssigneeFilter, matchesAssigneeFilter, ASSIGNEE_FILTER_ALL } from '@/components/shared/assignee-picker'
-import { STATUS, statusMeta, branchColor, baht, lineTotal, fmtDate } from '@/lib/anf'
+import { RequestDialog, CreatePODialog, ImportDialog, ProjectChip, projectTitle } from '@/components/anf/purchasing-ui'
+import { cn } from '@/lib/utils'
+import { ANF_ACCENT, baht, fmtDate } from '@/lib/anf'
+import { usePurchasing, requestStatus, REQ_STATUS, itemTotal, type ReqStatus } from '@/lib/supabase/purchasing'
+import { useSuppliers } from '@/lib/supabase/suppliers'
+import type { AnfOrder, AnfRequest } from '@/types'
 
-const assigneesOf = (o: AnfOrder): string[] => o.assignee_ids ?? (o.assignee_id ? [o.assignee_id] : [])
+/** A row = a real request, or a quick 1-item order (no request) shown as a "Stock refill" request. */
+interface ReqRow { key: string; req: AnfRequest | null; items: AnfOrder[]; created: string }
 
-export default function AnfOrderPage() {
+export default function RequestsPage() {
   const isHydrated = useHydrated()
-  const { user } = useAuth()
-  const meId = user?.id ?? null
   const anfOrders = useCRMStore((s) => s.anfOrders)
-  const updateAnfOrder = useCRMStore((s) => s.updateAnfOrder)
+  const wonJobs = useCRMStore((s) => s.wonJobs)
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
-  const focusAnfOrderId = useCRMStore((s) => s.focusAnfOrderId)
-  const setFocusAnfOrder = useCRMStore((s) => s.setFocusAnfOrder)
+  const { requests, pos } = usePurchasing()
+  useSuppliers()
+  const [filter, setFilter] = useState<'open' | ReqStatus | 'all'>('open')
+  const [q, setQ] = useState('')
+  const [selected, setSelected] = useState<string[]>([])
+  const [openReq, setOpenReq] = useState<AnfRequest | 'new' | null>(null)
+  const [openItem, setOpenItem] = useState<AnfOrder | null>(null)
+  const [poItems, setPoItems] = useState<AnfOrder[] | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [quick, setQuick] = useState(false)
 
-  // After a new order is created, scroll to it and let the highlight fade (~1.8s).
-  useEffect(() => {
-    if (!focusAnfOrderId) return
-    if (!anfOrders.some((o) => o.order_id === focusAnfOrderId)) return
-    const t1 = setTimeout(() => document.getElementById(`order-${focusAnfOrderId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80)
-    const t2 = setTimeout(() => setFocusAnfOrder(null), 1800)
-    return () => { clearTimeout(t1); clearTimeout(t2) }
-  }, [focusAnfOrderId, anfOrders, setFocusAnfOrder])
-  const [statusFilter, setStatusFilter] = useState<AnfOrderStatus | 'all'>('all')
-  const [branchFilter, setBranchFilter] = useState<string>('all')
-  const [assigneeFilter, setAssigneeFilter] = useState<string>(ASSIGNEE_FILTER_ALL)
-  const [showArchived, setShowArchived] = useState(false)
-  const [editing, setEditing] = useState<AnfOrder | null>(null)
-  const [creating, setCreating] = useState(false)
-  const [receiveOrder, setReceiveOrder] = useState<AnfOrder | null>(null)
+  const onBoard = (b?: string | null) => !activeBoardId || !b || b === activeBoardId
+  const rows: ReqRow[] = useMemo(() => {
+    const orders = anfOrders.filter((o) => onBoard(o.board_id))
+    const byReq = new Map<string, AnfOrder[]>()
+    for (const o of orders) if (o.request_id) byReq.set(o.request_id, [...(byReq.get(o.request_id) ?? []), o])
+    const real = requests.filter((r) => onBoard(r.board_id)).map((r) => ({ key: r.request_id, req: r, items: byReq.get(r.request_id) ?? [], created: r.created_at ?? '' }))
+    const singles = orders.filter((o) => !o.request_id || !requests.some((r) => r.request_id === o.request_id))
+      .map((o) => ({ key: o.order_id, req: null, items: [o], created: o.created_at }))
+    return [...real, ...singles].sort((a, b) => b.created.localeCompare(a.created))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anfOrders, requests, activeBoardId])
 
-  const orders = useMemo(
-    () => anfOrders.filter((o) => !activeBoardId || o.board_id === activeBoardId || !o.board_id),
-    [anfOrders, activeBoardId],
-  )
-  const branches = useMemo(
-    () => [...new Set(orders.map((o) => o.branch).filter(Boolean))] as string[],
-    [orders],
-  )
-  const archivedCount = orders.filter((o) => o.archived_at).length
-  const clearableCount = orders.filter((o) => o.status === 'received' && !o.archived_at).length
-  function clearReceived() {
-    const targets = orders.filter((o) => o.status === 'received' && !o.archived_at)
-    if (targets.length === 0) return
-    if (!window.confirm(`Archive ${targets.length} received order${targets.length > 1 ? 's' : ''}? They stay in item history and can be restored from “Show archived”.`)) return
-    const now = new Date().toISOString()
-    targets.forEach((o) => void updateAnfOrder(o.order_id, { archived_at: now }))
-  }
-
-  const filtered = orders.filter(
-    (o) => (statusFilter === 'all' || o.status === statusFilter) &&
-      (branchFilter === 'all' || o.branch === branchFilter) &&
-      matchesAssigneeFilter(assigneesOf(o), assigneeFilter, meId) &&
-      (showArchived || !o.archived_at),
-  )
-  const groups = useMemo(() => {
-    const m = new Map<string, AnfOrder[]>()
-    for (const o of filtered) {
-      const b = o.branch || 'No branch'
-      if (!m.has(b)) m.set(b, [])
-      m.get(b)!.push(o)
-    }
-    return [...m.entries()]
-  }, [filtered])
-
-  const openCount = orders.filter((o) => o.status !== 'received').length
-  const toOrderValue = orders.filter((o) => o.status === 'to_order').reduce((s, o) => s + lineTotal(o), 0)
+  const jobOf = (r: AnfRequest | null) => (r?.job_id ? wonJobs.find((j) => j.job_id === r.job_id) ?? null : null)
+  const poNum = (id: string) => pos.find((p) => p.po_id === id)?.number
+  const counts: Record<string, number> = {}
+  for (const r of rows) { const s = requestStatus(r.items).status; counts[s] = (counts[s] ?? 0) + 1 }
+  const needle = q.trim().toLowerCase()
+  const shown = rows.filter((r) => {
+    const s = requestStatus(r.items).status
+    if (filter === 'open' ? s === 'received' || (r.items.every((o) => o.archived_at) && r.items.length > 0) : filter !== 'all' && s !== filter) return false
+    if (!needle) return true
+    const job = jobOf(r.req)
+    return [r.req?.number, r.req?.project_name, job?.job_number, projectTitle(r.req, job), ...r.items.map((o) => o.item)].some((v) => (v ?? '').toLowerCase().includes(needle))
+  })
+  const selItems = rows.filter((r) => selected.includes(r.key)).flatMap((r) => r.items).filter((o) => o.status !== 'received' && !o.po_id)
+  const { suppliers } = useSuppliers()
+  const bySup = new Map<string, number>()
+  for (const o of selItems) bySup.set(o.supplier_id ?? '', (bySup.get(o.supplier_id ?? '') ?? 0) + 1)
 
   if (!isHydrated) return null
+  const chip = (k: typeof filter, label: string, n?: number) => (
+    <button key={k} type="button" onClick={() => setFilter(k)}
+      className={cn('h-7 rounded-full border px-2.5 text-[12px]', filter === k ? 'border-foreground bg-foreground text-background font-semibold' : 'border-border text-muted-foreground hover:text-foreground')}>
+      {label}{n ? <span className="ml-1 opacity-70">{n}</span> : null}
+    </button>
+  )
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
-      {/* Top bar */}
-      <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex items-center gap-3">
+      <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex flex-wrap items-center gap-3">
         <MobileMenuButton />
-        <span className="w-3.5 h-3.5 rounded-[5px] shrink-0" style={{ backgroundColor: '#7A5AA5' }} />
+        <span className="w-3.5 h-3.5 rounded-[5px] shrink-0 flex items-center justify-center" style={{ backgroundColor: ANF_ACCENT }}><ClipboardList className="w-2.5 h-2.5 text-white" /></span>
         <div>
-          <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight leading-none">Order</h1>
-          <p className="font-mono text-[12px] text-muted-foreground mt-1">{openCount} open · {baht(toOrderValue)} to order</p>
+          <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight leading-none">Requests</h1>
+          <p className="font-mono text-[12px] text-muted-foreground mt-1">{(counts.to_order ?? 0)} to order · {(counts.ordered ?? 0) + (counts.partial ?? 0)} ordered</p>
         </div>
-        <Button size="sm" className="ml-auto h-9 gap-1.5 bg-[#7A5AA5] hover:opacity-90 text-white" onClick={() => setCreating(true)}>
-          <Plus className="w-4 h-4" /> New order
-        </Button>
-      </div>
-
-      {/* Filters */}
-      <div className="px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center gap-2 border-b border-border/60">
-        <FilterChip label="All" on={statusFilter === 'all'} onClick={() => setStatusFilter('all')} />
-        {STATUS.map((s) => (
-          <FilterChip key={s.key} label={s.label} dot={s.dot} on={statusFilter === s.key} onClick={() => setStatusFilter(s.key)} />
-        ))}
-        {branches.length > 0 && <span className="w-px h-5 bg-border mx-1" />}
-        <FilterChip label="All branches" on={branchFilter === 'all'} onClick={() => setBranchFilter('all')} />
-        {branches.map((b) => (
-          <FilterChip key={b} label={b} color={branchColor(b)} on={branchFilter === b} onClick={() => setBranchFilter(b)} />
-        ))}
-        <span className="ml-auto flex items-center gap-2">
-          {clearableCount > 0 && (
-            <button type="button" onClick={clearReceived} className="inline-flex items-center gap-1.5 text-[12px] rounded-full px-3 py-1 border border-border bg-card text-muted-foreground hover:bg-muted transition-colors">
-              🗂 Clear received ({clearableCount})
-            </button>
-          )}
-          {archivedCount > 0 && (
-            <button type="button" onClick={() => setShowArchived((v) => !v)} className={`inline-flex items-center gap-1.5 text-[12px] rounded-full px-3 py-1 border transition-colors ${showArchived ? 'bg-foreground text-background border-transparent font-medium' : 'border-border bg-card text-muted-foreground hover:bg-muted'}`}>
-              {showArchived ? 'Hide' : 'Show'} archived ({archivedCount})
-            </button>
-          )}
-          <AssigneeFilter value={assigneeFilter} onChange={setAssigneeFilter} meId={meId} />
+        <span className="ml-auto flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" className="h-9 gap-1.5" onClick={() => setImporting(true)}><Upload className="w-4 h-4" />Import</Button>
+          <Button size="sm" variant="outline" className="h-9 gap-1.5" onClick={() => setQuick(true)}>Quick order</Button>
+          <Button size="sm" className="h-9 gap-1.5 bg-[#7A5AA5] hover:opacity-90 text-white" onClick={() => setOpenReq('new')}><Plus className="w-4 h-4" />New request</Button>
         </span>
       </div>
 
-      {/* Body */}
-      <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-4">
-        {filtered.length === 0 ? (
+      <div className="px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center gap-2 border-b border-border/60">
+        {chip('open', 'Open')}{chip('to_order', 'To order', counts.to_order)}{chip('ordered', 'Ordered', counts.ordered)}{chip('partial', 'Partly received', counts.partial)}{chip('received', 'Received', counts.received)}{chip('all', 'All')}
+        <div className="relative ml-auto w-full sm:w-64">
+          <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search item, project, REQ…" className="h-8 w-full rounded-lg border border-border bg-background pl-8 pr-2 text-[13px] outline-none focus:border-foreground/40" />
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-4 pb-24">
+        {shown.length === 0 ? (
           <div className="text-center py-20">
-            <Package className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-sm font-medium text-foreground">No orders yet</p>
-            <p className="text-[12px] text-muted-foreground mt-1">Add stock or consumables that need ordering.</p>
-            <Button size="sm" className="mt-4 gap-1.5 bg-[#7A5AA5] hover:opacity-90 text-white" onClick={() => setCreating(true)}>
-              <Plus className="w-4 h-4" /> New order
-            </Button>
+            <ClipboardList className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
+            <p className="text-sm font-medium">No requests here</p>
+            <p className="text-[12px] text-muted-foreground mt-1">＋Order a LOW/OUT item from Stock, start a New request, or Import a list.</p>
           </div>
         ) : (
-          <>
-            {/* Desktop table */}
-            <div className="hidden md:block border border-border rounded-xl overflow-hidden bg-card">
-              <table className="w-full text-sm table-fixed">
-                <colgroup>
-                  <col style={{ width: '150px' }} /><col style={{ width: '36%' }} /><col style={{ width: '56px' }} />
-                  <col /><col /><col /><col /><col />
-                </colgroup>
-                <thead>
-                  <tr className="border-b border-border">
-                    {[['Status', 'สถานะ'], ['Item', 'รายการ'], ['Qty', 'จำนวน'], ['Unit price', 'ราคา/หน่วย'], ['Total', 'ยอดรวม'], ['Needed by', 'ต้องใช้ภายใน'], ['Received', 'รับแล้ว'], ['Assignee', 'ผู้รับผิดชอบ']].map(([en, th], i) => (
-                      <th key={en} className={`px-4 py-3 whitespace-nowrap align-top ${i >= 2 && i <= 4 ? 'text-right' : 'text-left'}`}>
-                        <span className="block font-mono text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{en}</span>
-                        <span className="block text-[10.5px] text-muted-foreground/75 font-normal mt-0.5">{th}</span>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {groups.map(([branch, rows]) => (
-                    <DesktopBranch key={branch} branch={branch} rows={rows} onOpen={setEditing} onReceive={setReceiveOrder} focusId={focusAnfOrderId} />
-                  ))}
-                </tbody>
-              </table>
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="hidden md:grid grid-cols-[28px_2.2fr_80px_100px_80px_120px_120px] gap-3 px-4 py-2 border-b border-border font-mono text-[10px] tracking-wide text-muted-foreground">
+              <span /><span>REQUEST</span><span>ITEMS</span><span className="text-right">TOTAL</span><span>NEEDED</span><span>PO</span><span>STATUS</span>
             </div>
-
-            {/* Mobile list — Status · Item · Qty */}
-            <div className="md:hidden space-y-4">
-              {groups.map(([branch, rows]) => (
-                <div key={branch} className="border border-border rounded-xl overflow-hidden bg-card">
-                  <div className="flex items-center gap-2 px-3 py-2 bg-muted/50">
-                    <span className="font-mono text-[11px] uppercase tracking-wider font-bold" style={{ color: branchColor(branch) }}>{branch}</span>
-                    <span className="font-mono text-[10px] text-muted-foreground">— {rows.length}</span>
-                  </div>
-                  {rows.map((o) => (
-                    <button key={o.order_id} id={`order-${o.order_id}`} onClick={() => setEditing(o)} className={`w-full grid grid-cols-[auto_1fr_auto] gap-3 items-center px-3 py-3 border-b border-border/50 last:border-0 text-left transition-colors duration-700 ${focusAnfOrderId === o.order_id ? 'bg-[#7A5AA5]/15 [box-shadow:inset_3px_0_0_#7A5AA5]' : 'active:bg-muted/40'} ${o.archived_at ? 'opacity-55' : ''}`}>
-                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${statusMeta(o.status).dot}`} />
-                      <span className="min-w-0">
-                        <span className="block font-semibold text-[13.5px] leading-tight truncate">{o.item}</span>
-                        {o.description && <span className="block text-[11.5px] text-muted-foreground truncate mt-0.5">{o.description}</span>}
-                        <span className="font-mono text-[10.5px] mt-0.5 block">
-                          <span className="font-semibold" style={{ color: branchColor(o.branch) }}>{o.branch || '—'}</span><span className="text-muted-foreground"> · {baht(lineTotal(o))}</span>
-                          {o.status === 'received' && <span className="text-[#3f9d5b]"> · ✓ recv {fmtDate(o.received_at)}</span>}
-                        </span>
-                      </span>
-                      <span className="font-mono text-[13px] font-bold tabular-nums text-right">{o.quantity}<span className="block font-normal text-[9px] tracking-widest text-muted-foreground">QTY</span></span>
-                    </button>
-                  ))}
+            {shown.map((r) => {
+              const st = requestStatus(r.items)
+              const job = jobOf(r.req)
+              const total = r.items.reduce((t, o) => t + itemTotal(o), 0)
+              const manual = r.items.filter((o) => !o.product_id).length
+              const poIds = [...new Set(r.items.map((o) => o.po_id).filter(Boolean))] as string[]
+              const canSelect = r.items.some((o) => o.status !== 'received' && !o.po_id)
+              const on = selected.includes(r.key)
+              const single = r.req ? null : r.items[0]
+              return (
+                <div key={r.key} className={cn('grid grid-cols-[28px_1fr] md:grid-cols-[28px_2.2fr_80px_100px_80px_120px_120px] gap-x-3 gap-y-1 px-4 py-2.5 border-b border-border last:border-b-0 hover:bg-muted/40', on && 'bg-[#7A5AA5]/7')}>
+                  <span className="pt-0.5">
+                    {canSelect && <input type="checkbox" checked={on} onChange={() => setSelected((s) => (on ? s.filter((x) => x !== r.key) : [...s, r.key]))} className="w-4 h-4 accent-foreground" aria-label="Select for PO" />}
+                  </span>
+                  <button type="button" onClick={() => (r.req ? setOpenReq(r.req) : setOpenItem(single))} className="text-left min-w-0">
+                    <span className="flex items-center gap-2 min-w-0">
+                      <ProjectChip r={r.req} job={job} fallback={single?.branch ? `Refill · ${single.branch}` : undefined} />
+                      <b className="text-[14px] truncate">{projectTitle(r.req, job, single ?? undefined)}</b>
+                    </span>
+                    <span className="block font-mono text-[11px] text-muted-foreground truncate">{r.req ? `${r.req.number}${r.req.created_by ? ` · ${r.req.created_by}` : ''}` : `Quick order${single?.requested_by ? ` · ${single.requested_by}` : ''}`}</span>
+                  </button>
+                  <span className="col-start-2 md:col-start-auto text-[13px] text-muted-foreground md:text-foreground">{r.items.length}{manual ? <span className="text-muted-foreground text-[11px]"> · {manual} manual</span> : null}</span>
+                  <span className="col-start-2 md:col-start-auto md:text-right font-mono text-[13px]">{total ? baht(total) : '—'}</span>
+                  <span className="hidden md:block text-[12px] text-muted-foreground">{r.req?.needed_by ? fmtDate(r.req.needed_by) : single?.needed_by ? fmtDate(single.needed_by) : '—'}</span>
+                  <span className={cn('col-start-2 md:col-start-auto font-mono text-[12px] text-muted-foreground truncate', !poIds.length && 'hidden md:block')}>{poIds.length ? poIds.map((id) => <Link key={id} href="/anf-order/pos" className="underline mr-1">{poNum(id) ?? 'PO'}</Link>) : '—'}</span>
+                  <span className="col-start-2 md:col-start-auto"><span className={cn('rounded px-1.5 py-0.5 text-[11px] font-semibold whitespace-nowrap', REQ_STATUS[st.status].cls)}>{st.status === 'partial' ? `${st.received}/${st.total} received` : REQ_STATUS[st.status].label}</span></span>
                 </div>
-              ))}
-            </div>
-          </>
+              )
+            })}
+          </div>
         )}
       </div>
 
-      {(creating || editing) && (
-        <OrderDialog order={editing} onClose={() => { setCreating(false); setEditing(null) }} />
-      )}
-      {receiveOrder && <ReceiveOrderDialog order={receiveOrder} onClose={() => setReceiveOrder(null)} />}
-    </div>
-  )
-}
-
-// Board status → Received: capture date · qty · who before flipping (req 3).
-function ReceiveOrderDialog({ order, onClose }: { order: AnfOrder; onClose: () => void }) {
-  const updateAnfOrder = useCRMStore((s) => s.updateAnfOrder)
-  const anfStock = useCRMStore((s) => s.anfStock)
-  const currentUserName = useCRMStore((s) => s.currentUserName)
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
-  const [qty, setQty] = useState(String(order.quantity ?? 1))
-  const [by, setBy] = useState('')
-  const recent = [...new Set(anfStock.map((r) => r.sign).filter(Boolean) as string[])].slice(0, 6)
-  function confirm() {
-    void updateAnfOrder(order.order_id, {
-      status: 'received', received_at: date || null,
-      received_qty: parseInt(qty, 10) || order.quantity, received_by: by.trim() || currentUserName || null,
-    })
-    onClose()
-  }
-  return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent showCloseButton={false} className="max-w-sm p-0 gap-0 overflow-hidden">
-        <div className="flex items-center gap-2.5 px-5 py-3 border-b border-border">
-          <span className="w-3 h-3 rounded-[4px] bg-[#3f9d5b]" />
-          <DialogTitle className="text-[15px] font-bold">Received — {order.item}</DialogTitle>
-          <button onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground text-lg leading-none px-1">✕</button>
-        </div>
-        <div className="px-5 py-4">
-          <p className="text-[12.5px] text-muted-foreground mb-3">Tops up the WAREHOUSE and fills this order&apos;s Last-in.</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="field-label">Received date</label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-9" /></div>
-            <div><label className="field-label">Qty delivered</label><Input type="number" min={0} value={qty} onChange={(e) => setQty(e.target.value)} className="h-9" /></div>
-          </div>
-          <div className="mt-3">
-            <label className="field-label">Received by</label>
-            <Input value={by} onChange={(e) => setBy(e.target.value)} placeholder={currentUserName || 'name…'} className="h-9" />
-            {recent.length > 0 && <div className="flex flex-wrap gap-1.5 mt-1.5">{recent.map((nm) => <button key={nm} type="button" onClick={() => setBy(nm)} className="text-[12px] border border-border rounded-full px-2.5 py-1 hover:bg-muted">{nm}</button>)}</div>}
-          </div>
-        </div>
-        <div className="flex items-center gap-2 px-5 py-3 border-t border-border">
-          <Button variant="ghost" size="sm" className="ml-auto" onClick={onClose}>Cancel</Button>
-          <Button size="sm" className="bg-[#3f9d5b] hover:opacity-90 text-white" onClick={confirm}>Mark received</Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function FilterChip({ label, on, onClick, dot, color }: { label: string; on: boolean; onClick: () => void; dot?: string; color?: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={color && !on ? { color } : undefined}
-      className={`inline-flex items-center gap-1.5 text-[12px] rounded-full px-3 py-1 border transition-colors ${on ? 'bg-foreground text-background border-transparent font-medium' : color ? 'border-border bg-card font-semibold hover:bg-muted' : 'border-border bg-card text-muted-foreground hover:bg-muted'}`}
-    >
-      {dot && <span className={`w-2 h-2 rounded-full ${dot}`} />}
-      {label}
-    </button>
-  )
-}
-
-// Inline status dropdown — change status from the board without opening the editor.
-function StatusInline({ order, onReceive }: { order: AnfOrder; onReceive: (o: AnfOrder) => void }) {
-  const updateAnfOrder = useCRMStore((s) => s.updateAnfOrder)
-  const st = statusMeta(order.status)
-  return (
-    <span onClick={(e) => e.stopPropagation()}>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          aria-label="Change status"
-          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/60 pl-2 pr-2 py-1 hover:bg-muted transition-colors"
-        >
-          <span className="inline-flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-wide whitespace-nowrap">
-            <span className={`w-2 h-2 rounded-full ${st.dot}`} />{st.label}
+      {selItems.length > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 w-[min(720px,calc(100vw-2rem))] flex flex-wrap items-center gap-3 rounded-xl bg-foreground text-background px-4 py-3 shadow-xl">
+          <b className="text-[13px]">{selected.length} selected · {selItems.length} item{selItems.length > 1 ? 's' : ''}</b>
+          <span className="text-[12px] opacity-75 truncate">→ {[...bySup.entries()].map(([sid, n]) => `${suppliers.find((s) => s.supplier_id === sid)?.name ?? 'no supplier'} (${n})`).join(' · ')}</span>
+          <span className="ml-auto flex gap-2">
+            <button type="button" onClick={() => setSelected([])} className="h-8 rounded-md border border-background/30 px-3 text-[12px]">Clear</button>
+            <button type="button" onClick={() => setPoItems(selItems)} className="h-8 rounded-md bg-background text-foreground px-3 text-[12px] font-bold">Create PO →</button>
           </span>
-          <ChevronDown className="w-3 h-3 text-muted-foreground" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="min-w-[140px]">
-          {STATUS.map((s) => (
-            <DropdownMenuItem key={s.key} onClick={() => { if (s.key === order.status) return; if (s.key === 'received') onReceive(order); else void updateAnfOrder(order.order_id, { status: s.key }) }} className="text-xs gap-2 cursor-pointer font-mono uppercase tracking-wide">
-              <span className={`w-2 h-2 rounded-full ${s.dot}`} />{s.label}
-              {s.key === order.status && <Check className="w-3.5 h-3.5 ml-auto text-muted-foreground" />}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </span>
-  )
-}
+        </div>
+      )}
 
-function DesktopBranch({ branch, rows, onOpen, onReceive, focusId }: { branch: string; rows: AnfOrder[]; onOpen: (o: AnfOrder) => void; onReceive: (o: AnfOrder) => void; focusId?: string | null }) {
-  const teamMembers = useCRMStore((s) => s.teamMembers)
-  const today = new Date()
-  const color = branchColor(branch)
-  return (
-    <>
-      <tr>
-        <td colSpan={8} className="bg-muted/50 px-4 py-2">
-          <span className="font-mono text-[11px] uppercase tracking-wider font-bold" style={{ color }}>{branch}</span>
-          <span className="font-mono text-[10px] text-muted-foreground ml-2">— {rows.length} item{rows.length > 1 ? 's' : ''}</span>
-        </td>
-      </tr>
-      {rows.map((o) => {
-        const assignees = teamMembers.filter((m) => assigneesOf(o).includes(m.id))
-        const dueSoon = o.needed_by && o.status !== 'received' && new Date(o.needed_by + 'T00:00:00').getTime() - today.getTime() < 3 * 864e5
-        return (
-          <tr key={o.order_id} id={`order-${o.order_id}`} className={`border-b border-border/50 last:border-0 cursor-pointer transition-colors duration-700 ${focusId === o.order_id ? 'bg-[#7A5AA5]/15 [box-shadow:inset_3px_0_0_#7A5AA5]' : 'hover:bg-muted/40'} ${o.archived_at ? 'opacity-55' : ''}`} onClick={() => onOpen(o)}>
-            <td className="px-4 py-3"><StatusInline order={o} onReceive={onReceive} /></td>
-            <td className="px-4 py-3 min-w-0"><div className="font-semibold truncate">{o.item}</div>{o.description && <div className="text-[12.5px] text-muted-foreground truncate mt-0.5">{o.description}</div>}</td>
-            <td className="px-4 py-3 text-right font-mono tabular-nums">{o.quantity}</td>
-            <td className="px-4 py-3 text-right font-mono tabular-nums whitespace-nowrap">{baht(o.unit_price)}</td>
-            <td className="px-4 py-3 text-right font-mono tabular-nums whitespace-nowrap">{baht(lineTotal(o))}{o.with_vat && <span className="ml-1.5 font-mono text-[9px] tracking-wide bg-[#7A5AA5]/15 text-[#7A5AA5] px-1.5 py-0.5 rounded">+VAT</span>}</td>
-            <td className={`px-4 py-3 font-mono text-[12px] whitespace-nowrap ${dueSoon ? 'text-[#FF5B3F] font-bold' : 'text-muted-foreground'}`}>{fmtDate(o.needed_by)}{o.remind_at && <Bell className="inline w-3 h-3 ml-1.5 text-[#7A5AA5]" />}</td>
-            <td className="px-4 py-3 font-mono text-[11.5px] whitespace-nowrap">{o.status === 'received' ? <span><span className="block text-[#3f9d5b]">✓ {fmtDate(o.received_at)}</span>{o.received_qty != null && <span className="block text-muted-foreground">{o.received_qty} in</span>}{o.received_by && <span className="block text-[10px] text-muted-foreground">by {o.received_by}</span>}</span> : o.status === 'ordered' ? <span className="text-muted-foreground/70">awaiting</span> : <span className="text-muted-foreground/40">—</span>}</td>
-            <td className="px-4 py-3">{assignees.length > 0 ? (assignees.length === 1 ? <span className="inline-flex items-center gap-2 whitespace-nowrap"><UserAvatar name={assignees[0].name || assignees[0].email} size={22} /><span className="text-[12px]">{assignees[0].name || assignees[0].email}</span></span> : <span className="inline-flex -space-x-1.5" title={assignees.map((m) => m.name || m.email).join(', ')}>{assignees.slice(0, 4).map((m) => <span key={m.id} className="ring-2 ring-card rounded-full"><UserAvatar name={m.name || m.email} size={22} /></span>)}{assignees.length > 4 && <span className="w-[22px] h-[22px] rounded-full bg-muted ring-2 ring-card text-[9px] font-mono flex items-center justify-center text-muted-foreground">+{assignees.length - 4}</span>}</span>) : <span className="text-muted-foreground/60 text-[12px]">—</span>}</td>
-          </tr>
-        )
-      })}
-    </>
+      {openReq && <RequestDialog request={openReq === 'new' ? null : openReq} onClose={() => setOpenReq(null)} onCreatePO={(items) => setPoItems(items)} />}
+      {openItem && <OrderDialog order={openItem} onClose={() => setOpenItem(null)} />}
+      {quick && <OrderDialog order={null} onClose={() => setQuick(false)} />}
+      {poItems && <CreatePODialog items={poItems} onClose={() => setPoItems(null)} onDone={() => setSelected([])} />}
+      {importing && <ImportDialog onClose={() => setImporting(false)} />}
+    </div>
   )
 }

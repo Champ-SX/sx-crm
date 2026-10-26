@@ -1,0 +1,162 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Requests and POs</title>
+<style>
+:root{--bg:#f6f4ee;--card:#fff;--fg:#18181b;--mut:#71717a;--bd:#e4e2da;--sub:#f1efe8;--vio:#7A5AA5;--lem:#e8f25c;--grn:#15803d;--org:#c2410c;--blu:#2563eb;--red:#FF5B3F}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c0c0d;--card:#18181b;--fg:#fafafa;--mut:#a1a1aa;--bd:#2a2a2e;--sub:#202024;--grn:#4ade80;--org:#fb923c;--blu:#60a5fa}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,"Noto Sans Thai",sans-serif;padding:24px 16px}
+.mono{font-family:ui-monospace,"JetBrains Mono",monospace}
+.wrap{max-width:1200px}
+h1{font-size:19px;margin:0 0 4px}.lead{color:var(--mut);margin:0 0 6px}
+h2{font-size:12px;letter-spacing:.06em;color:var(--mut);margin:28px 0 8px;font-weight:700}
+.flow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0 4px;font-size:13px}
+.flow span{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:8px 12px}
+.flow i{color:var(--mut);font-style:normal}
+.app{display:grid;grid-template-columns:170px 1fr;background:var(--card);border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+@media(max-width:800px){.app{grid-template-columns:1fr}.nav{display:none}}
+.nav{background:var(--sub);border-right:1px solid var(--bd);padding:12px 10px;font-size:13px}
+.nav div{padding:6px 8px;border-radius:7px;color:var(--mut)}.nav .on{background:var(--card);color:var(--fg);font-weight:600}
+.main{min-width:0}
+.bar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--bd);flex-wrap:wrap}
+.bar b{font-size:16px}
+.btn{height:32px;border:1px solid var(--bd);border-radius:8px;padding:0 11px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;background:var(--card);color:var(--fg);white-space:nowrap}
+.btn.p{background:var(--vio);border-color:var(--vio);color:#fff}
+.btn.k{background:var(--fg);border-color:var(--fg);color:var(--card)}
+.chips{display:flex;gap:6px;padding:10px 16px;border-bottom:1px solid var(--bd);flex-wrap:wrap}
+.chip{font-size:12px;border:1px solid var(--bd);border-radius:999px;padding:2px 10px;color:var(--mut)}
+.chip.on{border-color:var(--fg);color:var(--fg);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:10px;letter-spacing:.06em;color:var(--mut);font-weight:700;padding:8px 12px;border-bottom:1px solid var(--bd);background:var(--sub)}
+td{padding:10px 12px;border-bottom:1px solid var(--bd);vertical-align:top}
+td small{display:block;color:var(--mut);font-size:11px}
+.num{font-family:ui-monospace,monospace;text-align:right}.r{text-align:right}
+.st{font-size:11px;font-weight:700;border-radius:5px;padding:2px 7px;white-space:nowrap}
+.s-t{background:var(--sub);color:var(--mut)}.s-o{background:color-mix(in srgb,var(--blu) 14%,transparent);color:var(--blu)}
+.s-p{background:color-mix(in srgb,var(--org) 15%,transparent);color:var(--org)}.s-r{background:color-mix(in srgb,var(--grn) 15%,transparent);color:var(--grn)}
+.pj{display:inline-block;font-size:11px;border-radius:999px;padding:1px 8px;font-weight:600}
+.job{background:color-mix(in srgb,var(--org) 12%,transparent);color:var(--org)}
+.free{background:var(--sub);color:var(--fg)}
+.refill{background:color-mix(in srgb,var(--red) 12%,transparent);color:var(--red)}
+.ck{width:16px;height:16px;border:1.5px solid var(--bd);border-radius:4px;display:inline-block;vertical-align:-3px}
+.ck.y{background:var(--fg);border-color:var(--fg)}
+.sel td{background:color-mix(in srgb,var(--vio) 7%,transparent)}
+.float{display:flex;align-items:center;gap:10px;margin:10px 16px 14px;padding:10px 12px;border-radius:10px;background:var(--fg);color:var(--card);font-size:13px;flex-wrap:wrap}
+.float .btn{background:var(--card);color:var(--fg);border-color:var(--card)}
+.grid2{display:grid;grid-template-columns:1.55fr 1fr;gap:18px;align-items:start}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+.head{padding:14px 16px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.head .t{font-size:18px;font-weight:700}.head small{color:var(--mut);display:block}
+.f{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px 16px;border-bottom:1px solid var(--bd)}
+@media(max-width:700px){.f{grid-template-columns:1fr}}
+.lbl{font-size:10px;letter-spacing:.06em;font-weight:700;color:var(--mut);margin-bottom:3px}
+.in{border:1px solid var(--bd);border-radius:7px;padding:7px 9px;font-size:13px;background:var(--card)}
+.in.ph{color:var(--mut)}
+.man td:nth-child(2){box-shadow:inset 3px 0 0 var(--lem)}
+.tot{display:flex;justify-content:flex-end;gap:24px;padding:12px 16px;font-size:13px;align-items:baseline}
+.tot b{font-size:18px}
+.side{padding:14px}
+.split{border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin-top:8px}
+.split .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.note{font-size:12px;color:var(--mut);margin:8px 0 0}
+.dlg{max-width:440px;background:var(--card);border:1px solid var(--bd);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.12);overflow:hidden}
+.dlg .h{padding:12px 16px;border-bottom:1px solid var(--bd);font-weight:700}
+.dlg .b{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dlg .b .w{grid-column:1/-1}
+.dlg .ft{padding:10px 16px;border-top:1px solid var(--bd);display:flex;justify-content:flex-end;gap:8px}
+.out{color:var(--red);font-weight:700;font-size:10px;background:var(--red);color:#fff;border-radius:4px;padding:1px 5px}
+.rx{display:flex;align-items:center;gap:8px}
+.rq{width:54px;border:1px solid var(--bd);border-radius:6px;padding:3px 6px;text-align:right;font-family:ui-monospace,monospace;font-size:12px}
+</style></head><body><div class="wrap">
+<h1>Order board — two steps: Requests → POs</h1>
+<p class="lead">Every order is a <b>Request</b> (1 item or many, for a project). <b>Create PO</b> groups request items by supplier; the PO document is issued in <b>FlowAccount</b>. No third tab. Sample data.</p>
+<div class="flow"><span>＋Order from LOW/OUT stock<br><small style="color:var(--mut)">= 1-item request</small></span><i>or</i><span>＋ New request / Import<br><small style="color:var(--mut)">= project with many items</small></span><i>→</i><span><b>Request</b><br><small style="color:var(--mut)">To order</small></span><i>→ Create PO →</i><span><b>PO</b> (FlowAccount)<br><small style="color:var(--mut)">Ordered</small></span><i>→ receive items →</i><span>Stock / asset units<br><small style="color:var(--mut)">Received</small></span></div>
+
+<h2>1 · REQUESTS — REPLACES TODAY'S ORDERS PAGE (TICK SEVERAL → ONE PO PER SUPPLIER)</h2>
+<div class="app">
+ <div class="nav"><div style="font-size:11px;letter-spacing:.06em;font-weight:700;margin-bottom:4px">ORDER BOARD</div><div class="on">Requests</div><div>POs</div><div>Stock</div><div>Suppliers</div></div>
+ <div class="main">
+  <div class="bar"><b>Requests</b><span style="color:var(--mut);font-size:12px">7 open · 2 to order</span><span style="flex:1"></span><span class="btn">⬆ Import Excel / CSV</span><span class="btn p">＋ New request</span></div>
+  <div class="chips"><span class="chip on">Open</span><span class="chip">To order 3</span><span class="chip">Ordered 2</span><span class="chip">Received</span><span class="chip">All</span><span style="flex:1"></span><span class="chip">🔍 Search item or project…</span></div>
+  <table>
+   <tr><th></th><th>REQUEST</th><th>ITEMS</th><th class="r">TOTAL</th><th>NEEDED</th><th>PO</th><th>STATUS</th></tr>
+   <tr class="sel"><td><span class="ck y"></span></td><td><span class="pj refill">Stock refill</span> <b>กระดาษปริ้นท์ RX1</b> ×5<small class="mono">REQ-2026-10-021 · BACC · from Stock OUT</small></td><td>1</td><td class="num">12,250</td><td>—</td><td>—</td><td><span class="st s-t">To order</span></td></tr>
+   <tr class="sel"><td><span class="ck y"></span></td><td><span class="pj job">#131</span> <b>Asus @The Okura</b><small class="mono">REQ-2026-10-014 · Champ</small></td><td>4 · 2 manual</td><td class="num">17,420</td><td>27 Oct</td><td>—</td><td><span class="st s-t">To order</span></td></tr>
+   <tr><td><span class="ck"></span></td><td><span class="pj refill">Stock refill</span> <b>ซองใส ใส่รูป</b> ×3<small class="mono">REQ-2026-10-020 · BTT</small></td><td>1</td><td class="num">—</td><td>—</td><td>—</td><td><span class="st s-t">To order</span></td></tr>
+   <tr><td><span class="ck"></span></td><td><span class="pj free">Project</span> <b>Phuket branch refit</b><small class="mono">REQ-2026-10-013 · Andy</small></td><td>12</td><td class="num">46,900</td><td>5 Nov</td><td class="mono">PO…01 ↗</td><td><span class="st s-p">3/12 received</span></td></tr>
+   <tr><td><span class="ck"></span></td><td><span class="pj job">#127</span> <b>NCT127 @Siam Paragon</b><small class="mono">REQ-2026-10-012</small></td><td>3</td><td class="num">4,350</td><td>27 Oct</td><td class="mono">PO…02 ↗</td><td><span class="st s-o">Ordered</span></td></tr>
+  </table>
+  <div class="float"><b>2 requests selected · 5 items</b><span style="opacity:.75">→ DNP Thailand (3 items) · PrintShop (1) · no supplier (1)</span><span style="flex:1"></span><span class="btn">Clear</span><span class="btn" style="font-weight:700">Create 2 POs →</span></div>
+ </div>
+</div>
+
+<h2>2 · QUICK ＋ORDER FROM STOCK — SAME DIALOG AS TODAY, SAVES AS A 1-ITEM REQUEST</h2>
+<div class="dlg">
+ <div class="h">New order · <span class="out">OUT</span> BACC</div>
+ <div class="b">
+  <div class="w"><div class="lbl">PRODUCT</div><div class="in">กระดาษปริ้นท์ RX1 · PAPER DNP RX1 4*6</div></div>
+  <div><div class="lbl">QTY</div><div class="in">5</div></div>
+  <div><div class="lbl">UNIT PRICE (฿)</div><div class="in">2,450</div></div>
+  <div class="w"><div class="lbl">ORDER FROM</div><div class="in">DNP Thailand ★ · lead 3–5 days</div></div>
+  <div class="w"><div class="lbl">PROJECT</div><div class="in">Stock refill ▾ <span style="color:var(--mut)">(or pick a Won job / project)</span></div></div>
+ </div>
+ <div class="ft"><span class="btn">Cancel</span><span class="btn p">Add order</span></div>
+</div>
+<p class="note">Nothing new to learn for quick refills — it simply appears in Requests as a 1-item request, ready to tick into a PO.</p>
+
+<h2>3 · REQUEST DETAIL — ADD ITEMS (CATALOG OR MANUAL), RECEIVE, CREATE PO</h2>
+<div class="grid2">
+ <div class="card">
+  <div class="head"><div><div class="t mono">REQ-2026-10-014</div><small>#131 Asus @The Okura · created by Champ · To order</small></div><span class="btn k">Create PO →</span></div>
+  <div class="f">
+   <div><div class="lbl">PROJECT</div><div class="in">#131 · Asus @The Okura ▾</div></div>
+   <div><div class="lbl">NEEDED BY</div><div class="in">27-10-2026</div></div>
+   <div><div class="lbl">DELIVER TO</div><div class="in">Warehouse ▾</div></div>
+  </div>
+  <table>
+   <tr><th>#</th><th>ITEM</th><th class="r">QTY</th><th class="r">UNIT ฿</th><th>SUPPLIER</th><th class="r">TOTAL</th><th>RECEIVED</th></tr>
+   <tr><td>1</td><td>กระดาษปริ้นท์ RX1<small>PAPER DNP RX1 4*6</small></td><td class="num">5 box</td><td class="num">2,450</td><td>DNP ★</td><td class="num">12,250</td><td><span class="rx"><span class="rq">0</span>/5</span></td></tr>
+   <tr><td>2</td><td>หมึก canon : BK<small>INK CANON BK GI-73</small></td><td class="num">4</td><td class="num">320</td><td>DNP ★</td><td class="num">1,280</td><td><span class="rx"><span class="rq">0</span>/4</span></td></tr>
+   <tr class="man"><td>3</td><td>Backdrop print 2×2.4 m<small>manual item</small></td><td class="num">1</td><td class="num">3,500</td><td>PrintShop</td><td class="num">3,500</td><td><span class="rx"><span class="rq">0</span>/1</span></td></tr>
+   <tr class="man"><td>4</td><td>Velcro + cable ties<small>manual item</small></td><td class="num">1 set</td><td class="num">390</td><td style="color:var(--mut)">pick ▾</td><td class="num">390</td><td><span class="rx"><span class="rq">0</span>/1</span></td></tr>
+   <tr><td></td><td colspan="6"><span class="in ph" style="display:block">＋ Add item — search catalog, or press Enter to add as a manual item</span></td></tr>
+  </table>
+  <div class="tot"><span>Total incl. VAT</span><b class="mono">฿ 17,420</b></div>
+ </div>
+ <div class="card side">
+  <b>Create PO</b>
+  <p class="note" style="margin-top:4px">Items are grouped by supplier → one PO each. Items without a supplier stay “To order”.</p>
+  <div class="split"><div class="top"><b>DNP Thailand</b><span class="mono">฿ 13,530</span></div><div class="note">2 items · add to open DNP PO? <b>Yes</b> (PO…02 still draft)</div></div>
+  <div class="split"><div class="top"><b>PrintShop</b><span class="mono">฿ 3,500</span></div><div class="note">1 item · new PO</div></div>
+  <div class="split" style="border-style:dashed"><div class="top"><span>No supplier</span><span class="mono">฿ 390</span></div><div class="note">Velcro + cable ties — order later</div></div>
+  <div style="margin-top:12px;display:flex;gap:6px"><span class="btn">Cancel</span><span class="btn p" style="flex:1;justify-content:center">Create POs</span></div>
+ </div>
+</div>
+
+<h2>4 · POs — ISSUED IN FLOWACCOUNT</h2>
+<div class="app">
+ <div class="nav"><div style="font-size:11px;letter-spacing:.06em;font-weight:700;margin-bottom:4px">ORDER BOARD</div><div>Requests</div><div class="on">POs</div><div>Stock</div><div>Suppliers</div></div>
+ <div class="main">
+  <div class="bar"><b>POs</b><span style="color:var(--mut);font-size:12px">grouped by supplier · made from requests</span></div>
+  <table>
+   <tr><th>PO</th><th>SUPPLIER</th><th>FROM REQUESTS</th><th class="r">TOTAL</th><th>FLOWACCOUNT</th><th>STATUS</th></tr>
+   <tr><td class="mono">PO2026100002</td><td>DNP Thailand</td><td><span class="pj refill">RX1 refill</span> <span class="pj job">#131</span> <span class="pj job">#127</span></td><td class="num">27,880</td><td><span class="st s-t">Not sent</span> <span class="btn p" style="height:24px;font-size:11px">Create in FlowAccount</span></td><td><span class="st s-t">Draft</span></td></tr>
+   <tr><td class="mono">PO2026100003</td><td>PrintShop</td><td><span class="pj job">#131</span></td><td class="num">3,500</td><td><span class="st s-r">✓ Sent ↗</span></td><td><span class="st s-o">Ordered</span></td></tr>
+   <tr><td class="mono">PO2026100001</td><td>Sample Camera Shop</td><td><span class="pj free">Phuket refit</span></td><td class="num">39,900</td><td><span class="st s-r">✓ Sent ↗</span></td><td><span class="st s-p">3/12 received</span></td></tr>
+  </table>
+  <p class="note" style="padding:0 16px 14px">Create in FlowAccount sends supplier + items + VAT + project ref and stores FlowAccount's PO number/link; print / email the PO from FlowAccount. Receiving is ticked on the request or the PO — both update the same items → stock / asset units.</p>
+ </div>
+</div>
+
+<h2>WHAT CHANGES FOR STAFF</h2>
+<div class="card" style="padding:14px 16px;font-size:13px">
+ <ul style="margin:0;padding-left:18px;color:var(--mut)">
+  <li><b style="color:var(--fg)">Quick refill</b> — exactly like today (＋Order on a LOW/OUT item). It just shows as a 1-item request.</li>
+  <li><b style="color:var(--fg)">Project purchase</b> — ＋ New request (or Import Excel) → add many items → Create PO.</li>
+  <li><b style="color:var(--fg)">Ordering</b> — tick requests → Create PO → Create in FlowAccount.</li>
+  <li><b style="color:var(--fg)">Receiving</b> — tick received qty on the request (or PO) → stock / asset units update, as now.</li>
+  <li><b style="color:var(--fg)">Existing orders</b> — each becomes a 1-item request; history kept.</li>
+ </ul>
+</div>
+</div></body></html>

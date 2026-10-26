@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Truck,
+import { ClipboardList, Truck,
   LayoutDashboard,
   Users,
   FileText,
@@ -13,7 +13,6 @@ import { Truck,
   Sun,
   X,
   LogOut,
-  Package,
   Boxes,
   Building2,
 } from 'lucide-react'
@@ -37,7 +36,8 @@ const capturesNav = [
   { href: '/won-ready-op',         label: 'Won & Ready for OP', icon: Kanban },
 ]
 const anfNav = [
-  { href: '/anf-order', label: 'Orders', icon: Package },
+  { href: '/anf-order', label: 'Requests', icon: ClipboardList },
+  { href: '/anf-order/pos', label: 'POs', icon: FileText },
   { href: '/anf-order/stock', label: 'Stock', icon: Boxes },
   { href: '/anf-order/suppliers', label: 'Suppliers', icon: Truck },
 ]

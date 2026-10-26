@@ -130,6 +130,9 @@ export interface AnfOrder {
   received_by?: string | null  // who took delivery (free text) — syncs to stock.sign
   stock_id?: string | null     // FK → anf_stock; if set, Received replenishes that row
   supplier_id?: string | null  // FK → anf_suppliers; which supplier the order went to
+  request_id?: string | null   // FK → anf_requests (project group); null = quick 1-item order
+  po_id?: string | null        // FK → anf_pos (supplier group)
+  unit?: string | null         // box / pcs / set (manual items)
   archived_at?: string | null  // soft-archive (hidden from the board); null = active
   notes: string | null
   created_at: string
@@ -189,6 +192,36 @@ export interface AnfSupplier {
   created_at?: string
   updated_at?: string
 }
+// ─── Order board purchasing: Requests (by project) → POs (by supplier) ────────
+export interface AnfRequest {
+  request_id: string
+  board_id?: string
+  number: string                    // REQ-2026-10-014
+  project_kind: 'refill' | 'job' | 'free'
+  job_id?: string | null
+  project_name?: string | null
+  needed_by?: string | null
+  deliver_to?: string | null
+  created_by?: string | null
+  notes?: string | null
+  created_at?: string
+  updated_at?: string
+}
+export interface AnfPO {
+  po_id: string
+  board_id?: string
+  number: string                    // PO2026100002
+  supplier_id?: string | null
+  status: 'draft' | 'ordered' | 'cancelled'
+  fa_doc_no?: string | null
+  fa_url?: string | null
+  created_by?: string | null
+  notes?: string | null
+  ordered_at?: string | null
+  created_at?: string
+  updated_at?: string
+}
+
 // ─── Order board asset units (section 2) ─────────────────────────────────────
 export type AssetLocationKind = 'rack' | 'factory' | 'event' | 'repair' | 'lost' | 'retired'
 export interface AnfAsset {
