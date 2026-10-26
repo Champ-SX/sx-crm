@@ -13,7 +13,7 @@ import { ANF_ACCENT, ASSET_CATEGORIES, categoryMeta, kindOf, orderedCategories }
 import { jobCardName } from '@/lib/jobs'
 import {
   useAssets, movesFor, saveAsset, moveAsset, newAssetId, nextCode, prefixFor,
-  RACKS, SHELVES, EVENT_SLOTS, LOCATION_KINDS, locMeta, locationLabel,
+  RACKS, SHELVES, EVENT_SLOTS, LOCATION_KINDS, locMeta, locationLabel, normSlot,
 } from '@/lib/supabase/assets'
 import type { AnfAsset, AnfProduct, AssetLocationKind, WonJob } from '@/types'
 
@@ -232,8 +232,9 @@ function AssetDialog({ asset, product, onClose }: { asset: AnfAsset; product?: A
   const [kind, setKind] = useState<AssetLocationKind>(asset.location_kind)
   const [rack, setRack] = useState(asset.location_kind === 'rack' && asset.location_slot ? asset.location_slot.split('-')[0] : RACKS[0])
   const [shelf, setShelf] = useState(asset.location_kind === 'rack' && asset.location_slot ? asset.location_slot.split('-')[1] ?? SHELVES[0] : SHELVES[0])
-  const [ev, setEv] = useState(asset.location_kind === 'event' && asset.location_slot ? asset.location_slot : EVENT_SLOTS[0])
-  const [extraEv, setExtraEv] = useState<string[]>(() => (asset.location_kind === 'event' && asset.location_slot && !EVENT_SLOTS.includes(asset.location_slot) ? [asset.location_slot] : []))
+  const curSet = asset.location_kind === 'event' ? normSlot(asset.location_slot) : null
+  const [ev, setEv] = useState(curSet ?? EVENT_SLOTS[0])
+  const [extraEv, setExtraEv] = useState<string[]>(() => (curSet && !EVENT_SLOTS.includes(curSet) ? [curSet] : []))
   const [jobId, setJobId] = useState<string | null>(asset.job_id ?? null)
   const [error, setError] = useState<string | null>(null)
   const [today] = useState(() => new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10))
@@ -243,7 +244,7 @@ function AssetDialog({ asset, product, onClose }: { asset: AnfAsset; product?: A
 
   const slot = kind === 'rack' ? `${rack}-${shelf}` : kind === 'event' ? ev : null
   const target = { location_kind: kind, location_slot: slot }
-  const moved = kind !== asset.location_kind || (slot ?? null) !== (asset.location_slot ?? null) || (kind === 'event' && (jobId ?? null) !== (asset.job_id ?? null))
+  const moved = kind !== asset.location_kind || (slot ?? null) !== ((kind === 'event' ? normSlot(asset.location_slot) : asset.location_slot) ?? null) || (kind === 'event' && (jobId ?? null) !== (asset.job_id ?? null))
   const detailsChanged = (['serial', 'purchase_date', 'value_thb', 'warranty_until', 'notes'] as const).some((k) => (d[k] ?? null) !== (asset[k] ?? null))
 
   async function save() {
@@ -297,10 +298,10 @@ function AssetDialog({ asset, product, onClose }: { asset: AnfAsset; product?: A
           )}
           {kind === 'event' && (
             <>
-              <div><label className="field-label">Event slot</label>
+              <div><label className="field-label">Equipment set</label>
                 <div className="flex flex-wrap gap-1.5">
                   {[...EVENT_SLOTS, ...extraEv].map((s) => <button key={s} type="button" onClick={() => setEv(s)} className={seg(ev === s)}>{s}</button>)}
-                  <button type="button" onClick={() => { const n = `EV${EVENT_SLOTS.length + extraEv.length + 1}`; setExtraEv((x) => [...x, n]); setEv(n) }} className={seg(false)}>＋ EV{EVENT_SLOTS.length + extraEv.length + 1}</button>
+                  <button type="button" onClick={() => { const n = `SET${EVENT_SLOTS.length + extraEv.length + 1}`; setExtraEv((x) => [...x, n]); setEv(n) }} className={seg(false)}>＋ SET{EVENT_SLOTS.length + extraEv.length + 1}</button>
                 </div>
               </div>
               <div><label className="field-label">Linked Won job</label>

@@ -54,6 +54,7 @@ import {
   LayoutGrid, CalendarDays, Plus,
 } from 'lucide-react'
 import { OpCalendar, InventoryPill, NeedStepper, NoStaffToggle, weekStart } from '@/components/won/op-calendar'
+import { EquipmentSection } from '@/components/won/equipment-section'
 import { useCosmo, cosmoFor, CosmoSection, CosmoSyncControl, type CosmoState } from '@/components/won/cosmo'
 import { useOpenFromUrl } from '@/hooks/use-open-from-url'
 import { copyCardLink, shareCardLink } from '@/lib/card-links'
@@ -1161,6 +1162,7 @@ function JobDetail({
               </div>
 
               {!job.is_ops && <CosmoSection job={job} rows={cosmoFor(cz, job)} onCopy={u} />}
+              <EquipmentSection job={job} />
 
               {/* Section C: Company Account */}
               <div className="rounded-xl border border-border overflow-hidden">
@@ -1343,6 +1345,7 @@ function JobDetail({
                     </div>
 
                     {!job.is_ops && <CosmoSection job={job} rows={cosmoFor(cz, job)} onCopy={u} />}
+                    <EquipmentSection job={job} />
 
                     {/* Section C: Company Account & OP Stage */}
                     <div className="rounded-xl border border-border overflow-hidden">
