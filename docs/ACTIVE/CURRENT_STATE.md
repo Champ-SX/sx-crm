@@ -36,7 +36,7 @@
 ## 🗂️ Remaining Backlog (updated Oct 24, 2026)
 
 1. **Duplicate customer warning** — add lead / add customer forms warn when name, phone or email matches an existing customer ("Use this" / "create anyway"). Mockup: `docs/mockups/customer-dup-warning.html`. Stops ทศภาค-style copies. (Med)
-2. **Order board — Supplies / Assets / Suppliers** — ✅ kind + Supplies|Assets switch, Suppliers page, supplier on items, ＋Order prefill shipped Oct 27 (migration `20261027_order_suppliers.sql` run). **Left: section 2 — asset units/IDs (CAM-001), locations R1–R3 A/B/C · F · EV1–3 linked to Won job, move log, QR** (racks to check physically first). (High)
+2. ~~**Order board — Supplies / Assets / Suppliers + asset units**~~ ✅ shipped Oct 27–28 (migrations `20261027_order_suppliers.sql`, `20261028_order_asset_units.sql`). Next ideas: QR labels, assets-out on Won card, rack list in settings after physical check. (Low–Med)
 3. ~~**Cosmo "Open in Cosmo ↗" link**~~ ✅ done Oct 26 (jobUrl synced, migration `20261026_cosmo_job_url.sql` run).
 4. **Cosmo phase 2 — crew & payment per phase** (setup / event / teardown; per-job vs long-term contractor vs contractor team). Open questions on fees. (Med-High)
 5. **GP-share deals — actual sales after the event.** (Low)
