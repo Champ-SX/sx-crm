@@ -37,10 +37,21 @@ export const CATEGORIES: { key: AnfStockCategory; th: string; en: string; color:
   { key: 'sleeve',    th: 'ซองใส',    en: 'Sleeve',        color: '#2E8A9A' },
   { key: 'other',     th: 'อื่นๆ',    en: 'Other',         color: '#8a8a8a' },
 ]
+// Asset categories (equipment) — used when a product's kind is 'asset'.
+export const ASSET_CATEGORIES: { key: string; th: string; en: string; color: string }[] = [
+  { key: 'computer',    th: 'คอมพิวเตอร์', en: 'Computer',    color: '#3F6EA5' },
+  { key: 'camera',      th: 'กล้อง',        en: 'Camera',      color: '#C9772E' },
+  { key: 'light',       th: 'ไฟ',           en: 'Light',       color: '#B8A021' },
+  { key: 'router',      th: 'เราเตอร์',     en: 'Router',      color: '#2E8A9A' },
+  { key: 'asset_other', th: 'อุปกรณ์อื่นๆ', en: 'Other asset', color: '#8a8a8a' },
+]
+export type ProductKind = 'supply' | 'asset'
+export const kindOf = (p: { kind?: string | null } | null | undefined): ProductKind => (p?.kind === 'asset' ? 'asset' : 'supply')
+export const categoriesFor = (kind: ProductKind) => (kind === 'asset' ? ASSET_CATEGORIES : CATEGORIES)
 // Seed categories keep fixed colours; custom ones get a stable hashed colour.
 const CATEGORY_PALETTE = ['#3F6EA5', '#C9772E', '#7A5AA5', '#2E8A9A', '#B8543F', '#5A7D3F', '#9A6B2E', '#3f9d5b']
 export function categoryColor(key: string): string {
-  const seed = CATEGORIES.find((c) => c.key === key)
+  const seed = CATEGORIES.find((c) => c.key === key) ?? ASSET_CATEGORIES.find((c) => c.key === key)
   if (seed) return seed.color
   let h = 0
   for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0
@@ -48,13 +59,13 @@ export function categoryColor(key: string): string {
 }
 // Category display meta; unknown (custom) keys render with the key as label.
 export const categoryMeta = (k?: string | null): { key: string; th: string; en: string; color: string } => {
-  const seed = CATEGORIES.find((c) => c.key === k)
+  const seed = CATEGORIES.find((c) => c.key === k) ?? ASSET_CATEGORIES.find((c) => c.key === k)
   if (seed) return seed
   const key = k || 'other'
   return { key, th: key, en: '', color: categoryColor(key) }
 }
 // Seed order stock rows fall into first; custom categories follow (sorted).
-export const CATEGORY_ORDER: string[] = ['paper', 'cartridge', 'ink', 'sleeve', 'other']
+export const CATEGORY_ORDER: string[] = ['paper', 'cartridge', 'ink', 'sleeve', 'other', 'computer', 'camera', 'light', 'router', 'asset_other']
 // Given the categories present, return them in board order.
 export function orderedCategories(present: string[]): string[] {
   const seed = CATEGORY_ORDER.filter((c) => present.includes(c))

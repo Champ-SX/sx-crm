@@ -129,6 +129,7 @@ export interface AnfOrder {
   received_qty?: number | null // qty actually delivered (default = quantity); tops up stock
   received_by?: string | null  // who took delivery (free text) — syncs to stock.sign
   stock_id?: string | null     // FK → anf_stock; if set, Received replenishes that row
+  supplier_id?: string | null  // FK → anf_suppliers; which supplier the order went to
   archived_at?: string | null  // soft-archive (hidden from the board); null = active
   notes: string | null
   created_at: string
@@ -166,8 +167,40 @@ export interface AnfProduct {
   code: string | null       // spec / product code
   category: string | null
   unit: string | null       // box | pack | pcs
+  kind?: 'supply' | 'asset' // supplies are counted & re-ordered; assets are equipment (computer, camera…)
   created_at?: string
   updated_at?: string
+}
+
+// ─── Order board suppliers ────────────────────────────────────────────────────
+export interface AnfSupplier {
+  supplier_id: string
+  board_id?: string
+  name: string
+  contact_person?: string | null
+  phone?: string | null
+  line_id?: string | null
+  email?: string | null
+  website?: string | null
+  address?: string | null
+  tax_id?: string | null
+  payment_terms?: string | null
+  notes?: string | null
+  created_at?: string
+  updated_at?: string
+}
+/** Item ↔ supplier link with ordering details. */
+export interface AnfProductSupplier {
+  id: string
+  product_id: string
+  supplier_id: string
+  preferred: boolean
+  price?: number | null
+  unit?: string | null
+  lead_time?: string | null
+  min_order?: string | null
+  order_via?: string | null
+  note?: string | null
 }
 
 // ─── ANF Stock movement log (receive / transfer / check) ────────────────────

@@ -15,7 +15,7 @@ import { Boxes, Plus, Trash2, ShoppingCart, Package, MoreHorizontal, Copy, Share
 import { OrderDialog, type OrderPrefill } from '@/components/anf/order-dialog'
 import { ProductPicker } from '@/components/anf/product-picker'
 import { ProductDialog } from '@/components/anf/product-dialog'
-import { ANF_ACCENT, SEED_BRANCHES, WAREHOUSE, branchColor, fmtDate, statusMeta, CATEGORIES, categoryMeta, orderedCategories, inferCategory } from '@/lib/anf'
+import { ANF_ACCENT, SEED_BRANCHES, WAREHOUSE, branchColor, fmtDate, statusMeta, CATEGORIES, categoryMeta, orderedCategories, inferCategory, kindOf, type ProductKind } from '@/lib/anf'
 
 const catOf = (r: { category?: string | null; item: string }): string =>
   (r.category || inferCategory(r.item))
@@ -46,10 +46,22 @@ export default function AnfStockPage() {
   const [transferRow, setTransferRow] = useState<AnfStock | null>(null)
   const [editProductRow, setEditProductRow] = useState<AnfProduct | null>(null)
 
-  const rows = useMemo(
+  // Supplies | Assets — products carry a kind; rows follow their product (no product = supply).
+  const [kind, setKind] = useState<ProductKind>(() => {
+    if (typeof window === 'undefined') return 'supply'
+    try { return localStorage.getItem('order-stock-kind') === 'asset' ? 'asset' : 'supply' } catch { return 'supply' }
+  })
+  const pickKind = (k: ProductKind) => { setKind(k); try { localStorage.setItem('order-stock-kind', k) } catch { /* private mode */ } }
+  const kindById = useMemo(() => new Map(anfProducts.map((p) => [p.product_id, kindOf(p)])), [anfProducts])
+  const boardRows = useMemo(
     () => anfStock.filter((r) => !activeBoardId || r.board_id === activeBoardId || !r.board_id),
     [anfStock, activeBoardId],
   )
+  const rows = useMemo(
+    () => boardRows.filter((r) => ((r.product_id && kindById.get(r.product_id)) || 'supply') === kind),
+    [boardRows, kind, kindById],
+  )
+  const assetCount = useMemo(() => anfProducts.filter((p) => kindOf(p) === 'asset').length, [anfProducts])
 
   // Branch set: seed order first, then any others present.
   const branches = useMemo(() => {
@@ -79,7 +91,7 @@ export default function AnfStockPage() {
     const real = rows.filter((r) => r.branch === WAREHOUSE)
     const haveProduct = new Set(real.map((r) => r.product_id).filter(Boolean) as string[])
     const haveItem = new Set(real.map((r) => r.item))
-    const prods = anfProducts.filter((p) => !activeBoardId || p.board_id === activeBoardId || !p.board_id)
+    const prods = anfProducts.filter((p) => (!activeBoardId || p.board_id === activeBoardId || !p.board_id) && kindOf(p) === kind)
     const virtual: AnfStock[] = prods
       .filter((p) => !(p.product_id && haveProduct.has(p.product_id)) && !haveItem.has(p.name))
       .map((p) => ({
@@ -95,7 +107,7 @@ export default function AnfStockPage() {
         delivered_at: null, notes: null, sign: null,
       }))
     return [...real, ...virtual]
-  }, [rows, anfProducts, activeBoardId])
+  }, [rows, anfProducts, activeBoardId, kind])
 
   // Open a card — a virtual warehouse row is materialised into a real 0-qty row first.
   function openStock(r: AnfStock) {
@@ -135,7 +147,7 @@ export default function AnfStockPage() {
   if (!isHydrated) return null
   const isTotal = tab === 'TOTAL'
   const isCatalog = tab === 'CATALOG'
-  const products = anfProducts.filter((p) => !activeBoardId || p.board_id === activeBoardId || !p.board_id)
+  const products = anfProducts.filter((p) => (!activeBoardId || p.board_id === activeBoardId || !p.board_id) && kindOf(p) === kind)
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
@@ -146,6 +158,12 @@ export default function AnfStockPage() {
         <div>
           <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight leading-none">ANF Stock</h1>
           <p className="font-mono text-[12px] text-muted-foreground mt-1">{rows.length} items · {lowCount} need reorder</p>
+        </div>
+        <div className="ml-2 inline-flex rounded-lg border border-border bg-card p-0.5" role="tablist" aria-label="Supplies or assets">
+          {([['supply', 'Supplies'], ['asset', `Assets${assetCount ? ` ${assetCount}` : ''}`]] as const).map(([k, l]) => (
+            <button key={k} type="button" role="tab" aria-selected={kind === k} onClick={() => pickKind(k)}
+              className={`h-7 px-2.5 rounded-md text-[12px] font-medium transition-colors ${kind === k ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}>{l}</button>
+          ))}
         </div>
         <Button size="sm" className="ml-auto h-9 gap-1.5 bg-[#7A5AA5] hover:opacity-90 text-white" onClick={() => setCreating(true)}>
           <Plus className="w-4 h-4" /> Add item

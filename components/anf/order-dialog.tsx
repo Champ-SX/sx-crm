@@ -7,6 +7,7 @@ import { useAuth } from '@/components/auth-provider'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { AssigneePicker } from '@/components/shared/assignee-picker'
 import { ProductPicker } from '@/components/anf/product-picker'
+import { useSuppliers, linksFor, preferredFor, telHref, lineHref } from '@/lib/supabase/suppliers'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -59,6 +60,13 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
   const [receivedQty, setReceivedQty] = useState(String(order?.received_qty ?? order?.quantity ?? 1))
   const [receivedBy, setReceivedBy] = useState(order?.received_by ?? '')
   const [notes, setNotes] = useState(order?.notes ?? '')
+  // Supplier: undefined = follow the item's preferred supplier; null = none chosen.
+  const { suppliers } = useSuppliers()
+  const [pickedSupplier, setPickedSupplier] = useState<string | null | undefined>(order ? (order.supplier_id ?? null) : undefined)
+  const productLinks = linksFor(productId)
+  const supplierId = pickedSupplier === undefined ? (preferredFor(productId)?.supplier_id ?? null) : pickedSupplier
+  const supplier = suppliers.find((x) => x.supplier_id === supplierId) ?? null
+  const supplierLink = productLinks.find((l) => l.supplier_id === supplierId) ?? null
 
   const qtyN = parseInt(quantity, 10) || 0
   const priceN = parseFloat(unitPrice) || 0
@@ -89,6 +97,8 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
       received_by: status === 'received' ? (receivedBy.trim() || null) : (order?.received_by ?? null),
       stock_id: stockId,
       notes: notes.trim() || null,
+      // only sent when set, so orders keep saving before the suppliers migration is run
+      ...(supplierId || order?.supplier_id ? { supplier_id: supplierId } : {}),
     }
     if (isEdit && order) {
       void updateAnfOrder(order.order_id, { ...base, remind_notified_at: null })
@@ -126,6 +136,30 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
             <ProductPicker value={productId} boardId={activeBoardId} onSelect={(p) => { setProductId(p.product_id); setItem(p.name); setDescription(p.code ?? ''); const last = lastPriceFor(p.name); if (!unitPrice && last) setUnitPrice(String(last)) }} />
             {productId && description && <div className="mt-1.5 text-[12px] text-muted-foreground truncate">{description}</div>}
           </div>
+
+          {productId && productLinks.length > 0 && (
+            <div className="col-span-full rounded-lg border border-border px-3 py-2">
+              <div className="flex items-center gap-2">
+                <label className="field-label m-0">Order from</label>
+                <select value={supplierId ?? ''} onChange={(e) => setPickedSupplier(e.target.value || null)}
+                  className="ml-auto h-8 max-w-[60%] rounded-md border border-border bg-card px-2 text-[13px]">
+                  <option value="">No supplier</option>
+                  {productLinks.map((l) => { const x = suppliers.find((y) => y.supplier_id === l.supplier_id); return x ? <option key={l.id} value={x.supplier_id}>{x.name}{l.preferred ? ' ★' : ''}</option> : null })}
+                </select>
+              </div>
+              {supplier && (
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted-foreground">
+                  {supplierLink?.price != null && <span>฿ {supplierLink.price.toLocaleString()}{supplierLink.unit ? ` / ${supplierLink.unit}` : ''}
+                    {String(supplierLink.price) !== unitPrice && <button type="button" onClick={() => setUnitPrice(String(supplierLink.price))} className="ml-1.5 underline text-foreground">use</button>}</span>}
+                  {supplierLink?.lead_time && <span>Lead {supplierLink.lead_time}</span>}
+                  {supplierLink?.min_order && <span>Min {supplierLink.min_order}</span>}
+                  {supplierLink?.order_via && <span>via {supplierLink.order_via}</span>}
+                  {telHref(supplier.phone) && <a href={telHref(supplier.phone)!} className="underline text-foreground">Call</a>}
+                  {lineHref(supplier.line_id) && <a href={lineHref(supplier.line_id)!} target="_blank" rel="noreferrer" className="underline text-foreground">LINE</a>}
+                </div>
+              )}
+            </div>
+          )}
 
           <div><label className="field-label">Qty</label><Input type="number" min={0} value={quantity} onChange={(e) => setQuantity(e.target.value)} className="h-9" /></div>
           <div><label className="field-label">Unit price (฿)</label><Input type="number" min={0} value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="0" className="h-9" /></div>
