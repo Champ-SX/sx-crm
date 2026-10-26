@@ -1,0 +1,155 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calendar Print Design</title>
+<style>
+:root{--bg:#e9e6de;--card:#fff;--fg:#18181b;--mut:#71717a;--bd:#e4e2da;--sub:#f4f2ec}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c0c0d;--card:#18181b;--fg:#fafafa;--mut:#a1a1aa;--bd:#2a2a2e;--sub:#202024}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,"Noto Sans Thai",sans-serif;padding:24px 16px}
+.mono{font-family:ui-monospace,"JetBrains Mono",monospace}
+.wrap{max-width:1200px}
+h1{font-size:19px;margin:0 0 4px}.lead{color:var(--mut);margin:0 0 18px}
+h2{font-size:12px;letter-spacing:.06em;color:var(--mut);margin:26px 0 8px;font-weight:700}
+.bar{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:relative}
+.btn{height:30px;border:1px solid var(--bd);border-radius:8px;padding:0 10px;font-size:12px;display:inline-flex;align-items:center;gap:6px;background:var(--card);color:var(--fg);white-space:nowrap}
+.btn.p{background:var(--fg);color:var(--card);border-color:var(--fg);font-weight:600}
+.btn.on{box-shadow:0 0 0 2px #7c3aed}
+.pop{position:absolute;top:46px;right:14px;width:300px;background:var(--card);border:1px solid var(--bd);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.16);padding:14px;font-size:13px;z-index:2}
+.lbl{font-size:10px;letter-spacing:.06em;font-weight:700;color:var(--mut);margin:12px 0 5px}
+.lbl:first-child{margin-top:0}
+.seg{display:flex;border:1px solid var(--bd);border-radius:9px;padding:2px}
+.seg span{flex:1;text-align:center;padding:6px 4px;border-radius:7px;font-size:12px;color:var(--mut)}
+.seg .on{background:var(--fg);color:var(--card);font-weight:600}
+.ori{display:flex;gap:8px}
+.ori div{flex:1;border:1px solid var(--bd);border-radius:9px;padding:8px;text-align:center;font-size:12px}
+.ori .on{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg);font-weight:600}
+.pg{display:inline-block;border:1.5px solid currentColor;border-radius:2px;margin-bottom:4px}
+.chk{display:flex;flex-direction:column;gap:5px;font-size:12px}
+.chk label{display:flex;gap:7px;align-items:center}
+.box{width:14px;height:14px;border-radius:4px;background:var(--fg)}.box.off{background:transparent;border:1.5px solid var(--bd)}
+.sel{border:1px solid var(--bd);border-radius:8px;padding:6px 9px;font-size:12px;display:flex;justify-content:space-between}
+/* paper */
+.papers{display:grid;grid-template-columns:1.45fr 1fr;gap:22px;align-items:start}
+@media(max-width:900px){.papers{grid-template-columns:1fr}}
+.paper{background:#fff;color:#111;box-shadow:0 6px 24px rgba(0,0,0,.18);padding:16px;font-size:9px}
+.paper.land{aspect-ratio:297/210}.paper.port{aspect-ratio:210/297}
+.ph{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1.5px solid #111;padding-bottom:5px;margin-bottom:6px}
+.ph b{font-size:14px}.ph span{color:#666}
+.mg{display:grid;grid-template-columns:repeat(7,1fr);border-left:1px solid #ccc;border-top:1px solid #ccc}
+.mg .h{font-weight:700;font-size:8px;color:#555;padding:2px 3px;border-right:1px solid #ccc;border-bottom:1px solid #ccc;background:#f3f3f3}
+.mg .d{min-height:62px;border-right:1px solid #ccc;border-bottom:1px solid #ccc;padding:2px 3px;overflow:hidden}
+.mg .d.o{background:#fafafa;color:#bbb}
+.dn{font-weight:700;font-size:9px}
+.it{border-left:2.5px solid #111;padding:0 0 0 3px;margin-top:2px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.it small{color:#666}
+.su{color:#15803d}.td{color:#c2410c}
+.bar2{margin-top:2px;background:#eee;border-left:2.5px solid #7c3aed;padding:0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wk{display:flex;flex-direction:column}
+.wd{display:grid;grid-template-columns:52px 1fr;border-top:1px solid #ccc;padding:4px 0}
+.wd .dl{font-weight:700;font-size:10px}.wd .dl small{display:block;font-weight:400;color:#666}
+.cd{border:1px solid #ccc;border-left:3px solid #111;border-radius:2px;padding:3px 5px;margin-bottom:3px}
+.cd b{font-size:9.5px}.cd .m{color:#555;margin-top:1px}
+.chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:2px}
+.chips span{border:1px solid #bbb;border-radius:8px;padding:0 4px;font-size:8px}
+.foot{display:flex;justify-content:space-between;color:#888;font-size:8px;margin-top:6px;border-top:1px solid #ddd;padding-top:3px}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:8px;color:#444;margin-top:4px}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:3px;vertical-align:-1px}
+.notes{font-size:12px;color:var(--mut);margin-top:10px}
+.notes li{margin-bottom:3px}
+</style></head><body><div class="wrap">
+<h1>Won &amp; Ready — calendar print</h1>
+<p class="lead">A Print button in the calendar toolbar opens print options; the page is laid out for paper (black-and-white friendly, stage colour as a left edge) and opens the browser's print dialog — or Save as PDF.</p>
+
+<h2>1 · PRINT BUTTON + OPTIONS</h2>
+<div class="bar" style="padding-bottom:300px">
+ <span class="btn">‹</span><span class="btn">Today</span><span class="btn">›</span><b style="font-size:13px">Mon 26 Oct – Tue 3 Nov 2026</b>
+ <span style="flex:1"></span><span class="btn">Ongoing: compact ▾</span><span class="btn on">🖨 Print</span>
+ <div class="pop">
+  <div class="lbl">RANGE</div>
+  <div class="seg"><span class="on">9 days (this view)</span><span>Month</span></div>
+  <div class="lbl">MONTH</div>
+  <div class="sel" style="opacity:.45"><span>November 2026</span><span>▾</span></div>
+  <div class="lbl">ORIENTATION</div>
+  <div class="ori">
+   <div class="on"><span class="pg" style="width:14px;height:19px"></span><br>Portrait</div>
+   <div><span class="pg" style="width:19px;height:14px"></span><br>Landscape</div>
+  </div>
+  <div class="lbl">SHOW ON CARDS</div>
+  <div class="chk">
+   <label><span class="box"></span>Venue + time</label>
+   <label><span class="box"></span>Staff · AW · Inventory</label>
+   <label><span class="box"></span>Cosmo setup / teardown (SU/TD)</label>
+   <label><span class="box off"></span>Assigned OP names</label>
+  </div>
+  <div class="lbl">FILTERS</div>
+  <div style="font-size:12px;color:var(--mut)">Uses the board's current filters (All jobs · All assignees · search)</div>
+  <div style="display:flex;gap:6px;margin-top:12px"><span class="btn" style="flex:1;justify-content:center">Cancel</span><span class="btn p" style="flex:1;justify-content:center">Print / Save PDF</span></div>
+ </div>
+</div>
+
+<h2>2 · PRINT PREVIEW — MONTH · LANDSCAPE (A4)</h2>
+<div class="papers">
+ <div class="paper land">
+  <div class="ph"><b>Won &amp; Ready · November 2026</b><span>CAP*TURES · printed 26 Oct 2026 14:05 · 24 jobs</span></div>
+  <div class="mg">
+   <div class="h">MON</div><div class="h">TUE</div><div class="h">WED</div><div class="h">THU</div><div class="h">FRI</div><div class="h">SAT</div><div class="h">SUN</div>
+   <div class="d o"><div class="dn">26</div></div><div class="d o"><div class="dn">27</div></div><div class="d o"><div class="dn">28</div></div><div class="d o"><div class="dn">29</div></div><div class="d o"><div class="dn">30</div></div><div class="d o"><div class="dn">31</div></div>
+   <div class="d"><div class="dn">1</div><div class="bar2">#127 NCT127 @Siam Paragon → 7</div></div>
+   <div class="d"><div class="dn">2</div><div class="it" style="border-color:#16a34a"><b>#131</b> Brand Day <small>10:00</small></div><div class="it su">▲ SU #133 20:00</div></div>
+   <div class="d"><div class="dn">3</div><div class="it" style="border-color:#2563eb"><b>#133</b> Sephora @Eastin <small>17–23</small></div></div>
+   <div class="d"><div class="dn">4</div><div class="it td">▼ TD #133 23:30</div></div>
+   <div class="d"><div class="dn">5</div></div>
+   <div class="d"><div class="dn">6</div><div class="it" style="border-color:#dc2626"><b>#135</b> TikTok Live</div><div class="it" style="border-color:#7c3aed"><b>#136</b> MUJI Opening</div><div class="it"><small>+2 more</small></div></div>
+   <div class="d"><div class="dn">7</div><div class="it td">▼ TD #127 22:00</div></div>
+   <div class="d"><div class="dn">8</div></div>
+   <div class="d"><div class="dn">9</div><div class="it" style="border-color:#16a34a"><b>#138</b> Kobo Book Fair</div></div>
+   <div class="d"><div class="dn">10</div></div><div class="d"><div class="dn">11</div><div class="it" style="border-color:#dc2626"><b>#140</b> 11.11 Mega</div></div>
+   <div class="d"><div class="dn">12</div></div><div class="d"><div class="dn">13</div></div><div class="d"><div class="dn">14</div></div><div class="d"><div class="dn">15</div></div>
+  </div>
+  <div class="legend"><span><i style="background:#2563eb"></i>AW done</span><span><i style="background:#16a34a"></i>Ready</span><span><i style="background:#7c3aed"></i>Ongoing</span><span><i style="background:#dc2626"></i>Event done</span><span class="su">▲ Setup</span><span class="td">▼ Teardown</span></div>
+  <div class="foot"><span>sx-crm · Won &amp; Ready</span><span>page 1 / 1</span></div>
+ </div>
+ <div>
+  <ul class="notes">
+   <li><b>Month:</b> Mon–Sun grid, whole month on one page; long events become one bar across the days.</li>
+   <li>Busy days show the first 3–4 cards then <b>“+N more”</b> — a second page lists every job in full when anything is hidden.</li>
+   <li>Stage = coloured left edge; legend at the bottom so it still reads in black &amp; white.</li>
+  </ul>
+ </div>
+</div>
+
+<h2>3 · PRINT PREVIEW — 9 DAYS · PORTRAIT (A4)</h2>
+<div class="papers">
+ <div class="paper port" style="max-width:520px">
+  <div class="ph"><b>Won &amp; Ready · 26 Oct – 3 Nov 2026</b><span>printed 26 Oct 14:05</span></div>
+  <div class="wk">
+   <div class="wd"><div class="dl">Mon 26<small>Oct</small></div><div>
+    <div class="cd" style="border-left-color:#7c3aed"><b>#113 Mega Halloween 2026</b><div class="m">day 4/10 · ศูนย์การค้าเมกาบางนา · 10:00–22:00</div><div class="chips"><span>Staff 2/2</span><span>AW ✓</span><span>Ready</span></div></div>
+    <div class="cd" style="border-left-color:#16a34a;border-style:dashed"><b class="su">▲ SU #127 22:00</b> <span style="color:#666">NCT127 @Siam Paragon · พี่แบงค์, พี่หนุ่ย</span></div>
+   </div></div>
+   <div class="wd"><div class="dl">Tue 27<small>Oct</small></div><div><span style="color:#999">—</span></div></div>
+   <div class="wd"><div class="dl">Wed 28<small>Oct</small></div><div>
+    <div class="cd" style="border-left-color:#dc2626"><b>#127 NCT127 @Siam Paragon</b><div class="m">28 Oct – 7 Nov · 10:00–22:00 · K009</div><div class="chips"><span>Staff 3/3</span><span>AW ✓</span><span>Inventory: none</span></div></div>
+    <div class="cd" style="border-left-color:#16a34a"><b>#105 Kobo มหกรรมหนังสือ</b><div class="m">ศูนย์การประชุมแห่งชาติสิริกิติ์ · 11:00–22:00</div><div class="chips"><span>No staff</span><span>AW ✓</span><span>Ready</span></div></div>
+   </div></div>
+   <div class="wd"><div class="dl">Thu 29<small>Oct</small></div><div><span style="color:#999">—</span></div></div>
+   <div class="wd"><div class="dl">Fri 30<small>Oct</small></div><div>
+    <div class="cd" style="border-left-color:#2563eb"><b>#118 Brand Day</b><div class="m">Central World · 10:00</div><div class="chips"><span>Staff 1/2</span><span>AW ✓</span></div></div>
+   </div></div>
+   <div class="wd"><div class="dl">Sat 31<small>Oct</small></div><div><span style="color:#999">—</span></div></div>
+   <div class="wd"><div class="dl">Sun 1<small>Nov</small></div><div><span style="color:#999">—</span></div></div>
+   <div class="wd"><div class="dl">Mon 2<small>Nov</small></div><div><div class="cd" style="border-left-color:#16a34a;border-style:dashed"><b class="su">▲ SU #133 20:00</b></div></div></div>
+   <div class="wd"><div class="dl">Tue 3<small>Nov</small></div><div><div class="cd" style="border-left-color:#2563eb"><b>#133 Sephora @Eastin</b><div class="m">17:00–23:00</div></div></div></div>
+  </div>
+  <div class="foot"><span>Ongoing all 9 days: #096 WIMB Central World (until 4 Dec)</span><span>page 1 / 1</span></div>
+ </div>
+ <div>
+  <ul class="notes">
+   <li><b>9 days portrait:</b> one row per day, full card details (name, venue, time, staff/AW/inventory, Cosmo SU/TD).</li>
+   <li><b>9 days landscape:</b> same 9 columns as the screen calendar, just print-sized.</li>
+   <li>Long “ongoing” jobs move to one footer line so they don't repeat 9 times.</li>
+   <li>Prints exactly what the board shows: current filters and search apply.</li>
+  </ul>
+ </div>
+</div>
+</div></body></html>

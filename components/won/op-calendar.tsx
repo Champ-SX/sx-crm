@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { CalendarPrint } from '@/components/won/calendar-print'
 import { cosmoFor, CosmoWarn, CosmoMarker, phasesOn, type CosmoState } from '@/components/won/cosmo'
 import { addDays, format, isToday, isWeekend, parseISO, differenceInCalendarDays, startOfWeek } from 'date-fns'
 import { ChevronLeft, ChevronRight, Users, Palette, Package, Check, CircleCheck, ArrowRight, Minus, Plus, UserPlus, UserX, TriangleAlert, ChevronDown } from 'lucide-react'
@@ -427,6 +428,7 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
           {totals.needed > 0 && <> · {totals.needed} staff needed</>}
           {totals.open > 0 && <> · <span className="text-amber-600 dark:text-amber-400 font-medium">{totals.open} open slot{totals.open === 1 ? '' : 's'}</span></>}
         </span>
+        <CalendarPrint jobs={jobs} stages={stages} start={start} cosmo={cosmo} />
       </div>
 
       {/* Desktop: 9 columns */}
