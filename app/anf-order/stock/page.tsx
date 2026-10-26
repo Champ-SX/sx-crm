@@ -15,6 +15,7 @@ import { Boxes, Plus, Trash2, ShoppingCart, Package, MoreHorizontal, Copy, Share
 import { OrderDialog, type OrderPrefill } from '@/components/anf/order-dialog'
 import { ProductPicker } from '@/components/anf/product-picker'
 import { ProductDialog } from '@/components/anf/product-dialog'
+import { AssetsView } from '@/components/anf/assets-view'
 import { ANF_ACCENT, SEED_BRANCHES, WAREHOUSE, branchColor, fmtDate, statusMeta, CATEGORIES, categoryMeta, orderedCategories, inferCategory, kindOf, type ProductKind } from '@/lib/anf'
 
 const catOf = (r: { category?: string | null; item: string }): string =>
@@ -47,8 +48,11 @@ export default function AnfStockPage() {
   const [editProductRow, setEditProductRow] = useState<AnfProduct | null>(null)
 
   // Supplies | Assets — products carry a kind; rows follow their product (no product = supply).
+  // ?asset=CAM-001 (asset card deep link — future QR) opens the Assets view on that unit.
+  const [assetParam] = useState<string | null>(() => (typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('asset')))
   const [kind, setKind] = useState<ProductKind>(() => {
     if (typeof window === 'undefined') return 'supply'
+    if (new URLSearchParams(window.location.search).get('asset')) return 'asset'
     try { return localStorage.getItem('order-stock-kind') === 'asset' ? 'asset' : 'supply' } catch { return 'supply' }
   })
   const pickKind = (k: ProductKind) => { setKind(k); try { localStorage.setItem('order-stock-kind', k) } catch { /* private mode */ } }
@@ -165,20 +169,23 @@ export default function AnfStockPage() {
               className={`h-7 px-2.5 rounded-md text-[12px] font-medium transition-colors ${kind === k ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}>{l}</button>
           ))}
         </div>
-        <Button size="sm" className="ml-auto h-9 gap-1.5 bg-[#7A5AA5] hover:opacity-90 text-white" onClick={() => setCreating(true)}>
-          <Plus className="w-4 h-4" /> Add item
-        </Button>
+        {kind === 'supply' ? (
+          <Button size="sm" className="ml-auto h-9 gap-1.5 bg-[#7A5AA5] hover:opacity-90 text-white" onClick={() => setCreating(true)}>
+            <Plus className="w-4 h-4" /> Add item
+          </Button>
+        ) : <span className="ml-auto" />}
       </div>
 
       {/* Tabs — WAREHOUSE first (via SEED order), then branches; TOTAL as an end link */}
       <div className="px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center gap-2 border-b border-border/60">
-        {branches.map((b) => <Tab key={b} label={b} color={branchColor(b)} on={tab === b} onClick={() => setTab(b)} />)}
-        <button type="button" onClick={() => setTab('TOTAL')} className={`text-[13px] underline underline-offset-4 transition-colors ${isTotal ? 'text-foreground font-semibold' : 'text-[#7A5AA5] hover:opacity-80'}`}>TOTAL ↗</button>
+        {kind === 'asset' && <button type="button" onClick={() => setTab(WAREHOUSE)} className={`text-[13px] underline underline-offset-4 transition-colors ${!isCatalog ? 'text-foreground font-semibold' : 'text-[#7A5AA5] hover:opacity-80'}`}>Units</button>}
+        {kind === 'supply' && branches.map((b) => <Tab key={b} label={b} color={branchColor(b)} on={tab === b} onClick={() => setTab(b)} />)}
+        {kind === 'supply' && <button type="button" onClick={() => setTab('TOTAL')} className={`text-[13px] underline underline-offset-4 transition-colors ${isTotal ? 'text-foreground font-semibold' : 'text-[#7A5AA5] hover:opacity-80'}`}>TOTAL ↗</button>}
         <button type="button" onClick={() => setTab('CATALOG')} className={`text-[13px] underline underline-offset-4 transition-colors ${isCatalog ? 'text-foreground font-semibold' : 'text-[#7A5AA5] hover:opacity-80'}`}>Catalog ↗</button>
         <span className="flex-1" />
-        <button type="button" onClick={() => setLowOnly((v) => !v)} className={`inline-flex items-center gap-1.5 text-[12px] rounded-full px-3 py-1 border transition-colors ${lowOnly ? 'bg-[#FF5B3F] text-white border-transparent font-medium' : 'border-border bg-card text-[#FF5B3F] font-semibold hover:bg-muted'}`}>
+        {kind === 'supply' && <button type="button" onClick={() => setLowOnly((v) => !v)} className={`inline-flex items-center gap-1.5 text-[12px] rounded-full px-3 py-1 border transition-colors ${lowOnly ? 'bg-[#FF5B3F] text-white border-transparent font-medium' : 'border-border bg-card text-[#FF5B3F] font-semibold hover:bg-muted'}`}>
           ⚠ Low only{lowCount > 0 && ` (${lowCount})`}
-        </button>
+        </button>}
       </div>
       {/* Hint — TOTAL is a read-only overview */}
       {isTotal && (
@@ -192,6 +199,8 @@ export default function AnfStockPage() {
       <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-4">
         {isCatalog ? (
           <CatalogView products={products} anfStock={anfStock} onEdit={setEditProductRow} />
+        ) : kind === 'asset' ? (
+          <AssetsView products={products} openCode={assetParam} />
         ) : (rows.length === 0 && !(tab === WAREHOUSE && warehouseRows.length > 0)) ? (
           <div className="text-center py-20">
             <Boxes className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />

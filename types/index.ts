@@ -189,6 +189,34 @@ export interface AnfSupplier {
   created_at?: string
   updated_at?: string
 }
+// ─── Order board asset units (section 2) ─────────────────────────────────────
+export type AssetLocationKind = 'rack' | 'factory' | 'event' | 'repair' | 'lost' | 'retired'
+export interface AnfAsset {
+  asset_id: string
+  board_id?: string
+  code: string                 // CAM-001 — category prefix + running number, never re-used
+  product_id: string
+  serial?: string | null
+  purchase_date?: string | null
+  value_thb?: number | null
+  warranty_until?: string | null
+  location_kind: AssetLocationKind
+  location_slot?: string | null   // R1-A … / EV1 …
+  job_id?: string | null          // Won job when location_kind = 'event'
+  notes?: string | null
+  created_at?: string
+  updated_at?: string
+}
+export interface AnfAssetMove {
+  id: string
+  asset_id: string
+  from_label: string | null
+  to_label: string
+  job_id?: string | null
+  moved_by?: string | null
+  moved_at: string
+  note?: string | null
+}
 /** Item ↔ supplier link with ordering details. */
 export interface AnfProductSupplier {
   id: string
