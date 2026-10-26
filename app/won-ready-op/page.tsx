@@ -1751,9 +1751,9 @@ export default function WonReadyOpPage() {
   return (
     <div className="flex flex-col h-[100dvh]">
       {/* Top bar */}
-      <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex flex-wrap xl:flex-nowrap items-center justify-between gap-x-3 gap-y-2">
+      <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex flex-wrap 2xl:flex-nowrap items-center justify-between gap-x-3 gap-y-2">
         {/* Mobile: children join the bar's own wrap so switch + search get a full row */}
-        <div className="contents sm:flex items-center gap-3 flex-1">
+        <div className="contents sm:flex items-center gap-3 sm:flex-auto">
           <MobileMenuButton />
           <div className="shrink-0">
             <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight">Won &amp; Ready for OP</h1>

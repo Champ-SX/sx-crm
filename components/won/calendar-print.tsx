@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { addDays, endOfMonth, format, parseISO, startOfMonth, startOfWeek, endOfWeek } from 'date-fns'
-import { Printer } from 'lucide-react'
+import { Printer, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { useCRMStore } from '@/store/crm-store'
 import { jobCardName } from '@/lib/jobs'
@@ -72,20 +72,29 @@ export function CalendarPrint({ jobs, stages, start, cosmo, boardName }: {
   const [orient, setOrient] = useState<Orient>('portrait')
   const [show, setShow] = useState<Show>({ venue: true, status: true, cosmo: true, ops: false })
   const [printing, setPrinting] = useState<Config | null>(null)
+  const [job, setJob] = useState(0)   // bumps once per Print click
 
-  // Open the browser print dialog once the print layout is in the DOM; clear it afterwards.
+  // Print only after the popover has fully closed and the sheet has painted —
+  // window.print() blocks the page, so firing mid-animation froze the popover
+  // half-faded on screen. The sheet stays mounted a little after `afterprint`
+  // because Safari / mobile can fire it before the page is captured.
   useEffect(() => {
-    if (!printing) return
-    const done = () => setPrinting(null)
-    window.addEventListener('afterprint', done)
-    const t = window.setTimeout(() => window.print(), 50)
-    return () => { window.clearTimeout(t); window.removeEventListener('afterprint', done) }
-  }, [printing])
+    if (!job) return
+    let raf = 0, clear = 0
+    const done = () => { clear = window.setTimeout(() => setPrinting(null), 1500) }
+    const go = window.setTimeout(() => {
+      raf = requestAnimationFrame(() => requestAnimationFrame(() => {
+        window.addEventListener('afterprint', done, { once: true })
+        window.print()
+      }))
+    }, 250)
+    return () => { window.clearTimeout(go); window.clearTimeout(clear); cancelAnimationFrame(raf); window.removeEventListener('afterprint', done) }
+  }, [job])
 
-  const months = useMemo(() => {
-    const base = fromISO(start.slice(0, 7) + '-01')
-    return Array.from({ length: 13 }, (_, i) => format(new Date(base.getFullYear(), base.getMonth() - 6 + i, 1), 'yyyy-MM'))
-  }, [start])
+  const stepMonth = (n: number) => {
+    const d = fromISO(month + '-01')
+    setMonth(format(new Date(d.getFullYear(), d.getMonth() + n, 1), 'yyyy-MM'))
+  }
 
   const seg = (on: boolean) => cn('flex-1 h-7 rounded-md text-[12px] font-medium', on ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')
   const check = (k: keyof Show, label: string) => (
@@ -96,7 +105,7 @@ export function CalendarPrint({ jobs, stages, start, cosmo, boardName }: {
 
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={(o) => { setOpen(o); if (o) setMonth(start.slice(0, 7)) }}>
         <PopoverTrigger className="h-8 px-2.5 rounded-lg border border-border bg-card inline-flex items-center gap-1.5 text-[12px] font-medium hover:bg-muted" title="Print calendar">
           <Printer className="w-3.5 h-3.5" /><span className="hidden sm:inline">Print</span>
         </PopoverTrigger>
@@ -107,9 +116,13 @@ export function CalendarPrint({ jobs, stages, start, cosmo, boardName }: {
             <button type="button" onClick={() => setRange('month')} className={seg(range === 'month')}>Month</button>
           </div>
           {range === 'month' && (
-            <select value={month} onChange={(e) => setMonth(e.target.value)} className="mt-2 h-8 w-full rounded-md border border-border bg-card px-2 text-[12px]">
-              {months.map((m) => <option key={m} value={m}>{format(fromISO(m + '-01'), 'MMMM yyyy')}</option>)}
-            </select>
+            // Stepper, not a native <select>: picking from a native list counts as an
+            // outside click in some browsers and closed the popover.
+            <div className="mt-2 flex items-center gap-1">
+              <button type="button" onClick={() => stepMonth(-1)} aria-label="Previous month" className="h-8 w-8 rounded-md border border-border inline-flex items-center justify-center hover:bg-muted"><ChevronLeft className="w-4 h-4" /></button>
+              <span className="flex-1 text-center text-[13px] font-semibold">{format(fromISO(month + '-01'), 'MMMM yyyy')}</span>
+              <button type="button" onClick={() => stepMonth(1)} aria-label="Next month" className="h-8 w-8 rounded-md border border-border inline-flex items-center justify-center hover:bg-muted"><ChevronRight className="w-4 h-4" /></button>
+            </div>
           )}
           <div className="field-label mt-3 mb-1">Orientation · A4</div>
           <div className="flex gap-2">
@@ -128,7 +141,7 @@ export function CalendarPrint({ jobs, stages, start, cosmo, boardName }: {
             {check('ops', 'Assigned OP names')}
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">Uses the board&apos;s current filters and search.</p>
-          <button type="button" onClick={() => { setOpen(false); setPrinting({ range, month, orient, show }) }}
+          <button type="button" onClick={() => { setPrinting({ range, month, orient, show }); setOpen(false); setJob((n) => n + 1) }}
             className="mt-3 h-8 w-full rounded-md bg-foreground text-background text-[12px] font-semibold inline-flex items-center justify-center gap-1.5">
             <Printer className="w-3.5 h-3.5" />Print / Save PDF
           </button>
