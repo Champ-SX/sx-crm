@@ -248,11 +248,16 @@ function JobCard({
       {...dragProps}
       className={`bg-card rounded-xl border border-border/60 overflow-hidden ${isMobile ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'} hover:shadow-md hover:border-border transition-all select-none group ${isBeingDragged ? 'opacity-50 shadow-lg' : ''}`}
     >
+      {job.is_ops && (
+        <div className="h-[22px] flex items-center justify-between px-3 bg-foreground text-background font-mono text-[10px] font-bold tracking-[0.25em]">
+          OPS<span className="font-semibold tracking-wide opacity-75">INTERNAL</span>
+        </div>
+      )}
       <div className="p-3">
         {/* Job # + compact date */}
         <div className="flex items-center justify-between gap-2 mb-2">
           {job.is_ops
-            ? <span className="inline-flex items-center gap-1.5"><span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-wider text-muted-foreground">OPS</span>{job.job_number && <span className="font-mono text-[12px] font-semibold text-foreground tracking-wide">{job.job_number}</span>}</span>
+            ? <span className="font-mono text-[12px] font-semibold text-foreground tracking-wide">{job.job_number ? `#${job.job_number}` : 'OPS'}</span>
             : job.job_number
             ? <span className="font-mono text-[12px] font-semibold text-foreground tracking-wide">#{job.job_number}</span>
             : <span className="font-mono text-[11px] font-semibold text-amber-700 bg-amber-100 dark:bg-amber-500/20 dark:text-amber-300 px-1.5 py-0.5 rounded" title="No job number in the title — open to set it">set #</span>}
