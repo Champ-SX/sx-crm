@@ -22,6 +22,7 @@ export function NotificationBell() {
   const { user } = useAuth()
   const notifications = useCRMStore((s) => s.notifications)
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
+  const wonJobs = useCRMStore((s) => s.wonJobs)
   const markNotificationRead = useCRMStore((s) => s.markNotificationRead)
   const markAllNotificationsRead = useCRMStore((s) => s.markAllNotificationsRead)
   const requestOpenEntity = useCRMStore((s) => s.requestOpenEntity)
@@ -42,7 +43,11 @@ export function NotificationBell() {
   function handleClick(n: (typeof mine)[number]) {
     markNotificationRead(n.id)
     setOpen(false)
-    const route = ENTITY_ROUTE[n.entity_type]
+    // Ops jobs have no lead: their activity (and mentions) is keyed by job_id
+    // under 'lead_opportunity', so send those to the Won board's drawer.
+    const entityType = n.entity_type === 'lead_opportunity' && n.entity_id && wonJobs.some((j) => j.job_id === n.entity_id)
+      ? 'won_job' : n.entity_type
+    const route = ENTITY_ROUTE[entityType]
     if (!route) {
       router.push('/dashboard')
       return
@@ -50,7 +55,7 @@ export function NotificationBell() {
     // Signal the target page to open this exact record. A reactive store value
     // (not a one-shot URL param) fires every click, even when already on the
     // page. Navigate to the page too — the page's watcher opens the drawer.
-    if (n.entity_id) requestOpenEntity(n.entity_type as 'customer' | 'lead_opportunity' | 'won_job', n.entity_id)
+    if (n.entity_id) requestOpenEntity(entityType as 'customer' | 'lead_opportunity' | 'won_job', n.entity_id)
     router.push(route)
   }
 
