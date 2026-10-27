@@ -246,7 +246,7 @@ function OpsAvatars({ job, ops }: { job: WonJob; ops: TeamMember[] }) {
 function Pills({ job, awDone, long, onMarkAw, onAddStaff }: { job: WonJob; awDone: boolean; long?: boolean; onMarkAw?: () => void; onAddStaff?: (jobId: string) => void }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-1">
-      <StaffPill job={job} long={long} onAddStaff={onAddStaff} /><AwPill done={awDone} onMark={onMarkAw} /><InventoryPill job={job} />
+      <StaffPill job={job} long={long} onAddStaff={onAddStaff} />{!job.is_ops && <><AwPill done={awDone} onMark={onMarkAw} /><InventoryPill job={job} /></>}
     </span>
   )
 }
@@ -259,6 +259,17 @@ function staffComplete(job: WonJob): boolean {
 
 const AW_STAGE = 'OP_PREPARING_AW_DONE'
 const READY_STAGE = 'OP_READY_FOR_EVENT'
+
+/** Ops (internal) jobs get a dark vertical OPS ribbon instead of the stage edge. */
+function OpsRibbon({ job, slim }: { job: WonJob; slim?: boolean }) {
+  if (!job.is_ops) return null
+  return (
+    <span aria-label="Internal Ops job" className={cn('absolute inset-y-0 left-0 bg-foreground text-background font-mono font-bold flex items-center justify-center', slim ? 'w-1.5' : 'w-5 text-[9px] tracking-[0.2em]')}>
+      {!slim && <span className="[writing-mode:vertical-rl] rotate-180">OPS</span>}
+    </span>
+  )
+}
+const opsCls = (job: WonJob, slim?: boolean) => job.is_ops && cn('relative overflow-hidden border-l', slim ? 'pl-3' : 'pl-7')
 
 function JobNo({ job }: { job: WonJob }) {
   return job.job_number ? <span className="font-mono text-muted-foreground mr-1">#{job.job_number}</span> : null
@@ -300,7 +311,7 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
     return new Map(ranked)
   }, [stages])
   const awIndex = stageOf.get(AW_STAGE)?.index ?? Infinity
-  const edge = (job: WonJob) => stageHex(stageOf.get(job.op_stage)?.dot)
+  const edge = (job: WonJob) => job.is_ops ? undefined : stageHex(stageOf.get(job.op_stage)?.dot)
   const awDone = (job: WonJob) => (stageOf.get(job.op_stage)?.index ?? -1) >= awIndex
   const idx = (stage: string) => stageOf.get(stage)?.index ?? -1
   const readyIndex = stageOf.get(READY_STAGE)?.index
@@ -456,7 +467,8 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
                 <div key={job.job_id} {...cardProps(job.job_id)}
                   title={`${job.job_number ? `#${job.job_number} ` : ''}${jobCardName(job)} · ${format(fromISO(all[0]), 'd MMM')} – ${format(fromISO(all[all.length - 1]), 'd MMM')}`}
                   style={{ gridColumn: `${days.indexOf(inWin[0]) + 1} / span ${span}`, borderLeftColor: edge(job) }}
-                  className={cn('h-[22px] flex items-center gap-1.5 min-w-0 rounded-md border border-border border-l-4 bg-muted/50 px-2 text-[11px] text-muted-foreground cursor-pointer hover:bg-muted whitespace-nowrap overflow-hidden', contL && 'rounded-l-none', contR && 'rounded-r-none')}>
+                  className={cn('h-[22px] flex items-center gap-1.5 min-w-0 rounded-md border border-border border-l-4 bg-muted/50 px-2 text-[11px] text-muted-foreground cursor-pointer hover:bg-muted whitespace-nowrap overflow-hidden', contL && 'rounded-l-none', contR && 'rounded-r-none', opsCls(job, true))}>
+                  <OpsRibbon job={job} slim />
                   {job.job_number && <span className="font-mono">#{job.job_number}</span>}
                   <span className="font-semibold text-foreground truncate">{jobCardName(job)}</span>
                   <span className="shrink-0">· {all.length > 1 ? `until ${format(fromISO(all[all.length - 1]), 'd MMM')}` : 'ongoing'}{contR && ' →'}</span>
@@ -475,7 +487,8 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
               return (
                 <div key={job.job_id} {...cardProps(job.job_id)}
                   style={{ gridColumn: `${col} / span ${inWin.length}`, borderLeftColor: edge(job) }}
-                  className={cn('text-left rounded-md border border-border border-l-4 cursor-pointer bg-card px-2 py-1.5 hover:border-foreground/30 transition-colors min-w-0', contL && 'rounded-l-none', contR && 'rounded-r-none')}>
+                  className={cn('text-left rounded-md border border-border border-l-4 cursor-pointer bg-card px-2 py-1.5 hover:border-foreground/30 transition-colors min-w-0', contL && 'rounded-l-none', contR && 'rounded-r-none', opsCls(job))}>
+                  <OpsRibbon job={job} />
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-[12px] font-semibold truncate"><JobNo job={job} />{jobCardName(job)}</span>
                     <CosmoWarn job={job} rows={cosmoFor(cosmo, job)} />
@@ -500,7 +513,8 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
                 {items.map(({ job }) => (
                   <div key={job.job_id} {...cardProps(job.job_id)}
                     style={{ borderLeftColor: edge(job) }}
-                    className="text-left rounded-md border border-border border-l-4 cursor-pointer bg-card p-1.5 hover:border-foreground/30 transition-colors min-w-0">
+                    className={cn('text-left rounded-md border border-border border-l-4 cursor-pointer bg-card p-1.5 hover:border-foreground/30 transition-colors min-w-0', opsCls(job))}>
+                    <OpsRibbon job={job} />
                     <div className="text-[12px] font-semibold leading-snug line-clamp-3 [overflow-wrap:anywhere]"><JobNo job={job} />{jobCardName(job)}</div>
                     <CosmoWarn job={job} rows={cosmoFor(cosmo, job)} />
                     {job.venue && <div className="text-[11px] text-muted-foreground truncate">{job.venue}</div>}
@@ -528,7 +542,8 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
           const expanded = openDays.includes(d)
           const slimRow = ({ job, all }: typeof placed[number]) => (
             <div key={job.job_id} {...cardProps(job.job_id)} style={{ borderLeftColor: edge(job) }}
-              className="h-[26px] flex items-center gap-1.5 rounded-md border border-border border-l-4 bg-card px-2 text-[12px] text-muted-foreground whitespace-nowrap overflow-hidden cursor-pointer">
+              className={cn('h-[26px] flex items-center gap-1.5 rounded-md border border-border border-l-4 bg-card px-2 text-[12px] text-muted-foreground whitespace-nowrap overflow-hidden cursor-pointer', opsCls(job, true))}>
+              <OpsRibbon job={job} slim />
               <span className="font-semibold text-foreground truncate"><JobNo job={job} />{jobCardName(job)}</span>
               {all.length > 1 && <span className="shrink-0">· day {all.indexOf(d) + 1}/{all.length}</span>}
               {staffPaid(job) && <CircleCheck className="w-3.5 h-3.5 ml-auto shrink-0 text-emerald-600" />}
@@ -555,7 +570,8 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
                   return (
                     <div key={job.job_id} {...cardProps(job.job_id)}
                       style={{ borderLeftColor: edge(job) }}
-                      className="text-left rounded-md border border-border border-l-4 cursor-pointer bg-card px-2.5 py-2 min-w-0">
+                      className={cn('text-left rounded-md border border-border border-l-4 cursor-pointer bg-card px-2.5 py-2 min-w-0', opsCls(job))}>
+                      <OpsRibbon job={job} />
                       <div className="text-[13px] font-semibold truncate"><JobNo job={job} />{jobCardName(job)}{all.length > 1 && <span className="font-normal text-muted-foreground"> · day {k + 1}/{all.length}</span>}</div>
                       <CosmoWarn job={job} rows={cosmoFor(cosmo, job)} />
                       <div className="text-[12px] text-muted-foreground truncate">{[job.venue, job.event_time].filter(Boolean).join(' · ')}</div>
