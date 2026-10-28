@@ -174,7 +174,7 @@ export default function AnfStockPage() {
         <MobileMenuButton />
         <span className="w-3.5 h-3.5 rounded-[5px] shrink-0 flex items-center justify-center" style={{ backgroundColor: ANF_ACCENT }}><Boxes className="w-2.5 h-2.5 text-white" /></span>
         <div>
-          <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight leading-none">ANF Stock</h1>
+          <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight leading-none">Stock &amp; Assets</h1>
           <p className="font-mono text-[12px] text-muted-foreground mt-1">{rows.length} items · {lowCount} need reorder</p>
         </div>
         <div className="ml-2 inline-flex rounded-lg border border-border bg-card p-0.5" role="tablist" aria-label="Supplies or assets">

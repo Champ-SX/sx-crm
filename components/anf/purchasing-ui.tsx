@@ -101,7 +101,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
   const firstBranch = lines.find((l) => l.branch)?.branch ?? null
   const [r, setR] = useState<AnfRequest>(() => request ?? {
     request_id: newPurchasingId(), board_id: activeBoardId || 'anf-order', number: nextRequestNumber(requests.map((x) => x.number)),
-    project_kind: lines.length ? 'refill' : 'free', job_id: null, project_name: firstBranch ? `Refill · ${firstBranch}` : '', needed_by: null,
+    project_kind: 'refill', job_id: null, project_name: firstBranch ? `Refill · ${firstBranch}` : '', needed_by: null,
     deliver_to: firstBranch || 'WAREHOUSE', created_by: me, status: 'draft',
   })
   const [rejecting, setRejecting] = useState<string | null>(null)   // reason being typed
@@ -110,9 +110,6 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
   const [receiving, setReceiving] = useState<AnfOrder | null>(null)
   const [error, setError] = useState<string | null>(null)
   const items = anfOrders.filter((o) => o.request_id === r.request_id).sort((a, b) => a.created_at.localeCompare(b.created_at))
-  const [jobsFrom] = useState(() => new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10))
-  const jobs = useMemo(() => wonJobs.filter((j) => !j.is_archived && ((j.event_end_date || j.event_date || '') >= jobsFrom || j.job_id === r.job_id))
-    .sort((a, b) => (a.event_date ?? '').localeCompare(b.event_date ?? '')), [wonJobs, jobsFrom, r.job_id])
   const products = anfProducts.filter((p) => !activeBoardId || !p.board_id || p.board_id === activeBoardId)
   const matches = q.trim() ? products.filter((p) => [p.name, p.code, ...(p.aliases ?? [])].some((v) => (v ?? '').toLowerCase().includes(q.trim().toLowerCase()))).slice(0, 6) : []
   const anfStock = useCRMStore((s) => s.anfStock)
@@ -158,7 +155,6 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
   /** Submit needs a project and a qty + price on every line (the price is what Champ approves). */
   function submitProblem(): string | null {
     if (items.length === 0) return 'Add at least one item.'
-    if (r.project_kind === 'job' && !r.job_id) return 'Pick the Won job.'
     const bad = items.find((o) => !(o.quantity > 0) || !(o.unit_price > 0))
     if (bad) return `Set the qty and price for “${bad.item}”.`
     return null
@@ -174,7 +170,6 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
   }
 
   async function ensureSaved(next = r) {
-    if (next.project_kind === 'job' && !next.job_id) throw new Error('Pick the Won job.')
     if (saved) return
     const first = numbered(next)
     await saveRequest(first); setR(first); setSaved(true)
@@ -259,16 +254,14 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
         <div className="overflow-y-auto">
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 px-5 py-3 border-b border-border">
             <div className="sm:col-span-2">
-              <label className="field-label">Project</label>
+              <label className="field-label">For</label>
               <div className="flex gap-1.5">
-                <select disabled={!editable} value={r.project_kind} onChange={(e) => patch({ project_kind: e.target.value as AnfRequest['project_kind'], job_id: null })} className={cn(inputCls, 'w-32 shrink-0')}>
-                  <option value="job">Won job</option><option value="free">Project</option><option value="refill">Stock refill</option>
+                {/* Purchases aren't tied to Won jobs; old job-linked requests just show their job. */}
+                <select disabled={!editable || r.project_kind === 'job'} value={r.project_kind} onChange={(e) => patch({ project_kind: e.target.value as AnfRequest['project_kind'] })} className={cn(inputCls, 'w-32 shrink-0')}>
+                  <option value="refill">Stock refill</option><option value="free">Project</option>{r.project_kind === 'job' && <option value="job">Won job</option>}
                 </select>
                 {r.project_kind === 'job' ? (
-                  <select disabled={!editable} value={r.job_id ?? ''} onChange={(e) => patch({ job_id: e.target.value || null })} className={inputCls}>
-                    <option value="">Pick a job…</option>
-                    {jobs.map((j) => <option key={j.job_id} value={j.job_id}>#{j.job_number ?? '—'} · {j.event_date ?? ''} · {jobCardName(j)}</option>)}
-                  </select>
+                  <span className={cn(inputCls, 'flex items-center text-muted-foreground')}>{projectTitle(r, wonJobs.find((j) => j.job_id === r.job_id))}</span>
                 ) : (
                   <input disabled={!editable} value={r.project_name ?? ''} onChange={(e) => setR({ ...r, project_name: e.target.value })} onBlur={() => saved && saveRequest(r).catch((e: Error) => setError(e.message))}
                     placeholder={r.project_kind === 'refill' ? 'Stock refill' : 'e.g. Phuket branch refit'} className={inputCls} />
@@ -543,7 +536,6 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
   const { requests } = usePurchasing()
   const { suppliers } = useSuppliers()
   const anfProducts = useCRMStore((s) => s.anfProducts)
-  const wonJobs = useCRMStore((s) => s.wonJobs)
   const addAnfOrder = useCRMStore((s) => s.addAnfOrder)
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
   const me = useMe()
@@ -553,10 +545,7 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null)
 
   const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim()
-  const jobFor = (project: string): WonJob | null => {
-    const n = /^#?\s*(\d{1,5})\b/.exec(project.trim())?.[1]
-    return n ? wonJobs.find((j) => parseInt(j.job_number ?? '', 10) === parseInt(n, 10)) ?? null : null
-  }
+  const isRefill = (project: string) => /^(stock )?refill|เติมสต็อก/i.test(project.trim())
 
   async function onFile(f: File) {
     setError(null); setFileName(f.name)
@@ -592,10 +581,9 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
     try {
       const numbers = requests.map((r) => r.number)
       for (const p of projects) {
-        const job = jobFor(p)
         const req: AnfRequest = {
           request_id: newPurchasingId(), board_id: activeBoardId || 'anf-order', number: nextRequestNumber(numbers),
-          project_kind: job ? 'job' : 'free', job_id: job?.job_id ?? null, project_name: job ? null : p, deliver_to: 'WAREHOUSE', created_by: me,
+          project_kind: isRefill(p) ? 'refill' : 'free', job_id: null, project_name: p, deliver_to: 'WAREHOUSE', created_by: me,
           notes: `Imported from ${fileName}`, status: 'draft',
         }
         numbers.push(req.number)
@@ -617,7 +605,7 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
   }
 
   function template() {
-    const ws = XLSX.utils.aoa_to_sheet([['project', 'item', 'qty', 'unit', 'price', 'supplier'], ['#131', 'กระดาษปริ้นท์ RX1', 5, 'box', 2450, ''], ['Phuket branch refit', 'LED strip 5m', 6, 'pcs', 450, '']])
+    const ws = XLSX.utils.aoa_to_sheet([['project', 'item', 'qty', 'unit', 'price', 'supplier'], ['Stock refill', 'กระดาษปริ้นท์ RX1', 5, 'box', 2450, ''], ['Phuket branch refit', 'LED strip 5m', 6, 'pcs', 450, '']])
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Request')
     XLSX.writeFile(wb, 'purchase-request-template.xlsx')
   }
@@ -637,7 +625,7 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
             <span className="block text-[12px] text-muted-foreground">Columns: project · item · qty · unit · price · supplier (optional)</span>
             <input type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={(e) => e.target.files?.[0] && void onFile(e.target.files[0])} />
           </label>
-          <p className="text-[12px] text-muted-foreground">Each <b>project</b> becomes one request. “#131” or “131” links to that Won job; anything else is a free-text project. <button type="button" onClick={template} className="underline">Download template</button></p>
+          <p className="text-[12px] text-muted-foreground">Each <b>project</b> becomes one request. Write “Stock refill” for restocking; anything else becomes a project name. <button type="button" onClick={template} className="underline">Download template</button></p>
           {rows && (
             <div className="rounded-lg border border-border overflow-hidden">
               <div className="px-3 py-2 text-[12px] bg-muted/40 border-b border-border">
@@ -647,10 +635,9 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
                 <table className="w-full text-[12px]">
                   <tbody>
                     {rows.map((r, i) => {
-                      const job = jobFor(r.project)
                       return (
                         <tr key={i} className="border-b border-border last:border-b-0">
-                          <td className="px-3 py-1.5">{job ? <span className="text-orange-700 dark:text-orange-400 font-semibold">#{job.job_number}</span> : r.project}</td>
+                          <td className="px-3 py-1.5">{r.project}</td>
                           <td className="px-2 py-1.5">{r.item}</td>
                           <td className="px-2 py-1.5 text-right font-mono">{r.qty} {r.unit}</td>
                           <td className="px-2 py-1.5 text-right font-mono">{r.price ? r.price.toLocaleString() : '—'}</td>

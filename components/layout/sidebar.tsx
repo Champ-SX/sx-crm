@@ -39,7 +39,7 @@ const capturesNav = [
 const anfNav = [
   { href: '/anf-order', label: 'Requests', icon: ClipboardList },
   { href: '/anf-order/pos', label: 'POs', icon: FileText },
-  { href: '/anf-order/stock', label: 'Stock', icon: Boxes },
+  { href: '/anf-order/stock', label: 'Stock & Assets', icon: Boxes },
   { href: '/anf-order/catalog', label: 'Catalog', icon: BookOpen },
 ]
 const anfTasksNav = [

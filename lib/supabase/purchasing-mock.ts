@@ -10,11 +10,11 @@ const day = (offset: number) => {
 const ts = (offset: number) => new Date(Date.now() + offset * 86400_000).toISOString()
 
 export const MOCK_REQUESTS: AnfRequest[] = [
-  { request_id: 'req-mock-21', number: 'REQ-2026-10-021', project_kind: 'job', project_name: '#131 Asus@The Okura', needed_by: day(5), deliver_to: 'Warehouse', created_by: 'Sale A', status: 'pending', total_thb: 24610, submitted_at: ts(-0.1), created_at: ts(0) },
+  { request_id: 'req-mock-21', number: 'REQ-2026-10-021', project_kind: 'free', project_name: 'Asus booth backdrop', needed_by: day(5), deliver_to: 'Warehouse', created_by: 'Sale A', status: 'pending', total_thb: 24610, submitted_at: ts(-0.1), created_at: ts(0) },
   { request_id: 'req-mock-20', number: 'REQ-2026-10-020', project_kind: 'refill', project_name: 'Refill · Central', needed_by: day(3), deliver_to: 'Central', created_by: 'Ops B', status: 'pending', total_thb: 18190, submitted_at: ts(-1), created_at: ts(-1) },
-  { request_id: 'req-mock-19', number: 'REQ-2026-10-019', project_kind: 'job', project_name: '#128 Columbia@central world', needed_by: day(2), deliver_to: 'Warehouse', created_by: 'Sale A', status: 'approved', total_thb: 4494, approved_by: 'auto', approved_at: ts(-1), created_at: ts(-1) },
+  { request_id: 'req-mock-19', number: 'REQ-2026-10-019', project_kind: 'free', project_name: 'Acrylic stands', needed_by: day(2), deliver_to: 'Warehouse', created_by: 'Sale A', status: 'approved', total_thb: 4494, approved_by: 'auto', approved_at: ts(-1), created_at: ts(-1) },
   { request_id: 'req-mock-18', number: 'REQ-2026-10-018', project_kind: 'refill', project_name: 'Refill · Siam', needed_by: day(4), deliver_to: 'Siam', created_by: 'Ops B', status: 'approved', total_thb: 2140, approved_by: 'auto', approved_at: ts(-2), created_at: ts(-2) },
-  { request_id: 'req-mock-16', number: 'REQ-2026-10-016', project_kind: 'job', project_name: '#118 Dyson@จุฬาฯ', needed_by: day(1), deliver_to: 'Warehouse', created_by: 'Sale C', status: 'approved', total_thb: 15836, approved_by: 'Champ', approved_at: ts(-4), created_at: ts(-4) },
+  { request_id: 'req-mock-16', number: 'REQ-2026-10-016', project_kind: 'free', project_name: 'Lighting kit', needed_by: day(1), deliver_to: 'Warehouse', created_by: 'Sale C', status: 'approved', total_thb: 15836, approved_by: 'Champ', approved_at: ts(-4), created_at: ts(-4) },
   { request_id: 'req-mock-14', number: 'REQ-2026-10-014', project_kind: 'free', project_name: 'Booth repair', created_by: 'Ops B', status: 'rejected', total_thb: 38520, rejected_reason: 'Repair the old one first', created_at: ts(-6) },
   { request_id: 'req-mock-22', number: 'REQ-2026-10-022', project_kind: 'free', project_name: 'Phuket branch refit', created_by: 'Vitta', status: 'draft', created_at: ts(0) },
 ]
