@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { ProjectChip, useMe, ReceiveDialog } from '@/components/anf/purchasing-ui'
 import { cn } from '@/lib/utils'
-import { ANF_ACCENT, baht, fmtDate } from '@/lib/anf'
+import { ANF_ACCENT, baht, fmtDate, kindOf } from '@/lib/anf'
 import { usePurchasing, savePO, requestStatus, REQ_STATUS, requestTotal, lineTotalVat } from '@/lib/supabase/purchasing'
 import { useSuppliers, telHref, lineHref } from '@/lib/supabase/suppliers'
 import type { AnfOrder, AnfPO } from '@/types'
@@ -105,7 +105,11 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
   const items = anfOrders.filter((o) => o.po_id === po.po_id)
   const sup = suppliers.find((s) => s.supplier_id === po.supplier_id)
   const total = requestTotal(items)
+  const anfProducts = useCRMStore((s) => s.anfProducts)
+  const isAsset = (o: AnfOrder) => kindOf(anfProducts.find((p) => p.product_id === o.product_id)) === 'asset'
   const open = items.filter((o) => o.status !== 'received')
+  // Receive all covers supplies; assets are received one by one so each unit gets its ID.
+  const bulk = open.filter((o) => !isAsset(o))
   const today = new Date().toISOString().slice(0, 10)
 
   async function markOrdered() {
@@ -115,8 +119,8 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
     } catch (e) { setError((e as Error).message) }
   }
   async function receiveAll() {
-    if (!window.confirm(`Receive all ${open.length} open line(s) in full?`)) return
-    try { for (const o of open) await updateAnfOrder(o.order_id, { status: 'received', received_qty: o.quantity, received_at: today, received_by: me }) }
+    if (!window.confirm(`Receive ${bulk.length} line(s) in full?${bulk.length < open.length ? ' Assets are received one by one.' : ''}`)) return
+    try { for (const o of bulk) await updateAnfOrder(o.order_id, { status: 'received', received_qty: o.quantity, received_at: today, received_by: me }) }
     catch (e) { setError((e as Error).message) }
   }
   async function cancel() {
@@ -173,7 +177,7 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
           <span className="ml-auto" />
           <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
           {po.status === 'draft' && <Button size="sm" className="bg-[#7A5AA5] hover:opacity-90 text-white" onClick={markOrdered} disabled={items.length === 0}>Mark ordered →</Button>}
-          {po.status === 'ordered' && open.length > 0 && <Button size="sm" className="bg-foreground text-background hover:opacity-90" onClick={() => void receiveAll()}>Receive all ✓</Button>}
+          {po.status === 'ordered' && bulk.length > 0 && <Button size="sm" className="bg-foreground text-background hover:opacity-90" onClick={() => void receiveAll()}>Receive all ✓</Button>}
         </div>
         {receiving && <ReceiveDialog order={receiving} onClose={() => setReceiving(null)} />}
       </DialogContent>

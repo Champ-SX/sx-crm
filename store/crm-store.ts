@@ -389,7 +389,9 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
           patch = { ...patch, received_at: receivedAt, received_qty: receivedQty }
           const receivedBy = updates.received_by ?? prev.received_by ?? null
           // Stock-in lands in the WAREHOUSE (not the branch the order came from).
-          replenishWarehouse(get, prev.item, prev.board_id, receivedQty || 0, receivedAt, receivedBy, prev.product_id ?? null, prev.order_id)
+          // Assets become numbered units (Receive dialog), not stock.
+          const isAsset = get().anfProducts.find((p) => p.product_id === prev.product_id)?.kind === 'asset'
+          if (!isAsset) replenishWarehouse(get, prev.item, prev.board_id, receivedQty || 0, receivedAt, receivedBy, prev.product_id ?? null, prev.order_id)
         }
         set((s) => ({
           anfOrders: s.anfOrders.map((o) => o.order_id === id ? { ...o, ...patch, updated_at: new Date().toISOString() } : o),

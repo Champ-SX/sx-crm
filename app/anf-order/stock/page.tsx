@@ -13,7 +13,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { type AnfStock, type AnfProduct, type AnfOrder } from '@/types'
 import { Boxes, Plus, Trash2, ShoppingCart, Package, MoreHorizontal, Copy, Share2, Check } from 'lucide-react'
 import { RequestDialog, CreatePODialog, type RequestPrefill } from '@/components/anf/purchasing-ui'
-import { usePurchasing } from '@/lib/supabase/purchasing'
+import { usePurchasing, approvalOf } from '@/lib/supabase/purchasing'
 import { ProductPicker } from '@/components/anf/product-picker'
 import { ProductDialog } from '@/components/anf/product-dialog'
 import { AssetsView } from '@/components/anf/assets-view'
@@ -39,7 +39,6 @@ export default function AnfStockPage() {
   const anfStock = useCRMStore((s) => s.anfStock)
   const anfOrders = useCRMStore((s) => s.anfOrders)
   const anfProducts = useCRMStore((s) => s.anfProducts)
-  usePurchasing()   // requests / POs loaded, so Reorder numbers correctly and knows what's on order
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
   const [tab, setTab] = useState<string>(WAREHOUSE)
   const [lowOnly, setLowOnly] = useState(false)
@@ -83,12 +82,20 @@ export default function AnfStockPage() {
     for (const o of anfOrders) if (o.item && !m.has(o.item)) m.set(o.item, o.unit_price)
     return m
   }, [anfOrders])
-  // Items with an open (not-received) order → shown as "on order".
+  // Where each item's open purchase is: "Requested · REQ-…" (draft / waiting / approved, not ordered)
+  // or "On order · PO…". Rejected requests don't count, so Reorder comes back.
+  const { requests, pos } = usePurchasing()
   const onOrder = useMemo(() => {
-    const s = new Set<string>()
-    for (const o of anfOrders) if (o.status !== 'received' && o.item) s.add(o.item)
-    return s
-  }, [anfOrders])
+    const m = new Map<string, string>()
+    for (const o of anfOrders) {
+      if (o.status === 'received' || o.archived_at || !o.item) continue
+      const req = o.request_id ? requests.find((x) => x.request_id === o.request_id) ?? null : null
+      if (approvalOf(req) === 'rejected') continue
+      if (o.status === 'ordered') m.set(o.item, `On order · ${pos.find((p) => p.po_id === o.po_id)?.number ?? 'ordered'}`)
+      else if (!m.has(o.item)) m.set(o.item, `Requested · ${req?.number ?? 'to order'}${approvalOf(req) === 'pending' ? ' · waiting for Champ' : ''}`)
+    }
+    return m
+  }, [anfOrders, requests, pos])
 
   const lowCount = rows.filter((r) => stockState(r) !== 'ok').length
 
@@ -281,7 +288,7 @@ function Tab({ label, on, onClick, color }: { label: string; on: boolean; onClic
 
 // ── By-branch table ─────────────────────────────────────────────────────────
 function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransfer }: {
-  rows: AnfStock[]; branch: string; lowOnly: boolean; onOrder: Set<string>
+  rows: AnfStock[]; branch: string; lowOnly: boolean; onOrder: Map<string, string>
   onOpen: (r: AnfStock) => void; onRaise: (item: string, branch: string | null, id: string | null) => void
   onTransfer: (r: AnfStock) => void
 }) {
@@ -333,7 +340,7 @@ function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransf
                         <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground truncate">{r.room || '—'}</td>
                         <td className={`px-4 py-3 text-right font-mono font-bold tabular-nums ${st !== 'ok' ? 'text-[#FF5B3F]' : ''}`}>{r.qty}</td>
                         <td className="px-4 py-3 text-right font-mono text-[12px] text-muted-foreground whitespace-nowrap">{r.alert_qty ?? '—'}{r.alert_unit ? ` ${r.alert_unit.toLowerCase()}` : ''}</td>
-                        <td className="px-4 py-3">{onOrder.has(r.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5]">● on order</span> : <StateFlag s={st} />}</td>
+                        <td className="px-4 py-3">{onOrder.has(r.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5] whitespace-nowrap">● {onOrder.get(r.item)}</span> : <StateFlag s={st} />}</td>
                         <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap">{fmtDate(r.checked_at)}{r.checked_by && <span className="block text-[10px]">by {r.checked_by}</span>}</td>
                         <td className="px-4 py-3 font-mono text-[11px] whitespace-nowrap">{r.delivered_at ? <span className="text-[#3f9d5b]">↓ {fmtDate(r.delivered_at)}{r.sign && <span className="block text-[10px] text-muted-foreground">by {r.sign}</span>}</span> : <span className="text-muted-foreground/40">— never</span>}</td>
                         <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
@@ -378,7 +385,7 @@ function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransf
                       </span>
                     </button>
                     <div className="flex items-center gap-2 mt-2">
-                      {onOrder.has(r.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5]">● on order</span> : <StateFlag s={st} />}
+                      {onOrder.has(r.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5] whitespace-nowrap">● {onOrder.get(r.item)}</span> : <StateFlag s={st} />}
                       <span className="ml-auto flex items-center gap-1.5">
                         {!r.stock_id.startsWith('virtual:') && (
                           <button onClick={() => onTransfer(r)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#5B6470] text-[#5B6470] rounded-md px-2 py-1"><Package className="w-3 h-3" />Move</button>
@@ -401,7 +408,7 @@ function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransf
 
 // ── TOTAL pivot ───────────────────────────────────────────────────────────────
 function TotalPivot({ rows, branches, lowOnly, onOrder, onRaise }: {
-  rows: AnfStock[]; branches: string[]; lowOnly: boolean; onOrder: Set<string>
+  rows: AnfStock[]; branches: string[]; lowOnly: boolean; onOrder: Map<string, string>
   onRaise: (item: string, branch: string | null, id: string | null) => void
 }) {
   const items = useMemo(() => {
@@ -452,7 +459,7 @@ function TotalPivot({ rows, branches, lowOnly, onOrder, onRaise }: {
                       <td className="px-4 py-3"><div className="font-semibold">{i.item}</div>{i.code && <div className="text-[12.5px] text-muted-foreground mt-0.5">{i.code}</div>}</td>
                       {branches.map((b) => <td key={b} className="px-3 py-3 text-right font-mono tabular-nums">{i.per[b] == null ? <span className="text-muted-foreground/40">N/A</span> : i.per[b]}</td>)}
                       <td className={`px-4 py-3 text-right font-mono font-bold tabular-nums ${st !== 'ok' ? 'text-[#FF5B3F]' : ''}`}>{i.total}</td>
-                      <td className="px-4 py-3">{onOrder.has(i.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5]">● on order</span> : <StateFlag s={st} />}</td>
+                      <td className="px-4 py-3">{onOrder.has(i.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5] whitespace-nowrap">● {onOrder.get(i.item)}</span> : <StateFlag s={st} />}</td>
                       <td className="px-3 py-3 text-right">
                         {st !== 'ok' && !onOrder.has(i.item) && (
                           <button onClick={() => onRaise(i.item, null, null)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1 hover:bg-[#7A5AA5]/10 whitespace-nowrap"><ShoppingCart className="w-3 h-3" />Reorder</button>

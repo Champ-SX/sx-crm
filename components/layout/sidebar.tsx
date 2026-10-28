@@ -26,6 +26,7 @@ import { BoardSwitcher } from '@/components/shared/board-switcher'
 import { PushPermissionBanner } from '@/components/shared/push-permission-banner'
 import { Button } from '@/components/ui/button'
 import { OP_STAGES } from '@/types'
+import { usePurchasing, approvalOf, isApprover } from '@/lib/supabase/purchasing'
 
 // Nav is board-aware (Phase 4.0): the CAP*TURES sales pipeline vs. the ANF
 // Order board's own (different) structure.
@@ -158,16 +159,28 @@ function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?
     j.op_stage !== 'OP_DONE_PAYMENT'
   ).length
 
-  const openOrdersCount = anfOrders.filter((o) => o.status !== 'received').length
-  // Stock items needing reorder (LOW + OUT) on the active board.
+  // Order badges = "your turn": the approver sees what waits for them; others see
+  // approved items not yet on a PO. POs: drafts to send + ordered POs still arriving.
+  const onOrderBoard = activeBoardId === 'anf-order'
+  const { requests, pos } = usePurchasing(onOrderBoard)
+  const { user, role } = useAuth()
+  const approver = isApprover(user?.email, role)
+  const openItems = anfOrders.filter((o) => o.status !== 'received' && !o.archived_at)
+  const reqOf = (id?: string | null) => (id ? requests.find((r) => r.request_id === id) ?? null : null)
+  const requestsBadge = approver && requests.some((r) => r.status === 'pending')
+    ? requests.filter((r) => r.status === 'pending').length
+    : openItems.filter((o) => o.status === 'to_order' && !o.po_id && approvalOf(reqOf(o.request_id)) === 'approved').length
+  const posBadge = pos.filter((p) => p.status === 'draft' || (p.status === 'ordered' && openItems.some((o) => o.po_id === p.po_id))).length
+  // Stock items needing reorder (LOW + OUT) that nobody has requested yet.
+  const requested = new Set(openItems.filter((o) => approvalOf(reqOf(o.request_id)) !== 'rejected').map((o) => o.item))
   const lowStockCount = anfStock.filter(
     (r) => (!activeBoardId || r.board_id === activeBoardId || !r.board_id) &&
-      (r.qty <= 0 || (r.alert_qty != null && r.qty <= r.alert_qty))
+      (r.qty <= 0 || (r.alert_qty != null && r.qty <= r.alert_qty)) && !requested.has(r.item)
   ).length
   const badges: Record<string, number> = {
     '/leads-opportunities': openLeadsCount,
     '/won-ready-op':        activeOPJobs,
-    '/anf-order':           openOrdersCount,
+    ...(onOrderBoard ? { '/anf-order': requestsBadge, '/anf-order/pos': posBadge } : {}),
     '/anf-order/stock':     lowStockCount,
   }
   // Hrefs whose badge is an alert (warning tint) rather than a neutral count.

@@ -9,14 +9,15 @@ import { useAuth } from '@/components/auth-provider'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
-import { ANF_ACCENT, SEED_BRANCHES, baht } from '@/lib/anf'
+import { ANF_ACCENT, SEED_BRANCHES, baht, kindOf } from '@/lib/anf'
 import { jobCardName } from '@/lib/jobs'
 import { useSuppliers, preferredFor, linksFor } from '@/lib/supabase/suppliers'
 import {
   usePurchasing, saveRequest, savePO, newPurchasingId, nextRequestNumber, nextPONumber, itemTotal,
   submitRequest, approveRequest, rejectRequest, withdrawRequest, deleteRequest, requestTotal, lineTotalVat, lineRules, receivePlan, approvalOf, isApprover, requestStatus, REQ_STATUS, APPROVAL_LIMIT_THB, type ReqStatus,
 } from '@/lib/supabase/purchasing'
-import type { AnfOrder, AnfRequest, AnfPO, AnfProduct, WonJob } from '@/types'
+import type { AnfOrder, AnfRequest, AnfPO, AnfProduct, AnfAsset, WonJob } from '@/types'
+import { useAssets, saveAsset, moveAsset, newAssetId, nextCode, prefixFor, RACKS, SHELVES } from '@/lib/supabase/assets'
 
 export const inputCls = 'h-9 w-full rounded-md border border-border bg-background px-2.5 text-[13px] outline-none focus:border-foreground/40'
 
@@ -360,6 +361,18 @@ export function ReceiveDialog({ order, onClose }: { order: AnfOrder; onClose: ()
   const n = parseInt(arrived, 10)
   const valid = Number.isFinite(n) && n > 0 && n <= order.quantity
   const missing = valid ? order.quantity - n : 0
+  // Assets (camera, light…) become numbered units in Assets instead of stock.
+  const product = useCRMStore((s) => s.anfProducts.find((p) => p.product_id === order.product_id))
+  const isAsset = kindOf(product) === 'asset'
+  const { assets } = useAssets()
+  const [rack, setRack] = useState(RACKS[0])
+  const [shelf, setShelf] = useState(SHELVES[0])
+  const codes = useMemo(() => {
+    if (!isAsset || !valid) return []
+    const taken = assets.map((a) => a.code); const out: string[] = []
+    for (let i = 0; i < n; i++) { const c = nextCode(prefixFor(product?.category), [...taken, ...out]); out.push(c) }
+    return out
+  }, [isAsset, valid, n, assets, product?.category])
 
   async function confirm() {
     if (!valid) { setError(`Enter 1 to ${order.quantity}.`); return }
@@ -367,6 +380,15 @@ export function ReceiveDialog({ order, onClose }: { order: AnfOrder; onClose: ()
       const plan = receivePlan(order, n, keepRest)
       await updateAnfOrder(order.order_id, { ...plan.patch, received_at: date, received_by: by.trim() || null })
       if (plan.rest) await addAnfOrder(plan.rest)
+      if (isAsset && product) {
+        const slot = `${rack}-${shelf}`
+        for (const code of codes) {
+          const a: AnfAsset = { asset_id: newAssetId(), board_id: order.board_id || 'anf-order', code, product_id: product.product_id, location_kind: 'rack', location_slot: slot,
+            job_id: null, purchase_date: date, value_thb: order.unit_price || null }
+          await saveAsset(a)
+          await moveAsset(a, { kind: 'rack', slot, job_id: null }, { from: '—', to: `New · ${rack} · ${shelf}` }, by.trim() || me, 'Received')
+        }
+      }
       onClose()
     } catch (e) { setError((e as Error).message) }
   }
@@ -391,12 +413,20 @@ export function ReceiveDialog({ order, onClose }: { order: AnfOrder; onClose: ()
               ))}
             </div>
           )}
+          {isAsset && valid && (
+            <div className="col-span-2 rounded-lg bg-muted px-3 py-2 flex flex-wrap items-center gap-2">
+              <span className="w-full">Creates <b className="font-mono">{codes.join(', ')}</b> in Assets</span>
+              <span className="text-muted-foreground">Put on</span>
+              <select value={rack} onChange={(e) => setRack(e.target.value)} className={cn(inputCls, 'h-8 w-20')}>{RACKS.map((x) => <option key={x}>{x}</option>)}</select>
+              <select value={shelf} onChange={(e) => setShelf(e.target.value)} className={cn(inputCls, 'h-8 w-24')}>{SHELVES.map((x) => <option key={x} value={x}>Shelf {x}</option>)}</select>
+            </div>
+          )}
           {error && <p className="col-span-2 text-[12px] text-destructive">{error}</p>}
         </div>
         <div className="flex items-center gap-2 px-5 py-3 border-t border-border">
-          <span className="mr-auto text-[12px] text-muted-foreground">Adds to Warehouse stock</span>
+          <span className="mr-auto text-[12px] text-muted-foreground">{isAsset ? 'Assets get units, not stock' : 'Adds to Warehouse stock'}</span>
           <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
-          <Button size="sm" disabled={!valid} onClick={() => void confirm()}>Receive {valid ? n : ''}</Button>
+          <Button size="sm" disabled={!valid} onClick={() => void confirm()}>{isAsset && valid ? `Receive & create ${n} unit${n > 1 ? 's' : ''}` : `Receive ${valid ? n : ''}`}</Button>
         </div>
       </DialogContent>
     </Dialog>

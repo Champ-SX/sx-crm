@@ -3,7 +3,7 @@ import { supabase, isSupabaseConfigured } from './client'
 import type { AnfOrder, AnfPO, AnfRequest, Notification } from '@/types'
 import { notificationQueries } from './db'
 import { useCRMStore } from '@/store/crm-store'
-import { MOCK_REQUESTS, MOCK_POS, MOCK_PURCHASE_ITEMS } from './purchasing-mock'
+import { MOCK_REQUESTS, MOCK_POS, MOCK_PURCHASE_ITEMS, MOCK_ASSET_PRODUCT } from './purchasing-mock'
 import { needsApproval, requestTotal, approvalOf } from '@/lib/purchasing-rules'
 export * from '@/lib/purchasing-rules'
 
@@ -26,6 +26,8 @@ async function load() {
     if (!loaded) {
       requests = [...MOCK_REQUESTS]; pos = [...MOCK_POS]
       if (useCRMStore.getState().anfOrders.length === 0) useCRMStore.setState({ anfOrders: [...MOCK_PURCHASE_ITEMS] })
+      const st = useCRMStore.getState()
+      if (!st.anfProducts.some((p) => p.product_id === MOCK_ASSET_PRODUCT.product_id)) useCRMStore.setState({ anfProducts: [...st.anfProducts, MOCK_ASSET_PRODUCT] })
     }
     loaded = true; emit(); return
   }
@@ -40,14 +42,15 @@ async function load() {
   loaded = true; emit()
 }
 
-export function usePurchasing() {
+/** enabled=false subscribes without loading (e.g. the sidebar on other boards). */
+export function usePurchasing(enabled = true) {
   const [, force] = useState(0)
   useEffect(() => {
     const f = () => force((n) => n + 1)
     listeners.add(f)
-    if (!loaded && !loading) loading = load()
+    if (enabled && !loaded && !loading) loading = load()
     return () => { listeners.delete(f) }
-  }, [])
+  }, [enabled])
   return { requests, pos, loaded }
 }
 

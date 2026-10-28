@@ -1,4 +1,4 @@
-import type { AnfOrder, AnfPO, AnfRequest } from '@/types'
+import type { AnfOrder, AnfPO, AnfProduct, AnfRequest } from '@/types'
 
 // Local dev (mock mode) only — made-up sample data for the Requests → POs screens.
 // Totals are picked to sit either side of the 10,000 THB approval limit.
@@ -48,4 +48,8 @@ export const MOCK_PURCHASE_ITEMS: AnfOrder[] = [
   item('ord-mock-8', 'req-mock-14', 'Printer DNP DS620', 1, 36000, { unit: 'pcs', supplier_id: 'sup-mock-2' }),
   // REQ-022 · draft, ฿9,630 → submitting it auto-approves (add one more LED strip to go over 10K)
   item('ord-mock-9', 'req-mock-22', 'LED strip 5m', 20, 450, { unit: 'pcs', supplier_id: 'sup-mock-2' }),
+  // REQ-016 / PO-004 · an asset: receiving creates CAM-00x units instead of stock
+  item('ord-mock-10', 'req-mock-16', 'Camera Canon R50', 2, 24900, { product_id: 'p-mock-cam', unit: 'pcs', supplier_id: 'sup-mock-2', status: 'ordered', po_id: 'po-mock-4', ordered_at: day(-3) }),
 ]
+
+export const MOCK_ASSET_PRODUCT: AnfProduct = { product_id: 'p-mock-cam', board_id: 'anf-order', name: 'Camera Canon R50', code: 'CAM-R50', category: 'camera', unit: 'pcs', kind: 'asset' }
