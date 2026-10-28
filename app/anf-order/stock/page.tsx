@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useCRMStore } from '@/store/crm-store'
 import { useHydrated } from '@/hooks/use-hydrated'
@@ -194,7 +195,7 @@ export default function AnfStockPage() {
         {kind === 'asset' && <button type="button" onClick={() => setTab(WAREHOUSE)} className={`text-[13px] underline underline-offset-4 transition-colors ${!isCatalog ? 'text-foreground font-semibold' : 'text-[#7A5AA5] hover:opacity-80'}`}>Units</button>}
         {kind === 'supply' && branches.map((b) => <Tab key={b} label={b} color={branchColor(b)} on={tab === b} onClick={() => setTab(b)} />)}
         {kind === 'supply' && <button type="button" onClick={() => setTab('TOTAL')} className={`text-[13px] underline underline-offset-4 transition-colors ${isTotal ? 'text-foreground font-semibold' : 'text-[#7A5AA5] hover:opacity-80'}`}>TOTAL ↗</button>}
-        <button type="button" onClick={() => setTab('CATALOG')} className={`text-[13px] underline underline-offset-4 transition-colors ${isCatalog ? 'text-foreground font-semibold' : 'text-[#7A5AA5] hover:opacity-80'}`}>Catalog ↗</button>
+        <Link href="/anf-order/catalog" className="text-[13px] underline underline-offset-4 text-[#7A5AA5] hover:opacity-80">Catalog ↗</Link>
         <span className="flex-1" />
         {kind === 'supply' && <button type="button" onClick={() => setLowOnly((v) => !v)} className={`inline-flex items-center gap-1.5 text-[12px] rounded-full px-3 py-1 border transition-colors ${lowOnly ? 'bg-[#FF5B3F] text-white border-transparent font-medium' : 'border-border bg-card text-[#FF5B3F] font-semibold hover:bg-muted'}`}>
           ⚠ Low only{lowCount > 0 && ` (${lowCount})`}

@@ -22,11 +22,15 @@ export function ProductDialog({ product, onClose }: { product: AnfProduct; onClo
   const { role } = useAuth()
   const isAdmin = role === 'admin'
   const [unit, setUnit] = useState(product.unit ?? '')
+  const [aliases, setAliases] = useState((product.aliases ?? []).join(', '))
   const usedBy = anfStock.filter((r) => r.product_id === product.product_id).length
 
   function save() {
     if (!name.trim()) return
-    void updateAnfProduct(product.product_id, { name: name.trim(), code: code.trim() || null, category, unit: unit.trim() || null, ...(kind !== kindOf(product) ? { kind } : {}) })
+    const nextAliases = aliases.split(',').map((a) => a.trim()).filter(Boolean)
+    const aliasesChanged = nextAliases.join('|') !== (product.aliases ?? []).join('|')
+    // aliases only sent when changed, so saving works before the aliases migration is run
+    void updateAnfProduct(product.product_id, { name: name.trim(), code: code.trim() || null, category, unit: unit.trim() || null, ...(kind !== kindOf(product) ? { kind } : {}), ...(aliasesChanged ? { aliases: nextAliases } : {}) })
     onClose()
   }
   function remove() {
@@ -39,11 +43,12 @@ export function ProductDialog({ product, onClose }: { product: AnfProduct; onClo
       <DialogContent showCloseButton={false} className="max-w-md p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col">
         <div className="flex items-center gap-2.5 px-5 py-3 border-b border-border">
           <span className="w-3 h-3 rounded-[4px]" style={{ backgroundColor: ANF_ACCENT }} />
-          <DialogTitle className="text-[15px] font-bold">Edit product</DialogTitle>
+          <DialogTitle className="text-[15px] font-bold">Edit item</DialogTitle>
           <button onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground text-lg leading-none px-1">✕</button>
         </div>
         <div className="px-5 py-4 space-y-3 overflow-y-auto">
           <div><label className="field-label">Name</label><Input value={name} onChange={(e) => setName(e.target.value)} className="h-9" /></div>
+          <div><label className="field-label">Also known as <span className="font-normal normal-case tracking-normal text-muted-foreground/70">· for search, comma-separated</span></label><Input value={aliases} onChange={(e) => setAliases(e.target.value)} placeholder="e.g. กระดาษ 4x6, DS-RX1" className="h-9" /></div>
           <div><label className="field-label">Code / spec <span className="font-normal normal-case tracking-normal text-muted-foreground/70">· optional</span></label><Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g. PAPER DNP RX1 4*6" className="h-9" /></div>
           <div>
             <label className="field-label">Kind</label>

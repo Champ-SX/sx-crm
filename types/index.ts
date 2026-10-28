@@ -171,6 +171,7 @@ export interface AnfProduct {
   category: string | null
   unit: string | null       // box | pack | pcs
   kind?: 'supply' | 'asset' // supplies are counted & re-ordered; assets are equipment (computer, camera…)
+  aliases?: string[] | null  // other names it's known by — catalog search only
   created_at?: string
   updated_at?: string
 }

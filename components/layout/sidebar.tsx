@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ClipboardList, Truck,
+import { ClipboardList, BookOpen,
   LayoutDashboard,
   Users,
   FileText,
@@ -40,7 +40,7 @@ const anfNav = [
   { href: '/anf-order', label: 'Requests', icon: ClipboardList },
   { href: '/anf-order/pos', label: 'POs', icon: FileText },
   { href: '/anf-order/stock', label: 'Stock', icon: Boxes },
-  { href: '/anf-order/suppliers', label: 'Suppliers', icon: Truck },
+  { href: '/anf-order/catalog', label: 'Catalog', icon: BookOpen },
 ]
 const anfTasksNav = [
   { href: '/anf-tasks', label: 'Tasks', icon: Kanban },

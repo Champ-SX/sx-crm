@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { ANF_ACCENT, SEED_BRANCHES, baht, kindOf } from '@/lib/anf'
 import { jobCardName } from '@/lib/jobs'
-import { useSuppliers, preferredFor, linksFor } from '@/lib/supabase/suppliers'
+import { useSuppliers, preferredFor, linksFor, saveLink, newLink } from '@/lib/supabase/suppliers'
 import {
   usePurchasing, saveRequest, savePO, newPurchasingId, nextRequestNumber, nextPONumber, itemTotal,
   submitRequest, approveRequest, rejectRequest, withdrawRequest, deleteRequest, requestTotal, lineTotalVat, lineRules, receivePlan, approvalOf, isApprover, requestStatus, REQ_STATUS, APPROVAL_LIMIT_THB, type ReqStatus,
@@ -76,11 +76,11 @@ export function StepBar({ status }: { status: ReqStatus }) {
   )
 }
 
-export interface RequestPrefill { item: string; product_id?: string | null; description?: string | null; branch?: string | null; unit_price?: number; quantity?: number }
+export interface RequestPrefill { item: string; product_id?: string | null; description?: string | null; branch?: string | null; unit_price?: number; quantity?: number; supplier_id?: string | null }
 
 export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
   request: AnfRequest | null      // null = new
-  prefill?: RequestPrefill        // Stock → Reorder: a 1-item refill request
+  prefill?: RequestPrefill | RequestPrefill[]   // Stock / Catalog → Reorder: a refill request with these lines
   onClose: () => void
   onCreatePO: (items: AnfOrder[]) => void
 }) {
@@ -92,14 +92,17 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
   const addAnfOrder = useCRMStore((s) => s.addAnfOrder)
   const updateAnfOrder = useCRMStore((s) => s.updateAnfOrder)
   const deleteAnfOrder = useCRMStore((s) => s.deleteAnfOrder)
+  const addAnfProduct = useCRMStore((s) => s.addAnfProduct)
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
   const me = useMe()
   const { user, role } = useAuth()
   const approver = isApprover(user?.email, role)
+  const lines = prefill ? (Array.isArray(prefill) ? prefill : [prefill]) : []
+  const firstBranch = lines.find((l) => l.branch)?.branch ?? null
   const [r, setR] = useState<AnfRequest>(() => request ?? {
     request_id: newPurchasingId(), board_id: activeBoardId || 'anf-order', number: nextRequestNumber(requests.map((x) => x.number)),
-    project_kind: prefill ? 'refill' : 'free', job_id: null, project_name: prefill?.branch ? `Refill · ${prefill.branch}` : '', needed_by: null,
-    deliver_to: prefill?.branch || 'WAREHOUSE', created_by: me, status: 'draft',
+    project_kind: lines.length ? 'refill' : 'free', job_id: null, project_name: firstBranch ? `Refill · ${firstBranch}` : '', needed_by: null,
+    deliver_to: firstBranch || 'WAREHOUSE', created_by: me, status: 'draft',
   })
   const [rejecting, setRejecting] = useState<string | null>(null)   // reason being typed
   const [saved, setSaved] = useState(!!request)
@@ -111,7 +114,9 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
   const jobs = useMemo(() => wonJobs.filter((j) => !j.is_archived && ((j.event_end_date || j.event_date || '') >= jobsFrom || j.job_id === r.job_id))
     .sort((a, b) => (a.event_date ?? '').localeCompare(b.event_date ?? '')), [wonJobs, jobsFrom, r.job_id])
   const products = anfProducts.filter((p) => !activeBoardId || !p.board_id || p.board_id === activeBoardId)
-  const matches = q.trim() ? products.filter((p) => `${p.name} ${p.code ?? ''}`.toLowerCase().includes(q.trim().toLowerCase())).slice(0, 6) : []
+  const matches = q.trim() ? products.filter((p) => [p.name, p.code, ...(p.aliases ?? [])].some((v) => (v ?? '').toLowerCase().includes(q.trim().toLowerCase()))).slice(0, 6) : []
+  const anfStock = useCRMStore((s) => s.anfStock)
+  const stockOf = (pid: string) => anfStock.filter((x) => x.product_id === pid).reduce((t, x) => t + (x.qty || 0), 0)
   const net = items.reduce((t, o) => t + itemTotal(o), 0)
   const grand = requestTotal(items)
   const appr = approvalOf(r)
@@ -127,18 +132,20 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
   // Stock → Reorder: create the draft with its one line as soon as the dialog opens (once).
   const seeded = useRef(false)
   useEffect(() => {
-    if (!prefill || request || seeded.current || !loaded) return
+    if (!lines.length || request || seeded.current || !loaded) return
     seeded.current = true
     let live = true
     ;(async () => {
       const first = numbered(r)
       await saveRequest(first); if (live) setR(first)
-      const pref = prefill.product_id ? preferredFor(prefill.product_id) : null
-      await addAnfOrder(newItem({
-        item: prefill.item, product_id: prefill.product_id ?? null, description: prefill.description ?? null,
-        quantity: prefill.quantity ?? 1, unit: pref?.unit ?? null, unit_price: prefill.unit_price ?? pref?.price ?? 0,
-        supplier_id: pref?.supplier_id ?? null, request_id: r.request_id, board_id: r.board_id, branch: r.deliver_to ?? null, requested_by: me,
-      }))
+      for (const l of lines) {
+        const pref = l.product_id ? preferredFor(l.product_id) : null
+        await addAnfOrder(newItem({
+          item: l.item, product_id: l.product_id ?? null, description: l.description ?? null,
+          quantity: l.quantity ?? 1, unit: pref?.unit ?? null, unit_price: l.unit_price ?? pref?.price ?? 0,
+          supplier_id: l.supplier_id ?? pref?.supplier_id ?? null, request_id: r.request_id, board_id: r.board_id, branch: r.deliver_to ?? null, requested_by: me,
+        }))
+      }
       if (live) setSaved(true)
     })().catch((e: Error) => live && setError(e.message))
     return () => { live = false }
@@ -190,6 +197,18 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
     } catch (e) { setError((e as Error).message) }
   }
   const upd = (o: AnfOrder, p: Partial<AnfOrder>) => void updateAnfOrder(o.order_id, p)
+  /** A typed-in line becomes a catalog item (with its supplier + price), so it can be found and reordered next time. */
+  async function saveToCatalog(o: AnfOrder) {
+    try {
+      const existing = products.find((p) => p.name.trim().toLowerCase() === o.item.trim().toLowerCase())
+      const p: AnfProduct = existing ?? { product_id: newPurchasingId(), board_id: r.board_id || 'anf-order', name: o.item.trim(), code: o.description ?? null, category: 'other', unit: o.unit ?? null, kind: 'supply' }
+      if (!existing) await addAnfProduct(p)
+      if (o.supplier_id && !linksFor(p.product_id).some((l) => l.supplier_id === o.supplier_id)) {
+        await saveLink({ ...newLink(p.product_id, o.supplier_id, linksFor(p.product_id).length === 0), price: o.unit_price || null, unit: o.unit ?? null })
+      }
+      await updateAnfOrder(o.order_id, { product_id: p.product_id })
+    } catch (e) { setError((e as Error).message) }
+  }
   const num = (v: string) => { const n = parseFloat(v.replace(/,/g, '')); return Number.isFinite(n) ? n : 0 }
   const limit = baht(APPROVAL_LIMIT_THB)
   const when = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '')
@@ -280,7 +299,8 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
                       <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
                       <td className={cn('px-2 py-2', !o.product_id && 'shadow-[inset_3px_0_0_#e8f25c]')}>
                         <div className="font-medium">{o.item}</div>
-                        <div className="text-[11px] text-muted-foreground">{o.description || (o.product_id ? 'catalog' : 'manual item')}</div>
+                        <div className="text-[11px] text-muted-foreground">{o.description || (o.product_id ? 'catalog' : 'manual item')}
+                          {!o.product_id && <button type="button" onClick={() => void saveToCatalog(o)} className="ml-1.5 underline text-[#7A5AA5]">＋ Save to catalog</button>}</div>
                       </td>
                       <td className="px-2 py-1.5"><input disabled={!rule.editQtyPrice} defaultValue={o.quantity} onBlur={(e) => num(e.target.value) !== o.quantity && upd(o, { quantity: num(e.target.value) })} className={cn(inputCls, 'h-8 text-right font-mono')} /></td>
                       <td className="px-2 py-1.5"><input disabled={!rule.editQtyPrice} defaultValue={o.unit ?? ''} onBlur={(e) => (e.target.value || null) !== (o.unit ?? null) && upd(o, { unit: e.target.value || null })} className={cn(inputCls, 'h-8')} /></td>
@@ -316,7 +336,10 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
                         <div className="absolute z-10 left-2 right-2 mt-1 rounded-lg border border-border bg-card shadow-lg overflow-hidden">
                           {matches.map((p) => (
                             <button key={p.product_id} type="button" onClick={() => void addItem(p)} className="w-full text-left px-3 py-1.5 text-[13px] hover:bg-muted">
-                              {p.name}{p.code && <span className="text-muted-foreground"> · {p.code}</span>}{preferredFor(p.product_id) && <span className="text-muted-foreground"> · ★ supplier</span>}
+                              <span className="flex items-baseline gap-2">
+                              <span className="min-w-0 truncate">{p.name}{p.code && <span className="text-muted-foreground"> · {p.code}</span>}</span>
+                              <span className="ml-auto shrink-0 text-[12px] text-muted-foreground">stock {stockOf(p.product_id)}{preferredFor(p.product_id) && <> · ★ {preferredFor(p.product_id)?.price != null ? baht(preferredFor(p.product_id)!.price!) : 'supplier'}</>}</span>
+                            </span>
                             </button>
                           ))}
                           <button type="button" onClick={() => void addItem(null)} className="w-full text-left px-3 py-1.5 text-[13px] text-muted-foreground hover:bg-muted border-t border-border">＋ Add “{q.trim()}” as a manual item</button>
@@ -380,6 +403,12 @@ export function ReceiveDialog({ order, onClose }: { order: AnfOrder; onClose: ()
       const plan = receivePlan(order, n, keepRest)
       await updateAnfOrder(order.order_id, { ...plan.patch, received_at: date, received_by: by.trim() || null })
       if (plan.rest) await addAnfOrder(plan.rest)
+      // Price memory: the supplier's price for this item becomes what was just paid.
+      if (order.product_id && order.supplier_id && order.unit_price > 0) {
+        const link = linksFor(order.product_id).find((l) => l.supplier_id === order.supplier_id)
+        if (!link) await saveLink({ ...newLink(order.product_id, order.supplier_id, linksFor(order.product_id).length === 0), price: order.unit_price, unit: order.unit ?? null })
+        else if (link.price !== order.unit_price) await saveLink({ ...link, price: order.unit_price })
+      }
       if (isAsset && product) {
         const slot = `${rack}-${shelf}`
         for (const code of codes) {
