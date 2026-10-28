@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>คู่มือสั่งของ</title>
+<style>
+:root{--bg:#f2f0ea;--card:#faf9f6;--fg:#18181b;--mut:#71717a;--bd:#e4e2da;--sub:#ebe9e2;--pur:#7A5AA5;--gr:#15803d;--grb:#e7f4ec;--am:#b45309;--amb:#fdf1dc;--rd:#dc2626;--rdb:#fdeaea;--bl:#1d4ed8;--blb:#e6edfb}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c0c0d;--card:#18181b;--fg:#fafafa;--mut:#a1a1aa;--bd:#2a2a2e;--sub:#232327;--gr:#4ade80;--grb:#13261b;--am:#fbbf24;--amb:#2a210c;--rd:#f87171;--rdb:#2a1414;--bl:#93b4ff;--blb:#16203a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 "Noto Sans Thai",system-ui,sans-serif;padding:24px 16px}
+.w{max-width:900px;margin:0 auto}
+h1{font-size:24px;margin:0 0 2px}.lead{color:var(--mut);margin:0 0 16px}
+h2{font-size:13px;letter-spacing:.04em;color:var(--mut);margin:28px 0 10px;font-weight:700}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px}
+.step{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px}
+.step b{display:block}.step small{color:var(--mut)}
+.ar{color:var(--mut)}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:720px){.cards{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px 16px}
+.card h3{margin:0 0 8px;font-size:16px}
+.who{display:inline-block;font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 9px;margin-bottom:6px}
+.w-all{background:var(--sub)}.w-buy{background:var(--blb);color:var(--bl)}.w-ch{background:var(--amb);color:var(--am)}
+ol{margin:0;padding-left:20px}ol li{margin:4px 0}
+.btn{display:inline-block;border-radius:6px;padding:0 7px;font-size:13px;font-weight:700;background:var(--fg);color:var(--bg);white-space:nowrap}
+.btn.o{background:transparent;color:var(--pur);border:1px solid var(--pur)}.btn.g{background:var(--gr);color:#fff}.btn.r{background:var(--rd);color:#fff}
+.tip{font-size:13px;color:var(--mut);margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td{padding:7px 8px;border-bottom:1px solid var(--bd);vertical-align:top}tr:last-child td{border-bottom:0}
+.st{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:1px 9px;white-space:nowrap}
+.s1{background:var(--sub);color:var(--mut)}.s2{background:var(--amb);color:var(--am)}.s3{background:var(--grb);color:var(--gr)}.s4{background:var(--blb);color:var(--bl)}.s5{background:var(--rdb);color:var(--rd)}
+.faq b{display:block;margin-top:8px}
+.print{font-size:12px;color:var(--mut);text-align:center;margin-top:24px}
+@media print{body{background:#fff;padding:0}.card,.step{break-inside:avoid}}
+</style></head><body><div class="w">
+<h1>คู่มือสั่งของ (Order) · 1 หน้า</h1>
+<p class="lead">ทุกการซื้อเริ่มจาก “คำขอ (Request)” เสมอ · ต่ำกว่า ฿10,000 อนุมัติอัตโนมัติ · ตั้งแต่ ฿10,000 ขึ้นไป คุณแชมป์อนุมัติ · ผู้สั่งซื้อหลักคือแอดมิน</p>
+
+<h2>ขั้นตอนทั้งหมด</h2>
+<div class="flow">
+ <div class="step"><b>① ขอซื้อ</b><small>ทุกคน</small></div><span class="ar">→</span>
+ <div class="step"><b>② อนุมัติ</b><small>อัตโนมัติ / คุณแชมป์</small></div><span class="ar">→</span>
+ <div class="step"><b>③ สั่งซื้อ (PO)</b><small>แอดมิน</small></div><span class="ar">→</span>
+ <div class="step"><b>④ รับของ</b><small>ใครก็ได้ที่อยู่หน้างาน</small></div>
+</div>
+
+<h2>ฉันอยากจะ…</h2>
+<div class="cards">
+ <div class="card"><span class="who w-all">ทุกคน</span><h3>สั่งของที่ใกล้หมด</h3>
+  <ol><li>เมนู <b>Stock &amp; Assets</b> → หาของที่ขึ้น <span class="st s5">LOW</span> / <span class="st s5">OUT</span></li>
+   <li>กด <span class="btn o">Reorder</span> → ระบบใส่ของ ผู้ขาย และราคาให้</li>
+   <li>ใส่จำนวน · ตรวจราคา → กด <span class="btn">Submit →</span></li></ol>
+  <p class="tip">ถ้าขึ้น “● Requested” แปลว่ามีคนขอไปแล้ว ไม่ต้องขอซ้ำ</p></div>
+
+ <div class="card"><span class="who w-all">ทุกคน</span><h3>ขอซื้อของใช้ทั่วไป (เช่น เทปผ้า)</h3>
+  <ol><li>เมนู <b>Requests</b> → <span class="btn">+ New request</span></li>
+   <li>เลือก <b>General</b> · พิมพ์ว่าขอเพื่ออะไร เช่น “เทป &amp; เคเบิลไทร์ ทีมอีเวนต์”</li>
+   <li>ค้นหาของ หรือพิมพ์ชื่อใหม่แล้วกด Enter · ใส่จำนวนและราคา</li>
+   <li>กด <span class="btn">Submit →</span></li></ol>
+  <p class="tip">ราคารวม VAT · ถ้าถึง ฿10,000 ปุ่มจะเปลี่ยนเป็น “Send for approval”</p></div>
+
+ <div class="card"><span class="who w-ch">คุณแชมป์</span><h3>อนุมัติคำขอ</h3>
+  <ol><li>กระดิ่ง 🔔 “asks for approval” หรือ Requests → แท็บ <b>Wait for approval</b></li>
+   <li>ดูรายการ → <span class="btn g">Approve ✓</span> หรือ <span class="btn r">Reject…</span> (ต้องใส่เหตุผล)</li></ol>
+  <p class="tip">คำขอที่รออนุมัติจะถูกล็อก ถ้าผู้ขออยากแก้ ให้กด “Withdraw to edit”</p></div>
+
+ <div class="card"><span class="who w-buy">แอดมิน (ผู้สั่งซื้อ)</span><h3>สั่งซื้อ (ทำ PO)</h3>
+  <ol><li>กระดิ่ง 🔔 “ready to order” · Requests → แท็บ <b>To order</b></li>
+   <li>ติ๊กคำขอ → <span class="btn">Create PO →</span> (ระบบแยก PO ตามผู้ขาย)</li>
+   <li>สั่งกับผู้ขาย / ทำ PO ใน FlowAccount → เมนู <b>POs</b> → <span class="btn">Mark ordered →</span></li></ol></div>
+
+ <div class="card"><span class="who w-all">ทุกคน</span><h3>ของมาส่ง (รับของ)</h3>
+  <ol><li>เมนู <b>POs</b> → เปิด PO → <span class="btn o">Receive…</span> ทีละรายการ หรือ <span class="btn">Receive all ✓</span></li>
+   <li>ใส่จำนวนที่ได้รับจริง · ถ้าไม่ครบ เลือก “รอส่วนที่เหลือ” หรือ “ปิดยอด (Close short)”</li></ol>
+  <p class="tip">สต็อกคลังเพิ่มอัตโนมัติ · กล้อง/อุปกรณ์จะได้รหัส เช่น CAM-007</p></div>
+
+ <div class="card"><span class="who w-all">ฉุกเฉิน</span><h3>ต้องสั่งเอง แอดมินติดต่อไม่ได้</h3>
+  <ol><li>เปิดคำขอที่ <b>อนุมัติแล้ว</b> → กดลิงก์แดง <b>Emergency order…</b></li>
+   <li>ใส่เหตุผล → <span class="btn r">Continue → Create PO</span> → Mark ordered</li></ol>
+  <p class="tip">PO จะติดป้าย EMERGENCY · คุณแชมป์และแอดมินได้รับแจ้ง</p></div>
+</div>
+
+<h2>สถานะหมายถึงอะไร</h2>
+<div class="card"><table>
+ <tr><td><span class="st s1">Draft</span></td><td>ยังไม่ได้ส่ง แก้ไขได้</td></tr>
+ <tr><td><span class="st s2">Wait for approval</span></td><td>รอคุณแชมป์อนุมัติ (฿10,000 ขึ้นไป)</td></tr>
+ <tr><td><span class="st s3">Approved · to order</span></td><td>อนุมัติแล้ว รอแอดมินสั่ง</td></tr>
+ <tr><td><span class="st s4">Ordered</span></td><td>สั่งกับผู้ขายแล้ว รอของมา</td></tr>
+ <tr><td><span class="st s4">Partly received</span></td><td>ได้รับของบางส่วน</td></tr>
+ <tr><td><span class="st s1">Received</span></td><td>ได้รับครบแล้ว</td></tr>
+ <tr><td><span class="st s5">Rejected</span></td><td>ไม่อนุมัติ ดูเหตุผล แก้แล้วส่งใหม่ได้</td></tr>
+ <tr><td><span style="color:var(--rd);font-weight:700">27 Oct · late</span></td><td>เลยวันที่ต้องใช้แล้ว ยังไม่ได้รับของ</td></tr>
+</table></div>
+
+<h2>คำถามที่พบบ่อย</h2>
+<div class="card faq">
+ <b>หาของไม่เจอ?</b> เมนู <b>Catalog</b> → พิมพ์ชื่อ รหัส หรือชื่อเล่น (เช่น “4x6”) · ไม่มีจริง ๆ ให้พิมพ์ชื่อใหม่ในคำขอแล้วกด “＋ Save to catalog”
+ <b>ราคาไม่ตรง?</b> แก้ได้ตอนเป็น Draft เท่านั้น · ส่งแล้วกด Withdraw to edit
+ <b>อยากรู้ว่าใครทำอะไร?</b> เปิดคำขอ → ดู <b>History</b> ด้านล่าง
+ <b>ขอเพิ่มหลังอนุมัติ?</b> ทำคำขอใหม่ (ของที่อนุมัติแล้วจะถูกล็อก)
+</div>
+<p class="print">พิมพ์ได้บน A4 1 หน้า · ปุ่มและเมนูในแอปเป็นภาษาอังกฤษตามภาพ</p>
+</div></body></html>

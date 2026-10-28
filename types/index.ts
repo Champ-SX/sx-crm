@@ -198,7 +198,7 @@ export interface AnfRequest {
   request_id: string
   board_id?: string
   number: string                    // REQ-2026-10-014
-  project_kind: 'refill' | 'job' | 'free'
+  project_kind: 'general' | 'refill' | 'free' | 'job'   // free = Project; job = legacy Won-job link
   job_id?: string | null
   project_name?: string | null
   needed_by?: string | null

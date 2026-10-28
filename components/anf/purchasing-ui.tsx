@@ -40,17 +40,26 @@ export function newItem(p: Partial<AnfOrder> & { item: string }): AnfOrder {
 }
 
 // ── Project chip ─────────────────────────────────────────────────────────────
-export function ProjectChip({ r, job, fallback }: { r?: AnfRequest | null; job?: WonJob | null; fallback?: string }) {
-  if (!r || r.project_kind === 'refill') return <span className="rounded-full px-2 py-px text-[11px] font-semibold bg-[#FF5B3F]/12 text-[#FF5B3F]">{fallback ?? 'Stock refill'}</span>
-  if (r.project_kind === 'job') return <span className="rounded-full px-2 py-px text-[11px] font-semibold bg-orange-500/12 text-orange-700 dark:text-orange-400">#{job?.job_number ?? '—'}</span>
-  return <span className="rounded-full px-2 py-px text-[11px] font-semibold bg-muted text-foreground">Project</span>
+/** What a request is for — the chip shows the kind, the title is the name people wrote. */
+export const FOR_KINDS = [
+  { key: 'general', label: 'General', ph: 'e.g. Tape & cable ties for the event team', cls: 'bg-muted text-foreground' },
+  { key: 'refill', label: 'Stock refill', ph: 'e.g. Paper & ink refill for Central', cls: 'bg-[#FF5B3F]/12 text-[#FF5B3F]' },
+  { key: 'free', label: 'Project', ph: 'e.g. Phuket branch refit, booth rebuild R2', cls: 'bg-[#7A5AA5]/12 text-[#7A5AA5]' },
+] as const
+export function ProjectChip({ r, job }: { r?: AnfRequest | null; job?: WonJob | null }) {
+  if (r?.project_kind === 'job') return <span className="rounded-full px-2 py-px text-[11px] font-semibold bg-orange-500/12 text-orange-700 dark:text-orange-400 whitespace-nowrap">#{job?.job_number ?? '—'}</span>
+  const k = FOR_KINDS.find((x) => x.key === (r?.project_kind ?? 'refill')) ?? FOR_KINDS[0]
+  return <span className={cn('rounded-full px-2 py-px text-[11px] font-semibold whitespace-nowrap', r ? k.cls : FOR_KINDS[1].cls)}>{r ? k.label : 'Quick order'}</span>
 }
 export function projectTitle(r: AnfRequest | null | undefined, job: WonJob | null | undefined, item?: AnfOrder) {
-  if (!r) return item ? `${item.item} ×${item.quantity}` : 'Stock refill'
+  if (!r) return item ? `${item.item} ×${item.quantity}` : 'Quick order'
   if (r.project_kind === 'job') return job ? jobCardName(job) : 'Won job'
-  if (r.project_kind === 'refill') return r.project_name || 'Stock refill'
-  return r.project_name || 'Untitled project'
+  return r.project_name?.trim() || 'Untitled request'
 }
+/** "Duct tape ×5 · Cable ties ×2 +1" — the first items, for list rows. */
+export const itemsLine = (items: AnfOrder[], n = 2) =>
+  items.slice(0, n).map((o) => `${o.item} ×${o.quantity}`).join(' · ') + (items.length > n ? ` +${items.length - n}` : '')
+export const branchLabel = (b?: string | null) => (!b ? '—' : b === 'WAREHOUSE' ? 'Warehouse' : b)
 
 // ── Request dialog (new / edit) ─────────────────────────────────────────────
 const STEPS = ['Request', 'Approve', 'Order', 'Receive'] as const
@@ -103,7 +112,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
   const firstBranch = lines.find((l) => l.branch)?.branch ?? null
   const [r, setR] = useState<AnfRequest>(() => request ?? {
     request_id: newPurchasingId(), board_id: activeBoardId || 'anf-order', number: nextRequestNumber(requests.map((x) => x.number)),
-    project_kind: 'refill', job_id: null, project_name: firstBranch ? `Refill · ${firstBranch}` : '', needed_by: null,
+    project_kind: lines.length ? 'refill' : 'general', job_id: null, project_name: lines.length ? `Refill · ${firstBranch ? branchLabel(firstBranch) : 'Warehouse'}` : '', needed_by: null,
     deliver_to: firstBranch || 'WAREHOUSE', created_by: me, created_by_id: user?.id ?? null, status: 'draft',
   })
   const [rejecting, setRejecting] = useState<string | null>(null)   // reason being typed
@@ -157,6 +166,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
   }
   /** Submit needs a project and a qty + price on every line (the price is what Champ approves). */
   function submitProblem(): string | null {
+    if (r.project_kind !== 'job' && !r.project_name?.trim()) return 'Write what this request is for.'
     if (items.length === 0) return 'Add at least one item.'
     const bad = items.find((o) => !(o.quantity > 0) || !(o.unit_price > 0))
     if (bad) return `Set the qty and price for “${bad.item}”.`
@@ -281,21 +291,28 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
 
         <div className="overflow-y-auto">
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 px-5 py-3 border-b border-border">
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-4">
               <label className="field-label">For</label>
-              <div className="flex gap-1.5">
-                {/* Purchases aren't tied to Won jobs; old job-linked requests just show their job. */}
-                <select disabled={!editable || r.project_kind === 'job'} value={r.project_kind} onChange={(e) => patch({ project_kind: e.target.value as AnfRequest['project_kind'] })} className={cn(inputCls, 'w-32 shrink-0')}>
-                  <option value="refill">Stock refill</option><option value="free">Project</option>{r.project_kind === 'job' && <option value="job">Won job</option>}
-                </select>
-                {r.project_kind === 'job' ? (
-                  <span className={cn(inputCls, 'flex items-center text-muted-foreground')}>{projectTitle(r, wonJobs.find((j) => j.job_id === r.job_id))}</span>
-                ) : (
-                  <input disabled={!editable} value={r.project_name ?? ''} onChange={(e) => setR({ ...r, project_name: e.target.value })} onBlur={() => saved && saveRequest(r).catch((e: Error) => setError(e.message))}
-                    placeholder={r.project_kind === 'refill' ? 'Stock refill' : 'e.g. Phuket branch refit'} className={inputCls} />
-                )}
-              </div>
+              {/* Purchases aren't tied to Won jobs; old job-linked requests just show their job. */}
+              {r.project_kind === 'job' ? (
+                <span className={cn(inputCls, 'flex items-center text-muted-foreground')}>Won job · {projectTitle(r, wonJobs.find((j) => j.job_id === r.job_id))}</span>
+              ) : (
+                <div className="flex rounded-lg border border-border p-0.5 w-max max-w-full">
+                  {FOR_KINDS.map((k) => (
+                    <button key={k.key} type="button" disabled={!editable} onClick={() => patch({ project_kind: k.key })}
+                      className={cn('h-8 px-3 rounded-md text-[13px]', r.project_kind === k.key ? 'bg-foreground text-background font-semibold' : 'text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground')}>{k.label}</button>
+                  ))}
+                </div>
+              )}
             </div>
+            {r.project_kind !== 'job' && (
+              <div className="sm:col-span-2">
+                <label className="field-label">What is this request? *</label>
+                <input disabled={!editable} value={r.project_name ?? ''} onChange={(e) => setR({ ...r, project_name: e.target.value })} onBlur={() => saved && saveRequest(r).catch((e: Error) => setError(e.message))}
+                  placeholder={(FOR_KINDS.find((k) => k.key === r.project_kind) ?? FOR_KINDS[0]).ph} className={inputCls} />
+                <p className="mt-1 text-[11.5px] text-muted-foreground">One short line: what it&apos;s for. This becomes the title in the list.</p>
+              </div>
+            )}
             <div><label className="field-label">Needed by</label><input type="date" value={r.needed_by ?? ''} onChange={(e) => patch({ needed_by: e.target.value || null, soon_notified_at: null, late_notified_at: null })} className={inputCls} /></div>
             <div><label className="field-label">Deliver to</label>
               <select value={r.deliver_to ?? ''} onChange={(e) => patch({ deliver_to: e.target.value || null })} className={inputCls}>

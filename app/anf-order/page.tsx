@@ -8,9 +8,9 @@ import { useHydrated } from '@/hooks/use-hydrated'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { Button } from '@/components/ui/button'
 import { OrderDialog } from '@/components/anf/order-dialog'
-import { RequestDialog, CreatePODialog, ImportDialog, ProjectChip, projectTitle } from '@/components/anf/purchasing-ui'
+import { RequestDialog, CreatePODialog, ImportDialog, ProjectChip, projectTitle, itemsLine, branchLabel } from '@/components/anf/purchasing-ui'
 import { cn } from '@/lib/utils'
-import { ANF_ACCENT, baht, fmtDate } from '@/lib/anf'
+import { ANF_ACCENT, baht, fmtDate, branchColor } from '@/lib/anf'
 import { usePurchasing, requestStatus, REQ_STATUS, requestTotal, approvalOf, isApprover, isBuyer, neededByAlert, thaiToday, type ReqStatus } from '@/lib/supabase/purchasing'
 import { useAuth } from '@/components/auth-provider'
 import { useOpenDeepLink } from '@/hooks/use-open-deep-link'
@@ -117,43 +117,41 @@ export default function RequestsPage() {
           </div>
         ) : (
           <div className="rounded-xl border border-border bg-card overflow-hidden">
-            <div className="hidden md:grid grid-cols-[28px_2.2fr_80px_100px_80px_120px_120px] gap-3 px-4 py-2 border-b border-border font-mono text-[10px] tracking-wide text-muted-foreground">
-              <span /><span>REQUEST</span><span>ITEMS</span><span className="text-right">TOTAL inc VAT</span><span>NEEDED</span><span>PO</span><span>STATUS</span>
+            <div className="hidden lg:grid grid-cols-[28px_2.4fr_100px_96px_100px_96px_110px_120px] gap-3 px-4 py-2 border-b border-border font-mono text-[10px] tracking-wide text-muted-foreground">
+              <span /><span>REQUEST</span><span>FOR</span><span>DELIVER TO</span><span className="text-right">TOTAL inc VAT</span><span>NEEDED BY</span><span>PO</span><span>STATUS</span>
             </div>
             {shown.map((r) => {
               const st = requestStatus(r.items, r.req)
               const job = jobOf(r.req)
               const total = requestTotal(r.items)
-              const manual = r.items.filter((o) => !o.product_id).length
               const poIds = [...new Set(r.items.map((o) => o.po_id).filter(Boolean))] as string[]
               const canSelect = buyer && approvalOf(r.req) === 'approved' && r.items.some((o) => o.status !== 'received' && !o.po_id)
               const on = selected.includes(r.key)
               const single = r.req ? null : r.items[0]
               return (
-                <div key={r.key} className={cn('grid grid-cols-[28px_1fr] md:grid-cols-[28px_2.2fr_80px_100px_80px_120px_120px] gap-x-3 gap-y-1 px-4 py-2.5 border-b border-border last:border-b-0 hover:bg-muted/40', on && 'bg-[#7A5AA5]/7')}>
+                <div key={r.key} className={cn('grid grid-cols-[28px_1fr] lg:grid-cols-[28px_2.4fr_100px_96px_100px_96px_110px_120px] gap-x-3 gap-y-1 px-4 py-2.5 border-b border-border last:border-b-0 hover:bg-muted/40', on && 'bg-[#7A5AA5]/7')}>
                   <span className="pt-0.5">
                     {canSelect && <input type="checkbox" checked={on} onChange={() => setSelected((s) => (on ? s.filter((x) => x !== r.key) : [...s, r.key]))} className="w-4 h-4 accent-foreground" aria-label="Select for PO" />}
                   </span>
                   <button type="button" onClick={() => (r.req ? setOpenReq(r.req) : setOpenItem(single))} className="text-left min-w-0">
-                    <span className="flex items-center gap-2 min-w-0">
-                      <ProjectChip r={r.req} job={job} fallback={single?.branch ? `Refill · ${single.branch}` : undefined} />
-                      <b className="text-[14px] truncate">{projectTitle(r.req, job, single ?? undefined)}</b>
-                    </span>
+                    <b className="block text-[14px] truncate">{projectTitle(r.req, job, single ?? undefined)}</b>
+                    {r.req && r.items.length > 0 && <span className="block text-[12px] text-muted-foreground truncate">{itemsLine(r.items)}</span>}
                     <span className="block font-mono text-[11px] text-muted-foreground truncate">{r.req ? `${r.req.number}${r.req.created_by ? ` · ${r.req.created_by}` : ''}` : `Quick order${single?.requested_by ? ` · ${single.requested_by}` : ''}`}</span>
                   </button>
-                  <span className="col-start-2 md:col-start-auto text-[13px] text-muted-foreground md:text-foreground">{r.items.length}{manual ? <span className="text-muted-foreground text-[11px]"> · {manual} manual</span> : null}</span>
-                  <span className="col-start-2 md:col-start-auto md:text-right font-mono text-[13px]">{total ? baht(total) : '—'}</span>
+                  <span className="col-start-2 lg:col-start-auto"><ProjectChip r={r.req} job={job} /></span>
+                  {(() => { const b = r.req?.deliver_to ?? single?.branch ?? null; return <span className="col-start-2 lg:col-start-auto text-[12px] font-semibold truncate" style={{ color: b && b !== 'WAREHOUSE' ? branchColor(b) : undefined }}>{branchLabel(b)}</span> })()}
+                  <span className="col-start-2 lg:col-start-auto lg:text-right font-mono text-[13px]">{total ? baht(total) : '—'}</span>
                   {(() => {
                     const a = alertOf(r)
                     return (
-                      <span className={cn('hidden md:block text-[12px]', a === 'late' ? 'text-red-600 dark:text-red-400 font-semibold' : a === 'soon' ? 'text-orange-600 dark:text-orange-400 font-semibold' : 'text-muted-foreground')}
+                      <span className={cn('col-start-2 lg:col-start-auto text-[12px]', a === 'late' ? 'text-red-600 dark:text-red-400 font-semibold' : a === 'soon' ? 'text-orange-600 dark:text-orange-400 font-semibold' : 'text-muted-foreground')}
                         title={a === 'late' ? 'Past needed by · not received' : a === 'soon' ? 'Needed soon · not ordered yet' : undefined}>
                         {r.req?.needed_by ? fmtDate(r.req.needed_by) : single?.needed_by ? fmtDate(single.needed_by) : '—'}{a === 'late' ? ' · late' : a === 'soon' ? ' · soon' : ''}
                       </span>
                     )
                   })()}
-                  <span className={cn('col-start-2 md:col-start-auto font-mono text-[12px] text-muted-foreground truncate', !poIds.length && 'hidden md:block')}>{poIds.length ? poIds.map((id) => <Link key={id} href="/anf-order/pos" className="underline mr-1">{poNum(id) ?? 'PO'}</Link>) : '—'}</span>
-                  <span className="col-start-2 md:col-start-auto"><span className={cn('rounded px-1.5 py-0.5 text-[11px] font-semibold whitespace-nowrap', REQ_STATUS[st.status].cls)}>{st.status === 'partial' ? `${st.received}/${st.total} received` : REQ_STATUS[st.status].label}</span></span>
+                  <span className={cn('col-start-2 lg:col-start-auto font-mono text-[12px] text-muted-foreground truncate', !poIds.length && 'hidden lg:block')}>{poIds.length ? poIds.map((id) => <Link key={id} href="/anf-order/pos" className="underline mr-1">{poNum(id) ?? 'PO'}</Link>) : '—'}</span>
+                  <span className="col-start-2 lg:col-start-auto"><span className={cn('rounded px-1.5 py-0.5 text-[11px] font-semibold whitespace-nowrap', REQ_STATUS[st.status].cls)}>{st.status === 'partial' ? `${st.received}/${st.total} received` : REQ_STATUS[st.status].label}</span></span>
                 </div>
               )
             })}

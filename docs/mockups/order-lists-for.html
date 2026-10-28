@@ -1,0 +1,105 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Requests &amp; POs Lists</title>
+<style>
+:root{--bg:#f2f0ea;--card:#faf9f6;--fg:#18181b;--mut:#71717a;--bd:#e4e2da;--sub:#ebe9e2;--pur:#7A5AA5;--gr:#15803d;--grb:#e7f4ec;--bl:#1d4ed8;--blb:#e6edfb;--am:#b45309;--amb:#fdf1dc;--rd:#dc2626;--rdb:#fdeaea;--or:#ea580c;--ov:rgba(24,24,27,.32)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c0c0d;--card:#18181b;--fg:#fafafa;--mut:#a1a1aa;--bd:#2a2a2e;--sub:#232327;--gr:#4ade80;--grb:#13261b;--bl:#93b4ff;--blb:#16203a;--am:#fbbf24;--amb:#2a210c;--rd:#f87171;--rdb:#2a1414;--or:#fb923c;--ov:rgba(0,0,0,.5)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,"Noto Sans Thai",sans-serif;padding:24px 16px}
+.w{max-width:1160px;margin:0 auto}
+h1{font-size:21px;margin:0 0 4px}.lead{color:var(--mut);margin:0 0 8px;max-width:800px}
+h2{font-size:12px;letter-spacing:.07em;color:var(--mut);margin:32px 0 10px;font-weight:700}
+.mono{font-family:ui-monospace,monospace}
+.small{font-size:12px;color:var(--mut)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.stage{background:var(--ov);border-radius:16px;padding:18px 12px;display:flex;justify-content:center}
+.dlg{background:var(--card);border-radius:14px;width:100%;max-width:640px;box-shadow:0 18px 44px rgba(0,0,0,.18);overflow:hidden}
+.dh{display:flex;align-items:center;gap:8px;padding:11px 16px;border-bottom:1px solid var(--bd)}
+.db{padding:12px 16px}
+.lbl{font:600 10.5px ui-monospace,monospace;letter-spacing:.06em;color:var(--mut);margin-bottom:5px}
+.seg{display:flex;border:1px solid var(--bd);border-radius:9px;padding:2px;width:max-content;margin-bottom:10px}
+.seg span{padding:5px 12px;border-radius:7px;font-size:13px}.seg .on{background:var(--fg);color:var(--bg);font-weight:600}
+.in{border:1.5px solid var(--bd);border-radius:8px;padding:9px 11px;background:var(--bg);font-size:13.5px}
+.in.ph{color:var(--mut)}.in.err{border-color:var(--rd)}
+.hint{font-size:12px;color:var(--mut);margin-top:5px}
+.row3{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.st{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.s-wait{background:var(--amb);color:var(--am)}.s-ap{background:var(--grb);color:var(--gr)}.s-or{background:var(--blb);color:var(--bl)}.s-dr{background:var(--sub);color:var(--mut)}.s-rc{background:var(--sub);color:var(--fg)}
+.for{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;margin-right:6px}
+.f-gen{background:var(--sub);color:var(--fg)}.f-ref{background:#FF5B3F1f;color:#e5401b}.f-prj{background:#7A5AA51f;color:var(--pur)}
+.tbl{background:var(--card);border:1px solid var(--bd);border-radius:12px;overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:860px}
+th{text-align:left;font:600 10px ui-monospace,monospace;letter-spacing:.06em;color:var(--mut);padding:8px 10px;border-bottom:1px solid var(--bd);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--bd);vertical-align:top}tr:last-child td{border-bottom:0}
+.r{text-align:right}
+.t{font-weight:700}.it{font-size:12px;color:var(--mut);margin-top:1px}
+.br{font-size:12px;font-weight:600}
+.late{color:var(--rd);font-weight:700}.soon{color:var(--or);font-weight:700}
+.em{font:700 9.5px ui-monospace,monospace;background:var(--rd);color:#fff;border-radius:4px;padding:1px 5px;margin-left:5px}
+.reqs div{font-size:12px;margin-bottom:2px}
+ul.k{margin:6px 0 0;padding-left:18px;font-size:13px}ul.k li{margin:3px 0}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px 16px}
+</style></head><body><div class="w">
+<h1>Requests &amp; POs: what each one is for</h1>
+<p class="lead">Every request names what it's for: <b>General</b>, <b>Stock refill</b> or <b>Project</b>. The name is required and the field guides people on what to write. Both lists then show what it's for, the branch, the items and the Needed by date. Sample data.</p>
+
+<h2>1 · REQUEST FORM: "FOR" + A REQUIRED NAME</h2>
+<div class="grid2">
+ <div class="stage"><div class="dlg">
+  <div class="dh"><b class="mono">REQ-2026-10-025</b><span class="st s-dr">Draft</span></div>
+  <div class="db">
+   <div class="lbl">FOR</div>
+   <div class="seg"><span class="on">General</span><span>Stock refill</span><span>Project</span></div>
+   <div class="lbl">WHAT IS THIS REQUEST? *</div>
+   <div class="in ph">e.g. Tape &amp; cable ties for the event team</div>
+   <div class="hint">One short line: what it's for. This becomes the title in the list.</div>
+   <div class="row3"><div><div class="lbl">NEEDED BY</div><div class="in">2 Nov</div></div><div><div class="lbl">DELIVER TO</div><div class="in">Warehouse ▾</div></div></div>
+  </div>
+ </div></div>
+ <div class="box">
+  <div class="lbl">PLACEHOLDER CHANGES WITH "FOR"</div>
+  <table style="min-width:0"><tr><th>FOR</th><th>GUIDE IN THE FIELD</th></tr>
+   <tr><td><span class="for f-gen">General</span></td><td class="small">e.g. Tape &amp; cable ties for the event team</td></tr>
+   <tr><td><span class="for f-ref">Stock refill</span></td><td class="small">e.g. Paper &amp; ink refill for Central (auto-filled from Reorder: "Refill · Central")</td></tr>
+   <tr><td><span class="for f-prj">Project</span></td><td class="small">e.g. Phuket branch refit, booth rebuild R2</td></tr>
+  </table>
+  <ul class="k" style="margin-top:12px">
+   <li><b>Required to submit.</b> An empty name shows "Write what this request is for".</li>
+   <li><b>General</b> is the default for New request. Reorder from Stock or Catalog picks <b>Stock refill</b> and fills in the name.</li>
+   <li>Import: the "project" column becomes the name; "Stock refill" rows become refill.</li>
+  </ul>
+ </div>
+</div>
+
+<h2>2 · REQUESTS LIST</h2>
+<div class="tbl"><table>
+ <tr><th>REQUEST</th><th>FOR</th><th>DELIVER TO</th><th class="r">TOTAL incl. VAT</th><th>NEEDED BY</th><th>PO</th><th>STATUS</th></tr>
+ <tr><td><div class="t">Tape &amp; cable ties for the event team</div><div class="it">Duct tape ×5 · Cable ties ×2</div><div class="small mono">REQ-2026-10-025 · Nong</div></td><td><span class="for f-gen">General</span></td><td class="br">Warehouse</td><td class="r mono">1,284</td><td>2 Nov</td><td>—</td><td><span class="st s-ap">Approved · to order</span></td></tr>
+ <tr><td><div class="t">Asus booth backdrop</div><div class="it">Backdrop 3×2m · LED panel ×2</div><div class="small mono">REQ-2026-10-021 · Sale A</div></td><td><span class="for f-prj">Project</span></td><td class="br">Warehouse</td><td class="r mono">24,610</td><td>2 Nov</td><td>—</td><td><span class="st s-wait">Wait for approval</span></td></tr>
+ <tr><td><div class="t">Refill · Central</div><div class="it">DNP 4×6 paper ×4</div><div class="small mono">REQ-2026-10-020 · Ops B</div></td><td><span class="for f-ref">Stock refill</span></td><td class="br" style="color:#3F6EA5">Central</td><td class="r mono">18,190</td><td class="soon">31 Oct · soon</td><td>—</td><td><span class="st s-wait">Wait for approval</span></td></tr>
+ <tr><td><div class="t">Refill · Siam</div><div class="it">Sleeve 4×6 ×10</div><div class="small mono">REQ-2026-10-018 · Ops B</div></td><td><span class="for f-ref">Stock refill</span></td><td class="br" style="color:#2E8A9A">Siam</td><td class="r mono">2,140</td><td class="late">27 Oct · late</td><td class="mono">PO…003</td><td><span class="st s-or">Ordered</span></td></tr>
+</table></div>
+<p class="small">The title is the name the person wrote. Under it are the first items, then the REQ number and who made it. The Deliver to branch has its own column in the branch colour.</p>
+
+<h2>3 · POs LIST</h2>
+<div class="tbl"><table>
+ <tr><th>PO</th><th>SUPPLIER</th><th>FOR (REQUESTS ON THIS PO)</th><th>DELIVER TO</th><th class="r">TOTAL</th><th>NEEDED BY</th><th>STATUS</th></tr>
+ <tr><td class="mono"><b>PO2026100007</b><span class="em">EMERGENCY</span></td><td>Sample Camera Shop<div class="it">2 items · 28 Oct</div></td>
+  <td class="reqs"><div><span class="for f-prj">Project</span>Asus booth backdrop <span class="small mono">REQ-021</span></div></td><td class="br">Warehouse</td><td class="r mono">24,610</td><td>2 Nov</td><td><span class="st s-or">Ordered</span></td></tr>
+ <tr><td class="mono"><b>PO2026100006</b></td><td>Sample Paper Co.<div class="it">3 items · 28 Oct</div></td>
+  <td class="reqs"><div><span class="for f-ref">Stock refill</span>Refill · Central <span class="small mono">REQ-020</span></div><div><span class="for f-ref">Stock refill</span>Refill · Siam <span class="small mono">REQ-018</span></div><div><span class="for f-gen">General</span>Tape &amp; cable ties <span class="small mono">REQ-025</span></div></td>
+  <td class="br"><span style="color:#3F6EA5">Central</span> · <span style="color:#2E8A9A">Siam</span> · Warehouse</td><td class="r mono">21,614</td><td class="late">27 Oct · late</td><td><span class="st s-dr">Draft</span></td></tr>
+ <tr><td class="mono"><b>PO2026100004</b></td><td>Sample Camera Shop<div class="it">2 items · 24 Oct</div></td>
+  <td class="reqs"><div><span class="for f-prj">Project</span>Lighting kit <span class="small mono">REQ-016</span></div></td><td class="br">Warehouse</td><td class="r mono">15,836</td><td>29 Oct</td><td><span class="st s-or">1/2 received</span></td></tr>
+</table></div>
+<p class="small">One supplier PO often collects several requests. Each one is listed with what it's for. Deliver to lists every branch involved. Needed by shows the <b>earliest</b> date on the PO, coloured if it's soon or late.</p>
+
+<h2>4 · RULES</h2>
+<div class="box"><ul class="k">
+ <li><b>For:</b> General (default) · Stock refill · Project. Old job-linked requests stay as they are.</li>
+ <li><b>Name required</b> for every type. The field's placeholder explains what to write, and Submit is blocked until it's filled.</li>
+ <li><b>Requests list:</b> name as the title, first items, For chip, Deliver to (branch colour), total, Needed by (soon / late), PO, status.</li>
+ <li><b>POs list:</b> requests on the PO (For + name + REQ), every delivery branch, the earliest Needed by.</li>
+ <li><b>Phone:</b> the same information stacks inside each row (title → items → For · branch · Needed by).</li>
+</ul></div>
+</div></body></html>

@@ -7,13 +7,13 @@ import { useHydrated } from '@/hooks/use-hydrated'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { ProjectChip, useMe, ReceiveDialog } from '@/components/anf/purchasing-ui'
+import { ProjectChip, projectTitle, branchLabel, useMe, ReceiveDialog } from '@/components/anf/purchasing-ui'
 import { useAuth } from '@/components/auth-provider'
 import { cn } from '@/lib/utils'
-import { ANF_ACCENT, baht, fmtDate, kindOf } from '@/lib/anf'
-import { usePurchasing, savePO, requestStatus, REQ_STATUS, requestTotal, lineTotalVat, isBuyer, logEvent } from '@/lib/supabase/purchasing'
+import { ANF_ACCENT, baht, fmtDate, kindOf, branchColor } from '@/lib/anf'
+import { usePurchasing, savePO, requestStatus, REQ_STATUS, requestTotal, lineTotalVat, isBuyer, logEvent, neededByAlert, thaiToday } from '@/lib/supabase/purchasing'
 import { useSuppliers, telHref, lineHref } from '@/lib/supabase/suppliers'
-import type { AnfOrder, AnfPO } from '@/types'
+import type { AnfOrder, AnfPO, AnfRequest } from '@/types'
 
 const PO_STATUS = { draft: { label: 'Draft', cls: 'bg-muted text-muted-foreground' }, cancelled: { label: 'Cancelled', cls: 'bg-muted text-muted-foreground line-through' } }
 
@@ -56,8 +56,8 @@ export default function POsPage() {
           </div>
         ) : (
           <div className="rounded-xl border border-border bg-card overflow-hidden">
-            <div className="hidden md:grid grid-cols-[130px_1.3fr_1.4fr_110px_120px_130px] gap-3 px-4 py-2 border-b border-border font-mono text-[10px] tracking-wide text-muted-foreground">
-              <span>PO</span><span>SUPPLIER</span><span>FROM REQUESTS</span><span className="text-right">TOTAL</span><span>FLOWACCOUNT</span><span>STATUS</span>
+            <div className="hidden lg:grid grid-cols-[150px_1.1fr_1.7fr_1fr_100px_100px_120px] gap-3 px-4 py-2 border-b border-border font-mono text-[10px] tracking-wide text-muted-foreground">
+              <span>PO</span><span>SUPPLIER</span><span>FOR (REQUESTS ON THIS PO)</span><span>DELIVER TO</span><span className="text-right">TOTAL</span><span>NEEDED BY</span><span>STATUS</span>
             </div>
             {list.map((p) => {
               const items = itemsOf(p.po_id)
@@ -66,12 +66,14 @@ export default function POsPage() {
               const sup = suppliers.find((s) => s.supplier_id === p.supplier_id)
               return (
                 <button key={p.po_id} type="button" onClick={() => setOpen(p)}
-                  className="w-full text-left grid grid-cols-1 md:grid-cols-[130px_1.3fr_1.4fr_110px_120px_130px] gap-x-3 gap-y-1 px-4 py-2.5 border-b border-border last:border-b-0 hover:bg-muted/40">
-                  <span className="font-mono text-[13px] font-semibold">{p.number}{p.emergency_by && <span className="ml-1.5 rounded bg-red-600 px-1 py-px text-[9.5px] font-bold tracking-wider text-white align-middle">EMERGENCY</span>}</span>
+                  className="w-full text-left grid grid-cols-1 lg:grid-cols-[150px_1.1fr_1.7fr_1fr_100px_100px_120px] gap-x-3 gap-y-1 px-4 py-2.5 border-b border-border last:border-b-0 hover:bg-muted/40">
+                  <span className="font-mono text-[13px] font-semibold">{p.number}{p.emergency_by && <span className="ml-1.5 rounded bg-red-600 px-1 py-px text-[9.5px] font-bold tracking-wider text-white align-middle">EMERGENCY</span>}
+                    <span className="block text-[11px] font-normal text-muted-foreground">{p.fa_doc_no ? `FlowAccount ✓ ${p.fa_doc_no}` : 'FlowAccount: not sent'}</span></span>
                   <span className="text-[13px]">{sup?.name ?? '—'}<span className="block text-[11px] text-muted-foreground">{items.length} item{items.length === 1 ? '' : 's'} · {fmtDate((p.created_at ?? '').slice(0, 10))}</span></span>
                   <ReqChips items={items} />
-                  <span className="md:text-right font-mono text-[13px]">{total ? baht(total) : '—'}</span>
-                  <span><span className="rounded px-1.5 py-0.5 text-[11px] font-semibold bg-muted text-muted-foreground">{p.fa_doc_no ? `✓ ${p.fa_doc_no}` : 'Not sent'}</span></span>
+                  <PODelivery items={items} />
+                  <span className="lg:text-right font-mono text-[13px]">{total ? baht(total) : '—'}</span>
+                  <PONeededBy items={items} />
                   <span>{p.status === 'ordered'
                     ? <span className={cn('rounded px-1.5 py-0.5 text-[11px] font-semibold', REQ_STATUS[st.status === 'to_order' ? 'ordered' : st.status].cls)}>{st.status === 'partial' ? `${st.received}/${st.total} received` : st.status === 'received' ? 'Received' : 'Ordered'}</span>
                     : <span className={cn('rounded px-1.5 py-0.5 text-[11px] font-semibold', PO_STATUS[p.status].cls)}>{PO_STATUS[p.status].label}</span>}</span>
@@ -86,18 +88,53 @@ export default function POsPage() {
   )
 }
 
+/** The requests on a PO: what each is for, its name and REQ number. */
 function ReqChips({ items }: { items: AnfOrder[] }) {
   const { requests } = usePurchasing()
   const wonJobs = useCRMStore((s) => s.wonJobs)
   const ids = [...new Set(items.map((o) => o.request_id ?? `single:${o.order_id}`))]
   return (
-    <span className="flex flex-wrap gap-1 items-start">
-      {ids.slice(0, 4).map((id) => {
+    <span className="flex flex-col gap-0.5 min-w-0">
+      {ids.slice(0, 3).map((id) => {
         const r = requests.find((x) => x.request_id === id) ?? null
         const job = r?.job_id ? wonJobs.find((j) => j.job_id === r.job_id) : null
-        return <span key={id} className="inline-flex items-center gap-1"><ProjectChip r={r} job={job} />{r?.project_kind === 'free' && <span className="text-[11px] text-muted-foreground">{r.project_name}</span>}</span>
+        const single = r ? undefined : items.find((o) => `single:${o.order_id}` === id)
+        return (
+          <span key={id} className="flex items-center gap-1.5 min-w-0 text-[12.5px]">
+            <ProjectChip r={r} job={job} />
+            <span className="truncate min-w-0">{projectTitle(r, job, single)}</span>
+            {r && <span className="shrink-0 font-mono text-[10.5px] text-muted-foreground">{r.number.replace(/^REQ-\d{4}-\d{2}-/, 'REQ-')}</span>}
+          </span>
+        )
       })}
-      {ids.length > 4 && <span className="text-[11px] text-muted-foreground">+{ids.length - 4}</span>}
+      {ids.length > 3 && <span className="text-[11px] text-muted-foreground">+{ids.length - 3} more</span>}
+    </span>
+  )
+}
+
+/** Every branch the PO's items go to (request's Deliver to, else the item's branch). */
+function PODelivery({ items }: { items: AnfOrder[] }) {
+  const { requests } = usePurchasing()
+  const branches = [...new Set(items.map((o) => requests.find((r) => r.request_id === o.request_id)?.deliver_to ?? o.branch ?? 'WAREHOUSE'))]
+  return (
+    <span className="text-[12px] font-semibold min-w-0">
+      {branches.map((b, i) => <span key={b}>{i > 0 && <span className="text-muted-foreground font-normal"> · </span>}<span style={{ color: b !== 'WAREHOUSE' ? branchColor(b) : undefined }}>{branchLabel(b)}</span></span>)}
+    </span>
+  )
+}
+
+/** Earliest Needed by among the PO's requests, coloured by the most urgent alert. */
+function PONeededBy({ items }: { items: AnfOrder[] }) {
+  const { requests } = usePurchasing()
+  const anfOrders = useCRMStore((s) => s.anfOrders)
+  const [today] = useState(() => thaiToday())
+  const reqs = [...new Set(items.map((o) => o.request_id).filter(Boolean))].map((id) => requests.find((r) => r.request_id === id)).filter((r): r is AnfRequest => !!r)
+  const dates = reqs.map((r) => r.needed_by).filter((d): d is string => !!d).sort()
+  const alerts = reqs.map((r) => neededByAlert(r, anfOrders.filter((o) => o.request_id === r.request_id), today))
+  const a = alerts.includes('late') ? 'late' : alerts.includes('soon') ? 'soon' : null
+  return (
+    <span className={cn('text-[12px]', a === 'late' ? 'text-red-600 dark:text-red-400 font-semibold' : a === 'soon' ? 'text-orange-600 dark:text-orange-400 font-semibold' : 'text-muted-foreground')}>
+      {dates[0] ? fmtDate(dates[0]) : '—'}{a ? ` · ${a}` : ''}
     </span>
   )
 }
