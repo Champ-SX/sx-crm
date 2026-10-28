@@ -124,7 +124,7 @@ function ItemsView() {
           </div>
           {isAdmin && <Button size="sm" className="h-10 gap-1.5 bg-[#7A5AA5] hover:opacity-90 text-white" onClick={() => void (q.trim() ? createFromSearch() : setEditing({ product_id: crypto.randomUUID(), board_id: activeBoardId || 'anf-order', name: '', code: null, category: 'other', unit: null, kind: 'supply' }))}><Plus className="w-4 h-4" />New item</Button>}
         </div>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex gap-1.5 overflow-x-auto -mx-4 px-4 pb-1 sm:mx-0 sm:px-0 sm:flex-wrap [&>*]:shrink-0">
           {chip('all', 'All')}
           {cats.map((c) => chip(`cat:${c}`, categoryMeta(c).en || categoryMeta(c).th))}
           {chip('asset', 'Assets')}{chip('low', 'Low stock')}{chip('nosup', 'No supplier')}
@@ -139,7 +139,31 @@ function ItemsView() {
             {needle && isAdmin && <Button size="sm" variant="outline" className="mt-3" onClick={() => void createFromSearch()}>＋ Create “{q.trim()}” as a new item</Button>}
           </div>
         ) : (
-          <div className="rounded-xl border border-border bg-card overflow-x-auto">
+          <>
+          {/* Phone: one card per item — stock on the right, supplier · price · Reorder underneath. */}
+          <div className="sm:hidden flex flex-col gap-2">
+            {shown.map((r) => {
+              const cm = categoryMeta(r.p.category || 'other')
+              return (
+                <div key={r.p.product_id} role="button" tabIndex={0} onClick={() => setOpen(r.p)} onKeyDown={(e) => { if (e.key === 'Enter') setOpen(r.p) }}
+                  className="grid grid-cols-[8px_1fr_auto] gap-x-2.5 gap-y-1 rounded-xl border border-border bg-card px-3 py-2.5 cursor-pointer active:bg-muted/40">
+                  <span className="row-span-2 rounded-[3px]" style={{ backgroundColor: cm.color }} />
+                  <span className="min-w-0">
+                    <b className="block truncate text-[14px]">{r.p.name}</b>
+                    <span className="block font-mono text-[11px] text-muted-foreground truncate">{[r.p.code, r.p.unit, r.asset ? 'ASSET' : null].filter(Boolean).join(' · ') || '—'}</span>
+                  </span>
+                  <span className={cn('text-right font-mono font-bold text-[15px] leading-tight', r.low && 'text-[#e5401b]')}>
+                    {r.qty}<span className="block text-[10px] font-semibold text-muted-foreground">{r.asset ? 'UNITS' : r.qty <= 0 ? 'OUT' : r.low ? 'LOW' : 'IN STOCK'}</span>
+                  </span>
+                  <span className="col-start-2 col-span-2 flex items-center gap-2 text-[12.5px] text-muted-foreground min-w-0">
+                    <span className="truncate">{r.supplier ? <>{r.pref?.preferred && <span className="text-amber-500">★ </span>}{r.supplier.name}{r.pref?.price != null && <> · <b className="font-mono text-foreground">{baht(r.pref.price)}</b></>}{r.last && <> · last {baht(r.last.unit_price)}</>}</> : <span className="text-amber-700 dark:text-amber-400">— no supplier</span>}</span>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); reorder(r) }} className="ml-auto shrink-0 h-7 rounded-md border border-[#7A5AA5] text-[#7A5AA5] px-2.5 text-[12px] font-medium">{r.asset ? 'Request' : 'Reorder'}</button>
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+          <div className="hidden sm:block rounded-xl border border-border bg-card overflow-x-auto">
             <table className="w-full text-[13px] min-w-[720px]">
               <thead><tr className="text-left font-mono text-[10px] tracking-wide text-muted-foreground border-b border-border">
                 <th className="px-4 py-2">ITEM</th><th className="px-2 py-2">★ SUPPLIER</th><th className="px-2 py-2 text-right">PRICE</th><th className="px-2 py-2 text-right">LAST PAID</th><th className="px-2 py-2 text-right">STOCK</th><th className="w-24" />
@@ -171,6 +195,7 @@ function ItemsView() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 

@@ -1,0 +1,81 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Catalog Mobile</title>
+<style>
+:root{--bg:#f2f0ea;--card:#faf9f6;--fg:#18181b;--mut:#71717a;--bd:#e4e2da;--sub:#ebe9e2;--pur:#7A5AA5;--or:#e5401b;--am:#b45309}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c0c0d;--card:#18181b;--fg:#fafafa;--mut:#a1a1aa;--bd:#2a2a2e;--sub:#232327;--am:#fbbf24}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,"Noto Sans Thai",sans-serif;padding:20px 16px}
+.wrap{display:flex;gap:28px;flex-wrap:wrap;justify-content:center}
+.col h2{font-size:12px;letter-spacing:.06em;color:var(--mut);margin:0 0 8px;font-weight:700;text-align:center}
+.phone{width:375px;max-width:100%;border:1px solid var(--bd);border-radius:28px;background:var(--bg);overflow:hidden;padding:12px 12px 20px}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.tabs{display:flex;border:1px solid var(--bd);border-radius:9px;padding:2px}.tabs span{padding:4px 12px;border-radius:7px;font-size:13px}.tabs .on{background:var(--fg);color:var(--bg);font-weight:600}
+.search{border:2px solid var(--bd);border-radius:10px;padding:9px 12px;color:var(--mut);background:var(--card);margin-bottom:8px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px}
+.chip{flex:0 0 auto;border:1px solid var(--bd);border-radius:999px;padding:3px 10px;font-size:12px;background:var(--card)}.chip.on{background:var(--fg);color:var(--bg)}.chip.low{color:var(--or)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;margin-bottom:8px;display:grid;grid-template-columns:8px 1fr auto;gap:4px 10px;align-items:start}
+.bar{grid-row:1/3;width:8px;align-self:stretch;border-radius:3px}
+.name{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.code{font:11px ui-monospace,monospace;color:var(--mut)}
+.stock{text-align:right;font:700 15px ui-monospace,monospace}.stock.low{color:var(--or)}
+.stock small{display:block;font:600 10px ui-monospace,monospace;color:var(--mut)}
+.meta{grid-column:2/4;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--mut);margin-top:2px}
+.meta b{color:var(--fg);font-family:ui-monospace,monospace}
+.meta .nos{color:var(--am)}
+.btn{margin-left:auto;border:1px solid var(--pur);color:var(--pur);border-radius:7px;padding:3px 10px;font-size:12px;font-weight:600}
+.star{color:#d69e00}
+.note{max-width:780px;margin:18px auto 0;font-size:13px;color:var(--mut)}
+.bad{position:relative;overflow:hidden}
+.tbl{background:var(--card);border:1px solid var(--bd);border-radius:12px;overflow:hidden;white-space:nowrap}
+.tbl div{display:flex;gap:16px;padding:10px 12px;border-bottom:1px solid var(--bd);font-size:13px}
+.tbl .h{font:600 10px ui-monospace,monospace;color:var(--mut)}
+.cut{position:absolute;right:0;top:0;bottom:0;width:40px;background:linear-gradient(90deg,transparent,var(--bg))}
+</style></head><body>
+<div class="wrap">
+ <div class="col"><h2>NOW · TABLE CUT OFF</h2>
+  <div class="phone bad">
+   <div class="top"><b>Catalog</b><div class="tabs"><span class="on">Items</span><span>Suppliers</span></div></div>
+   <div class="search">Search item, code, other na…</div>
+   <div class="tbl">
+    <div class="h"><span style="width:190px">ITEM</span><span>★ SUPPLIER</span><span>PRICE</span><span>STOCK</span></div>
+    <div><span style="width:190px"><b>กระดาษปริ้นท์ RX1</b></span><span style="color:var(--am)">— no supplier</span><span>—</span></div>
+    <div><span style="width:190px"><b>ซองใส ใส่รูป</b></span><span style="color:var(--am)">— no supplier</span></div>
+    <div><span style="width:190px"><b>Camera Canon R50</b></span><span style="color:var(--am)">— no supplier</span></div>
+   </div>
+   <div class="cut"></div>
+   <p style="font-size:12px;color:var(--or);margin:10px 4px 0">Price, stock and Reorder are off-screen →</p>
+  </div>
+ </div>
+
+ <div class="col"><h2>PROPOSED · ONE CARD PER ITEM</h2>
+  <div class="phone">
+   <div class="top"><b>Catalog</b><div class="tabs"><span class="on">Items</span><span>Suppliers</span></div><span style="margin-left:auto;background:var(--pur);color:#fff;border-radius:8px;padding:5px 10px;font-size:13px;font-weight:600">＋</span></div>
+   <div class="search">🔍 Search item, code, supplier…</div>
+   <div class="chips"><span class="chip on">All 8</span><span class="chip low">Low 3</span><span class="chip">Paper 4</span><span class="chip">Sleeve 1</span><span class="chip">Ink 2</span><span class="chip">Assets 1</span><span class="chip">No supplier 8</span></div>
+
+   <div class="card"><span class="bar" style="background:#3F6EA5"></span>
+    <span><div class="name">กระดาษปริ้นท์ RX1</div><div class="code">PAPER DNP RX1 4*6 · box</div></span>
+    <span class="stock low">6<small>LOW</small></span>
+    <div class="meta"><span class="star">★</span> Sample Paper · <b>2,450</b><span class="btn">Reorder</span></div>
+   </div>
+   <div class="card"><span class="bar" style="background:#3F6EA5"></span>
+    <span><div class="name">กรอบฟิล์มใส (ฟ้า)</div><div class="code">PAPER FRAME SKY</div></span>
+    <span class="stock low">0<small>OUT</small></span>
+    <div class="meta"><span class="nos">— no supplier</span><span class="btn">Reorder</span></div>
+   </div>
+   <div class="card"><span class="bar" style="background:#2E8A9A"></span>
+    <span><div class="name">ซองใส ใส่รูป</div><div class="code">ANDY PHOTO WALLET</div></span>
+    <span class="stock">15<small>IN STOCK</small></span>
+    <div class="meta"><span class="star">★</span> Sample Paper · <b>200</b> · last 190<span class="btn">Reorder</span></div>
+   </div>
+   <div class="card"><span class="bar" style="background:#C9772E"></span>
+    <span><div class="name">Camera Canon R50</div><div class="code">CAM-R50 · ASSET</div></span>
+    <span class="stock">2<small>UNITS</small></span>
+    <div class="meta"><span class="star">★</span> Sample Camera · <b>24,900</b><span class="btn">Request</span></div>
+   </div>
+  </div>
+ </div>
+</div>
+<p class="note">Below 640px, each item becomes a card: name and code on the left, stock (LOW / OUT in orange) on the right, and the ★ supplier, price and Reorder underneath. Nothing scrolls sideways. Tap a card to open the item drawer. Desktop keeps the table. The filter chips become one row you can swipe. Sample data.</p>
+</body></html>
