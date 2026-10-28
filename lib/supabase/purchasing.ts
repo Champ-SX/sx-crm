@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase, isSupabaseConfigured } from './client'
 import type { AnfOrder, AnfPO, AnfRequest } from '@/types'
+import { useCRMStore } from '@/store/crm-store'
+import { MOCK_REQUESTS, MOCK_POS, MOCK_PURCHASE_ITEMS } from './purchasing-mock'
 
 // Order board purchasing — Requests (by project) → POs (by supplier).
 // Items live in anf_orders (request_id / po_id). Shared module store like suppliers/assets.
@@ -16,7 +18,14 @@ const listeners = new Set<() => void>()
 const emit = () => listeners.forEach((f) => f())
 
 async function load() {
-  if (!isSupabaseConfigured) { loaded = true; emit(); return }
+  if (!isSupabaseConfigured) {
+    // Local dev (mock mode) — sample requests / POs / items to click through.
+    if (!loaded) {
+      requests = [...MOCK_REQUESTS]; pos = [...MOCK_POS]
+      if (useCRMStore.getState().anfOrders.length === 0) useCRMStore.setState({ anfOrders: [...MOCK_PURCHASE_ITEMS] })
+    }
+    loaded = true; emit(); return
+  }
   const [r, p] = await Promise.all([
     supabase.from('anf_requests').select('*').order('created_at', { ascending: false }),
     supabase.from('anf_pos').select('*').order('created_at', { ascending: false }),
