@@ -296,7 +296,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
                 )}
               </div>
             </div>
-            <div><label className="field-label">Needed by</label><input type="date" value={r.needed_by ?? ''} onChange={(e) => patch({ needed_by: e.target.value || null })} className={inputCls} /></div>
+            <div><label className="field-label">Needed by</label><input type="date" value={r.needed_by ?? ''} onChange={(e) => patch({ needed_by: e.target.value || null, soon_notified_at: null, late_notified_at: null })} className={inputCls} /></div>
             <div><label className="field-label">Deliver to</label>
               <select value={r.deliver_to ?? ''} onChange={(e) => patch({ deliver_to: e.target.value || null })} className={inputCls}>
                 {SEED_BRANCHES.map((b) => <option key={b} value={b}>{b === 'WAREHOUSE' ? 'Warehouse' : b}</option>)}

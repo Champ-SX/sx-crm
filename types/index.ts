@@ -215,6 +215,8 @@ export interface AnfRequest {
   approved_by?: string | null
   approved_at?: string | null
   rejected_reason?: string | null
+  soon_notified_at?: string | null   // needed-by alerts (cron) — each fires once
+  late_notified_at?: string | null
   created_at?: string
   updated_at?: string
 }

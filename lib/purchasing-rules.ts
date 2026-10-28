@@ -63,3 +63,26 @@ export const itemTotal = (o: Pick<AnfOrder, 'quantity' | 'unit_price'>) => (o.qu
 
 /** ฿10,000 or more (incl. VAT) needs the approver; anything under is approved on submit. */
 export const needsApproval = (totalThb: number) => totalThb >= APPROVAL_LIMIT_THB
+
+/** Days before "Needed by" when an unordered request starts to warn. */
+export const NEEDED_SOON_DAYS = 3
+/** Today's date in Thai time (YYYY-MM-DD) — dates are compared as calendar days. */
+export const thaiToday = (nowMs = Date.now()) => new Date(nowMs + 7 * 3600_000).toISOString().slice(0, 10)
+const dayDiff = (a: string, b: string) => Math.round((Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 86_400_000)
+
+/**
+ * Needed-by state of a submitted request:
+ * 'late' = past Needed by and something not received; 'soon' = within NEEDED_SOON_DAYS and something not ordered yet.
+ * Drafts / rejected requests and requests without a date never alert.
+ */
+export function neededByAlert(r: Pick<AnfRequest, 'needed_by' | 'status'> | null, items: Pick<AnfOrder, 'status' | 'archived_at'>[], today: string): 'soon' | 'late' | null {
+  if (!r?.needed_by) return null
+  const appr = approvalOf(r as AnfRequest)
+  if (appr !== 'pending' && appr !== 'approved') return null
+  const live = items.filter((o) => !o.archived_at || o.status === 'received')
+  if (!live.length) return null
+  const left = dayDiff(r.needed_by, today)
+  if (left < 0 && live.some((o) => o.status !== 'received')) return 'late'
+  if (left >= 0 && left <= NEEDED_SOON_DAYS && live.some((o) => o.status === 'to_order')) return 'soon'
+  return null
+}

@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import webpush from 'web-push'
 import { createClient } from '@supabase/supabase-js'
+import { neededByAlert, thaiToday } from '@/lib/purchasing-rules'
+import type { AnfOrder, AnfRequest } from '@/types'
+
+// Same accounts as lib/supabase/purchasing.ts (kept here so the cron needs no client code).
+const BUYER_EMAIL = 'admin@sixsheet.me'
+const APPROVER_EMAIL = 'champ@sixsheet.me'
 
 // Phase 2.7 — fired by Supabase pg_cron (via pg_net) every few minutes.
 // Finds Won jobs whose reminder time has arrived, notifies the owner + assignees
@@ -146,5 +152,62 @@ export async function POST(req: NextRequest) {
     console.warn('[cron/due-notify] anf_orders skipped (pre-migration?)', e)
   }
 
-  return NextResponse.json({ ok: true, notified, anfNotified })
+  // ── Order requests: "Needed by" alerts ───────────────────────────────────
+  // soon → not ordered yet, ≤3 days left: buyer (or Champ while it still waits for approval).
+  // late → past Needed by, not all received: buyer + requester. Each stamped so it fires once.
+  let reqNotified = 0
+  try {
+    const today = thaiToday(now)
+    const { data: reqs } = await sb
+      .from('anf_requests')
+      .select('request_id, number, project_name, needed_by, status, created_by, created_by_id, soon_notified_at, late_notified_at')
+      .not('needed_by', 'is', null)
+      .in('status', ['pending', 'approved'])
+    const open = (reqs ?? []).filter((r) => !r.late_notified_at)
+    const ids = open.map((r) => r.request_id as string)
+    const { data: lines } = ids.length
+      ? await sb.from('anf_orders').select('request_id, status, archived_at').in('request_id', ids)
+      : { data: [] as { request_id: string; status: string; archived_at: string | null }[] }
+    const buyer = byName.get(BUYER_EMAIL)
+    const approver = byName.get(APPROVER_EMAIL)
+    for (const r of open) {
+      const items = (lines ?? []).filter((l) => l.request_id === r.request_id) as { status: AnfOrder['status']; archived_at: string | null }[]
+      const alert = neededByAlert(r as { needed_by: string; status: AnfRequest['status'] }, items, today)
+      if (!alert || (alert === 'soon' && r.soon_notified_at)) continue
+      const when = new Date(`${r.needed_by}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+      const recipients = new Set<string>()
+      if (alert === 'soon') {
+        const who = r.status === 'pending' ? approver : buyer
+        if (who) recipients.add(who.id)
+      } else {
+        if (buyer) recipients.add(buyer.id)
+        const requester = (r.created_by_id && userById.get(r.created_by_id as string)) || (r.created_by ? byName.get((r.created_by as string).toLowerCase()) : undefined)
+        if (requester) recipients.add(requester.id)
+      }
+      const message = alert === 'late'
+        ? `was needed by ${when} · not received yet`
+        : r.status === 'pending' ? `needed by ${when} · still waiting for your approval` : `needed by ${when} · not ordered yet`
+      const title = `${r.number}${r.project_name ? ` · ${r.project_name}` : ''}`
+      for (const rid of recipients) {
+        const u = userById.get(rid)
+        try {
+          await sb.from('notifications').insert({
+            recipient_id: rid, recipient_name: u?.name || u?.email || '', actor: 'Reminder',
+            entity_type: 'anf_request', entity_id: r.request_id, entity_name: title, message, read: false, board_id: 'anf-order',
+          })
+        } catch (e) { console.warn('[cron] request alert insert skipped', e) }
+        const { data: subs } = await sb.from('push_subscriptions').select('subscription').eq('user_id', rid)
+        if (subs?.length && vapidPublic && vapidPrivate) {
+          const payload = JSON.stringify({ title: alert === 'late' ? 'Order late' : 'Order needed soon', body: `${title} — ${message}`, url: '/anf-order' })
+          await Promise.allSettled(subs.map((s) => webpush.sendNotification(s.subscription, payload)))
+        }
+      }
+      await sb.from('anf_requests').update(alert === 'late' ? { late_notified_at: new Date().toISOString() } : { soon_notified_at: new Date().toISOString() }).eq('request_id', r.request_id)
+      reqNotified++
+    }
+  } catch (e) {
+    console.warn('[cron/due-notify] request alerts skipped (pre-migration?)', e)
+  }
+
+  return NextResponse.json({ ok: true, notified, anfNotified, reqNotified })
 }

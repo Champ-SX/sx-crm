@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { AnfOrder, AnfRequest } from '@/types'
-import { requestTotal, needsApproval, approvalOf, requestStatus, lineRules, receivePlan, APPROVAL_LIMIT_THB } from './purchasing-rules'
+import { requestTotal, needsApproval, approvalOf, requestStatus, lineRules, receivePlan, neededByAlert, thaiToday, APPROVAL_LIMIT_THB } from './purchasing-rules'
 
 const line = (p: Partial<AnfOrder> = {}): AnfOrder => ({
   order_id: 'o1', item: 'Paper', quantity: 1, unit_price: 100, with_vat: true, branch: null, ordered_at: null, needed_by: null,
@@ -86,5 +86,30 @@ describe('receiving', () => {
 describe('draft PO', () => {
   it('an item on a draft PO is still "to order"', () => {
     expect(requestStatus([line({ po_id: 'p1', status: 'to_order' })], req({ status: 'approved' })).status).toBe('to_order')
+  })
+})
+
+describe('needed-by alerts', () => {
+  const today = '2026-10-28'
+  const ap = (needed_by: string | null) => req({ status: 'approved', needed_by })
+  it('warns 3 days before when nothing is ordered yet', () => {
+    expect(neededByAlert(ap('2026-10-31'), [line()], today)).toBe('soon')
+    expect(neededByAlert(ap('2026-11-01'), [line()], today)).toBeNull()
+    expect(neededByAlert(ap('2026-10-28'), [line()], today)).toBe('soon')
+  })
+  it('does not warn "soon" once everything is ordered', () => {
+    expect(neededByAlert(ap('2026-10-30'), [line({ status: 'ordered' })], today)).toBeNull()
+  })
+  it('is late after the date until everything is received', () => {
+    expect(neededByAlert(ap('2026-10-27'), [line({ status: 'ordered' })], today)).toBe('late')
+    expect(neededByAlert(ap('2026-10-27'), [line({ status: 'received' })], today)).toBeNull()
+  })
+  it('ignores drafts, rejected requests and requests without a date', () => {
+    expect(neededByAlert(req({ status: 'draft', needed_by: '2026-10-27' }), [line()], today)).toBeNull()
+    expect(neededByAlert(req({ status: 'rejected', needed_by: '2026-10-27' }), [line()], today)).toBeNull()
+    expect(neededByAlert(ap(null), [line()], today)).toBeNull()
+  })
+  it('uses Thai calendar days', () => {
+    expect(thaiToday(Date.parse('2026-10-28T18:30:00Z'))).toBe('2026-10-29')
   })
 })

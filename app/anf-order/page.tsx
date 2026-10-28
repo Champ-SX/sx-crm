@@ -11,7 +11,7 @@ import { OrderDialog } from '@/components/anf/order-dialog'
 import { RequestDialog, CreatePODialog, ImportDialog, ProjectChip, projectTitle } from '@/components/anf/purchasing-ui'
 import { cn } from '@/lib/utils'
 import { ANF_ACCENT, baht, fmtDate } from '@/lib/anf'
-import { usePurchasing, requestStatus, REQ_STATUS, requestTotal, approvalOf, isApprover, isBuyer, type ReqStatus } from '@/lib/supabase/purchasing'
+import { usePurchasing, requestStatus, REQ_STATUS, requestTotal, approvalOf, isApprover, isBuyer, neededByAlert, thaiToday, type ReqStatus } from '@/lib/supabase/purchasing'
 import { useAuth } from '@/components/auth-provider'
 import { useOpenDeepLink } from '@/hooks/use-open-deep-link'
 import { useSuppliers } from '@/lib/supabase/suppliers'
@@ -30,7 +30,8 @@ export default function RequestsPage() {
   const approver = isApprover(user?.email, role)
   const buyer = isBuyer(user?.email, role)   // only the buyer bulk-selects requests into POs
   useSuppliers()
-  const [pick, setFilter] = useState<'open' | ReqStatus | 'all' | null>(null)
+  const [pick, setFilter] = useState<'open' | ReqStatus | 'all' | 'late' | null>(null)
+  const [today] = useState(() => thaiToday())
   const [q, setQ] = useState('')
   const [selected, setSelected] = useState<string[]>([])
   const [openReq, setOpenReq] = useState<AnfRequest | 'new' | null>(null)
@@ -55,12 +56,15 @@ export default function RequestsPage() {
   const poNum = (id: string) => pos.find((p) => p.po_id === id)?.number
   const counts: Record<string, number> = {}
   for (const r of rows) { const s = requestStatus(r.items, r.req).status; counts[s] = (counts[s] ?? 0) + 1 }
+  const alertOf = (r: ReqRow) => neededByAlert(r.req, r.items, today)
+  const lateCount = rows.filter((r) => alertOf(r) === 'late').length
   // Approver lands on what's waiting for them; everyone else on open requests.
   const filter = pick ?? (approver && counts.pending ? 'pending' : 'open')
   const needle = q.trim().toLowerCase()
   const shown = rows.filter((r) => {
     const s = requestStatus(r.items, r.req).status
-    if (filter === 'open' ? s === 'received' || (r.items.every((o) => o.archived_at) && r.items.length > 0) : filter !== 'all' && s !== filter) return false
+    if (filter === 'late') { if (alertOf(r) !== 'late') return false }
+    else if (filter === 'open' ? s === 'received' || (r.items.every((o) => o.archived_at) && r.items.length > 0) : filter !== 'all' && s !== filter) return false
     if (!needle) return true
     const job = jobOf(r.req)
     return [r.req?.number, r.req?.project_name, job?.job_number, projectTitle(r.req, job), ...r.items.map((o) => o.item)].some((v) => (v ?? '').toLowerCase().includes(needle))
@@ -97,7 +101,7 @@ export default function RequestsPage() {
       </div>
 
       <div className="px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center gap-2 border-b border-border/60">
-        {chip('open', 'Open')}{chip('pending', 'Wait for approval', counts.pending)}{chip('to_order', 'To order', counts.to_order)}{chip('ordered', 'Ordered', counts.ordered)}{chip('partial', 'Partly received', counts.partial)}{chip('received', 'Received', counts.received)}{chip('rejected', 'Rejected', counts.rejected)}{counts.draft ? chip('draft', 'Draft', counts.draft) : null}{chip('all', 'All')}
+        {chip('open', 'Open')}{lateCount ? chip('late', 'Late', lateCount) : null}{chip('pending', 'Wait for approval', counts.pending)}{chip('to_order', 'To order', counts.to_order)}{chip('ordered', 'Ordered', counts.ordered)}{chip('partial', 'Partly received', counts.partial)}{chip('received', 'Received', counts.received)}{chip('rejected', 'Rejected', counts.rejected)}{counts.draft ? chip('draft', 'Draft', counts.draft) : null}{chip('all', 'All')}
         <div className="relative ml-auto w-full sm:w-64">
           <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search item, project, REQ…" className="h-8 w-full rounded-lg border border-border bg-background pl-8 pr-2 text-[13px] outline-none focus:border-foreground/40" />
@@ -139,7 +143,15 @@ export default function RequestsPage() {
                   </button>
                   <span className="col-start-2 md:col-start-auto text-[13px] text-muted-foreground md:text-foreground">{r.items.length}{manual ? <span className="text-muted-foreground text-[11px]"> · {manual} manual</span> : null}</span>
                   <span className="col-start-2 md:col-start-auto md:text-right font-mono text-[13px]">{total ? baht(total) : '—'}</span>
-                  <span className="hidden md:block text-[12px] text-muted-foreground">{r.req?.needed_by ? fmtDate(r.req.needed_by) : single?.needed_by ? fmtDate(single.needed_by) : '—'}</span>
+                  {(() => {
+                    const a = alertOf(r)
+                    return (
+                      <span className={cn('hidden md:block text-[12px]', a === 'late' ? 'text-red-600 dark:text-red-400 font-semibold' : a === 'soon' ? 'text-orange-600 dark:text-orange-400 font-semibold' : 'text-muted-foreground')}
+                        title={a === 'late' ? 'Past needed by · not received' : a === 'soon' ? 'Needed soon · not ordered yet' : undefined}>
+                        {r.req?.needed_by ? fmtDate(r.req.needed_by) : single?.needed_by ? fmtDate(single.needed_by) : '—'}{a === 'late' ? ' · late' : a === 'soon' ? ' · soon' : ''}
+                      </span>
+                    )
+                  })()}
                   <span className={cn('col-start-2 md:col-start-auto font-mono text-[12px] text-muted-foreground truncate', !poIds.length && 'hidden md:block')}>{poIds.length ? poIds.map((id) => <Link key={id} href="/anf-order/pos" className="underline mr-1">{poNum(id) ?? 'PO'}</Link>) : '—'}</span>
                   <span className="col-start-2 md:col-start-auto"><span className={cn('rounded px-1.5 py-0.5 text-[11px] font-semibold whitespace-nowrap', REQ_STATUS[st.status].cls)}>{st.status === 'partial' ? `${st.received}/${st.total} received` : REQ_STATUS[st.status].label}</span></span>
                 </div>
