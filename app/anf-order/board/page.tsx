@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
@@ -9,9 +10,8 @@ import { UserAvatar } from '@/components/shared/user-avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { type AnfOrder, type AnfOrderStatus } from '@/types'
-import { Plus, Bell, Package, ChevronDown, Check } from 'lucide-react'
+import { Bell, Package } from 'lucide-react'
 import { OrderDialog } from '@/components/anf/order-dialog'
 import { AssigneeFilter, matchesAssigneeFilter, ASSIGNEE_FILTER_ALL } from '@/components/shared/assignee-picker'
 import { STATUS, statusMeta, branchColor, baht, lineTotal, fmtDate } from '@/lib/anf'
@@ -93,9 +93,7 @@ export default function AnfOrderPage() {
           <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight leading-none">Order</h1>
           <p className="font-mono text-[12px] text-muted-foreground mt-1">{openCount} open · {baht(toOrderValue)} to order</p>
         </div>
-        <Button size="sm" className="ml-auto h-9 gap-1.5 bg-[#7A5AA5] hover:opacity-90 text-white" onClick={() => setCreating(true)}>
-          <Plus className="w-4 h-4" /> New order
-        </Button>
+        <Link href="/anf-order" className="ml-auto text-[13px] underline">Order history (read-only) · new orders go in Requests →</Link>
       </div>
 
       {/* Filters */}
@@ -131,9 +129,6 @@ export default function AnfOrderPage() {
             <Package className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-sm font-medium text-foreground">No orders yet</p>
             <p className="text-[12px] text-muted-foreground mt-1">Add stock or consumables that need ordering.</p>
-            <Button size="sm" className="mt-4 gap-1.5 bg-[#7A5AA5] hover:opacity-90 text-white" onClick={() => setCreating(true)}>
-              <Plus className="w-4 h-4" /> New order
-            </Button>
           </div>
         ) : (
           <>
@@ -258,31 +253,14 @@ function FilterChip({ label, on, onClick, dot, color }: { label: string; on: boo
   )
 }
 
-// Inline status dropdown — change status from the board without opening the editor.
+// Status pill (read-only).
 function StatusInline({ order, onReceive }: { order: AnfOrder; onReceive: (o: AnfOrder) => void }) {
-  const updateAnfOrder = useCRMStore((s) => s.updateAnfOrder)
+  // Read-only: items move through Requests → POs → Receive, not by hand here.
+  void onReceive
   const st = statusMeta(order.status)
   return (
-    <span onClick={(e) => e.stopPropagation()}>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          aria-label="Change status"
-          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/60 pl-2 pr-2 py-1 hover:bg-muted transition-colors"
-        >
-          <span className="inline-flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-wide whitespace-nowrap">
-            <span className={`w-2 h-2 rounded-full ${st.dot}`} />{st.label}
-          </span>
-          <ChevronDown className="w-3 h-3 text-muted-foreground" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="min-w-[140px]">
-          {STATUS.map((s) => (
-            <DropdownMenuItem key={s.key} onClick={() => { if (s.key === order.status) return; if (s.key === 'received') onReceive(order); else void updateAnfOrder(order.order_id, { status: s.key }) }} className="text-xs gap-2 cursor-pointer font-mono uppercase tracking-wide">
-              <span className={`w-2 h-2 rounded-full ${s.dot}`} />{s.label}
-              {s.key === order.status && <Check className="w-3.5 h-3.5 ml-auto text-muted-foreground" />}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/60 px-2 py-1 font-mono text-[10.5px] uppercase tracking-wide whitespace-nowrap">
+      <span className={`w-2 h-2 rounded-full ${st.dot}`} />{st.label}
     </span>
   )
 }

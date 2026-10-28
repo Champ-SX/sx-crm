@@ -10,9 +10,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
-import { type AnfStock, type AnfProduct } from '@/types'
+import { type AnfStock, type AnfProduct, type AnfOrder } from '@/types'
 import { Boxes, Plus, Trash2, ShoppingCart, Package, MoreHorizontal, Copy, Share2, Check } from 'lucide-react'
-import { OrderDialog, type OrderPrefill } from '@/components/anf/order-dialog'
+import { RequestDialog, CreatePODialog, type RequestPrefill } from '@/components/anf/purchasing-ui'
+import { usePurchasing } from '@/lib/supabase/purchasing'
 import { ProductPicker } from '@/components/anf/product-picker'
 import { ProductDialog } from '@/components/anf/product-dialog'
 import { AssetsView } from '@/components/anf/assets-view'
@@ -38,12 +39,14 @@ export default function AnfStockPage() {
   const anfStock = useCRMStore((s) => s.anfStock)
   const anfOrders = useCRMStore((s) => s.anfOrders)
   const anfProducts = useCRMStore((s) => s.anfProducts)
+  usePurchasing()   // requests / POs loaded, so Reorder numbers correctly and knows what's on order
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
   const [tab, setTab] = useState<string>(WAREHOUSE)
   const [lowOnly, setLowOnly] = useState(false)
   const [editing, setEditing] = useState<AnfStock | null>(null)
   const [creating, setCreating] = useState(false)
-  const [orderPrefill, setOrderPrefill] = useState<OrderPrefill | null>(null)
+  const [orderPrefill, setOrderPrefill] = useState<RequestPrefill | null>(null)
+  const [poItems, setPoItems] = useState<AnfOrder[] | null>(null)
   const [transferRow, setTransferRow] = useState<AnfStock | null>(null)
   const [editProductRow, setEditProductRow] = useState<AnfProduct | null>(null)
 
@@ -124,7 +127,10 @@ export default function AnfStockPage() {
 
   function raiseOrder(item: string, branch: string | null, stock_id: string | null) {
     const src = stock_id ? rows.find((r) => r.stock_id === stock_id) : rows.find((r) => r.item === item && r.branch === branch)
-    setOrderPrefill({ item, branch, stock_id, unit_price: lastPrice.get(item), description: src?.description ?? null, product_id: src?.product_id ?? null })
+    // Suggest topping back up to twice the alert level.
+    const quantity = src?.alert_qty != null ? Math.max(1, src.alert_qty * 2 - src.qty) : 1
+    const product = src?.product_id ? null : anfProducts.find((p) => p.name === item)
+    setOrderPrefill({ item, branch, unit_price: lastPrice.get(item), description: src?.description ?? product?.code ?? null, product_id: src?.product_id ?? product?.product_id ?? null, quantity })
   }
   const addAnfStock = useCRMStore((s) => s.addAnfStock)
   function duplicateStock(row: AnfStock) {
@@ -217,7 +223,8 @@ export default function AnfStockPage() {
       </div>
 
       {(creating || editing) && <StockDialog key={editing?.stock_id ?? 'new'} row={editing} onClose={() => { setCreating(false); setEditing(null) }} onRaise={raiseOrder} onTransfer={setTransferRow} onDuplicate={duplicateStock} />}
-      {orderPrefill && <OrderDialog order={null} prefill={orderPrefill} onClose={() => setOrderPrefill(null)} />}
+      {orderPrefill && <RequestDialog request={null} prefill={orderPrefill} onClose={() => setOrderPrefill(null)} onCreatePO={(items) => { setOrderPrefill(null); setPoItems(items) }} />}
+      {poItems && <CreatePODialog items={poItems} onClose={() => setPoItems(null)} />}
       {transferRow && <TransferDialog row={transferRow} onClose={() => setTransferRow(null)} />}
       {editProductRow && <ProductDialog product={editProductRow} onClose={() => setEditProductRow(null)} />}
     </div>
@@ -331,7 +338,7 @@ function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransf
                         <td className="px-4 py-3 font-mono text-[11px] whitespace-nowrap">{r.delivered_at ? <span className="text-[#3f9d5b]">↓ {fmtDate(r.delivered_at)}{r.sign && <span className="block text-[10px] text-muted-foreground">by {r.sign}</span>}</span> : <span className="text-muted-foreground/40">— never</span>}</td>
                         <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                           {st !== 'ok' && !onOrder.has(r.item) && (
-                            <button onClick={() => onRaise(r.item, r.branch, r.stock_id.startsWith('virtual:') ? null : r.stock_id)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1 hover:bg-[#7A5AA5]/10 whitespace-nowrap"><ShoppingCart className="w-3 h-3" />Order</button>
+                            <button onClick={() => onRaise(r.item, r.branch, r.stock_id.startsWith('virtual:') ? null : r.stock_id)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1 hover:bg-[#7A5AA5]/10 whitespace-nowrap"><ShoppingCart className="w-3 h-3" />Reorder</button>
                           )}
                         </td>
                       </tr>
@@ -377,7 +384,7 @@ function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransf
                           <button onClick={() => onTransfer(r)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#5B6470] text-[#5B6470] rounded-md px-2 py-1"><Package className="w-3 h-3" />Move</button>
                         )}
                         {st !== 'ok' && !onOrder.has(r.item) && (
-                          <button onClick={() => onRaise(r.item, r.branch, r.stock_id.startsWith('virtual:') ? null : r.stock_id)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1"><ShoppingCart className="w-3 h-3" />Order</button>
+                          <button onClick={() => onRaise(r.item, r.branch, r.stock_id.startsWith('virtual:') ? null : r.stock_id)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1"><ShoppingCart className="w-3 h-3" />Reorder</button>
                         )}
                       </span>
                     </div>
@@ -448,7 +455,7 @@ function TotalPivot({ rows, branches, lowOnly, onOrder, onRaise }: {
                       <td className="px-4 py-3">{onOrder.has(i.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5]">● on order</span> : <StateFlag s={st} />}</td>
                       <td className="px-3 py-3 text-right">
                         {st !== 'ok' && !onOrder.has(i.item) && (
-                          <button onClick={() => onRaise(i.item, null, null)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1 hover:bg-[#7A5AA5]/10 whitespace-nowrap"><ShoppingCart className="w-3 h-3" />Order</button>
+                          <button onClick={() => onRaise(i.item, null, null)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1 hover:bg-[#7A5AA5]/10 whitespace-nowrap"><ShoppingCart className="w-3 h-3" />Reorder</button>
                         )}
                       </td>
                     </tr>
@@ -834,7 +841,7 @@ function StockDialog({ row, onClose, onRaise, onTransfer, onDuplicate }: {
           {isEdit && row && (
             <div className="flex flex-wrap gap-2 px-5 pt-3 pb-1">
               <button onClick={() => { onTransfer(row); onClose() }} className="inline-flex items-center gap-1.5 text-sm text-[#5B6470] border border-[#5B6470] rounded-md px-3 h-9 hover:bg-[#5B6470]/10"><Package className="w-4 h-4" /> Move stock</button>
-              <button onClick={() => { onRaise(row.item, row.branch, row.stock_id); onClose() }} className="inline-flex items-center gap-1.5 text-sm text-[#7A5AA5] border border-[#7A5AA5] rounded-md px-3 h-9 hover:bg-[#7A5AA5]/10"><ShoppingCart className="w-4 h-4" /> Raise order</button>
+              <button onClick={() => { onRaise(row.item, row.branch, row.stock_id); onClose() }} className="inline-flex items-center gap-1.5 text-sm text-[#7A5AA5] border border-[#7A5AA5] rounded-md px-3 h-9 hover:bg-[#7A5AA5]/10"><ShoppingCart className="w-4 h-4" /> Reorder</button>
             </div>
           )}
           <div className="flex justify-end items-center gap-2 px-5 py-3">

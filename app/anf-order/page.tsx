@@ -36,7 +36,6 @@ export default function RequestsPage() {
   const [openItem, setOpenItem] = useState<AnfOrder | null>(null)
   const [poItems, setPoItems] = useState<AnfOrder[] | null>(null)
   const [importing, setImporting] = useState(false)
-  const [quick, setQuick] = useState(false)
 
   const onBoard = (b?: string | null) => !activeBoardId || !b || b === activeBoardId
   const rows: ReqRow[] = useMemo(() => {
@@ -91,7 +90,6 @@ export default function RequestsPage() {
         </div>
         <span className="ml-auto flex flex-wrap items-center gap-2">
           <Button size="sm" variant="outline" className="h-9 gap-1.5" onClick={() => setImporting(true)}><Upload className="w-4 h-4" />Import</Button>
-          <Button size="sm" variant="outline" className="h-9 gap-1.5" onClick={() => setQuick(true)}>Quick order</Button>
           <Button size="sm" className="h-9 gap-1.5 bg-[#7A5AA5] hover:opacity-90 text-white" onClick={() => setOpenReq('new')}><Plus className="w-4 h-4" />New request</Button>
         </span>
       </div>
@@ -109,7 +107,7 @@ export default function RequestsPage() {
           <div className="text-center py-20">
             <ClipboardList className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-sm font-medium">No requests here</p>
-            <p className="text-[12px] text-muted-foreground mt-1">＋Order a LOW/OUT item from Stock, start a New request, or Import a list.</p>
+            <p className="text-[12px] text-muted-foreground mt-1">Reorder a LOW/OUT item from Stock, start a New request, or Import a list.</p>
           </div>
         ) : (
           <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -162,7 +160,6 @@ export default function RequestsPage() {
 
       {openReq && <RequestDialog request={openReq === 'new' ? null : openReq} onClose={() => setOpenReq(null)} onCreatePO={(items) => setPoItems(items)} />}
       {openItem && <OrderDialog order={openItem} onClose={() => setOpenItem(null)} />}
-      {quick && <OrderDialog order={null} onClose={() => setQuick(false)} />}
       {poItems && <CreatePODialog items={poItems} onClose={() => setPoItems(null)} onDone={() => setSelected([])} />}
       {importing && <ImportDialog onClose={() => setImporting(false)} />}
     </div>

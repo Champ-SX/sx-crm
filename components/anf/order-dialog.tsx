@@ -13,10 +13,11 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
+import { ReceiveDialog } from '@/components/anf/purchasing-ui'
 import { VAT_RATE, type AnfOrder, type AnfOrderStatus, type AnfRemindOption } from '@/types'
 import { Plus, Trash2, Archive } from 'lucide-react'
 import {
-  ANF_ACCENT, STATUS, statusMeta, SEED_BRANCHES, branchColor, REMIND, baht, computeRemindAt,
+  ANF_ACCENT, statusMeta, SEED_BRANCHES, branchColor, REMIND, baht, computeRemindAt,
 } from '@/lib/anf'
 
 // Prefill when raising an order from a low stock row (the Stock⇄Order loop).
@@ -55,7 +56,8 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
   const [requestedBy, setRequestedBy] = useState(order?.requested_by ?? '')
   const [orderedBy, setOrderedBy] = useState(order ? (order.ordered_by ?? '') : myName)
   const [assigneeIds, setAssigneeIds] = useState<string[]>(order?.assignee_ids ?? (order?.assignee_id ? [order.assignee_id] : []))
-  const [status, setStatus] = useState<AnfOrderStatus>(order?.status ?? 'to_order')
+  const [status] = useState<AnfOrderStatus>(order?.status ?? 'to_order')
+  const [receiving, setReceiving] = useState(false)
   const [receivedAt, setReceivedAt] = useState(order?.received_at ?? new Date().toISOString().slice(0, 10))
   const [receivedQty, setReceivedQty] = useState(String(order?.received_qty ?? order?.quantity ?? 1))
   const [receivedBy, setReceivedBy] = useState(order?.received_by ?? '')
@@ -189,13 +191,13 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
               </Select>
             )}
           </div>
-          {/* Status (with colour dot) */}
+          {/* Status is read-only: items move by request → PO → Receive, never by hand. */}
           <div className="min-w-0">
             <label className="field-label">Status</label>
-            <Select value={status} onValueChange={(v) => v && setStatus(v as AnfOrderStatus)}>
-              <SelectTrigger className="h-9 w-full"><span className="flex-1 min-w-0 flex items-center gap-2"><span className={`w-2 h-2 rounded-full shrink-0 ${statusMeta(status).dot}`} /><span className="truncate">{statusMeta(status).label}</span></span></SelectTrigger>
-              <SelectContent>{STATUS.map((s) => <SelectItem key={s.key} value={s.key}><span className="inline-flex items-center gap-2"><span className={`w-2 h-2 rounded-full ${s.dot}`} />{s.label}</span></SelectItem>)}</SelectContent>
-            </Select>
+            <div className="h-9 flex items-center gap-2 text-[13px]">
+              <span className={`w-2 h-2 rounded-full shrink-0 ${statusMeta(status).dot}`} />{statusMeta(status).label}
+              {order?.status === 'ordered' && <button type="button" onClick={() => setReceiving(true)} className="ml-auto h-7 rounded-md border border-border px-2 text-[12px] hover:bg-muted">Receive…</button>}
+            </div>
           </div>
 
           <div><label className="field-label">Ordered</label><Input type="date" value={orderedAt} onChange={(e) => setOrderedAt(e.target.value)} className="h-9" /></div>
@@ -266,6 +268,7 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
           <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
           <Button size="sm" className="bg-[#7A5AA5] hover:opacity-90 text-white" onClick={save} disabled={!item.trim()}>{isEdit ? 'Save' : 'Add order'}</Button>
         </div>
+        {receiving && order && <ReceiveDialog order={order} onClose={() => { setReceiving(false); onClose() }} />}
       </DialogContent>
     </Dialog>
   )

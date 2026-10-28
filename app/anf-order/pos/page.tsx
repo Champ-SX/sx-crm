@@ -7,11 +7,10 @@ import { useHydrated } from '@/hooks/use-hydrated'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { OrderDialog } from '@/components/anf/order-dialog'
-import { ProjectChip, useMe } from '@/components/anf/purchasing-ui'
+import { ProjectChip, useMe, ReceiveDialog } from '@/components/anf/purchasing-ui'
 import { cn } from '@/lib/utils'
 import { ANF_ACCENT, baht, fmtDate } from '@/lib/anf'
-import { usePurchasing, savePO, requestStatus, REQ_STATUS, itemTotal } from '@/lib/supabase/purchasing'
+import { usePurchasing, savePO, requestStatus, REQ_STATUS, requestTotal, lineTotalVat } from '@/lib/supabase/purchasing'
 import { useSuppliers, telHref, lineHref } from '@/lib/supabase/suppliers'
 import type { AnfOrder, AnfPO } from '@/types'
 
@@ -56,7 +55,7 @@ export default function POsPage() {
             {list.map((p) => {
               const items = itemsOf(p.po_id)
               const st = requestStatus(items)
-              const total = items.reduce((t, o) => t + itemTotal(o), 0)
+              const total = requestTotal(items)
               const sup = suppliers.find((s) => s.supplier_id === p.supplier_id)
               return (
                 <button key={p.po_id} type="button" onClick={() => setOpen(p)}
@@ -105,7 +104,8 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
   const [error, setError] = useState<string | null>(null)
   const items = anfOrders.filter((o) => o.po_id === po.po_id)
   const sup = suppliers.find((s) => s.supplier_id === po.supplier_id)
-  const total = items.reduce((t, o) => t + itemTotal(o), 0)
+  const total = requestTotal(items)
+  const open = items.filter((o) => o.status !== 'received')
   const today = new Date().toISOString().slice(0, 10)
 
   async function markOrdered() {
@@ -113,6 +113,11 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
       await savePO({ ...po, status: 'ordered', ordered_at: new Date().toISOString() })
       for (const o of items) if (o.status === 'to_order') await updateAnfOrder(o.order_id, { status: 'ordered', ordered_at: o.ordered_at ?? today, ordered_by: o.ordered_by ?? me, supplier_id: po.supplier_id ?? o.supplier_id })
     } catch (e) { setError((e as Error).message) }
+  }
+  async function receiveAll() {
+    if (!window.confirm(`Receive all ${open.length} open line(s) in full?`)) return
+    try { for (const o of open) await updateAnfOrder(o.order_id, { status: 'received', received_qty: o.quantity, received_at: today, received_by: me }) }
+    catch (e) { setError((e as Error).message) }
   }
   async function cancel() {
     if (!window.confirm(`Cancel ${po.number}? Its items go back to their requests as “To order”.`)) return
@@ -141,7 +146,7 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
         <div className="overflow-y-auto">
           <table className="w-full text-[13px]">
             <thead><tr className="text-left font-mono text-[10px] tracking-wide text-muted-foreground border-b border-border bg-muted/40">
-              <th className="px-4 py-2">ITEM</th><th className="px-2 py-2 text-right">QTY</th><th className="px-2 py-2 text-right">UNIT ฿</th><th className="px-2 py-2 text-right">TOTAL</th><th className="px-2 py-2">RECEIVED</th>
+              <th className="px-4 py-2">ITEM</th><th className="px-2 py-2 text-right">QTY</th><th className="px-2 py-2 text-right">UNIT ฿</th><th className="px-2 py-2 text-right">TOTAL inc VAT</th><th className="px-2 py-2">RECEIVED</th>
             </tr></thead>
             <tbody>
               {items.map((o) => (
@@ -149,7 +154,7 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
                   <td className="px-4 py-2"><div className="font-medium">{o.item}</div><div className="text-[11px] text-muted-foreground">{o.description || (o.product_id ? '' : 'manual item')}</div></td>
                   <td className="px-2 py-2 text-right font-mono">{o.quantity}{o.unit ? ` ${o.unit}` : ''}</td>
                   <td className="px-2 py-2 text-right font-mono">{o.unit_price ? o.unit_price.toLocaleString() : '—'}</td>
-                  <td className="px-2 py-2 text-right font-mono">{itemTotal(o) ? baht(itemTotal(o)) : '—'}</td>
+                  <td className="px-2 py-2 text-right font-mono">{lineTotalVat(o) ? baht(Math.round(lineTotalVat(o))) : '—'}</td>
                   <td className="px-2 py-2">{o.status === 'received'
                     ? <span className="inline-flex items-center gap-1 text-[12px] text-emerald-700 dark:text-emerald-400"><Check className="w-3.5 h-3.5" />{o.received_qty ?? o.quantity}</span>
                     : <button type="button" disabled={po.status !== 'ordered'} onClick={() => setReceiving(o)} className="h-7 rounded-md border border-border px-2 text-[12px] hover:bg-muted disabled:opacity-40" title={po.status !== 'ordered' ? 'Mark the PO ordered first' : ''}>Receive…</button>}</td>
@@ -157,7 +162,7 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
               ))}
             </tbody>
           </table>
-          <div className="flex justify-end items-baseline gap-4 px-5 py-3"><span className="text-[13px] text-muted-foreground">Total</span><b className="font-mono text-[18px]">{baht(total)}</b></div>
+          <div className="flex justify-end items-baseline gap-4 px-5 py-3"><span className="text-[13px] text-muted-foreground">Total incl. VAT</span><b className="font-mono text-[18px]">{baht(total)}</b></div>
           <div className="mx-5 mb-4 rounded-lg border border-dashed border-border px-3 py-2 text-[12px] text-muted-foreground">
             <b className="text-foreground">FlowAccount</b> — “Create PO in FlowAccount” comes in phase 2. For now, create the PO in FlowAccount by hand using the lines above, then mark it ordered here.
           </div>
@@ -167,9 +172,10 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
           {po.status !== 'cancelled' && items.every((o) => o.status !== 'received') && <button type="button" onClick={cancel} className="text-destructive text-sm mr-auto">Cancel PO</button>}
           <span className="ml-auto" />
           <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
-          {po.status === 'draft' && <Button size="sm" className="bg-[#7A5AA5] hover:opacity-90 text-white" onClick={markOrdered} disabled={items.length === 0}>Mark ordered</Button>}
+          {po.status === 'draft' && <Button size="sm" className="bg-[#7A5AA5] hover:opacity-90 text-white" onClick={markOrdered} disabled={items.length === 0}>Mark ordered →</Button>}
+          {po.status === 'ordered' && open.length > 0 && <Button size="sm" className="bg-foreground text-background hover:opacity-90" onClick={() => void receiveAll()}>Receive all ✓</Button>}
         </div>
-        {receiving && <OrderDialog order={receiving} onClose={() => setReceiving(null)} />}
+        {receiving && <ReceiveDialog order={receiving} onClose={() => setReceiving(null)} />}
       </DialogContent>
     </Dialog>
   )

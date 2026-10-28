@@ -533,8 +533,11 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
         if (!USE_SUPABASE) {
           const warnMsg = '⚠️ [CRM Store] USE_SUPABASE is false. Using mock data. Check your Supabase environment variables (NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY) in Vercel settings.'
           console.warn(warnMsg)
-          // Mark initialization as complete with mock data loaded (already in initial state)
-          set({ error: warnMsg, isInitialized: true, isLoading: false })
+          // Mark initialization as complete with mock data loaded (already in initial state).
+          // Restore the saved board too, so opening /anf-order/* directly shows Order data.
+          let saved: string | null = null
+          try { if (typeof window !== 'undefined') saved = window.localStorage.getItem(ACTIVE_BOARD_KEY) } catch { /* ignore */ }
+          set({ error: warnMsg, isInitialized: true, isLoading: false, ...(saved && currentState.boards.some((b) => b.board_id === saved) ? { activeBoardId: saved } : {}) })
           return
         }
 
