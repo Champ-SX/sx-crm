@@ -14,7 +14,7 @@ import { jobCardName } from '@/lib/jobs'
 import { useSuppliers, preferredFor, linksFor, saveLink, newLink } from '@/lib/supabase/suppliers'
 import {
   usePurchasing, saveRequest, savePO, newPurchasingId, nextRequestNumber, nextPONumber, itemTotal,
-  submitRequest, approveRequest, rejectRequest, withdrawRequest, deleteRequest, requestTotal, lineTotalVat, lineRules, receivePlan, approvalOf, isApprover, requestStatus, REQ_STATUS, APPROVAL_LIMIT_THB, type ReqStatus,
+  submitRequest, approveRequest, rejectRequest, withdrawRequest, isBuyer, notifyEmergencyPO, deleteRequest, requestTotal, lineTotalVat, lineRules, receivePlan, approvalOf, isApprover, requestStatus, REQ_STATUS, APPROVAL_LIMIT_THB, type ReqStatus,
 } from '@/lib/supabase/purchasing'
 import type { AnfOrder, AnfRequest, AnfPO, AnfProduct, AnfAsset, WonJob } from '@/types'
 import { useAssets, saveAsset, moveAsset, newAssetId, nextCode, prefixFor, RACKS, SHELVES } from '@/lib/supabase/assets'
@@ -82,7 +82,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
   request: AnfRequest | null      // null = new
   prefill?: RequestPrefill | RequestPrefill[]   // Stock / Catalog → Reorder: a refill request with these lines
   onClose: () => void
-  onCreatePO: (items: AnfOrder[]) => void
+  onCreatePO: (items: AnfOrder[], emergency?: string) => void   // emergency = reason, when not the buyer
 }) {
   const { requests, pos, loaded } = usePurchasing()
   const { suppliers } = useSuppliers()
@@ -97,6 +97,8 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
   const me = useMe()
   const { user, role } = useAuth()
   const approver = isApprover(user?.email, role)
+  const buyer = isBuyer(user?.email, role)
+  const [emergency, setEmergency] = useState<string | null>(null)   // reason being typed
   const lines = prefill ? (Array.isArray(prefill) ? prefill : [prefill]) : []
   const firstBranch = lines.find((l) => l.branch)?.branch ?? null
   const [r, setR] = useState<AnfRequest>(() => request ?? {
@@ -234,7 +236,19 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
     )) : <Button size="sm" variant="outline" className="h-9" onClick={() => void act(() => withdrawRequest(r))}>Withdraw to edit</Button>
   } else {
     hint = <span className="text-emerald-700 dark:text-emerald-400">{r.approved_by === 'auto' ? `Approved automatically (under ${limit})` : r.approved_by ? `Approved by ${r.approved_by}` : 'Approved'}{r.approved_at ? ` · ${when(r.approved_at)}` : ''}</span>
-    if (orderable.length) main = <Button size="sm" className="h-9 bg-foreground text-background hover:opacity-90" onClick={() => onCreatePO(orderable)}>Create PO →</Button>
+    if (orderable.length && buyer) main = <Button size="sm" className="h-9 bg-foreground text-background hover:opacity-90" onClick={() => onCreatePO(orderable)}>Create PO →</Button>
+    else if (orderable.length) {
+      hint = <span className="text-muted-foreground">Purchasing (admin) will order this{r.approved_at ? ` · approved ${when(r.approved_at)}` : ''}</span>
+      main = emergency === null
+        ? <button type="button" onClick={() => setEmergency('')} className="text-[12.5px] text-red-600 dark:text-red-400 underline">Emergency order…</button>
+        : (
+          <span className="flex w-full sm:w-auto flex-wrap gap-2">
+            <input autoFocus value={emergency} onChange={(e) => setEmergency(e.target.value)} placeholder="Why can't it wait? (required)" className={cn(inputCls, 'sm:w-72')} />
+            <Button size="sm" variant="outline" className="h-9" onClick={() => setEmergency(null)}>Cancel</Button>
+            <Button size="sm" className="h-9 bg-red-600 hover:bg-red-700 text-white" disabled={!emergency.trim()} onClick={() => onCreatePO(orderable, emergency.trim())}>Continue → Create PO</Button>
+          </span>
+        )
+    }
     else if (st.status === 'to_order' && items.some((o) => poOf(o.po_id)?.status === 'draft')) main = <Link href="/anf-order/pos" className="text-[13px] underline">Mark the PO ordered →</Link>
     else if (st.status === 'ordered' || st.status === 'partial') main = <Link href="/anf-order/pos" className="text-[13px] underline">Receive on the PO →</Link>
   }
@@ -456,7 +470,7 @@ export function ReceiveDialog({ order, onClose }: { order: AnfOrder; onClose: ()
 }
 
 // ── Create PO ────────────────────────────────────────────────────────────────
-export function CreatePODialog({ items, onClose, onDone }: { items: AnfOrder[]; onClose: () => void; onDone?: (n: number) => void }) {
+export function CreatePODialog({ items, emergency, onClose, onDone }: { items: AnfOrder[]; emergency?: string; onClose: () => void; onDone?: (n: number) => void }) {
   const { pos } = usePurchasing()
   const { suppliers } = useSuppliers()
   const updateAnfOrder = useCRMStore((s) => s.updateAnfOrder)
@@ -479,11 +493,14 @@ export function CreatePODialog({ items, onClose, onDone }: { items: AnfOrder[]; 
     try {
       const numbers = pos.map((p) => p.number)
       for (const g of real) {
-        let po: AnfPO | null = joinOpen ? g.open : null
+        // An emergency PO is always its own PO (never joins the buyer's draft).
+        let po: AnfPO | null = joinOpen && !emergency ? g.open : null
         if (!po) {
-          po = { po_id: newPurchasingId(), board_id: activeBoardId || 'anf-order', number: nextPONumber(numbers), supplier_id: g.sid, status: 'draft', created_by: me }
+          po = { po_id: newPurchasingId(), board_id: activeBoardId || 'anf-order', number: nextPONumber(numbers), supplier_id: g.sid, status: 'draft', created_by: me,
+            ...(emergency ? { emergency_by: me, emergency_reason: emergency, emergency_at: new Date().toISOString() } : {}) }
           numbers.push(po.number)
           await savePO(po)
+          if (emergency) notifyEmergencyPO(po, requestTotal(g.list), g.list[0]?.request_id ?? null)
         }
         for (const o of g.list) await updateAnfOrder(o.order_id, { po_id: po.po_id })
       }
@@ -497,6 +514,7 @@ export function CreatePODialog({ items, onClose, onDone }: { items: AnfOrder[]; 
         <div className="flex items-center gap-2.5 px-5 py-3 border-b border-border">
           <span className="w-3 h-3 rounded-[4px]" style={{ backgroundColor: ANF_ACCENT }} />
           <DialogTitle className="text-[15px] font-bold">Create PO</DialogTitle>
+          {emergency && <span className="rounded bg-red-600 px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-wider text-white">EMERGENCY</span>}
           <button onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground text-lg leading-none px-1">✕</button>
         </div>
         <div className="px-5 py-4 space-y-2 max-h-[60vh] overflow-y-auto">
@@ -509,11 +527,12 @@ export function CreatePODialog({ items, onClose, onDone }: { items: AnfOrder[]; 
               </div>
               <div className="text-[12px] text-muted-foreground">
                 {g.list.length} item{g.list.length > 1 ? 's' : ''} · {g.list.map((o) => o.item).slice(0, 3).join(', ')}{g.list.length > 3 ? '…' : ''}
-                {g.sid ? (g.open && joinOpen ? ` · add to ${g.open.number} (draft)` : ' · new PO') : ' · order later'}
+                {g.sid ? (g.open && joinOpen && !emergency ? ` · add to ${g.open.number} (draft)` : ' · new PO') : ' · order later'}
               </div>
             </div>
           ))}
-          {real.some((g) => g.open) && (
+          {emergency && <p className="rounded-md bg-red-500/10 px-2.5 py-1.5 text-[12px] text-red-700 dark:text-red-400">Emergency: “{emergency}”. Champ and the buyer will be notified.</p>}
+          {!emergency && real.some((g) => g.open) && (
             <label className="flex items-center gap-2 text-[12px] pt-1"><input type="checkbox" checked={joinOpen} onChange={(e) => setJoinOpen(e.target.checked)} className="accent-foreground" />Add to the supplier&apos;s open draft PO when there is one</label>
           )}
           {error && <p className="text-[12px] text-destructive">{error}</p>}

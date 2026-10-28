@@ -98,12 +98,45 @@ export function nextPONumber(existing: string[]): string {
 
 // ── Approval ─────────────────────────────────────────────────────────────────
 export const APPROVER_EMAIL = 'champ@sixsheet.me'
+/** The one person who normally makes POs; anyone else can only in an emergency (with a reason). */
+export const BUYER_EMAIL = 'admin@sixsheet.me'
 
 /** Mock mode has no Champ — the mock admin stands in so the flow can be clicked through. */
 export function isApprover(email?: string | null, role?: string | null): boolean {
   if (!email) return false
   if (email.toLowerCase() === APPROVER_EMAIL) return true
   return !isSupabaseConfigured && role === 'admin'
+}
+
+/** Mock mode has no admin@ — the mock admin stands in so the buyer flow can be clicked through. */
+export function isBuyer(email?: string | null, role?: string | null): boolean {
+  if (!email) return false
+  if (email.toLowerCase() === BUYER_EMAIL) return true
+  return !isSupabaseConfigured && role === 'admin'
+}
+const memberByEmail = (email: string) => {
+  const st = useCRMStore.getState()
+  return st.teamMembers.find((x) => x.email?.toLowerCase() === email) ?? (!isSupabaseConfigured ? st.teamMembers.find((x) => x.role === 'admin') : undefined)
+}
+/** Tell the buyer an approved request is ready to order. */
+function notifyBuyer(r: AnfRequest, total: number, by: string) {
+  const m = memberByEmail(BUYER_EMAIL)
+  if (!m) return
+  notify({ recipient_id: m.id, recipient_name: m.name || m.email, actor: by,
+    entity_type: 'anf_request', entity_id: r.request_id, entity_name: `${r.number} · ${r.project_name || 'request'}`,
+    message: `approved · ready to order · ฿${total.toLocaleString('en-US')}`, read: false, board_id: 'anf-order' })
+}
+/** Emergency PO: Champ and the buyer both hear about it. */
+export function notifyEmergencyPO(po: AnfPO, total: number, requestId: string | null) {
+  const seen = new Set<string>()
+  for (const email of [APPROVER_EMAIL, BUYER_EMAIL]) {
+    const m = memberByEmail(email)
+    if (!m || seen.has(m.id)) continue
+    seen.add(m.id)
+    notify({ recipient_id: m.id, recipient_name: m.name || m.email, actor: po.emergency_by || 'Someone',
+      entity_type: 'anf_request', entity_id: requestId ?? po.po_id, entity_name: `${po.number} · ฿${total.toLocaleString('en-US')}`,
+      message: `made an emergency PO: “${po.emergency_reason ?? ''}”`, read: false, board_id: 'anf-order' })
+  }
 }
 
 function notifyApprover(r: AnfRequest, total: number) {
@@ -142,12 +175,14 @@ export async function submitRequest(r: AnfRequest, items: AnfOrder[]): Promise<A
     ...(auto ? { status: 'approved', approved_by: 'auto', approved_at: now } : { status: 'pending', approved_by: null, approved_at: null }) }
   await saveRequest(next)
   if (!auto) notifyApprover(next, total)
+  else notifyBuyer(next, total, 'Auto-approved')
   return next
 }
 export async function approveRequest(r: AnfRequest, items: AnfOrder[], by: string): Promise<AnfRequest> {
   const next: AnfRequest = { ...r, status: 'approved', total_thb: requestTotal(items), approved_by: by, approved_at: new Date().toISOString(), rejected_reason: null }
   await saveRequest(next)
   notifyRequester(next, 'approved your request')
+  notifyBuyer(next, next.total_thb ?? 0, by)
   return next
 }
 export async function rejectRequest(r: AnfRequest, reason: string): Promise<AnfRequest> {

@@ -47,6 +47,7 @@ export default function AnfStockPage() {
   const [creating, setCreating] = useState(false)
   const [orderPrefill, setOrderPrefill] = useState<RequestPrefill | null>(null)
   const [poItems, setPoItems] = useState<AnfOrder[] | null>(null)
+  const [poEmergency, setPoEmergency] = useState<string | undefined>(undefined)
   const [transferRow, setTransferRow] = useState<AnfStock | null>(null)
   const [editProductRow, setEditProductRow] = useState<AnfProduct | null>(null)
 
@@ -231,8 +232,8 @@ export default function AnfStockPage() {
       </div>
 
       {(creating || editing) && <StockDialog key={editing?.stock_id ?? 'new'} row={editing} onClose={() => { setCreating(false); setEditing(null) }} onRaise={raiseOrder} onTransfer={setTransferRow} onDuplicate={duplicateStock} />}
-      {orderPrefill && <RequestDialog request={null} prefill={orderPrefill} onClose={() => setOrderPrefill(null)} onCreatePO={(items) => { setOrderPrefill(null); setPoItems(items) }} />}
-      {poItems && <CreatePODialog items={poItems} onClose={() => setPoItems(null)} />}
+      {orderPrefill && <RequestDialog request={null} prefill={orderPrefill} onClose={() => setOrderPrefill(null)} onCreatePO={(items, why) => { setOrderPrefill(null); setPoItems(items); setPoEmergency(why) }} />}
+      {poItems && <CreatePODialog items={poItems} emergency={poEmergency} onClose={() => { setPoItems(null); setPoEmergency(undefined) }} />}
       {transferRow && <TransferDialog row={transferRow} onClose={() => setTransferRow(null)} />}
       {editProductRow && <ProductDialog product={editProductRow} onClose={() => setEditProductRow(null)} />}
     </div>

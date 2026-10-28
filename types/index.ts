@@ -221,6 +221,9 @@ export interface AnfPO {
   number: string                    // PO2026100002
   supplier_id?: string | null
   status: 'draft' | 'ordered' | 'cancelled'
+  emergency_by?: string | null      // set when someone other than the buyer made it
+  emergency_reason?: string | null
+  emergency_at?: string | null
   fa_doc_no?: string | null
   fa_url?: string | null
   created_by?: string | null

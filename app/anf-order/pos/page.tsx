@@ -8,9 +8,10 @@ import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { ProjectChip, useMe, ReceiveDialog } from '@/components/anf/purchasing-ui'
+import { useAuth } from '@/components/auth-provider'
 import { cn } from '@/lib/utils'
 import { ANF_ACCENT, baht, fmtDate, kindOf } from '@/lib/anf'
-import { usePurchasing, savePO, requestStatus, REQ_STATUS, requestTotal, lineTotalVat } from '@/lib/supabase/purchasing'
+import { usePurchasing, savePO, requestStatus, REQ_STATUS, requestTotal, lineTotalVat, isBuyer } from '@/lib/supabase/purchasing'
 import { useSuppliers, telHref, lineHref } from '@/lib/supabase/suppliers'
 import type { AnfOrder, AnfPO } from '@/types'
 
@@ -24,9 +25,12 @@ export default function POsPage() {
   const { suppliers } = useSuppliers()
   const [open, setOpen] = useState<AnfPO | null>(null)
   const [showCancelled, setShowCancelled] = useState(false)
+  const [onlyEmergency, setOnlyEmergency] = useState(false)
   if (!isHydrated) return null
 
-  const list = pos.filter((p) => (!activeBoardId || !p.board_id || p.board_id === activeBoardId) && (showCancelled || p.status !== 'cancelled'))
+  const boardPos = pos.filter((p) => (!activeBoardId || !p.board_id || p.board_id === activeBoardId) && (showCancelled || p.status !== 'cancelled'))
+  const emergencyCount = boardPos.filter((p) => p.emergency_by).length
+  const list = boardPos.filter((p) => !onlyEmergency || p.emergency_by)
   const itemsOf = (id: string) => anfOrders.filter((o) => o.po_id === id)
 
   return (
@@ -38,7 +42,10 @@ export default function POsPage() {
           <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight leading-none">POs</h1>
           <p className="font-mono text-[12px] text-muted-foreground mt-1">grouped by supplier · made from requests</p>
         </div>
-        <label className="ml-auto flex items-center gap-1.5 text-[12px] text-muted-foreground"><input type="checkbox" checked={showCancelled} onChange={(e) => setShowCancelled(e.target.checked)} className="accent-foreground" />Show cancelled</label>
+        {emergencyCount > 0 && (
+          <button type="button" onClick={() => setOnlyEmergency((v) => !v)} className={cn('ml-auto h-7 rounded-full border px-2.5 text-[12px]', onlyEmergency ? 'border-red-600 bg-red-600 text-white font-semibold' : 'border-red-600/40 text-red-700 dark:text-red-400')}>Emergency {emergencyCount}</button>
+        )}
+        <label className={cn('flex items-center gap-1.5 text-[12px] text-muted-foreground', !emergencyCount && 'ml-auto')}><input type="checkbox" checked={showCancelled} onChange={(e) => setShowCancelled(e.target.checked)} className="accent-foreground" />Show cancelled</label>
       </div>
       <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-4">
         {list.length === 0 ? (
@@ -60,7 +67,7 @@ export default function POsPage() {
               return (
                 <button key={p.po_id} type="button" onClick={() => setOpen(p)}
                   className="w-full text-left grid grid-cols-1 md:grid-cols-[130px_1.3fr_1.4fr_110px_120px_130px] gap-x-3 gap-y-1 px-4 py-2.5 border-b border-border last:border-b-0 hover:bg-muted/40">
-                  <span className="font-mono text-[13px] font-semibold">{p.number}</span>
+                  <span className="font-mono text-[13px] font-semibold">{p.number}{p.emergency_by && <span className="ml-1.5 rounded bg-red-600 px-1 py-px text-[9.5px] font-bold tracking-wider text-white align-middle">EMERGENCY</span>}</span>
                   <span className="text-[13px]">{sup?.name ?? '—'}<span className="block text-[11px] text-muted-foreground">{items.length} item{items.length === 1 ? '' : 's'} · {fmtDate((p.created_at ?? '').slice(0, 10))}</span></span>
                   <ReqChips items={items} />
                   <span className="md:text-right font-mono text-[13px]">{total ? baht(total) : '—'}</span>
@@ -100,6 +107,9 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
   const updateAnfOrder = useCRMStore((s) => s.updateAnfOrder)
   const { suppliers } = useSuppliers()
   const me = useMe()
+  const { user, role } = useAuth()
+  // Ordering / cancelling is the buyer's job; an emergency PO can also be run by whoever made it.
+  const canOrder = isBuyer(user?.email, role) || (!!po.emergency_by && po.emergency_by === me)
   const [receiving, setReceiving] = useState<AnfOrder | null>(null)
   const [error, setError] = useState<string | null>(null)
   const items = anfOrders.filter((o) => o.po_id === po.po_id)
@@ -137,7 +147,7 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
       <DialogContent showCloseButton={false} className="sm:max-w-[720px] max-w-[96vw] p-0 gap-0 overflow-hidden max-h-[92vh] flex flex-col">
         <div className="flex items-start gap-3 px-5 py-3 border-b border-border">
           <div>
-            <DialogTitle className="font-mono text-[18px] font-bold" style={{ color: ANF_ACCENT }}>{po.number}</DialogTitle>
+            <DialogTitle className="font-mono text-[18px] font-bold" style={{ color: ANF_ACCENT }}>{po.number}{po.emergency_by && <span className="ml-2 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-white align-middle">EMERGENCY</span>}</DialogTitle>
             <p className="text-[13px] mt-0.5">{sup?.name ?? 'No supplier'}{sup?.contact_person && <span className="text-muted-foreground"> · {sup.contact_person}</span>}</p>
             <p className="text-[12px] text-muted-foreground flex gap-3">
               {telHref(sup?.phone) && <a href={telHref(sup?.phone)!} className="underline">Call</a>}
@@ -148,6 +158,11 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
           <button onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground text-lg leading-none px-1">✕</button>
         </div>
         <div className="overflow-y-auto">
+          {po.emergency_by && (
+            <div className="mx-5 mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-[12.5px] text-red-700 dark:text-red-400">
+              <b>Emergency PO by {po.emergency_by}</b>{po.emergency_at ? ` · ${new Date(po.emergency_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : ''} — “{po.emergency_reason}”
+            </div>
+          )}
           <table className="w-full text-[13px]">
             <thead><tr className="text-left font-mono text-[10px] tracking-wide text-muted-foreground border-b border-border bg-muted/40">
               <th className="px-4 py-2">ITEM</th><th className="px-2 py-2 text-right">QTY</th><th className="px-2 py-2 text-right">UNIT ฿</th><th className="px-2 py-2 text-right">TOTAL inc VAT</th><th className="px-2 py-2">RECEIVED</th>
@@ -173,10 +188,11 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
           {error && <p className="px-5 pb-2 text-[12px] text-destructive">{error}</p>}
         </div>
         <div className="flex flex-wrap items-center gap-2 px-5 py-3 border-t border-border">
-          {po.status !== 'cancelled' && items.every((o) => o.status !== 'received') && <button type="button" onClick={cancel} className="text-destructive text-sm mr-auto">Cancel PO</button>}
+          {canOrder && po.status !== 'cancelled' && items.every((o) => o.status !== 'received') && <button type="button" onClick={cancel} className="text-destructive text-sm mr-auto">Cancel PO</button>}
           <span className="ml-auto" />
           <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
-          {po.status === 'draft' && <Button size="sm" className="bg-[#7A5AA5] hover:opacity-90 text-white" onClick={markOrdered} disabled={items.length === 0}>Mark ordered →</Button>}
+          {po.status === 'draft' && !canOrder && <span className="text-[12px] text-muted-foreground">Purchasing (admin) marks this ordered</span>}
+          {po.status === 'draft' && canOrder && <Button size="sm" className="bg-[#7A5AA5] hover:opacity-90 text-white" onClick={markOrdered} disabled={items.length === 0}>Mark ordered →</Button>}
           {po.status === 'ordered' && bulk.length > 0 && <Button size="sm" className="bg-foreground text-background hover:opacity-90" onClick={() => void receiveAll()}>Receive all ✓</Button>}
         </div>
         {receiving && <ReceiveDialog order={receiving} onClose={() => setReceiving(null)} />}

@@ -63,6 +63,7 @@ function ItemsView() {
   const [editing, setEditing] = useState<AnfProduct | null>(null)
   const [prefill, setPrefill] = useState<RequestPrefill | null>(null)
   const [poItems, setPoItems] = useState<AnfOrder[] | null>(null)
+  const [poEmergency, setPoEmergency] = useState<string | undefined>(undefined)
 
   const rows = useMemo(() => anfProducts.filter((p) => !activeBoardId || !p.board_id || p.board_id === activeBoardId).map((p) => {
     const ls = links.filter((l) => l.product_id === p.product_id)
@@ -202,8 +203,8 @@ function ItemsView() {
       {open && <ItemDrawer product={anfProducts.find((p) => p.product_id === open.product_id) ?? open} canEdit={isAdmin}
         onEdit={(p) => { setOpen(null); setEditing(p) }} onReorder={() => { const r = rows.find((x) => x.p.product_id === open.product_id); setOpen(null); if (r) reorder(r) }} onClose={() => setOpen(null)} />}
       {editing && <ProductDialog product={anfProducts.find((p) => p.product_id === editing.product_id) ?? editing} onClose={() => setEditing(null)} />}
-      {prefill && <RequestDialog request={null} prefill={prefill} onClose={() => setPrefill(null)} onCreatePO={(items) => { setPrefill(null); setPoItems(items) }} />}
-      {poItems && <CreatePODialog items={poItems} onClose={() => setPoItems(null)} />}
+      {prefill && <RequestDialog request={null} prefill={prefill} onClose={() => setPrefill(null)} onCreatePO={(items, why) => { setPrefill(null); setPoItems(items); setPoEmergency(why) }} />}
+      {poItems && <CreatePODialog items={poItems} emergency={poEmergency} onClose={() => { setPoItems(null); setPoEmergency(undefined) }} />}
     </>
   )
 }

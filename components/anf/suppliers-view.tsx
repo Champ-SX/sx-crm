@@ -5,7 +5,7 @@ import { Truck, Plus, Phone, MessageCircle, ExternalLink, Search } from 'lucide-
 import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
 import { useHydrated } from '@/hooks/use-hydrated'
-import { RequestDialog, type RequestPrefill } from '@/components/anf/purchasing-ui'
+import { RequestDialog, CreatePODialog, type RequestPrefill } from '@/components/anf/purchasing-ui'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { ANF_ACCENT, categoryMeta, baht, kindOf } from '@/lib/anf'
 import { useSuppliers, saveSupplier, deleteSupplier, newSupplierId, telHref, lineHref } from '@/lib/supabase/suppliers'
-import type { AnfSupplier } from '@/types'
+import type { AnfOrder, AnfSupplier } from '@/types'
 
 /** Catalog → Suppliers: who we buy from, what they sell, and one click to request their low items. Admin edits, everyone views. */
 export function SuppliersView() {
@@ -192,6 +192,7 @@ function SupplierItems({ supplier, onDone }: { supplier: AnfSupplier; onDone: ()
   }).filter((x) => x.p).sort((a, b) => Number(b.low) - Number(a.low) || a.p!.name.localeCompare(b.p!.name))
   const [picked, setPicked] = useState<string[]>(() => rows.filter((x) => x.low && !x.asset).map((x) => x.l.product_id))
   const [prefill, setPrefill] = useState<RequestPrefill[] | null>(null)
+  const [po, setPo] = useState<{ items: AnfOrder[]; why?: string } | null>(null)
 
   return (
     <>
@@ -221,7 +222,8 @@ function SupplierItems({ supplier, onDone }: { supplier: AnfSupplier; onDone: ()
           item: x.p!.name, product_id: x.p!.product_id, description: x.p!.code, unit_price: x.l.price ?? undefined, supplier_id: supplier.supplier_id,
         })))}>Request {picked.length || ''} item{picked.length === 1 ? '' : 's'} →</Button>
       </div>
-      {prefill && <RequestDialog request={null} prefill={prefill} onClose={() => { setPrefill(null); onDone() }} onCreatePO={() => { setPrefill(null); onDone() }} />}
+      {prefill && <RequestDialog request={null} prefill={prefill} onClose={() => { setPrefill(null); onDone() }} onCreatePO={(items, why) => { setPrefill(null); setPo({ items, why }) }} />}
+      {po && <CreatePODialog items={po.items} emergency={po.why} onClose={() => { setPo(null); onDone() }} />}
     </>
   )
 }

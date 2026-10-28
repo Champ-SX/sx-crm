@@ -26,7 +26,7 @@ import { BoardSwitcher } from '@/components/shared/board-switcher'
 import { PushPermissionBanner } from '@/components/shared/push-permission-banner'
 import { Button } from '@/components/ui/button'
 import { OP_STAGES } from '@/types'
-import { usePurchasing, approvalOf, isApprover } from '@/lib/supabase/purchasing'
+import { usePurchasing, approvalOf, isApprover, isBuyer } from '@/lib/supabase/purchasing'
 
 // Nav is board-aware (Phase 4.0): the CAP*TURES sales pipeline vs. the ANF
 // Order board's own (different) structure.
@@ -167,10 +167,12 @@ function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?
   const approver = isApprover(user?.email, role)
   const openItems = anfOrders.filter((o) => o.status !== 'received' && !o.archived_at)
   const reqOf = (id?: string | null) => (id ? requests.find((r) => r.request_id === id) ?? null : null)
-  const requestsBadge = approver && requests.some((r) => r.status === 'pending')
-    ? requests.filter((r) => r.status === 'pending').length
-    : openItems.filter((o) => o.status === 'to_order' && !o.po_id && approvalOf(reqOf(o.request_id)) === 'approved').length
-  const posBadge = pos.filter((p) => p.status === 'draft' || (p.status === 'ordered' && openItems.some((o) => o.po_id === p.po_id))).length
+  const buyer = isBuyer(user?.email, role)
+  const pendingCount = requests.filter((r) => r.status === 'pending').length
+  const toOrderCount = openItems.filter((o) => o.status === 'to_order' && !o.po_id && approvalOf(reqOf(o.request_id)) === 'approved').length
+  // Champ: waiting for approval · buyer: approved items to order · everyone else: no "your turn" here.
+  const requestsBadge = approver && pendingCount ? pendingCount : buyer ? toOrderCount : 0
+  const posBadge = !buyer ? 0 : pos.filter((p) => p.status === 'draft' || (p.status === 'ordered' && openItems.some((o) => o.po_id === p.po_id))).length
   // Stock items needing reorder (LOW + OUT) that nobody has requested yet.
   const requested = new Set(openItems.filter((o) => approvalOf(reqOf(o.request_id)) !== 'rejected').map((o) => o.item))
   const lowStockCount = anfStock.filter(

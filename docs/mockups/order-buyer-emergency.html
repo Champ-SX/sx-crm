@@ -1,0 +1,172 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Buyer &amp; Emergency PO</title>
+<style>
+:root{--bg:#f2f0ea;--card:#faf9f6;--fg:#18181b;--mut:#71717a;--bd:#e4e2da;--sub:#ebe9e2;--pur:#7A5AA5;--gr:#15803d;--grb:#e7f4ec;--bl:#1d4ed8;--blb:#e6edfb;--am:#b45309;--amb:#fdf1dc;--rd:#dc2626;--rdb:#fdeaea;--ov:rgba(24,24,27,.32)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c0c0d;--card:#18181b;--fg:#fafafa;--mut:#a1a1aa;--bd:#2a2a2e;--sub:#232327;--gr:#4ade80;--grb:#13261b;--bl:#93b4ff;--blb:#16203a;--am:#fbbf24;--amb:#2a210c;--rd:#f87171;--rdb:#2a1414;--ov:rgba(0,0,0,.5)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,"Noto Sans Thai",sans-serif;padding:24px 16px}
+.w{max-width:1120px;margin:0 auto}
+h1{font-size:21px;margin:0 0 4px}.lead{color:var(--mut);margin:0 0 8px;max-width:780px}
+h2{font-size:12px;letter-spacing:.07em;color:var(--mut);margin:32px 0 10px;font-weight:700}
+.mono{font-family:ui-monospace,monospace}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}@media(max-width:900px){.grid3{grid-template-columns:1fr}}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px 16px}
+.lbl{font-size:11.5px;color:var(--mut);font-weight:600;margin-bottom:6px;letter-spacing:.03em}
+.stage{background:var(--ov);border-radius:16px;padding:18px 12px;display:flex;justify-content:center}
+.dlg{background:var(--card);border-radius:14px;width:100%;max-width:620px;box-shadow:0 18px 44px rgba(0,0,0,.18);overflow:hidden}
+.dlg.sm{max-width:420px}
+.dh{display:flex;align-items:center;gap:8px;padding:11px 16px;border-bottom:1px solid var(--bd);flex-wrap:wrap}
+.steps{display:flex;gap:4px;padding:8px 16px;border-bottom:1px solid var(--bd);font-size:12px}
+.steps span{flex:1;text-align:center;padding:4px 0;border-radius:6px;background:var(--sub);color:var(--mut)}
+.steps .d{background:var(--grb);color:var(--gr)}.steps .n{background:var(--fg);color:var(--bg);font-weight:700}
+.db{padding:12px 16px;font-size:13px}
+.df{display:flex;align-items:center;gap:8px;padding:11px 16px;border-top:1px solid var(--bd);flex-wrap:wrap}
+.df .h{margin-right:auto;font-size:12.5px}
+.btn{display:inline-flex;align-items:center;border-radius:8px;padding:7px 13px;font-size:13px;font-weight:600;border:1px solid var(--bd);background:var(--card);white-space:nowrap}
+.btn.pri{background:var(--fg);color:var(--bg);border-color:var(--fg)}.btn.red{background:var(--rd);color:#fff;border-color:var(--rd)}
+.link{font-size:12.5px;color:var(--rd);text-decoration:underline}
+.st{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.s-ap{background:var(--grb);color:var(--gr)}.s-or{background:var(--blb);color:var(--bl)}.s-dr{background:var(--sub);color:var(--mut)}
+.em{font:700 10.5px ui-monospace,monospace;letter-spacing:.06em;background:var(--rd);color:#fff;border-radius:4px;padding:2px 6px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:10.5px;color:var(--mut);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--bd);letter-spacing:.04em}
+td{padding:8px;border-bottom:1px solid var(--bd)}tr:last-child td{border-bottom:0}
+.r{text-align:right}
+.in{border:1px solid var(--bd);border-radius:8px;padding:8px 10px;background:var(--bg);color:var(--mut);font-size:13px;min-height:58px}
+.notif{display:flex;gap:10px;padding:10px;border-radius:10px;background:var(--sub);font-size:13px;margin-bottom:8px}
+.av{width:28px;height:28px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex:0 0 28px}
+.small{font-size:12px;color:var(--mut)}
+.side{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:8px}
+.nav{display:flex;justify-content:space-between;padding:6px 10px;border-radius:8px;font-size:13.5px}
+.bdg{font:700 11px ui-monospace,monospace;border-radius:999px;padding:1px 7px}
+.b-am{background:var(--amb);color:var(--am)}.b-mu{background:var(--sub);color:var(--mut)}.b-or{background:#FF5B3F22;color:#e5401b}
+.flow{display:flex;gap:0;overflow-x:auto}
+.fs{flex:1 0 150px;border:1px solid var(--bd);background:var(--card);padding:10px 12px;font-size:12.5px}
+.fs+.fs{border-left:0}.fs:first-child{border-radius:12px 0 0 12px}.fs:last-child{border-radius:0 12px 12px 0}
+.fs b{display:block;font-size:13px}.fs .who{font:600 10px ui-monospace,monospace;color:var(--pur);letter-spacing:.06em}
+.fs.buy{background:var(--blb)}
+ul.k{margin:6px 0 0;padding-left:18px;font-size:13px}ul.k li{margin:3px 0}
+</style></head><body><div class="w">
+<h1>Buyer &amp; emergency PO</h1>
+<p class="lead">admin@sixsheet.me makes every PO. Anyone else can still order in an emergency: they give a reason, the PO is tagged <span class="em">EMERGENCY</span>, and both Champ and the buyer are told. Approval (฿10K) always applies. Sample data.</p>
+
+<h2>1 · WHO DOES WHAT</h2>
+<div class="flow">
+ <div class="fs"><span class="who">ANYONE</span><b>Request</b>Add items, submit</div>
+ <div class="fs"><span class="who">AUTO / CHAMP</span><b>Approve</b>&lt; ฿10K auto · ≥ ฿10K Champ</div>
+ <div class="fs buy"><span class="who">BUYER · ADMIN@</span><b>Create PO → Mark ordered</b>Notified when a request is approved</div>
+ <div class="fs"><span class="who">ANYONE</span><b>Receive</b>Whoever is at the warehouse</div>
+</div>
+<p class="small" style="margin-top:8px">Emergency: anyone can do the buyer's step, with a reason. Champ and the buyer both get a bell notification.</p>
+
+<h2>2 · APPROVED REQUEST: WHAT EACH PERSON SEES</h2>
+<div class="grid2">
+ <div>
+  <div class="lbl">BUYER (admin@sixsheet.me)</div>
+  <div class="stage"><div class="dlg">
+   <div class="dh"><b class="mono">REQ-2026-10-021</b><span class="st s-ap">Approved · to order</span><span class="small">by Sale A</span></div>
+   <div class="steps"><span class="d">✓ Request</span><span class="d">✓ Approve</span><span class="n">3 Order</span><span>4 Receive</span></div>
+   <div class="db"><table>
+    <tr><th>ITEM</th><th>SUPPLIER</th><th class="r">TOTAL</th></tr>
+    <tr><td>Backdrop 3×2m</td><td>Sample Camera Shop</td><td class="r mono">9,095</td></tr>
+    <tr><td>LED panel ×2</td><td>Sample Camera Shop</td><td class="r mono">15,515</td></tr>
+   </table></div>
+   <div class="df"><span class="h" style="color:var(--gr)">Approved by Champ · 28 Oct</span><span class="btn pri">Create PO →</span></div>
+  </div></div>
+ </div>
+ <div>
+  <div class="lbl">EVERYONE ELSE</div>
+  <div class="stage"><div class="dlg">
+   <div class="dh"><b class="mono">REQ-2026-10-021</b><span class="st s-ap">Approved · to order</span><span class="small">by Sale A</span></div>
+   <div class="steps"><span class="d">✓ Request</span><span class="d">✓ Approve</span><span class="n">3 Order</span><span>4 Receive</span></div>
+   <div class="db"><table>
+    <tr><th>ITEM</th><th>SUPPLIER</th><th class="r">TOTAL</th></tr>
+    <tr><td>Backdrop 3×2m</td><td>Sample Camera Shop</td><td class="r mono">9,095</td></tr>
+    <tr><td>LED panel ×2</td><td>Sample Camera Shop</td><td class="r mono">15,515</td></tr>
+   </table></div>
+   <div class="df"><span class="h">Purchasing (admin) will order this · waiting 2h</span><span class="link">Emergency order…</span></div>
+  </div></div>
+  <p class="small">No main button. The emergency link is small and red, so it isn't used by habit.</p>
+ </div>
+</div>
+
+<h2>3 · EMERGENCY: GIVE A REASON</h2>
+<div class="grid2">
+ <div class="stage"><div class="dlg sm">
+  <div class="dh"><b>Emergency order</b></div>
+  <div class="db">
+   <p style="margin:0 0 10px">Purchasing normally makes POs. Order this yourself only if it can't wait.</p>
+   <div class="lbl">REASON (REQUIRED)</div>
+   <div class="in">Event tomorrow 10:00, admin not reachable</div>
+   <p class="small" style="margin:10px 0 0">Champ and the buyer will be notified. The PO is tagged <span class="em">EMERGENCY</span>.</p>
+  </div>
+  <div class="df"><span class="h"></span><span class="btn">Cancel</span><span class="btn red">Continue → Create PO</span></div>
+ </div></div>
+ <div class="box">
+  <div class="lbl">AFTER CONTINUE</div>
+  <ul class="k">
+   <li>Opens the normal <b>Create PO</b> step for this request, then <b>Mark ordered</b>.</li>
+   <li>The reason is saved on the PO: <i>emergency by Nong · 28 Oct 18:05 · "Event tomorrow…"</i>.</li>
+   <li>Only for <b>approved</b> requests. Requests waiting for Champ can't be ordered as an emergency.</li>
+   <li>The buyer can open the PO afterwards and add the FlowAccount number as usual.</li>
+  </ul>
+ </div>
+</div>
+
+<h2>4 · THE PO AND THE LIST</h2>
+<div class="grid2">
+ <div class="stage"><div class="dlg">
+  <div class="dh"><b class="mono" style="color:var(--pur);font-size:16px">PO2026100007</b><span class="em">EMERGENCY</span><span class="st s-or">Ordered</span></div>
+  <div class="db">
+   <div style="background:var(--rdb);color:var(--rd);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:12.5px"><b>Emergency PO by Nong</b> · 28 Oct 18:05 — “Event tomorrow 10:00, admin not reachable”</div>
+   <table>
+    <tr><th>ITEM</th><th class="r">QTY</th><th class="r">TOTAL incl. VAT</th><th></th></tr>
+    <tr><td>Backdrop 3×2m</td><td class="r">1</td><td class="r mono">9,095</td><td class="r"><span class="btn" style="padding:3px 8px;font-size:12px">Receive…</span></td></tr>
+    <tr><td>LED panel 60W</td><td class="r">2</td><td class="r mono">15,515</td><td class="r"><span class="btn" style="padding:3px 8px;font-size:12px">Receive…</span></td></tr>
+   </table>
+  </div>
+  <div class="df"><span class="h small">Sample Camera Shop</span><span class="btn pri">Receive all ✓</span></div>
+ </div></div>
+ <div>
+  <div class="box" style="padding:0;overflow:hidden">
+   <table>
+    <tr><th style="padding-left:14px">PO</th><th>SUPPLIER</th><th class="r">TOTAL</th><th>STATUS</th></tr>
+    <tr><td style="padding-left:14px" class="mono">PO2026100007 <span class="em">EMERGENCY</span></td><td>Sample Camera Shop</td><td class="r mono">24,610</td><td><span class="st s-or">Ordered</span></td></tr>
+    <tr><td style="padding-left:14px" class="mono">PO2026100006</td><td>Sample Paper Co.</td><td class="r mono">2,140</td><td><span class="st s-dr">Draft</span></td></tr>
+    <tr><td style="padding-left:14px" class="mono">PO2026100005</td><td>Sample Camera Shop</td><td class="r mono">15,836</td><td><span class="st s-or">Ordered</span></td></tr>
+   </table>
+  </div>
+  <p class="small">A filter chip <b>Emergency 1</b> on the POs page lets Champ review them later.</p>
+ </div>
+</div>
+
+<h2>5 · NOTIFICATIONS (BELL)</h2>
+<div class="grid3">
+ <div class="box"><div class="lbl">BUYER · WHEN APPROVED</div>
+  <div class="notif"><span class="av" style="background:#15803d">C</span><span><b>Champ</b> approved · ready to order<br><span class="small">REQ-2026-10-021 · ฿24,610</span></span></div>
+  <div class="notif"><span class="av" style="background:#71717a">A</span><span><b>Auto-approved</b> · ready to order<br><span class="small">REQ-2026-10-024 · ฿482</span></span></div>
+ </div>
+ <div class="box"><div class="lbl">CHAMP + BUYER · EMERGENCY</div>
+  <div class="notif" style="background:var(--rdb)"><span class="av" style="background:#dc2626">N</span><span><b>Nong</b> made an emergency PO<br><span class="small">PO2026100007 · ฿24,610 · “Event tomorrow…”</span></span></div>
+ </div>
+ <div class="box"><div class="lbl">SIDEBAR BADGES</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+   <div class="side" style="flex:1;min-width:140px"><div class="small" style="margin:0 0 4px 6px">Buyer</div><div class="nav">Requests <span class="bdg b-mu">3 to order</span></div><div class="nav">POs <span class="bdg b-mu">2</span></div></div>
+   <div class="side" style="flex:1;min-width:140px"><div class="small" style="margin:0 0 4px 6px">Champ</div><div class="nav">Requests <span class="bdg b-am">2 approve</span></div><div class="nav">POs</div></div>
+  </div>
+ </div>
+</div>
+
+<h2>6 · RULES</h2>
+<div class="box"><ul class="k">
+ <li><b>Buyer:</b> admin@sixsheet.me, set up like the approver (champ@sixsheet.me). One buyer, no back-up.</li>
+ <li><b>Buyer only (normal):</b> Create PO, add to a draft PO, Mark ordered, Cancel PO.</li>
+ <li><b>Anyone:</b> request, receive (count deliveries), view everything.</li>
+ <li><b>Emergency (anyone):</b> needs a reason. Only for approved requests. The PO is tagged EMERGENCY and Champ and the buyer get a bell notification.</li>
+ <li><b>Buyer notified</b> every time a request becomes approved (automatically or by Champ).</li>
+ <li><b>Screen-enforced</b> like approval. A database rule can come later.</li>
+ <li><b>Data:</b> anf_pos gets emergency_by, emergency_reason, emergency_at (one small migration).</li>
+</ul></div>
+</div></body></html>

@@ -11,7 +11,7 @@ import { OrderDialog } from '@/components/anf/order-dialog'
 import { RequestDialog, CreatePODialog, ImportDialog, ProjectChip, projectTitle } from '@/components/anf/purchasing-ui'
 import { cn } from '@/lib/utils'
 import { ANF_ACCENT, baht, fmtDate } from '@/lib/anf'
-import { usePurchasing, requestStatus, REQ_STATUS, requestTotal, approvalOf, isApprover, type ReqStatus } from '@/lib/supabase/purchasing'
+import { usePurchasing, requestStatus, REQ_STATUS, requestTotal, approvalOf, isApprover, isBuyer, type ReqStatus } from '@/lib/supabase/purchasing'
 import { useAuth } from '@/components/auth-provider'
 import { useOpenDeepLink } from '@/hooks/use-open-deep-link'
 import { useSuppliers } from '@/lib/supabase/suppliers'
@@ -28,6 +28,7 @@ export default function RequestsPage() {
   const { requests, pos, loaded } = usePurchasing()
   const { user, role } = useAuth()
   const approver = isApprover(user?.email, role)
+  const buyer = isBuyer(user?.email, role)   // only the buyer bulk-selects requests into POs
   useSuppliers()
   const [pick, setFilter] = useState<'open' | ReqStatus | 'all' | null>(null)
   const [q, setQ] = useState('')
@@ -35,6 +36,7 @@ export default function RequestsPage() {
   const [openReq, setOpenReq] = useState<AnfRequest | 'new' | null>(null)
   const [openItem, setOpenItem] = useState<AnfOrder | null>(null)
   const [poItems, setPoItems] = useState<AnfOrder[] | null>(null)
+  const [poEmergency, setPoEmergency] = useState<string | undefined>(undefined)
   const [importing, setImporting] = useState(false)
 
   const onBoard = (b?: string | null) => !activeBoardId || !b || b === activeBoardId
@@ -120,7 +122,7 @@ export default function RequestsPage() {
               const total = requestTotal(r.items)
               const manual = r.items.filter((o) => !o.product_id).length
               const poIds = [...new Set(r.items.map((o) => o.po_id).filter(Boolean))] as string[]
-              const canSelect = approvalOf(r.req) === 'approved' && r.items.some((o) => o.status !== 'received' && !o.po_id)
+              const canSelect = buyer && approvalOf(r.req) === 'approved' && r.items.some((o) => o.status !== 'received' && !o.po_id)
               const on = selected.includes(r.key)
               const single = r.req ? null : r.items[0]
               return (
@@ -153,14 +155,14 @@ export default function RequestsPage() {
           <span className="text-[12px] opacity-75 truncate">→ {[...bySup.entries()].map(([sid, n]) => `${suppliers.find((s) => s.supplier_id === sid)?.name ?? 'no supplier'} (${n})`).join(' · ')}</span>
           <span className="ml-auto flex gap-2">
             <button type="button" onClick={() => setSelected([])} className="h-8 rounded-md border border-background/30 px-3 text-[12px]">Clear</button>
-            <button type="button" onClick={() => setPoItems(selItems)} className="h-8 rounded-md bg-background text-foreground px-3 text-[12px] font-bold">Create PO →</button>
+            <button type="button" onClick={() => { setPoItems(selItems); setPoEmergency(undefined) }} className="h-8 rounded-md bg-background text-foreground px-3 text-[12px] font-bold">Create PO →</button>
           </span>
         </div>
       )}
 
-      {openReq && <RequestDialog request={openReq === 'new' ? null : openReq} onClose={() => setOpenReq(null)} onCreatePO={(items) => setPoItems(items)} />}
+      {openReq && <RequestDialog request={openReq === 'new' ? null : openReq} onClose={() => setOpenReq(null)} onCreatePO={(items, why) => { setPoItems(items); setPoEmergency(why) }} />}
       {openItem && <OrderDialog order={openItem} onClose={() => setOpenItem(null)} />}
-      {poItems && <CreatePODialog items={poItems} onClose={() => setPoItems(null)} onDone={() => setSelected([])} />}
+      {poItems && <CreatePODialog items={poItems} emergency={poEmergency} onClose={() => { setPoItems(null); setPoEmergency(undefined) }} onDone={() => setSelected([])} />}
       {importing && <ImportDialog onClose={() => setImporting(false)} />}
     </div>
   )
