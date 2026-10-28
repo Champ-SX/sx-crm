@@ -1,4 +1,4 @@
-import type { AnfOrder, AnfPO, AnfProduct, AnfRequest } from '@/types'
+import type { AnfOrder, AnfPO, AnfProduct, AnfRequest, AnfRequestEvent } from '@/types'
 
 // Local dev (mock mode) only — made-up sample data for the Requests → POs screens.
 // Totals are picked to sit either side of the 10,000 THB approval limit.
@@ -53,3 +53,20 @@ export const MOCK_PURCHASE_ITEMS: AnfOrder[] = [
 ]
 
 export const MOCK_ASSET_PRODUCT: AnfProduct = { product_id: 'p-mock-cam', board_id: 'anf-order', name: 'Camera Canon R50', code: 'CAM-R50', category: 'camera', unit: 'pcs', kind: 'asset' }
+
+const ev = (id: string, request_id: string, action: AnfRequestEvent['action'], actor: string, at: number, detail?: string): AnfRequestEvent =>
+  ({ id, request_id, action, actor, actor_id: null, at: ts(at), detail: detail ?? null })
+export const MOCK_EVENTS: AnfRequestEvent[] = [
+  ev('ev-1', 'req-mock-21', 'created', 'Sale A', -0.2),
+  ev('ev-2', 'req-mock-21', 'item_added', 'Sale A', -0.2, 'Backdrop 3×2m print ×1'),
+  ev('ev-3', 'req-mock-21', 'item_added', 'Sale A', -0.2, 'LED panel 60W ×2'),
+  ev('ev-4', 'req-mock-21', 'submitted', 'Sale A', -0.1, '฿24,610 · sent to Champ for approval'),
+  ev('ev-5', 'req-mock-16', 'created', 'Sale C', -4.2),
+  ev('ev-6', 'req-mock-16', 'submitted', 'Sale C', -4.1, '฿15,836 · sent to Champ for approval'),
+  ev('ev-7', 'req-mock-16', 'approved', 'Champ', -4, '฿15,836'),
+  ev('ev-8', 'req-mock-16', 'added_to_po', 'Admin', -3.5, 'PO2026100004 · Sample Camera Shop'),
+  ev('ev-9', 'req-mock-16', 'ordered', 'Admin', -3, 'PO2026100004'),
+  ev('ev-10', 'req-mock-16', 'received', 'Ops B', -1, 'Ring light 18" · 2/2'),
+  ev('ev-11', 'req-mock-14', 'submitted', 'Ops B', -6, '฿38,520 · sent to Champ for approval'),
+  ev('ev-12', 'req-mock-14', 'rejected', 'Champ', -5.5, 'Repair the old one first'),
+]

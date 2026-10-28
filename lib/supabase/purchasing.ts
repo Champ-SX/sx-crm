@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase, isSupabaseConfigured } from './client'
-import type { AnfOrder, AnfPO, AnfRequest, Notification } from '@/types'
+import type { AnfOrder, AnfPO, AnfRequest, AnfRequestEvent, Notification } from '@/types'
 import { notificationQueries } from './db'
 import { useCRMStore } from '@/store/crm-store'
-import { MOCK_REQUESTS, MOCK_POS, MOCK_PURCHASE_ITEMS, MOCK_ASSET_PRODUCT } from './purchasing-mock'
+import { MOCK_REQUESTS, MOCK_POS, MOCK_PURCHASE_ITEMS, MOCK_ASSET_PRODUCT, MOCK_EVENTS } from './purchasing-mock'
 import { needsApproval, requestTotal, approvalOf } from '@/lib/purchasing-rules'
 export * from '@/lib/purchasing-rules'
 
@@ -15,6 +15,7 @@ export const newPurchasingId = mkId
 
 let requests: AnfRequest[] = []
 let pos: AnfPO[] = []
+let events: AnfRequestEvent[] = []
 let loaded = false
 let loading: Promise<void> | null = null
 const listeners = new Set<() => void>()
@@ -24,7 +25,7 @@ async function load() {
   if (!isSupabaseConfigured) {
     // Local dev (mock mode) — sample requests / POs / items to click through.
     if (!loaded) {
-      requests = [...MOCK_REQUESTS]; pos = [...MOCK_POS]
+      requests = [...MOCK_REQUESTS]; pos = [...MOCK_POS]; events = [...MOCK_EVENTS]
       if (useCRMStore.getState().anfOrders.length === 0) useCRMStore.setState({ anfOrders: [...MOCK_PURCHASE_ITEMS] })
       const st = useCRMStore.getState()
       if (!st.anfProducts.some((p) => p.product_id === MOCK_ASSET_PRODUCT.product_id)) useCRMStore.setState({ anfProducts: [...st.anfProducts, MOCK_ASSET_PRODUCT] })
@@ -39,6 +40,10 @@ async function load() {
   if (p.error) console.warn('[purchasing] POs load failed', p.error.message)
   requests = (r.data ?? []) as AnfRequest[]
   pos = (p.data ?? []) as AnfPO[]
+  // History is optional until its migration has run.
+  const e = await supabase.from('anf_request_events').select('*').order('at', { ascending: true })
+  if (e.error) console.warn('[purchasing] history load failed', e.error.message)
+  events = (e.data ?? []) as AnfRequestEvent[]
   loaded = true; emit()
 }
 
@@ -51,7 +56,7 @@ export function usePurchasing(enabled = true) {
     if (enabled && !loaded && !loading) loading = load()
     return () => { listeners.delete(f) }
   }, [enabled])
-  return { requests, pos, loaded }
+  return { requests, pos, events, loaded }
 }
 
 export async function saveRequest(r: AnfRequest) {
@@ -76,6 +81,24 @@ export async function savePO(p: AnfPO) {
   if (!isSupabaseConfigured) return
   const { error } = await supabase.from('anf_pos').upsert(row)
   if (error) throw new Error(error.message)
+}
+
+// ── History ──────────────────────────────────────────────────────────────────
+/** The signed-in person, for "who did it" (name for display, id because names change). */
+export function actor(): { name: string; id: string | null } {
+  const st = useCRMStore.getState()
+  return { name: st.currentUserName || 'Someone', id: st.currentUserId }
+}
+export const eventsFor = (requestId: string) => events.filter((e) => e.request_id === requestId)
+export async function logEvent(requestId: string | null | undefined, action: AnfRequestEvent['action'], detail?: string | null) {
+  if (!requestId) return
+  const who = actor()
+  const e: AnfRequestEvent = { id: mkId(), request_id: requestId, action, detail: detail ?? null, actor: who.name, actor_id: who.id, at: new Date().toISOString() }
+  events = [...events, e]
+  emit()
+  if (!isSupabaseConfigured) return
+  const { error } = await supabase.from('anf_request_events').insert(e)
+  if (error) console.warn('[purchasing] history write failed', error.message)
 }
 
 // ── Numbers ──────────────────────────────────────────────────────────────────
@@ -150,7 +173,7 @@ function notifyApprover(r: AnfRequest, total: number) {
 }
 function notifyRequester(r: AnfRequest, message: string) {
   const st = useCRMStore.getState()
-  const m = st.teamMembers.find((x) => x.name === r.created_by || x.email === r.created_by)
+  const m = st.teamMembers.find((x) => (r.created_by_id && x.id === r.created_by_id) || x.name === r.created_by || x.email === r.created_by)
   if (!m || m.id === st.currentUserId) return
   notify({ recipient_id: m.id, recipient_name: m.name || m.email, actor: st.currentUserName || 'Champ',
     entity_type: 'anf_request', entity_id: r.request_id, entity_name: r.number, message, read: false, board_id: 'anf-order' })
@@ -171,30 +194,35 @@ export async function submitRequest(r: AnfRequest, items: AnfOrder[]): Promise<A
   const total = requestTotal(items)
   const now = new Date().toISOString()
   const auto = !needsApproval(total)
-  const next: AnfRequest = { ...r, total_thb: total, submitted_at: now, rejected_reason: null,
-    ...(auto ? { status: 'approved', approved_by: 'auto', approved_at: now } : { status: 'pending', approved_by: null, approved_at: null }) }
+  const who = actor()
+  const next: AnfRequest = { ...r, total_thb: total, submitted_at: now, submitted_by: who.name, submitted_by_id: who.id, rejected_reason: null,
+    ...(auto ? { status: 'approved', approved_by: 'auto', approved_by_id: null, approved_at: now } : { status: 'pending', approved_by: null, approved_by_id: null, approved_at: null }) }
   await saveRequest(next)
+  void logEvent(r.request_id, 'submitted', `฿${total.toLocaleString('en-US')} · ${auto ? 'approved automatically (under ฿10,000)' : 'sent to Champ for approval'}`)
   if (!auto) notifyApprover(next, total)
   else notifyBuyer(next, total, 'Auto-approved')
   return next
 }
 export async function approveRequest(r: AnfRequest, items: AnfOrder[], by: string): Promise<AnfRequest> {
-  const next: AnfRequest = { ...r, status: 'approved', total_thb: requestTotal(items), approved_by: by, approved_at: new Date().toISOString(), rejected_reason: null }
+  const next: AnfRequest = { ...r, status: 'approved', total_thb: requestTotal(items), approved_by: by, approved_by_id: actor().id, approved_at: new Date().toISOString(), rejected_reason: null }
   await saveRequest(next)
+  void logEvent(r.request_id, 'approved', `฿${(next.total_thb ?? 0).toLocaleString('en-US')}`)
   notifyRequester(next, 'approved your request')
   notifyBuyer(next, next.total_thb ?? 0, by)
   return next
 }
 export async function rejectRequest(r: AnfRequest, reason: string): Promise<AnfRequest> {
-  const next: AnfRequest = { ...r, status: 'rejected', rejected_reason: reason, approved_by: null, approved_at: null }
+  const next: AnfRequest = { ...r, status: 'rejected', rejected_reason: reason, approved_by: null, approved_by_id: null, approved_at: null }
   await saveRequest(next)
+  void logEvent(r.request_id, 'rejected', reason)
   notifyRequester(next, `rejected your request: ${reason}`)
   return next
 }
 /** Withdraw a waiting (or rejected) request back to draft so it can be edited. */
 export async function withdrawRequest(r: AnfRequest): Promise<AnfRequest> {
-  const next: AnfRequest = { ...r, status: 'draft', submitted_at: null, approved_by: null, approved_at: null }
+  const next: AnfRequest = { ...r, status: 'draft', submitted_at: null, approved_by: null, approved_by_id: null, approved_at: null }
   await saveRequest(next)
+  void logEvent(r.request_id, 'withdrawn', 'back to draft to edit')
   return next
 }
 

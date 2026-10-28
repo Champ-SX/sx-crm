@@ -14,9 +14,9 @@ import { jobCardName } from '@/lib/jobs'
 import { useSuppliers, preferredFor, linksFor, saveLink, newLink } from '@/lib/supabase/suppliers'
 import {
   usePurchasing, saveRequest, savePO, newPurchasingId, nextRequestNumber, nextPONumber, itemTotal,
-  submitRequest, approveRequest, rejectRequest, withdrawRequest, isBuyer, notifyEmergencyPO, deleteRequest, requestTotal, lineTotalVat, lineRules, receivePlan, approvalOf, isApprover, requestStatus, REQ_STATUS, APPROVAL_LIMIT_THB, type ReqStatus,
+  submitRequest, approveRequest, rejectRequest, withdrawRequest, isBuyer, notifyEmergencyPO, logEvent, eventsFor, deleteRequest, requestTotal, lineTotalVat, lineRules, receivePlan, approvalOf, isApprover, requestStatus, REQ_STATUS, APPROVAL_LIMIT_THB, type ReqStatus,
 } from '@/lib/supabase/purchasing'
-import type { AnfOrder, AnfRequest, AnfPO, AnfProduct, AnfAsset, WonJob } from '@/types'
+import type { AnfOrder, AnfRequest, AnfRequestEvent, AnfPO, AnfProduct, AnfAsset, WonJob } from '@/types'
 import { useAssets, saveAsset, moveAsset, newAssetId, nextCode, prefixFor, RACKS, SHELVES } from '@/lib/supabase/assets'
 
 export const inputCls = 'h-9 w-full rounded-md border border-border bg-background px-2.5 text-[13px] outline-none focus:border-foreground/40'
@@ -104,7 +104,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
   const [r, setR] = useState<AnfRequest>(() => request ?? {
     request_id: newPurchasingId(), board_id: activeBoardId || 'anf-order', number: nextRequestNumber(requests.map((x) => x.number)),
     project_kind: 'refill', job_id: null, project_name: firstBranch ? `Refill · ${firstBranch}` : '', needed_by: null,
-    deliver_to: firstBranch || 'WAREHOUSE', created_by: me, status: 'draft',
+    deliver_to: firstBranch || 'WAREHOUSE', created_by: me, created_by_id: user?.id ?? null, status: 'draft',
   })
   const [rejecting, setRejecting] = useState<string | null>(null)   // reason being typed
   const [saved, setSaved] = useState(!!request)
@@ -136,9 +136,10 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
     let live = true
     ;(async () => {
       const first = numbered(r)
-      await saveRequest(first); if (live) setR(first)
+      await saveRequest(first); void logEvent(first.request_id, 'created', lines.length > 1 ? `${lines.length} items` : null); if (live) setR(first)
       for (const l of lines) {
         const pref = l.product_id ? preferredFor(l.product_id) : null
+        void logEvent(r.request_id, 'item_added', `${l.item} ×${l.quantity ?? 1}`)
         await addAnfOrder(newItem({
           item: l.item, product_id: l.product_id ?? null, description: l.description ?? null,
           quantity: l.quantity ?? 1, unit: pref?.unit ?? null, unit_price: l.unit_price ?? pref?.price ?? 0,
@@ -175,6 +176,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
     if (saved) return
     const first = numbered(next)
     await saveRequest(first); setR(first); setSaved(true)
+    void logEvent(first.request_id, 'created')
   }
   const patch = (p: Partial<AnfRequest>) => { const next = { ...r, ...p }; setR(next); if (saved) saveRequest(next).catch((e: Error) => setError(e.message)) }
 
@@ -185,6 +187,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
       setError(null)
       await ensureSaved()
       const pref = p ? preferredFor(p.product_id) : null
+      void logEvent(r.request_id, 'item_added', `${text} ×1`)
       await addAnfOrder(newItem({
         item: text, product_id: p?.product_id ?? null, description: p?.code ?? null, unit: pref?.unit ?? p?.unit ?? null,
         unit_price: pref?.price ?? 0, supplier_id: pref?.supplier_id ?? null, request_id: r.request_id,
@@ -193,7 +196,18 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
       setQ('')
     } catch (e) { setError((e as Error).message) }
   }
-  const upd = (o: AnfOrder, p: Partial<AnfOrder>) => void updateAnfOrder(o.order_id, p)
+  const upd = (o: AnfOrder, p: Partial<AnfOrder>) => {
+    // Log what changed on the line (qty / price / VAT / supplier) for the request's history.
+    const sup = (id?: string | null) => suppliers.find((x) => x.supplier_id === id)?.name ?? 'none'
+    const parts = [
+      p.quantity !== undefined && p.quantity !== o.quantity && `qty ${o.quantity} → ${p.quantity}`,
+      p.unit_price !== undefined && p.unit_price !== o.unit_price && `price ${o.unit_price} → ${p.unit_price}`,
+      p.with_vat !== undefined && p.with_vat !== o.with_vat && (p.with_vat ? 'VAT on' : 'VAT off'),
+      p.supplier_id !== undefined && p.supplier_id !== o.supplier_id && `supplier ${sup(o.supplier_id)} → ${sup(p.supplier_id)}`,
+    ].filter(Boolean)
+    if (parts.length) void logEvent(r.request_id, 'item_changed', `${o.item}: ${parts.join(', ')}`)
+    void updateAnfOrder(o.order_id, p)
+  }
   /** A typed-in line becomes a catalog item (with its supplier + price), so it can be found and reordered next time. */
   async function saveToCatalog(o: AnfOrder) {
     try {
@@ -328,7 +342,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
                           : po ? <span className="font-mono text-muted-foreground">{po.number} · draft</span>
                           : <span className="text-muted-foreground">{appr === 'approved' ? 'not on a PO yet' : '—'}</span>}
                       </td>
-                      <td className="px-1 py-2">{rule.remove && <button type="button" onClick={() => { if (window.confirm(`Remove “${o.item}”?`)) void deleteAnfOrder(o.order_id) }} className="text-muted-foreground hover:text-destructive" aria-label="Remove"><Trash2 className="w-4 h-4" /></button>}</td>
+                      <td className="px-1 py-2">{rule.remove && <button type="button" onClick={() => { if (window.confirm(`Remove “${o.item}”?`)) { void logEvent(r.request_id, 'item_removed', `${o.item} ×${o.quantity}`); void deleteAnfOrder(o.order_id) } }} className="text-muted-foreground hover:text-destructive" aria-label="Remove"><Trash2 className="w-4 h-4" /></button>}</td>
                     </tr>
                   )
                 })}
@@ -364,6 +378,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
             <span className="text-[13px] text-muted-foreground">{baht(net)} + VAT</span>
             <b className="font-mono text-[18px]">{baht(grand)}</b>
           </div>
+          {saved && <RequestHistory r={r} />}
         </div>
         {error && <p className="px-5 py-2 text-[12px] text-destructive border-t border-border">{error}</p>}
         <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-t border-border">
@@ -374,6 +389,41 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
         {receiving && <ReceiveDialog order={receiving} onClose={() => setReceiving(null)} />}
       </DialogContent>
     </Dialog>
+  )
+}
+
+// ── History ──────────────────────────────────────────────────────────────────
+const EVENT_LABEL: Record<AnfRequestEvent['action'], string> = {
+  created: 'Created', submitted: 'Submitted', approved: 'Approved', rejected: 'Rejected', withdrawn: 'Withdrawn',
+  item_added: 'Item added', item_removed: 'Item removed', item_changed: 'Item changed', added_to_po: 'Added to PO',
+  ordered: 'Ordered', po_cancelled: 'PO cancelled', received: 'Received',
+}
+/** Who did what on this request, oldest first. Collapsed to the key steps; item edits behind "show all". */
+function RequestHistory({ r }: { r: AnfRequest }) {
+  usePurchasing()
+  const [all, setAll] = useState(false)
+  const list = eventsFor(r.request_id)
+  const minor = (a: AnfRequestEvent['action']) => a === 'item_added' || a === 'item_removed' || a === 'item_changed'
+  const shown = all ? list : list.filter((e) => !minor(e.action))
+  const hidden = list.length - shown.length
+  const when = (iso: string) => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+  return (
+    <div className="px-5 pb-4">
+      <div className="flex items-center gap-2 border-t border-border pt-3 mb-1.5">
+        <span className="font-mono text-[10px] tracking-wide text-muted-foreground">HISTORY</span>
+        {(hidden > 0 || all) && <button type="button" onClick={() => setAll((v) => !v)} className="ml-auto text-[12px] text-muted-foreground underline">{all ? 'Key steps only' : `Show all (${list.length})`}</button>}
+      </div>
+      {list.length === 0 ? <p className="text-[12px] text-muted-foreground">Created by {r.created_by ?? '—'}{r.created_at ? ` · ${when(r.created_at)}` : ''}. (History starts from now.)</p> : (
+        <ol className="space-y-1">
+          {shown.map((e) => (
+            <li key={e.id} className="grid grid-cols-[96px_1fr] gap-2 text-[12.5px]">
+              <span className="font-mono text-[11px] text-muted-foreground pt-px">{when(e.at)}</span>
+              <span className="min-w-0"><b className={cn(e.action === 'rejected' && 'text-red-700 dark:text-red-400', e.action === 'approved' && 'text-emerald-700 dark:text-emerald-400')}>{EVENT_LABEL[e.action]}</b> by {e.actor ?? '—'}{e.detail && <span className="text-muted-foreground"> · {e.detail}</span>}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
   )
 }
 
@@ -410,6 +460,7 @@ export function ReceiveDialog({ order, onClose }: { order: AnfOrder; onClose: ()
       const plan = receivePlan(order, n, keepRest)
       await updateAnfOrder(order.order_id, { ...plan.patch, received_at: date, received_by: by.trim() || null })
       if (plan.rest) await addAnfOrder(plan.rest)
+      void logEvent(order.request_id, 'received', `${order.item} · ${n}/${order.quantity}${missing ? (keepRest ? ` · ${missing} still on order` : ' · closed short') : ''}`)
       // Price memory: the supplier's price for this item becomes what was just paid.
       if (order.product_id && order.supplier_id && order.unit_price > 0) {
         const link = linksFor(order.product_id).find((l) => l.supplier_id === order.supplier_id)
@@ -503,6 +554,9 @@ export function CreatePODialog({ items, emergency, onClose, onDone }: { items: A
           if (emergency) notifyEmergencyPO(po, requestTotal(g.list), g.list[0]?.request_id ?? null)
         }
         for (const o of g.list) await updateAnfOrder(o.order_id, { po_id: po.po_id })
+        for (const rid of new Set(g.list.map((o) => o.request_id).filter(Boolean))) {
+          void logEvent(rid, 'added_to_po', `${po.number} · ${g.supplier?.name ?? 'supplier'}${emergency ? ` · EMERGENCY: “${emergency}”` : ''}`)
+        }
       }
       onDone?.(real.length); onClose()
     } catch (e) { setError((e as Error).message) } finally { setBusy(false) }

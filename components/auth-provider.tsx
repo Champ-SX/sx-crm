@@ -38,6 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setUser(devUser as unknown as User)
       setRole(admin?.role ?? 'admin')
+      // Same as a real sign-in: the store knows who is acting (history, notifications).
+      void import('@/store/crm-store').then(({ useCRMStore }) => useCRMStore.getState().setCurrentUser(devUser.id, devUser.user_metadata.full_name))
       setSession({ user: devUser, access_token: 'mock', token_type: 'bearer' } as unknown as Session)
       setLoading(false)
       return

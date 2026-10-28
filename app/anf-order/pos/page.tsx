@@ -11,7 +11,7 @@ import { ProjectChip, useMe, ReceiveDialog } from '@/components/anf/purchasing-u
 import { useAuth } from '@/components/auth-provider'
 import { cn } from '@/lib/utils'
 import { ANF_ACCENT, baht, fmtDate, kindOf } from '@/lib/anf'
-import { usePurchasing, savePO, requestStatus, REQ_STATUS, requestTotal, lineTotalVat, isBuyer } from '@/lib/supabase/purchasing'
+import { usePurchasing, savePO, requestStatus, REQ_STATUS, requestTotal, lineTotalVat, isBuyer, logEvent } from '@/lib/supabase/purchasing'
 import { useSuppliers, telHref, lineHref } from '@/lib/supabase/suppliers'
 import type { AnfOrder, AnfPO } from '@/types'
 
@@ -125,18 +125,25 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
   async function markOrdered() {
     try {
       await savePO({ ...po, status: 'ordered', ordered_at: new Date().toISOString() })
+      for (const rid of new Set(items.map((o) => o.request_id).filter(Boolean))) void logEvent(rid, 'ordered', `${po.number} · ${sup?.name ?? 'supplier'}`)
       for (const o of items) if (o.status === 'to_order') await updateAnfOrder(o.order_id, { status: 'ordered', ordered_at: o.ordered_at ?? today, ordered_by: o.ordered_by ?? me, supplier_id: po.supplier_id ?? o.supplier_id })
     } catch (e) { setError((e as Error).message) }
   }
   async function receiveAll() {
     if (!window.confirm(`Receive ${bulk.length} line(s) in full?${bulk.length < open.length ? ' Assets are received one by one.' : ''}`)) return
-    try { for (const o of bulk) await updateAnfOrder(o.order_id, { status: 'received', received_qty: o.quantity, received_at: today, received_by: me }) }
+    try {
+      for (const o of bulk) {
+        await updateAnfOrder(o.order_id, { status: 'received', received_qty: o.quantity, received_at: today, received_by: me })
+        void logEvent(o.request_id, 'received', `${o.item} · ${o.quantity}/${o.quantity} (Receive all)`)
+      }
+    }
     catch (e) { setError((e as Error).message) }
   }
   async function cancel() {
     if (!window.confirm(`Cancel ${po.number}? Its items go back to their requests as “To order”.`)) return
     try {
       await savePO({ ...po, status: 'cancelled' })
+      for (const rid of new Set(items.map((o) => o.request_id).filter(Boolean))) void logEvent(rid, 'po_cancelled', `${po.number} · items back to “to order”`)
       for (const o of items) if (o.status !== 'received') await updateAnfOrder(o.order_id, { po_id: null, status: 'to_order' })
       onClose()
     } catch (e) { setError((e as Error).message) }

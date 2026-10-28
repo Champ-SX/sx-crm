@@ -208,6 +208,10 @@ export interface AnfRequest {
   status?: AnfRequestApproval         // approval state; ordered/received is derived from items
   total_thb?: number | null           // incl. VAT, stored at submit / approval
   submitted_at?: string | null
+  submitted_by?: string | null
+  submitted_by_id?: string | null
+  created_by_id?: string | null      // users.id of created_by (names can change)
+  approved_by_id?: string | null
   approved_by?: string | null
   approved_at?: string | null
   rejected_reason?: string | null
@@ -215,6 +219,16 @@ export interface AnfRequest {
   updated_at?: string
 }
 export type AnfRequestApproval = 'draft' | 'pending' | 'approved' | 'rejected'
+/** One line of a request's history — who did what, when. */
+export interface AnfRequestEvent {
+  id: string
+  request_id: string
+  action: 'created' | 'submitted' | 'approved' | 'rejected' | 'withdrawn' | 'item_added' | 'item_removed' | 'item_changed' | 'added_to_po' | 'ordered' | 'po_cancelled' | 'received'
+  detail?: string | null
+  actor?: string | null
+  actor_id?: string | null
+  at: string
+}
 export interface AnfPO {
   po_id: string
   board_id?: string
