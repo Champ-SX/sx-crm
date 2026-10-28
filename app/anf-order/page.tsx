@@ -11,7 +11,9 @@ import { OrderDialog } from '@/components/anf/order-dialog'
 import { RequestDialog, CreatePODialog, ImportDialog, ProjectChip, projectTitle } from '@/components/anf/purchasing-ui'
 import { cn } from '@/lib/utils'
 import { ANF_ACCENT, baht, fmtDate } from '@/lib/anf'
-import { usePurchasing, requestStatus, REQ_STATUS, itemTotal, type ReqStatus } from '@/lib/supabase/purchasing'
+import { usePurchasing, requestStatus, REQ_STATUS, requestTotal, approvalOf, isApprover, type ReqStatus } from '@/lib/supabase/purchasing'
+import { useAuth } from '@/components/auth-provider'
+import { useOpenDeepLink } from '@/hooks/use-open-deep-link'
 import { useSuppliers } from '@/lib/supabase/suppliers'
 import type { AnfOrder, AnfRequest } from '@/types'
 
@@ -23,9 +25,11 @@ export default function RequestsPage() {
   const anfOrders = useCRMStore((s) => s.anfOrders)
   const wonJobs = useCRMStore((s) => s.wonJobs)
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
-  const { requests, pos } = usePurchasing()
+  const { requests, pos, loaded } = usePurchasing()
+  const { user, role } = useAuth()
+  const approver = isApprover(user?.email, role)
   useSuppliers()
-  const [filter, setFilter] = useState<'open' | ReqStatus | 'all'>('open')
+  const [pick, setFilter] = useState<'open' | ReqStatus | 'all' | null>(null)
   const [q, setQ] = useState('')
   const [selected, setSelected] = useState<string[]>([])
   const [openReq, setOpenReq] = useState<AnfRequest | 'new' | null>(null)
@@ -49,19 +53,24 @@ export default function RequestsPage() {
   const jobOf = (r: AnfRequest | null) => (r?.job_id ? wonJobs.find((j) => j.job_id === r.job_id) ?? null : null)
   const poNum = (id: string) => pos.find((p) => p.po_id === id)?.number
   const counts: Record<string, number> = {}
-  for (const r of rows) { const s = requestStatus(r.items).status; counts[s] = (counts[s] ?? 0) + 1 }
+  for (const r of rows) { const s = requestStatus(r.items, r.req).status; counts[s] = (counts[s] ?? 0) + 1 }
+  // Approver lands on what's waiting for them; everyone else on open requests.
+  const filter = pick ?? (approver && counts.pending ? 'pending' : 'open')
   const needle = q.trim().toLowerCase()
   const shown = rows.filter((r) => {
-    const s = requestStatus(r.items).status
+    const s = requestStatus(r.items, r.req).status
     if (filter === 'open' ? s === 'received' || (r.items.every((o) => o.archived_at) && r.items.length > 0) : filter !== 'all' && s !== filter) return false
     if (!needle) return true
     const job = jobOf(r.req)
     return [r.req?.number, r.req?.project_name, job?.job_number, projectTitle(r.req, job), ...r.items.map((o) => o.item)].some((v) => (v ?? '').toLowerCase().includes(needle))
   })
-  const selItems = rows.filter((r) => selected.includes(r.key)).flatMap((r) => r.items).filter((o) => o.status !== 'received' && !o.po_id)
+  const selItems = rows.filter((r) => selected.includes(r.key) && approvalOf(r.req) === 'approved').flatMap((r) => r.items).filter((o) => o.status !== 'received' && !o.po_id)
   const { suppliers } = useSuppliers()
   const bySup = new Map<string, number>()
   for (const o of selItems) bySup.set(o.supplier_id ?? '', (bySup.get(o.supplier_id ?? '') ?? 0) + 1)
+
+  useOpenDeepLink(loaded, 'anf_request', (id) => requests.some((r) => r.request_id === id),
+    (id) => setOpenReq(requests.find((r) => r.request_id === id) ?? null))
 
   if (!isHydrated) return null
   const chip = (k: typeof filter, label: string, n?: number) => (
@@ -78,7 +87,7 @@ export default function RequestsPage() {
         <span className="w-3.5 h-3.5 rounded-[5px] shrink-0 flex items-center justify-center" style={{ backgroundColor: ANF_ACCENT }}><ClipboardList className="w-2.5 h-2.5 text-white" /></span>
         <div>
           <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight leading-none">Requests</h1>
-          <p className="font-mono text-[12px] text-muted-foreground mt-1">{(counts.to_order ?? 0)} to order · {(counts.ordered ?? 0) + (counts.partial ?? 0)} ordered</p>
+          <p className="font-mono text-[12px] text-muted-foreground mt-1">{counts.pending ? <span className="text-amber-700 dark:text-amber-400">{counts.pending} wait for approval · </span> : null}{(counts.to_order ?? 0)} to order · {(counts.ordered ?? 0) + (counts.partial ?? 0)} ordered</p>
         </div>
         <span className="ml-auto flex flex-wrap items-center gap-2">
           <Button size="sm" variant="outline" className="h-9 gap-1.5" onClick={() => setImporting(true)}><Upload className="w-4 h-4" />Import</Button>
@@ -88,7 +97,7 @@ export default function RequestsPage() {
       </div>
 
       <div className="px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center gap-2 border-b border-border/60">
-        {chip('open', 'Open')}{chip('to_order', 'To order', counts.to_order)}{chip('ordered', 'Ordered', counts.ordered)}{chip('partial', 'Partly received', counts.partial)}{chip('received', 'Received', counts.received)}{chip('all', 'All')}
+        {chip('open', 'Open')}{chip('pending', 'Wait for approval', counts.pending)}{chip('to_order', 'To order', counts.to_order)}{chip('ordered', 'Ordered', counts.ordered)}{chip('partial', 'Partly received', counts.partial)}{chip('received', 'Received', counts.received)}{chip('rejected', 'Rejected', counts.rejected)}{counts.draft ? chip('draft', 'Draft', counts.draft) : null}{chip('all', 'All')}
         <div className="relative ml-auto w-full sm:w-64">
           <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search item, project, REQ…" className="h-8 w-full rounded-lg border border-border bg-background pl-8 pr-2 text-[13px] outline-none focus:border-foreground/40" />
@@ -105,15 +114,15 @@ export default function RequestsPage() {
         ) : (
           <div className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="hidden md:grid grid-cols-[28px_2.2fr_80px_100px_80px_120px_120px] gap-3 px-4 py-2 border-b border-border font-mono text-[10px] tracking-wide text-muted-foreground">
-              <span /><span>REQUEST</span><span>ITEMS</span><span className="text-right">TOTAL</span><span>NEEDED</span><span>PO</span><span>STATUS</span>
+              <span /><span>REQUEST</span><span>ITEMS</span><span className="text-right">TOTAL inc VAT</span><span>NEEDED</span><span>PO</span><span>STATUS</span>
             </div>
             {shown.map((r) => {
-              const st = requestStatus(r.items)
+              const st = requestStatus(r.items, r.req)
               const job = jobOf(r.req)
-              const total = r.items.reduce((t, o) => t + itemTotal(o), 0)
+              const total = requestTotal(r.items)
               const manual = r.items.filter((o) => !o.product_id).length
               const poIds = [...new Set(r.items.map((o) => o.po_id).filter(Boolean))] as string[]
-              const canSelect = r.items.some((o) => o.status !== 'received' && !o.po_id)
+              const canSelect = approvalOf(r.req) === 'approved' && r.items.some((o) => o.status !== 'received' && !o.po_id)
               const on = selected.includes(r.key)
               const single = r.req ? null : r.items[0]
               return (

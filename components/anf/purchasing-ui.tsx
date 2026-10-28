@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import * as XLSX from 'xlsx'
 import { Trash2, Upload, Check } from 'lucide-react'
 import { useCRMStore } from '@/store/crm-store'
@@ -14,6 +14,7 @@ import { jobCardName } from '@/lib/jobs'
 import { useSuppliers, preferredFor, linksFor } from '@/lib/supabase/suppliers'
 import {
   usePurchasing, saveRequest, savePO, newPurchasingId, nextRequestNumber, nextPONumber, itemTotal,
+  submitRequest, approveRequest, rejectRequest, recheckApproval, requestTotal, approvalOf, isApprover, requestStatus, REQ_STATUS, APPROVAL_LIMIT_THB,
 } from '@/lib/supabase/purchasing'
 import type { AnfOrder, AnfRequest, AnfPO, AnfProduct, WonJob } from '@/types'
 
@@ -51,6 +52,53 @@ export function projectTitle(r: AnfRequest | null | undefined, job: WonJob | nul
 }
 
 // ── Request dialog (new / edit) ─────────────────────────────────────────────
+/** The approval strip at the top of a request: submit / wait / approve / reject. */
+function ApprovalBar({ r, grand, hasItems, approver, rejecting, setRejecting, onSubmit, onApprove, onReject }: {
+  r: AnfRequest; grand: number; hasItems: boolean; approver: boolean
+  rejecting: string | null; setRejecting: (v: string | null) => void
+  onSubmit: () => void; onApprove: () => void; onReject: (why: string) => void
+}) {
+  const appr = approvalOf(r)
+  const over = grand >= APPROVAL_LIMIT_THB
+  const limit = baht(APPROVAL_LIMIT_THB)
+  const when = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '')
+  const bar = 'flex flex-wrap items-center gap-3 px-5 py-2.5 border-b border-border text-[13px]'
+  if (appr === 'draft' || appr === 'rejected') return (
+    <div className={cn(bar, appr === 'rejected' ? 'bg-red-500/8' : 'bg-muted/40')}>
+      <span className="min-w-0 flex-1">
+        {appr === 'rejected' && <b className="text-red-700 dark:text-red-400">Rejected{r.rejected_reason ? `: “${r.rejected_reason}”` : ''}. </b>}
+        {!hasItems ? 'Add items, then submit.' : over ? `${baht(grand)} is ${limit} or more, so Champ will need to approve it.` : `Under ${limit}: approved straight away when you submit.`}
+      </span>
+      <Button size="sm" className="h-8" disabled={!hasItems} onClick={onSubmit}>{appr === 'rejected' ? 'Resubmit' : 'Submit'}</Button>
+    </div>
+  )
+  if (appr === 'pending') return (
+    <div className={cn(bar, 'bg-amber-500/10')}>
+      <span className="min-w-0 flex-1 text-amber-800 dark:text-amber-300">
+        <b>Wait for approval.</b> {baht(r.total_thb ?? grand)} is {limit} or more{approver ? ', so it needs your approval before it can be ordered.' : '. Waiting for Champ.'}
+      </span>
+      {approver && (rejecting === null ? (
+        <span className="flex gap-2">
+          <Button size="sm" variant="outline" className="h-8 text-destructive" onClick={() => setRejecting('')}>Reject…</Button>
+          <Button size="sm" className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onApprove}>Approve</Button>
+        </span>
+      ) : (
+        <span className="flex w-full sm:w-auto gap-2">
+          <input autoFocus value={rejecting} onChange={(e) => setRejecting(e.target.value)} placeholder="Reason (required)" className={cn(inputCls, 'h-8 sm:w-64')}
+            onKeyDown={(e) => { if (e.key === 'Enter' && rejecting.trim()) onReject(rejecting.trim()) }} />
+          <Button size="sm" variant="outline" className="h-8" onClick={() => setRejecting(null)}>Cancel</Button>
+          <Button size="sm" className="h-8 bg-destructive text-white hover:opacity-90" disabled={!rejecting.trim()} onClick={() => onReject(rejecting.trim())}>Reject</Button>
+        </span>
+      ))}
+    </div>
+  )
+  return (
+    <div className={cn(bar, 'py-2 text-[12px] text-emerald-700 dark:text-emerald-400')}>
+      {r.approved_by === 'auto' ? `Approved automatically (under ${limit})` : r.approved_by ? `Approved by ${r.approved_by}` : 'Approved'}{r.approved_at ? ` · ${when(r.approved_at)}` : ''}
+    </div>
+  )
+}
+
 export function RequestDialog({ request, onClose, onCreatePO }: {
   request: AnfRequest | null      // null = new
   onClose: () => void
@@ -66,10 +114,13 @@ export function RequestDialog({ request, onClose, onCreatePO }: {
   const deleteAnfOrder = useCRMStore((s) => s.deleteAnfOrder)
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
   const me = useMe()
+  const { user, role } = useAuth()
+  const approver = isApprover(user?.email, role)
   const [r, setR] = useState<AnfRequest>(() => request ?? {
     request_id: newPurchasingId(), board_id: activeBoardId || 'anf-order', number: nextRequestNumber(requests.map((x) => x.number)),
-    project_kind: 'free', job_id: null, project_name: '', needed_by: null, deliver_to: 'WAREHOUSE', created_by: me,
+    project_kind: 'free', job_id: null, project_name: '', needed_by: null, deliver_to: 'WAREHOUSE', created_by: me, status: 'draft',
   })
+  const [rejecting, setRejecting] = useState<string | null>(null)   // reason being typed
   const [saved, setSaved] = useState(!!request)
   const [q, setQ] = useState('')
   const [receiving, setReceiving] = useState<AnfOrder | null>(null)
@@ -81,7 +132,23 @@ export function RequestDialog({ request, onClose, onCreatePO }: {
   const products = anfProducts.filter((p) => !activeBoardId || !p.board_id || p.board_id === activeBoardId)
   const matches = q.trim() ? products.filter((p) => `${p.name} ${p.code ?? ''}`.toLowerCase().includes(q.trim().toLowerCase())).slice(0, 6) : []
   const total = items.reduce((t, o) => t + itemTotal(o), 0)
-  const orderable = items.filter((o) => o.status !== 'received' && !o.po_id)
+  const grand = requestTotal(items)
+  const appr = approvalOf(r)
+  const st = requestStatus(items, r)
+  const orderable = appr === 'approved' ? items.filter((o) => o.status !== 'received' && !o.po_id) : []
+
+  // Approved, then edited above the limit and above what was approved → back to Champ.
+  useEffect(() => {
+    if (!saved || appr !== 'approved') return
+    let live = true
+    recheckApproval(r, items).then((next) => { if (live && next) setR(next) }).catch((e: Error) => setError(e.message))
+    return () => { live = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [grand])
+
+  async function act(fn: () => Promise<AnfRequest>) {
+    try { setError(null); setR(await fn()) } catch (e) { setError((e as Error).message) }
+  }
 
   async function ensureSaved(next = r) {
     if (next.project_kind === 'job' && !next.job_id) throw new Error('Pick the Won job.')
@@ -113,6 +180,7 @@ export function RequestDialog({ request, onClose, onCreatePO }: {
         <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-border">
           <span className="w-3 h-3 rounded-[4px]" style={{ backgroundColor: ANF_ACCENT }} />
           <DialogTitle className="font-mono text-[16px] font-bold">{r.number}</DialogTitle>
+          <span className={cn('rounded px-1.5 py-0.5 text-[11px] font-semibold', REQ_STATUS[st.status].cls)}>{st.status === 'partial' ? `${st.received}/${st.total} received` : REQ_STATUS[st.status].label}</span>
           <span className="text-[12px] text-muted-foreground">{saved ? `by ${r.created_by ?? '—'}` : 'new request'}</span>
           <span className="ml-auto flex items-center gap-2">
             {orderable.length > 0 && <Button size="sm" className="h-8 bg-foreground text-background hover:opacity-90" onClick={() => onCreatePO(orderable)}>Create PO →</Button>}
@@ -121,6 +189,10 @@ export function RequestDialog({ request, onClose, onCreatePO }: {
         </div>
 
         <div className="overflow-y-auto">
+          <ApprovalBar r={r} grand={grand} hasItems={items.length > 0} approver={approver} rejecting={rejecting} setRejecting={setRejecting}
+            onSubmit={() => act(() => submitRequest(r, items))}
+            onApprove={() => act(() => approveRequest(r, items, me || 'Champ'))}
+            onReject={(why) => act(() => rejectRequest(r, why)).then(() => setRejecting(null))} />
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 px-5 py-3 border-b border-border">
             <div className="sm:col-span-2">
               <label className="field-label">Project</label>
@@ -205,7 +277,7 @@ export function RequestDialog({ request, onClose, onCreatePO }: {
             </table>
           </div>
           {error && <p className="px-5 pt-2 text-[12px] text-destructive">{error}</p>}
-          <div className="flex justify-end items-baseline gap-4 px-5 py-3"><span className="text-[13px] text-muted-foreground">Total</span><b className="font-mono text-[18px]">{baht(total)}</b></div>
+          <div className="flex justify-end items-baseline gap-4 px-5 py-3"><span className="text-[13px] text-muted-foreground">Total</span><span className="font-mono text-[13px] text-muted-foreground">{baht(total)}</span><span className="text-[13px] text-muted-foreground">incl. VAT</span><b className="font-mono text-[18px]">{baht(grand)}</b></div>
         </div>
         {receiving && <OrderDialog order={receiving} onClose={() => setReceiving(null)} />}
       </DialogContent>
@@ -347,17 +419,21 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
         const req: AnfRequest = {
           request_id: newPurchasingId(), board_id: activeBoardId || 'anf-order', number: nextRequestNumber(numbers),
           project_kind: job ? 'job' : 'free', job_id: job?.job_id ?? null, project_name: job ? null : p, deliver_to: 'WAREHOUSE', created_by: me,
-          notes: `Imported from ${fileName}`,
+          notes: `Imported from ${fileName}`, status: 'draft',
         }
         numbers.push(req.number)
         await saveRequest(req)
+        const added: AnfOrder[] = []
         for (const r of rows.filter((x) => x.project === p)) {
-          await addAnfOrder(newItem({
+          const it = newItem({
             item: r.product?.name ?? r.item, product_id: r.product?.product_id ?? null, description: r.product?.code ?? null,
             quantity: r.qty, unit: r.unit || r.product?.unit || null, unit_price: r.price, supplier_id: r.supplierId,
             request_id: req.request_id, board_id: req.board_id, branch: 'WAREHOUSE', requested_by: me,
-          }))
+          })
+          await addAnfOrder(it); added.push(it)
         }
+        // Imported lists are submitted straight away: auto-approved under the limit, else to Champ.
+        await submitRequest(req, added)
       }
       onClose()
     } catch (e) { setError((e as Error).message) } finally { setBusy(false) }

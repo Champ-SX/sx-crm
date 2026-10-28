@@ -204,9 +204,16 @@ export interface AnfRequest {
   deliver_to?: string | null
   created_by?: string | null
   notes?: string | null
+  status?: AnfRequestApproval         // approval state; ordered/received is derived from items
+  total_thb?: number | null           // incl. VAT, stored at submit / approval
+  submitted_at?: string | null
+  approved_by?: string | null
+  approved_at?: string | null
+  rejected_reason?: string | null
   created_at?: string
   updated_at?: string
 }
+export type AnfRequestApproval = 'draft' | 'pending' | 'approved' | 'rejected'
 export interface AnfPO {
   po_id: string
   board_id?: string
@@ -511,7 +518,7 @@ export interface Notification {
   recipient_id: string       // TeamMember.id of who is notified
   recipient_name: string     // denormalized for matching/display
   actor: string              // who wrote the note (display name)
-  entity_type: 'customer' | 'lead_opportunity' | 'won_job' | 'anf_order' | 'anf_task'
+  entity_type: 'customer' | 'lead_opportunity' | 'won_job' | 'anf_order' | 'anf_task' | 'anf_request'
   entity_id: string
   entity_name: string        // e.g. lead/customer/job title for context
   message: string            // short preview of the note

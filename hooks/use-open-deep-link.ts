@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useCRMStore } from '@/store/crm-store'
 
-type EntityType = 'customer' | 'lead_opportunity' | 'won_job'
+type EntityType = 'customer' | 'lead_opportunity' | 'won_job' | 'anf_request'
 
 /**
  * Opens a record's detail drawer when the notification bell requests it

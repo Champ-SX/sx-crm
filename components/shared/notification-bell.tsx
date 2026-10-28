@@ -15,6 +15,7 @@ const ENTITY_ROUTE: Record<string, string> = {
   customer: '/customers',
   lead_opportunity: '/leads-opportunities',
   won_job: '/won-ready-op',
+  anf_request: '/anf-order',
 }
 
 export function NotificationBell() {
@@ -55,7 +56,7 @@ export function NotificationBell() {
     // Signal the target page to open this exact record. A reactive store value
     // (not a one-shot URL param) fires every click, even when already on the
     // page. Navigate to the page too — the page's watcher opens the drawer.
-    if (n.entity_id) requestOpenEntity(entityType as 'customer' | 'lead_opportunity' | 'won_job', n.entity_id)
+    if (n.entity_id) requestOpenEntity(entityType as 'customer' | 'lead_opportunity' | 'won_job' | 'anf_request', n.entity_id)
     router.push(route)
   }
 
@@ -117,10 +118,10 @@ export function NotificationBell() {
                         <UserAvatar name={n.actor} size={22} className="mt-0.5" />
                         <div className={`flex-1 min-w-0`}>
                           <p className="text-[12px] text-foreground leading-snug">
-                            <span className="font-semibold">{n.actor}</span> mentioned you
-                            {n.entity_name ? <> in <span className="font-medium">{n.entity_name}</span></> : null}
+                            <span className="font-semibold">{n.actor}</span> {n.entity_type === 'anf_request' ? n.message : 'mentioned you'}
+                            {n.entity_name ? <> {n.entity_type === 'anf_request' ? '·' : 'in'} <span className="font-medium">{n.entity_name}</span></> : null}
                           </p>
-                          <p className="text-[12px] text-muted-foreground line-clamp-2 mt-0.5">{n.message}</p>
+                          {n.entity_type !== 'anf_request' && <p className="text-[12px] text-muted-foreground line-clamp-2 mt-0.5">{n.message}</p>}
                           <p className="text-[12px] text-muted-foreground/70 mt-0.5">
                             {formatDistanceToNow(parseDbDate(n.created_at), { addSuffix: true })}
                           </p>
