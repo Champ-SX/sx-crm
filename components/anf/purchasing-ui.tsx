@@ -371,7 +371,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void addItem(matches.length === 1 && matches[0].name.toLowerCase() === q.trim().toLowerCase() ? matches[0] : null) } }}
                         placeholder="＋ Add item — search the catalog, or type a name and press Enter for a manual item" className={cn(inputCls, 'border-dashed')} />
                       {matches.length > 0 && (
-                        <div className="absolute z-10 left-2 right-2 mt-1 rounded-lg border border-border bg-card shadow-lg overflow-hidden">
+                        <div ref={(el) => el?.scrollIntoView({ block: 'nearest' })} className="mt-1 max-h-64 overflow-y-auto rounded-lg border border-border bg-card shadow-sm">
                           {matches.map((p) => (
                             <button key={p.product_id} type="button" onClick={() => void addItem(p)} className="w-full text-left px-3 py-1.5 text-[13px] hover:bg-muted">
                               <span className="flex items-baseline gap-2">
