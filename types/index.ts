@@ -460,6 +460,8 @@ export interface WonJob {
   is_ops?: boolean                     // internal Ops job: no lead, no value, no per-job staff pay
   staff_needed?: number | null         // headcount the event needs (Operation calendar: assigned / needed)
   inventory_status?: InventoryStatus | null  // prep status (Operation calendar pill)
+  aw_drive_folder?: string | null           // CAPTURES.DESIGNER — job's artwork Drive folder (set in the Designer app)
+  aw_start_mode?: 'reference' | 'adapt' | null  // CAPTURES.DESIGNER — design from client reference / adapt client assets
   inventory_note?: string | null
   inventory_updated_by?: string | null
   inventory_updated_at?: string | null

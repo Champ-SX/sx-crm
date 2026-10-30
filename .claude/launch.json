@@ -4,9 +4,24 @@
     {
       "name": "sx-crm",
       "runtimeExecutable": "/Users/vittavinlee/.nvm/versions/node/v20.20.2/bin/node",
-      "runtimeArgs": ["node_modules/.bin/next", "dev"],
+      "runtimeArgs": [
+        "node_modules/.bin/next",
+        "dev"
+      ],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "sx-designer",
+      "runtimeExecutable": "/Users/vittavinlee/.nvm/versions/node/v20.20.2/bin/node",
+      "runtimeArgs": [
+        "/Users/vittavinlee/Desktop/temp_WORK/sx-designer/node_modules/.bin/next",
+        "dev",
+        "/Users/vittavinlee/Desktop/temp_WORK/sx-designer",
+        "-p",
+        "3001"
+      ],
+      "port": 3001
     }
   ]
 }

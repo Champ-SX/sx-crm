@@ -53,6 +53,7 @@ import {
   Link2, Share2, Copy, Archive, ArchiveRestore,
   LayoutGrid, CalendarDays, Plus,
 } from 'lucide-react'
+import { ArtworkSummary, ArtworkChip } from '@/components/won/artwork-summary'
 import { OpCalendar, InventoryPill, NeedStepper, NoStaffToggle, weekStart } from '@/components/won/op-calendar'
 import { EquipmentSection } from '@/components/won/equipment-section'
 import { useCosmo, cosmoFor, CosmoSection, CosmoSyncControl, type CosmoState } from '@/components/won/cosmo'
@@ -279,6 +280,7 @@ function JobCard({
           {cat && (
             <span className="font-mono text-[12px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{cat}</span>
           )}
+          {!job.is_ops && <ArtworkChip job={job} />}
         </div>
 
         {/* Customer */}
@@ -1167,6 +1169,7 @@ function JobDetail({
               </div>
 
               {!job.is_ops && <CosmoSection job={job} rows={cosmoFor(cz, job)} onCopy={u} />}
+              {!job.is_ops && <ArtworkSummary job={job} />}
               <EquipmentSection job={job} />
 
               {/* Section C: Company Account */}
@@ -1350,6 +1353,7 @@ function JobDetail({
                     </div>
 
                     {!job.is_ops && <CosmoSection job={job} rows={cosmoFor(cz, job)} onCopy={u} />}
+              {!job.is_ops && <ArtworkSummary job={job} />}
                     <EquipmentSection job={job} />
 
                     {/* Section C: Company Account & OP Stage */}
