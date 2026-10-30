@@ -27,8 +27,9 @@ export const KIND_LABEL: Record<ArtworkKind, string> = {
 }
 export const STATUS_LABEL: Record<ArtworkStatus, string> = { todo: 'To do', draft: 'Draft', sent: 'Sent', approved: 'Approved' }
 
-/** The Designer app's address. Set NEXT_PUBLIC_DESIGNER_URL once it's deployed. */
-export const DESIGNER_URL = (process.env.NEXT_PUBLIC_DESIGNER_URL || 'http://localhost:3001').replace(/\/$/, '')
+/** The Designer app's address. Until NEXT_PUBLIC_DESIGNER_URL is set, the CRM's Artwork section stays greyed out. */
+export const DESIGNER_URL = (process.env.NEXT_PUBLIC_DESIGNER_URL || '').replace(/\/$/, '')
+export const DESIGNER_LIVE = !!DESIGNER_URL
 export const designerJobUrl = (jobId: string) => `${DESIGNER_URL}/job/${encodeURIComponent(jobId)}`
 
 const COLS = 'id,job_id,kind,label,status,version,owner_id,drive_url,canva_url,position,updated_at'

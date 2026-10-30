@@ -3,7 +3,7 @@
 import { ExternalLink, FolderOpen, Palette } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
-  useArtwork, artworkProgress, designerJobUrl, KIND_LABEL, STATUS_LABEL,
+  useArtwork, artworkProgress, designerJobUrl, DESIGNER_LIVE, KIND_LABEL, STATUS_LABEL,
   type ArtworkStatus,
 } from '@/lib/supabase/artwork'
 import type { WonJob } from '@/types'
@@ -28,6 +28,26 @@ function daysToEvent(job: WonJob): number | null {
  * CAPTURES.DESIGNER app — this just shows where things stand and links there.
  */
 export function ArtworkSummary({ job }: { job: WonJob }) {
+  if (!DESIGNER_LIVE) return <ArtworkComingSoon />
+  return <ArtworkLive job={job} />
+}
+
+/** Shown until the Designer app is released: greyed, nothing to click. */
+function ArtworkComingSoon() {
+  return (
+    <div className="rounded-xl border border-dashed border-border overflow-hidden opacity-55 select-none" aria-disabled="true">
+      <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-muted/40 border-b border-dashed border-border">
+        <span className="flex items-center gap-2 text-[13px] font-semibold text-muted-foreground">
+          <Palette className="w-4 h-4" />Artwork
+        </span>
+        <span className="rounded px-1.5 py-px text-[11px] font-semibold bg-muted text-muted-foreground">Coming soon</span>
+      </div>
+      <p className="bg-card px-4 py-3 text-[12px] text-muted-foreground">Artwork tracking moves to the CAPTURES.DESIGNER app. It will show here once the app is ready.</p>
+    </div>
+  )
+}
+
+function ArtworkLive({ job }: { job: WonJob }) {
   const items = useArtwork().get(job.job_id) ?? []
   const { done, total } = artworkProgress(items)
   const all = total > 0 && done === total
@@ -76,6 +96,11 @@ export function ArtworkSummary({ job }: { job: WonJob }) {
 
 /** Small "AW 3/5" chip for a Won board card. Red when the event is ≤3 days away and not all approved. */
 export function ArtworkChip({ job }: { job: WonJob }) {
+  if (!DESIGNER_LIVE) return null
+  return <ArtworkChipLive job={job} />
+}
+
+function ArtworkChipLive({ job }: { job: WonJob }) {
   const { done, total } = artworkProgress(useArtwork().get(job.job_id))
   if (total === 0) return null
   const all = done === total
