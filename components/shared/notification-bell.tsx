@@ -15,7 +15,7 @@ const ENTITY_ROUTE: Record<string, string> = {
   customer: '/customers',
   lead_opportunity: '/leads-opportunities',
   won_job: '/won-ready-op',
-  anf_request: '/anf-order',
+  anf_request: '/purchasing',
 }
 
 export function NotificationBell() {

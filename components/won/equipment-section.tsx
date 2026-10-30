@@ -72,7 +72,7 @@ export function EquipmentSection({ job }: { job: WonJob }) {
                 <li key={a.asset_id} className="flex items-center gap-2.5 py-2">
                   <span className="w-1.5 h-6 rounded-full shrink-0" style={{ backgroundColor: cm.color }} />
                   <span className="min-w-0 flex-1 flex flex-wrap items-baseline gap-x-2">
-                    <Link href={`/anf-order/stock?asset=${encodeURIComponent(a.code)}`} className="font-mono text-[13px] font-semibold whitespace-nowrap hover:underline">{a.code}</Link>
+                    <Link href={`/purchasing/stock?asset=${encodeURIComponent(a.code)}`} className="font-mono text-[13px] font-semibold whitespace-nowrap hover:underline">{a.code}</Link>
                     <span className="min-w-0 text-[13px] truncate">{p?.name ?? '—'}{a.serial && <span className="text-muted-foreground font-mono text-[11px]"> · SN {a.serial}</span>}</span>
                   </span>
                   <span className={cn('rounded px-1.5 py-0.5 font-mono text-[11px] font-bold', locMeta('event').cls)}>{normSlot(a.location_slot) ?? 'EV'}</span>

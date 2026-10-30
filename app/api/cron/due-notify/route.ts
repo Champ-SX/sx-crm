@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
         } catch (e) { console.warn('[cron] anf notification insert skipped', e) }
         const { data: subs } = await sb.from('push_subscriptions').select('subscription').eq('user_id', rid)
         if (subs?.length && vapidPublic && vapidPrivate) {
-          const payload = JSON.stringify({ title: 'Order reminder', body: `${title} — ${label}`, url: '/anf-order' })
+          const payload = JSON.stringify({ title: 'Order reminder', body: `${title} — ${label}`, url: '/purchasing' })
           await Promise.allSettled(subs.map((s) => webpush.sendNotification(s.subscription, payload)))
         }
       }
@@ -198,7 +198,7 @@ export async function POST(req: NextRequest) {
         } catch (e) { console.warn('[cron] request alert insert skipped', e) }
         const { data: subs } = await sb.from('push_subscriptions').select('subscription').eq('user_id', rid)
         if (subs?.length && vapidPublic && vapidPrivate) {
-          const payload = JSON.stringify({ title: alert === 'late' ? 'Order late' : 'Order needed soon', body: `${title} — ${message}`, url: '/anf-order' })
+          const payload = JSON.stringify({ title: alert === 'late' ? 'Order late' : 'Order needed soon', body: `${title} — ${message}`, url: '/purchasing' })
           await Promise.allSettled(subs.map((s) => webpush.sendNotification(s.subscription, payload)))
         }
       }

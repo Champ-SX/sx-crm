@@ -150,7 +150,7 @@ export default function RequestsPage() {
                       </span>
                     )
                   })()}
-                  <span className={cn('col-start-2 lg:col-start-auto font-mono text-[12px] text-muted-foreground truncate', !poIds.length && 'hidden lg:block')}>{poIds.length ? poIds.map((id) => <Link key={id} href="/anf-order/pos" className="underline mr-1">{poNum(id) ?? 'PO'}</Link>) : '—'}</span>
+                  <span className={cn('col-start-2 lg:col-start-auto font-mono text-[12px] text-muted-foreground truncate', !poIds.length && 'hidden lg:block')}>{poIds.length ? poIds.map((id) => <Link key={id} href="/purchasing/pos" className="underline mr-1">{poNum(id) ?? 'PO'}</Link>) : '—'}</span>
                   <span className="col-start-2 lg:col-start-auto"><span className={cn('rounded px-1.5 py-0.5 text-[11px] font-semibold whitespace-nowrap', REQ_STATUS[st.status].cls)}>{st.status === 'partial' ? `${st.received}/${st.total} received` : REQ_STATUS[st.status].label}</span></span>
                 </div>
               )

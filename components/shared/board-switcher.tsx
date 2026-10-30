@@ -40,7 +40,7 @@ export function BoardSwitcher() {
   const active = visible.find((b) => b.board_id === activeBoardId) ?? visible[0]
 
   // Each board opens at its own home (structures differ).
-  const homeFor = (boardId: string) => (boardId === 'anf-order' ? '/anf-order' : boardId === 'anf' ? '/anf-tasks' : '/dashboard')
+  const homeFor = (boardId: string) => (boardId === 'anf-order' ? '/purchasing' : boardId === 'anf' ? '/anf-tasks' : '/dashboard')
   function pick(boardId: string) {
     setActiveBoard(boardId)
     router.push(homeFor(boardId))

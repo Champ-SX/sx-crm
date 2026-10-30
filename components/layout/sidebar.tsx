@@ -37,10 +37,10 @@ const capturesNav = [
   { href: '/won-ready-op',         label: 'Won & Ready for OP', icon: Kanban },
 ]
 const anfNav = [
-  { href: '/anf-order', label: 'Requests', icon: ClipboardList },
-  { href: '/anf-order/pos', label: 'POs', icon: FileText },
-  { href: '/anf-order/stock', label: 'Stock & Assets', icon: Boxes },
-  { href: '/anf-order/catalog', label: 'Catalog', icon: BookOpen },
+  { href: '/purchasing', label: 'Requests', icon: ClipboardList },
+  { href: '/purchasing/pos', label: 'POs', icon: FileText },
+  { href: '/purchasing/stock', label: 'Stock & Assets', icon: Boxes },
+  { href: '/purchasing/catalog', label: 'Catalog', icon: BookOpen },
 ]
 const anfTasksNav = [
   { href: '/anf-tasks', label: 'Tasks', icon: Kanban },
@@ -182,16 +182,16 @@ function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?
   const badges: Record<string, number> = {
     '/leads-opportunities': openLeadsCount,
     '/won-ready-op':        activeOPJobs,
-    ...(onOrderBoard ? { '/anf-order': requestsBadge, '/anf-order/pos': posBadge } : {}),
-    '/anf-order/stock':     lowStockCount,
+    ...(onOrderBoard ? { '/purchasing': requestsBadge, '/purchasing/pos': posBadge } : {}),
+    '/purchasing/stock':     lowStockCount,
   }
   // Hrefs whose badge is an alert (warning tint) rather than a neutral count.
-  const warnBadges = new Set(['/anf-order/stock'])
+  const warnBadges = new Set(['/purchasing/stock'])
 
   function NavLink({ href, label, icon: Icon }: { href: string; label: string; icon: React.ElementType }) {
-    // Exact-match for /anf-order so its sub-route (/anf-order/stock) doesn't
+    // Exact-match for /purchasing so its sub-route (/purchasing/stock) doesn't
     // light up both nav items.
-    const isActive = pathname === href || (href !== '/anf-order' && pathname.startsWith(href + '/'))
+    const isActive = pathname === href || (href !== '/purchasing' && pathname.startsWith(href + '/'))
     const badge = badges[href]
 
     return (

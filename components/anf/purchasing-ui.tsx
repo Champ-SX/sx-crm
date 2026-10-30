@@ -273,8 +273,8 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
           </span>
         )
     }
-    else if (st.status === 'to_order' && items.some((o) => poOf(o.po_id)?.status === 'draft')) main = <Link href="/anf-order/pos" className="text-[13px] underline">Mark the PO ordered →</Link>
-    else if (st.status === 'ordered' || st.status === 'partial') main = <Link href="/anf-order/pos" className="text-[13px] underline">Receive on the PO →</Link>
+    else if (st.status === 'to_order' && items.some((o) => poOf(o.po_id)?.status === 'draft')) main = <Link href="/purchasing/pos" className="text-[13px] underline">Mark the PO ordered →</Link>
+    else if (st.status === 'ordered' || st.status === 'partial') main = <Link href="/purchasing/pos" className="text-[13px] underline">Receive on the PO →</Link>
   }
 
   return (

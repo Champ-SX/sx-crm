@@ -185,7 +185,7 @@ function notify(n: Omit<Notification, 'id' | 'created_at'>) {
   void notificationQueries.insert(n).catch((e: Error) => console.warn('[purchasing] notify failed', e.message))
   void fetch('/api/push/send', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ recipientId: n.recipient_id, title: n.entity_name, body: `${n.actor} ${n.message}`, url: '/anf-order' }),
+    body: JSON.stringify({ recipientId: n.recipient_id, title: n.entity_name, body: `${n.actor} ${n.message}`, url: '/purchasing' }),
   }).catch(() => {})
 }
 

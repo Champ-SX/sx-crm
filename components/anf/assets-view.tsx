@@ -338,7 +338,7 @@ function AssetDialog({ asset, product, onClose }: { asset: AnfAsset; product?: A
         </div>
 
         <div className="flex items-center gap-2 px-5 py-3 border-t border-border">
-          <span className="mr-auto text-[11px] text-muted-foreground font-mono">/anf-order/stock?asset={asset.code}</span>
+          <span className="mr-auto text-[11px] text-muted-foreground font-mono">/purchasing/stock?asset={asset.code}</span>
           <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
           <Button size="sm" className="bg-[#7A5AA5] hover:opacity-90 text-white" disabled={!moved && !detailsChanged} onClick={save}>{moved ? `Move to ${locationLabel(target, jobOf(jobId)?.job_number)}` : 'Save'}</Button>
         </div>

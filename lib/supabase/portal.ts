@@ -88,7 +88,7 @@ const MOCK_RESOURCES: PortalResource[] = [
   M('andyfine', 'Brand & Web', 'public', 'Link Hub', 'Bio / links', null, 'https://lnk.bio/andyandfine', '—', 'active', 0),
   M('andyfine', 'Brand & Web', 'public', 'Brand & Logo Docs', 'Brand assets', 'เอกสาร บริษัท', null, '—', 'to add', 1),
   M('andyfine', 'Operations', 'internal', 'OP · Trello', 'Operation board', null, 'https://trello.com/b/86E0vHTC/%F0%9F%8F%87%F0%9F%8F%BCandy-operation-%F0%9F%8F%87%F0%9F%8F%BC', 'Ops', 'active', 0),
-  M('andyfine', 'Operations', 'internal', 'Order & Stock', 'Inventory', null, 'https://sx-crm.vercel.app/anf-order', 'Ops', 'active', 1),
+  M('andyfine', 'Operations', 'internal', 'Purchasing & Stock', 'Inventory', null, 'https://sx-crm.vercel.app/purchasing', 'Ops', 'active', 1),
   M('sxtech', 'Brand & Web', 'public', 'Website', 'Website', null, null, '—', 'to add', 0),
   M('sxtech', 'Brand & Web', 'public', 'Brand & Logo Docs', 'Brand assets', 'เอกสาร บริษัท', null, '—', 'to add', 1),
   M('sxtech', 'Operations', 'internal', 'R&D Board', 'Project board', null, null, 'Tech', 'to add', 0),

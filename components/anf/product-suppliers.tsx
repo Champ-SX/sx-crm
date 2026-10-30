@@ -26,7 +26,7 @@ export function ProductSuppliers({ productId, unit, canEdit }: { productId: stri
     <div>
       <div className="flex items-center justify-between">
         <label className="field-label">Suppliers</label>
-        <Link href="/anf-order/catalog?tab=suppliers" className="text-[11px] text-muted-foreground underline">All suppliers</Link>
+        <Link href="/purchasing/catalog?tab=suppliers" className="text-[11px] text-muted-foreground underline">All suppliers</Link>
       </div>
       {list.length === 0 && <p className="text-[12px] text-muted-foreground mt-1">No supplier linked yet{canEdit ? ' — link one so anyone can re-order.' : '.'}</p>}
       <div className="mt-1.5 space-y-2">
@@ -63,7 +63,7 @@ export function ProductSuppliers({ productId, unit, canEdit }: { productId: stri
       {canEdit && (picking ? (
         <div className="mt-2 rounded-lg border border-border p-2">
           {unlinked.length === 0 ? (
-            <p className="text-[12px] text-muted-foreground">All suppliers are linked. <Link href="/anf-order/catalog?tab=suppliers" className="underline">Add a new supplier</Link></p>
+            <p className="text-[12px] text-muted-foreground">All suppliers are linked. <Link href="/purchasing/catalog?tab=suppliers" className="underline">Add a new supplier</Link></p>
           ) : (
             <div className="max-h-44 overflow-y-auto">
               {unlinked.map((s) => (

@@ -115,7 +115,7 @@ export function OrderDialog({ order, prefill, onClose }: { order: AnfOrder | nul
       // Jump to the Orders board and anchor on the row we just created.
       setFocusAnfOrder(newId)
       onClose()
-      router.push('/anf-order')
+      router.push('/purchasing')
     }
   }
   function remove() {

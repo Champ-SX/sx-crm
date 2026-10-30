@@ -84,7 +84,7 @@ function notifyAnfAssignees(
       })
       void fetch('/api/push/send', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipientId: n.recipient_id, title, body: message, url: '/anf-order' }),
+        body: JSON.stringify({ recipientId: n.recipient_id, title, body: message, url: '/purchasing' }),
       }).catch(() => {})
     }
   }
@@ -114,7 +114,7 @@ console.log('[CRM Store] USE_SUPABASE =', USE_SUPABASE, {
 const SEED_BOARDS: Board[] = [
   { board_id: 'captures', name: 'CAP*TURES', slug: 'captures', color: '#FF5B3F', sort_order: 0 },
   { board_id: 'anf', name: 'Andy & Fine.', slug: 'anf', color: '#FF809E', sort_order: 1, restricted: true },
-  { board_id: 'anf-order', name: 'Order', slug: 'anf-order', color: '#7A5AA5', sort_order: 2 },
+  { board_id: 'anf-order', name: 'Purchasing', slug: 'anf-order', color: '#7A5AA5', sort_order: 2 },
 ]
 const ACTIVE_BOARD_KEY = 'sx-active-board'
 
@@ -536,7 +536,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
           const warnMsg = '⚠️ [CRM Store] USE_SUPABASE is false. Using mock data. Check your Supabase environment variables (NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY) in Vercel settings.'
           console.warn(warnMsg)
           // Mark initialization as complete with mock data loaded (already in initial state).
-          // Restore the saved board too, so opening /anf-order/* directly shows Order data.
+          // Restore the saved board too, so opening /purchasing/* directly shows Order data.
           let saved: string | null = null
           try { if (typeof window !== 'undefined') saved = window.localStorage.getItem(ACTIVE_BOARD_KEY) } catch { /* ignore */ }
           set({ error: warnMsg, isInitialized: true, isLoading: false, ...(saved && currentState.boards.some((b) => b.board_id === saved) ? { activeBoardId: saved } : {}) })

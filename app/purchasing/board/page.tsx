@@ -93,7 +93,7 @@ export default function AnfOrderPage() {
           <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight leading-none">Order</h1>
           <p className="font-mono text-[12px] text-muted-foreground mt-1">{openCount} open · {baht(toOrderValue)} to order</p>
         </div>
-        <Link href="/anf-order" className="ml-auto text-[13px] underline">Order history (read-only) · new orders go in Requests →</Link>
+        <Link href="/purchasing" className="ml-auto text-[13px] underline">Order history (read-only) · new orders go in Requests →</Link>
       </div>
 
       {/* Filters */}
