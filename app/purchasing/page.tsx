@@ -8,7 +8,7 @@ import { useHydrated } from '@/hooks/use-hydrated'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { Button } from '@/components/ui/button'
 import { OrderDialog } from '@/components/anf/order-dialog'
-import { RequestDialog, CreatePODialog, ImportDialog, ProjectChip, projectTitle, itemsLine, branchLabel } from '@/components/anf/purchasing-ui'
+import { RequestDialog, CreatePODialog, ImportDialog, ProjectChip, projectTitle, itemsLine, branchLabel, hasNote } from '@/components/anf/purchasing-ui'
 import { cn } from '@/lib/utils'
 import { ANF_ACCENT, baht, fmtDate, branchColor } from '@/lib/anf'
 import { usePurchasing, requestStatus, REQ_STATUS, requestTotal, approvalOf, isApprover, isBuyer, neededByAlert, thaiToday, type ReqStatus } from '@/lib/supabase/purchasing'
@@ -134,7 +134,7 @@ export default function RequestsPage() {
                     {canSelect && <input type="checkbox" checked={on} onChange={() => setSelected((s) => (on ? s.filter((x) => x !== r.key) : [...s, r.key]))} className="w-4 h-4 accent-foreground" aria-label="Select for PO" />}
                   </span>
                   <button type="button" onClick={() => (r.req ? setOpenReq(r.req) : setOpenItem(single))} className="text-left min-w-0">
-                    <b className="block text-[14px] truncate">{projectTitle(r.req, job, single ?? undefined)}</b>
+                    <b className="block text-[14px] truncate">{projectTitle(r.req, job, single ?? undefined)}{hasNote(r.req, r.items) && <span className="ml-1.5 font-normal" title={r.req?.notes ?? 'Has item notes'}>📝</span>}</b>
                     {r.req && r.items.length > 0 && <span className="block text-[12px] text-muted-foreground truncate">{itemsLine(r.items)}</span>}
                     <span className="block font-mono text-[11px] text-muted-foreground truncate">{r.req ? `${r.req.number}${r.req.created_by ? ` · ${r.req.created_by}` : ''}` : `Quick order${single?.requested_by ? ` · ${single.requested_by}` : ''}`}</span>
                   </button>

@@ -225,7 +225,7 @@ export type AnfRequestApproval = 'draft' | 'pending' | 'approved' | 'rejected'
 export interface AnfRequestEvent {
   id: string
   request_id: string
-  action: 'created' | 'submitted' | 'approved' | 'rejected' | 'withdrawn' | 'item_added' | 'item_removed' | 'item_changed' | 'added_to_po' | 'ordered' | 'po_cancelled' | 'received'
+  action: 'created' | 'submitted' | 'approved' | 'rejected' | 'withdrawn' | 'item_added' | 'item_removed' | 'item_changed' | 'note_changed' | 'added_to_po' | 'ordered' | 'po_cancelled' | 'received'
   detail?: string | null
   actor?: string | null
   actor_id?: string | null

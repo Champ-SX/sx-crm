@@ -1,0 +1,138 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Purchasing Notes</title>
+<style>
+:root{--bg:#f2f0ea;--card:#faf9f6;--fg:#18181b;--mut:#71717a;--bd:#e4e2da;--sub:#ebe9e2;--pur:#7A5AA5;--gr:#15803d;--grb:#e7f4ec;--bl:#1d4ed8;--blb:#e6edfb;--am:#b45309;--amb:#fdf1dc;--yl:#fef7d6;--ylb:#e9d98a;--ov:rgba(24,24,27,.32)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c0c0d;--card:#18181b;--fg:#fafafa;--mut:#a1a1aa;--bd:#2a2a2e;--sub:#232327;--gr:#4ade80;--grb:#13261b;--bl:#93b4ff;--blb:#16203a;--am:#fbbf24;--amb:#2a210c;--yl:#2a2510;--ylb:#5a4c1a;--ov:rgba(0,0,0,.5)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,"Noto Sans Thai",sans-serif;padding:24px 16px}
+.w{max-width:1100px;margin:0 auto}
+h1{font-size:21px;margin:0 0 4px}.lead{color:var(--mut);margin:0 0 8px;max-width:800px}
+h2{font-size:12px;letter-spacing:.07em;color:var(--mut);margin:32px 0 10px;font-weight:700}
+.mono{font-family:ui-monospace,monospace}.small{font-size:12px;color:var(--mut)}
+.grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.stage{background:var(--ov);border-radius:16px;padding:18px 12px;display:flex;justify-content:center}
+.dlg{background:var(--card);border-radius:14px;width:100%;max-width:700px;box-shadow:0 18px 44px rgba(0,0,0,.18);overflow:hidden}
+.dh{display:flex;align-items:center;gap:8px;padding:11px 16px;border-bottom:1px solid var(--bd)}
+.db{padding:12px 16px}
+.lbl{font:600 10.5px ui-monospace,monospace;letter-spacing:.06em;color:var(--mut);margin-bottom:5px}
+.in{border:1.5px solid var(--bd);border-radius:8px;padding:8px 11px;background:var(--bg);font-size:13.5px}
+.in.ta{min-height:54px}.ph{color:var(--mut)}
+.new{outline:2px solid var(--pur);outline-offset:2px;border-radius:8px}
+.hint{font-size:12px;color:var(--mut);margin-top:4px}
+.st{display:inline-block;font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 8px}
+.s-dr{background:var(--sub);color:var(--mut)}.s-wait{background:var(--amb);color:var(--am)}.s-or{background:var(--blb);color:var(--bl)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font:600 10px ui-monospace,monospace;letter-spacing:.06em;color:var(--mut);padding:7px 8px;border-bottom:1px solid var(--bd);background:var(--sub)}
+td{padding:8px;border-bottom:1px solid var(--bd);vertical-align:top}
+.r{text-align:right}
+.it{font-weight:600}.code{font-size:11.5px;color:var(--mut)}
+.nlink{font-size:12px;color:var(--pur)}
+.note{display:block;margin-top:4px;font-size:12.5px;background:var(--yl);border:1px solid var(--ylb);border-radius:6px;padding:3px 7px}
+.note::before{content:"📝 "}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px 16px}
+ul.k{margin:0;padding-left:18px;font-size:13px}ul.k li{margin:4px 0}
+.notes{background:var(--yl);border:1px solid var(--ylb);border-radius:10px;padding:10px 12px;font-size:13px}
+.notes div{margin:3px 0}
+.btn{display:inline-block;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:700;background:var(--fg);color:var(--bg)}
+.btn.g{background:var(--gr);color:#fff}.btn.o{background:transparent;border:1px solid var(--bd);color:var(--fg)}
+.lock{font-size:12px;color:var(--mut)}
+.tag{font:700 9.5px ui-monospace,monospace;border-radius:4px;padding:1px 5px;background:var(--sub);color:var(--mut);margin-left:6px}
+.list td{font-size:13px}
+</style></head><body><div class="w">
+<h1>Notes on requests and POs</h1>
+<p class="lead">Two kinds of note: one for the <b>whole request</b> and one per <b>item</b>. Both show to Champ when approving and to Nice on the PO. Notes are <b>internal</b>; the PO's own note is what Nice writes for the supplier. Sample data. <span style="outline:2px solid var(--pur);border-radius:4px;padding:0 4px">Purple outline</span> = new.</p>
+
+<h2>1 · REQUEST (DRAFT): WRITING NOTES</h2>
+<div class="grid2">
+ <div class="stage"><div class="dlg">
+  <div class="dh"><b class="mono">REQ-2026-10-026</b><span class="st s-dr">Draft</span><span class="small">by Nong</span></div>
+  <div class="db">
+   <div class="lbl">WHAT IS THIS REQUEST? *</div>
+   <div class="in">Tape &amp; cable ties for the event team</div>
+   <div class="new" style="margin-top:10px">
+    <div class="lbl">NOTE FOR THIS REQUEST</div>
+    <div class="in ta">Deliver to the back door of the warehouse. Call Nong 08x-xxx-xxxx before arriving.</div>
+   </div>
+   <div class="hint">Internal: for Champ and Nice, not sent to the supplier.</div>
+  </div>
+  <table>
+   <tr><th>#</th><th>ITEM</th><th class="r">QTY</th><th class="r">UNIT ฿</th><th>SUPPLIER</th><th class="r">TOTAL</th></tr>
+   <tr><td>1</td><td><div class="it">Duct tape</div><div class="code">TAPE-DUCT-48</div><span class="new note" style="outline-offset:1px">Black, 48 mm, 3M only</span></td><td class="r">5</td><td class="r">120</td><td>Sample Supply</td><td class="r mono">642</td></tr>
+   <tr><td>2</td><td><div class="it">Cable ties</div><div class="code">TIE-200</div><span class="nlink new" style="outline-offset:1px">＋ note</span></td><td class="r">2</td><td class="r">300</td><td>Sample Supply</td><td class="r mono">642</td></tr>
+  </table>
+  <div class="db" style="display:flex;justify-content:flex-end"><span class="btn">Submit →</span></div>
+ </div></div>
+ <div class="box"><div class="lbl">HOW IT WORKS</div><ul class="k">
+  <li><b>Request note:</b> a box under the request name. Delivery, contact, why it's needed.</li>
+  <li><b>Item note:</b> tap <b>＋ note</b> under the item name. Spec, colour, size, brand.</li>
+  <li>Both are optional, and editable only while the request is a <b>Draft</b>.</li>
+  <li>After Submit they lock like the items. <b>Withdraw to edit</b> unlocks them.</li>
+  <li>Every change goes to the request's <b>History</b>.</li>
+ </ul></div>
+</div>
+
+<h2>2 · CHAMP APPROVING: NOTES ARE VISIBLE (READ-ONLY)</h2>
+<div class="stage"><div class="dlg">
+ <div class="dh"><b class="mono">REQ-2026-10-021</b><span class="st s-wait">Wait for approval</span><span class="small">by Sale A · ฿24,610</span></div>
+ <div class="db"><div class="lbl">NOTE FOR THIS REQUEST</div>
+  <div class="notes">For the Asus booth on 8 Nov. Client asked for the brighter LED panels, so these cost more than last time.</div></div>
+ <table>
+  <tr><th>#</th><th>ITEM</th><th class="r">QTY</th><th class="r">UNIT ฿</th><th class="r">TOTAL</th></tr>
+  <tr><td>1</td><td><div class="it">Backdrop 3×2 m</div><span class="note">Matte print, no seams</span></td><td class="r">1</td><td class="r">8,500</td><td class="r mono">9,095</td></tr>
+  <tr><td>2</td><td><div class="it">LED panel</div><span class="note">5600K, at least 2000 lm</span></td><td class="r">2</td><td class="r">7,250</td><td class="r mono">15,515</td></tr>
+ </table>
+ <div class="db" style="display:flex;gap:8px;justify-content:flex-end"><span class="lock" style="margin-right:auto">🔒 Locked while waiting for approval</span><span class="btn o">Reject…</span><span class="btn g">Approve ✓</span></div>
+</div></div>
+
+<h2>3 · NICE'S PO: NOTES CARRIED OVER</h2>
+<div class="grid2">
+ <div class="stage"><div class="dlg">
+  <div class="dh"><b class="mono">PO2026100008</b><span class="st s-dr">Draft</span><span class="small">Sample Supply · 3 requests</span></div>
+  <div class="db">
+   <div class="new">
+    <div class="lbl">NOTES FROM REQUESTS <span class="tag">INTERNAL</span></div>
+    <div class="notes">
+     <div><b class="mono">REQ-026</b> · Tape &amp; cable ties: Deliver to the back door of the warehouse. Call Nong 08x-xxx-xxxx before arriving.</div>
+     <div><b class="mono">REQ-020</b> · Refill · Central: Needed before the Saturday event.</div>
+    </div>
+    <div class="hint">Read-only here. Updates if a request note is changed.</div>
+   </div>
+  </div>
+  <table>
+   <tr><th>ITEM</th><th>FROM</th><th class="r">QTY</th><th class="r">TOTAL</th></tr>
+   <tr><td><div class="it">Duct tape</div><span class="note">Black, 48 mm, 3M only</span></td><td class="mono small">REQ-026</td><td class="r">5</td><td class="r mono">642</td></tr>
+   <tr><td><div class="it">Cable ties</div></td><td class="mono small">REQ-026</td><td class="r">2</td><td class="r mono">642</td></tr>
+   <tr><td><div class="it">DNP 4×6 paper</div><span class="note">Same lot as last order if possible</span></td><td class="mono small">REQ-020</td><td class="r">4</td><td class="r mono">18,190</td></tr>
+  </table>
+  <div class="db">
+   <div class="lbl">PO NOTE (NICE → SUPPLIER)</div>
+   <div class="in ta ph">e.g. Pay by transfer, need tax invoice</div>
+   <div class="hint">This is the only note meant for the supplier.</div>
+  </div>
+  <div class="db" style="display:flex;justify-content:flex-end"><span class="btn">Mark ordered →</span></div>
+ </div></div>
+ <div class="box"><div class="lbl">ON THE PO</div><ul class="k">
+  <li><b>Notes from requests:</b> one line per request that has a note, with its REQ number. Nothing is retyped.</li>
+  <li><b>Item notes</b> stay under each item, with the REQ the line came from.</li>
+  <li>Yellow = internal. Shown in the app only, never copied to what goes to the supplier.</li>
+  <li><b>PO note:</b> Nice's own note for the supplier (the field already exists, now shown).</li>
+ </ul></div>
+</div>
+
+<h2>4 · LISTS: 📝 SHOWS THERE'S A NOTE</h2>
+<div class="box" style="padding:0;overflow:auto"><table class="list" style="min-width:640px">
+ <tr><th>REQUEST</th><th>FOR</th><th class="r">TOTAL</th><th>STATUS</th></tr>
+ <tr><td><b>Tape &amp; cable ties for the event team</b> <span title="Deliver to the back door…">📝</span><div class="small">Duct tape ×5 · Cable ties ×2 · REQ-026</div></td><td>General</td><td class="r mono">1,284</td><td><span class="st s-dr">Draft</span></td></tr>
+ <tr><td><b>Asus booth backdrop</b> <span>📝</span><div class="small">Backdrop ×1 · LED panel ×2 · REQ-021</div></td><td>Project</td><td class="r mono">24,610</td><td><span class="st s-wait">Wait for approval</span></td></tr>
+ <tr><td><b>Refill · Siam</b><div class="small">Sleeve 4×6 ×10 · REQ-018</div></td><td>Stock refill</td><td class="r mono">2,140</td><td><span class="st s-or">Ordered</span></td></tr>
+</table></div>
+<p class="small">📝 appears when the request or any of its items has a note. Hover (desktop) or tap (phone) to read the request note. Same on the POs list.</p>
+
+<h2>5 · BUILD NOTES</h2>
+<div class="box"><ul class="k">
+ <li>No new SQL: <span class="mono">anf_requests.notes</span>, <span class="mono">anf_orders.notes</span> and <span class="mono">anf_pos.notes</span> already exist.</li>
+ <li>Notes are not counted in the ฿10,000 limit.</li>
+ <li>Thai cheat sheet gets one line: “ใส่โน้ตได้ทั้งคำขอและแต่ละรายการ (ภายในเท่านั้น)”.</li>
+</ul></div>
+</div></body></html>

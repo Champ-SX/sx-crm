@@ -117,6 +117,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
   })
   const [rejecting, setRejecting] = useState<string | null>(null)   // reason being typed
   const [saved, setSaved] = useState(!!request)
+  const savedNote = useRef<string | null>(request?.notes ?? null)
   const [q, setQ] = useState('')
   const [receiving, setReceiving] = useState<AnfOrder | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -216,6 +217,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
       p.supplier_id !== undefined && p.supplier_id !== o.supplier_id && `supplier ${sup(o.supplier_id)} → ${sup(p.supplier_id)}`,
     ].filter(Boolean)
     if (parts.length) void logEvent(r.request_id, 'item_changed', `${o.item}: ${parts.join(', ')}`)
+    if (p.notes !== undefined && (p.notes ?? '') !== (o.notes ?? '')) void logEvent(r.request_id, 'note_changed', `${o.item}: ${p.notes ? `“${p.notes}”` : 'note removed'}`)
     void updateAnfOrder(o.order_id, p)
   }
   /** A typed-in line becomes a catalog item (with its supplier + price), so it can be found and reordered next time. */
@@ -319,6 +321,19 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
                 {SEED_BRANCHES.map((b) => <option key={b} value={b}>{b === 'WAREHOUSE' ? 'Warehouse' : b}</option>)}
               </select>
             </div>
+            {(editable || r.notes) && (
+              <div className="sm:col-span-4">
+                <label className="field-label">Note for this request</label>
+                {editable ? (
+                  <>
+                    <textarea rows={2} value={r.notes ?? ''} onChange={(e) => setR({ ...r, notes: e.target.value })}
+                      onBlur={() => { if ((r.notes ?? '').trim() !== (savedNote.current ?? '')) { const v = (r.notes ?? '').trim() || null; savedNote.current = v; setR({ ...r, notes: v }); (saved ? saveRequest({ ...r, notes: v }) : ensureSaved({ ...r, notes: v })).catch((e: Error) => setError(e.message)); void logEvent(r.request_id, 'note_changed', v ? `“${v}”` : 'note removed') } }}
+                      placeholder="Optional: delivery details, who to call, why it's needed…" className={cn(inputCls, 'h-auto py-1.5')} />
+                    <p className="mt-1 text-[11.5px] text-muted-foreground">Internal: for Champ and the buyer, not sent to the supplier.</p>
+                  </>
+                ) : <NoteBox>{r.notes}</NoteBox>}
+              </div>
+            )}
           </div>
 
           <div className="overflow-x-auto">
@@ -339,6 +354,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
                         <div className="font-medium">{o.item}</div>
                         <div className="text-[11px] text-muted-foreground">{o.description || (o.product_id ? 'catalog' : 'manual item')}
                           {!o.product_id && <button type="button" onClick={() => void saveToCatalog(o)} className="ml-1.5 underline text-[#7A5AA5]">＋ Save to catalog</button>}</div>
+                        <ItemNote note={o.notes} editable={editable} onSave={(v) => upd(o, { notes: v })} />
                       </td>
                       <td className="px-2 py-1.5"><input disabled={!rule.editQtyPrice} defaultValue={o.quantity} onBlur={(e) => num(e.target.value) !== o.quantity && upd(o, { quantity: num(e.target.value) })} className={cn(inputCls, 'h-8 text-right font-mono')} /></td>
                       <td className="px-2 py-1.5"><input disabled={!rule.editQtyPrice} defaultValue={o.unit ?? ''} onBlur={(e) => (e.target.value || null) !== (o.unit ?? null) && upd(o, { unit: e.target.value || null })} className={cn(inputCls, 'h-8')} /></td>
@@ -409,10 +425,34 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
   )
 }
 
+// ── Notes (internal: Champ + buyer, never sent to the supplier) ─────────────
+export function NoteBox({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={cn('rounded-md border border-amber-300/70 bg-amber-100/60 dark:border-amber-500/30 dark:bg-amber-500/10 px-2 py-1 text-[12.5px] whitespace-pre-wrap break-words', className)}>📝 {children}</div>
+}
+
+/** Per-item note: "＋ note" while editable, a yellow note when set. */
+function ItemNote({ note, editable, onSave }: { note: string | null | undefined; editable: boolean; onSave: (v: string | null) => void }) {
+  const [editing, setEditing] = useState(false)
+  const [v, setV] = useState(note ?? '')
+  if (!editable) return note ? <NoteBox className="mt-1">{note}</NoteBox> : null
+  if (editing) return (
+    <input autoFocus value={v} onChange={(e) => setV(e.target.value)} placeholder="Spec, colour, size, brand…"
+      onBlur={() => { setEditing(false); const t = v.trim() || null; if (t !== (note ?? null)) onSave(t) }}
+      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') { setV(note ?? ''); setEditing(false) } }}
+      className={cn(inputCls, 'mt-1 h-7 text-[12.5px]')} />
+  )
+  return note
+    ? <button type="button" onClick={() => { setV(note); setEditing(true) }} className="mt-1 block w-full text-left"><NoteBox>{note}</NoteBox></button>
+    : <button type="button" onClick={() => { setV(''); setEditing(true) }} className="mt-0.5 text-[11.5px] text-[#7A5AA5] hover:underline">＋ note</button>
+}
+
+/** True when the request or any of its items has a note (for the 📝 in lists). */
+export const hasNote = (r: AnfRequest | null | undefined, items: AnfOrder[]) => !!r?.notes?.trim() || items.some((o) => !!o.notes?.trim())
+
 // ── History ──────────────────────────────────────────────────────────────────
 const EVENT_LABEL: Record<AnfRequestEvent['action'], string> = {
   created: 'Created', submitted: 'Submitted', approved: 'Approved', rejected: 'Rejected', withdrawn: 'Withdrawn',
-  item_added: 'Item added', item_removed: 'Item removed', item_changed: 'Item changed', added_to_po: 'Added to PO',
+  item_added: 'Item added', item_removed: 'Item removed', item_changed: 'Item changed', note_changed: 'Note changed', added_to_po: 'Added to PO',
   ordered: 'Ordered', po_cancelled: 'PO cancelled', received: 'Received',
 }
 /** Who did what on this request, oldest first. Collapsed to the key steps; item edits behind "show all". */
@@ -420,7 +460,7 @@ function RequestHistory({ r }: { r: AnfRequest }) {
   usePurchasing()
   const [all, setAll] = useState(false)
   const list = eventsFor(r.request_id)
-  const minor = (a: AnfRequestEvent['action']) => a === 'item_added' || a === 'item_removed' || a === 'item_changed'
+  const minor = (a: AnfRequestEvent['action']) => a === 'item_added' || a === 'item_removed' || a === 'item_changed' || a === 'note_changed'
   const shown = all ? list : list.filter((e) => !minor(e.action))
   const hidden = list.length - shown.length
   const when = (iso: string) => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })

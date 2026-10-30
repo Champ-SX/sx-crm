@@ -7,7 +7,7 @@ import { useHydrated } from '@/hooks/use-hydrated'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { ProjectChip, projectTitle, branchLabel, useMe, ReceiveDialog } from '@/components/anf/purchasing-ui'
+import { ProjectChip, projectTitle, branchLabel, useMe, ReceiveDialog, NoteBox, inputCls } from '@/components/anf/purchasing-ui'
 import { useAuth } from '@/components/auth-provider'
 import { cn } from '@/lib/utils'
 import { ANF_ACCENT, baht, fmtDate, kindOf, branchColor } from '@/lib/anf'
@@ -104,6 +104,7 @@ function ReqChips({ items }: { items: AnfOrder[] }) {
             <ProjectChip r={r} job={job} />
             <span className="truncate min-w-0">{projectTitle(r, job, single)}</span>
             {r && <span className="shrink-0 font-mono text-[10.5px] text-muted-foreground">{r.number.replace(/^REQ-\d{4}-\d{2}-/, 'REQ-')}</span>}
+            {r && (r.notes?.trim() || items.some((o) => o.request_id === r.request_id && o.notes?.trim())) && <span className="shrink-0" title={r.notes ?? 'Has item notes'}>📝</span>}
           </span>
         )
       })}
@@ -158,6 +159,12 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
   // Receive all covers supplies; assets are received one by one so each unit gets its ID.
   const bulk = open.filter((o) => !isAsset(o))
   const today = new Date().toISOString().slice(0, 10)
+  const { requests, pos } = usePurchasing()
+  const livePO = pos.find((x) => x.po_id === po.po_id) ?? po
+  const reqOf = (id: string | null | undefined) => (id ? requests.find((r) => r.request_id === id) : undefined)
+  const reqNo = (id: string | null | undefined) => reqOf(id)?.number.replace(/^REQ-\d{4}-\d{2}-/, 'REQ-') ?? ''
+  const reqNotes = [...new Set(items.map((o) => o.request_id))].map(reqOf).filter((r): r is AnfRequest => !!r && !!r.notes?.trim())
+  const [poNote, setPoNote] = useState(po.notes ?? '')
 
   async function markOrdered() {
     try {
@@ -207,6 +214,14 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
               <b>Emergency PO by {po.emergency_by}</b>{po.emergency_at ? ` · ${new Date(po.emergency_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : ''} — “{po.emergency_reason}”
             </div>
           )}
+          {reqNotes.length > 0 && (
+            <div className="mx-5 mt-3">
+              <div className="field-label mb-1">Notes from requests <span className="ml-1 rounded bg-muted px-1 py-px text-[9.5px]">INTERNAL</span></div>
+              <NoteBox>
+                {reqNotes.map((r) => <span key={r.request_id} className="block"><b className="font-mono">{r.number.replace(/^REQ-\d{4}-\d{2}-/, 'REQ-')}</b> · {r.project_name ? `${r.project_name}: ` : ''}{r.notes}</span>)}
+              </NoteBox>
+            </div>
+          )}
           <table className="w-full text-[13px]">
             <thead><tr className="text-left font-mono text-[10px] tracking-wide text-muted-foreground border-b border-border bg-muted/40">
               <th className="px-4 py-2">ITEM</th><th className="px-2 py-2 text-right">QTY</th><th className="px-2 py-2 text-right">UNIT ฿</th><th className="px-2 py-2 text-right">TOTAL inc VAT</th><th className="px-2 py-2">RECEIVED</th>
@@ -214,7 +229,7 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
             <tbody>
               {items.map((o) => (
                 <tr key={o.order_id} className="border-b border-border">
-                  <td className="px-4 py-2"><div className="font-medium">{o.item}</div><div className="text-[11px] text-muted-foreground">{o.description || (o.product_id ? '' : 'manual item')}</div></td>
+                  <td className="px-4 py-2"><div className="font-medium">{o.item}</div><div className="text-[11px] text-muted-foreground">{[o.description || (o.product_id ? '' : 'manual item'), reqNo(o.request_id)].filter(Boolean).join(' · ')}</div>{o.notes && <NoteBox className="mt-1">{o.notes}</NoteBox>}</td>
                   <td className="px-2 py-2 text-right font-mono">{o.quantity}{o.unit ? ` ${o.unit}` : ''}</td>
                   <td className="px-2 py-2 text-right font-mono">{o.unit_price ? o.unit_price.toLocaleString() : '—'}</td>
                   <td className="px-2 py-2 text-right font-mono">{lineTotalVat(o) ? baht(Math.round(lineTotalVat(o))) : '—'}</td>
@@ -226,6 +241,15 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
             </tbody>
           </table>
           <div className="flex justify-end items-baseline gap-4 px-5 py-3"><span className="text-[13px] text-muted-foreground">Total incl. VAT</span><b className="font-mono text-[18px]">{baht(total)}</b></div>
+          <div className="mx-5 mb-3">
+            <label className="field-label">PO note (for the supplier)</label>
+            {canOrder && livePO.status !== 'cancelled' ? (
+              <textarea rows={2} value={poNote} onChange={(e) => setPoNote(e.target.value)}
+                onBlur={() => { const v = poNote.trim() || null; if (v !== (livePO.notes ?? null)) savePO({ ...livePO, notes: v }).catch((e: Error) => setError(e.message)) }}
+                placeholder="e.g. Pay by transfer, need tax invoice" className={cn(inputCls, 'h-auto py-1.5')} />
+            ) : <p className="text-[13px] text-muted-foreground">{livePO.notes || '—'}</p>}
+            <p className="mt-1 text-[11.5px] text-muted-foreground">The only note meant for the supplier. Yellow notes above are internal.</p>
+          </div>
           <div className="mx-5 mb-4 rounded-lg border border-dashed border-border px-3 py-2 text-[12px] text-muted-foreground">
             <b className="text-foreground">FlowAccount</b> — “Create PO in FlowAccount” comes in phase 2. For now, create the PO in FlowAccount by hand using the lines above, then mark it ordered here.
           </div>
