@@ -197,6 +197,7 @@ export default function AnfStockPage() {
         {kind === 'supply' && branches.map((b) => <Tab key={b} label={b} color={branchColor(b)} on={tab === b} onClick={() => setTab(b)} />)}
         {kind === 'supply' && <button type="button" onClick={() => setTab('TOTAL')} className={`text-[13px] underline underline-offset-4 transition-colors ${isTotal ? 'text-foreground font-semibold' : 'text-[#7A5AA5] hover:opacity-80'}`}>TOTAL ↗</button>}
         <Link href="/purchasing/catalog" className="text-[13px] underline underline-offset-4 text-[#7A5AA5] hover:opacity-80">Catalog ↗</Link>
+        {kind === 'asset' && <Link href="/purchasing/products" className="text-[13px] underline underline-offset-4 text-[#7A5AA5] hover:opacity-80">Products (BOM) ↗</Link>}
         <span className="flex-1" />
         {kind === 'supply' && <button type="button" onClick={() => setLowOnly((v) => !v)} className={`inline-flex items-center gap-1.5 text-[12px] rounded-full px-3 py-1 border transition-colors ${lowOnly ? 'bg-[#FF5B3F] text-white border-transparent font-medium' : 'border-border bg-card text-[#FF5B3F] font-semibold hover:bg-muted'}`}>
           ⚠ Low only{lowCount > 0 && ` (${lowCount})`}

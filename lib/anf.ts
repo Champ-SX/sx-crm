@@ -43,6 +43,8 @@ export const ASSET_CATEGORIES: { key: string; th: string; en: string; color: str
   { key: 'camera',      th: 'กล้อง',        en: 'Camera',      color: '#C9772E' },
   { key: 'light',       th: 'ไฟ',           en: 'Light',       color: '#B8A021' },
   { key: 'router',      th: 'เราเตอร์',     en: 'Router',      color: '#2E8A9A' },
+  { key: 'printer',     th: 'ปริ้นเตอร์',   en: 'Printer',     color: '#7A5AA5' },
+  { key: 'tablet',      th: 'แท็บเล็ต',     en: 'Tablet',      color: '#C0567A' },
   { key: 'asset_other', th: 'อุปกรณ์อื่นๆ', en: 'Other asset', color: '#8a8a8a' },
 ]
 export type ProductKind = 'supply' | 'asset'

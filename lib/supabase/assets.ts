@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, isSupabaseConfigured } from './client'
+import { useCRMStore } from '@/store/crm-store'
+import { MOCK_KIT_ASSET_PRODUCTS, MOCK_KIT_ASSETS } from './bom-mock'
 import type { AnfAsset, AnfAssetMove, AssetLocationKind } from '@/types'
 
 // Order board · section 2 — asset units + move log. Shared module store (like suppliers).
@@ -33,7 +35,7 @@ export function locationLabel(a: Pick<AnfAsset, 'location_kind' | 'location_slot
 }
 
 // ── Codes ────────────────────────────────────────────────────────────────────
-const PREFIX: Record<string, string> = { computer: 'PC', camera: 'CAM', light: 'LGT', router: 'RTR', asset_other: 'AST' }
+const PREFIX: Record<string, string> = { computer: 'PC', camera: 'CAM', light: 'LGT', router: 'RTR', printer: 'PRT', tablet: 'TAB', asset_other: 'AST' }
 export const prefixFor = (category: string | null | undefined) =>
   PREFIX[category ?? ''] ?? ((category ?? 'AST').replace(/[^a-z]/gi, '').slice(0, 3).toUpperCase() || 'AST')
 /** Next free code for a prefix — max existing + 1, so retired codes are never re-used. */
@@ -55,7 +57,14 @@ const listeners = new Set<() => void>()
 const emit = () => listeners.forEach((f) => f())
 
 async function load() {
-  if (!isSupabaseConfigured) { loaded = true; emit(); return }   // mock: starts empty, add units to try it
+  if (!isSupabaseConfigured) {
+    // Mock: sample units (cameras, printers, iPads…) so pickers have something to offer.
+    const st = useCRMStore.getState()
+    const missing = MOCK_KIT_ASSET_PRODUCTS.filter((p) => !st.anfProducts.some((x) => x.product_id === p.product_id))
+    if (missing.length) useCRMStore.setState({ anfProducts: [...st.anfProducts, ...missing] })
+    assets = MOCK_KIT_ASSETS.map((a) => ({ ...a }))
+    loaded = true; emit(); return
+  }
   const [a, m] = await Promise.all([
     supabase.from('anf_assets').select('*').order('code'),
     supabase.from('anf_asset_moves').select('*').order('moved_at', { ascending: false }).limit(2000),

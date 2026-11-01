@@ -13,8 +13,9 @@ import { ANF_ACCENT, ASSET_CATEGORIES, categoryMeta, kindOf, orderedCategories }
 import { jobCardName } from '@/lib/jobs'
 import {
   useAssets, movesFor, saveAsset, moveAsset, newAssetId, nextCode, prefixFor,
-  RACKS, SHELVES, EVENT_SLOTS, LOCATION_KINDS, locMeta, locationLabel, normSlot,
+  RACKS, SHELVES, LOCATION_KINDS, locMeta, locationLabel, normSlot,
 } from '@/lib/supabase/assets'
+import { useBom, kitLineForAsset } from '@/lib/supabase/bom'
 import type { AnfAsset, AnfProduct, AssetLocationKind, WonJob } from '@/types'
 
 const input = 'h-9 w-full rounded-md border border-border bg-background px-2.5 text-[13px] outline-none focus:border-foreground/40'
@@ -232,9 +233,10 @@ function AssetDialog({ asset, product, onClose }: { asset: AnfAsset; product?: A
   const [kind, setKind] = useState<AssetLocationKind>(asset.location_kind)
   const [rack, setRack] = useState(asset.location_kind === 'rack' && asset.location_slot ? asset.location_slot.split('-')[0] : RACKS[0])
   const [shelf, setShelf] = useState(asset.location_kind === 'rack' && asset.location_slot ? asset.location_slot.split('-')[1] ?? SHELVES[0] : SHELVES[0])
-  const curSet = asset.location_kind === 'event' ? normSlot(asset.location_slot) : null
-  const [ev, setEv] = useState(curSet ?? EVENT_SLOTS[0])
-  const [extraEv, setExtraEv] = useState<string[]>(() => (curSet && !EVENT_SLOTS.includes(curSet) ? [curSet] : []))
+  // On event, the slot is the job's product ("LCA iPad #1"), set from the Won card. Keep whatever it is.
+  const ev = asset.location_kind === 'event' ? normSlot(asset.location_slot) : null
+  useBom()
+  const onKit = kitLineForAsset(asset.asset_id)
   const [jobId, setJobId] = useState<string | null>(asset.job_id ?? null)
   const [error, setError] = useState<string | null>(null)
   const [today] = useState(() => new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10))
@@ -298,12 +300,9 @@ function AssetDialog({ asset, product, onClose }: { asset: AnfAsset; product?: A
           )}
           {kind === 'event' && (
             <>
-              <div><label className="field-label">Equipment set</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {[...EVENT_SLOTS, ...extraEv].map((s) => <button key={s} type="button" onClick={() => setEv(s)} className={seg(ev === s)}>{s}</button>)}
-                  <button type="button" onClick={() => { const n = `SET${EVENT_SLOTS.length + extraEv.length + 1}`; setExtraEv((x) => [...x, n]); setEv(n) }} className={seg(false)}>＋ SET{EVENT_SLOTS.length + extraEv.length + 1}</button>
-                </div>
-              </div>
+              {onKit?.kit && asset.location_kind === 'event' && (
+                <p className="rounded-lg bg-muted/60 px-3 py-2 text-[12.5px]">On <b>{onKit.kit.name} #{onKit.kit.kit_no}</b> · {onKit.line.label}{onKit.line.of_qty > 1 ? ` ${onKit.line.slot} of ${onKit.line.of_qty}` : ''}. Pick or swap units from the Won card&apos;s Equipment.</p>
+              )}
               <div><label className="field-label">Linked Won job</label>
                 <select value={jobId ?? ''} onChange={(e) => setJobId(e.target.value || null)} className={input}>
                   <option value="">No job</option>
