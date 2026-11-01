@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Package, ClipboardList, BookOpen,
+import { Camera, Package, ClipboardList, BookOpen,
   LayoutDashboard,
   Users,
   FileText,
@@ -36,13 +36,24 @@ const capturesNav = [
   { href: '/leads-opportunities',  label: 'Leads & Opps',     icon: FileText },
   { href: '/won-ready-op',         label: 'Won & Ready for OP', icon: Kanban },
 ]
-const anfNav = [
-  { href: '/purchasing', label: 'Requests', icon: ClipboardList },
-  { href: '/purchasing/pos', label: 'POs', icon: FileText },
-  { href: '/purchasing/stock', label: 'Stock & Assets', icon: Boxes },
-  { href: '/purchasing/products', label: 'Products', icon: Package },
-  { href: '/purchasing/catalog', label: 'Catalog', icon: BookOpen },
+// Purchasing board: grouped, Thai name above the English one.
+type NavItem = { href: string; label: string; th?: string; icon: React.ElementType }
+type NavSection = { title: string; th: string; items: NavItem[] }
+const anfSections: NavSection[] = [
+  { title: 'Buying', th: 'จัดซื้อ', items: [
+    { href: '/purchasing', label: 'Requests', th: 'คำขอซื้อ', icon: ClipboardList },
+    { href: '/purchasing/pos', label: 'POs', th: 'ใบสั่งซื้อ', icon: FileText },
+  ] },
+  { title: 'Warehouse', th: 'คลัง', items: [
+    { href: '/purchasing/stock', label: 'Supplies', th: 'ของสิ้นเปลือง', icon: Boxes },
+    { href: '/purchasing/equipment', label: 'Equipment', th: 'อุปกรณ์', icon: Camera },
+    { href: '/purchasing/catalog', label: 'Items & Suppliers', th: 'รายการของ & ผู้ขาย', icon: BookOpen },
+  ] },
+  { title: 'Event equipment list', th: 'รายการอุปกรณ์งานอีเวนต์', items: [
+    { href: '/purchasing/event-products', label: 'Event Product', th: 'โปรดักต์งานอีเวนต์', icon: Package },
+  ] },
 ]
+const anfNav = anfSections.flatMap((s) => s.items)
 const anfTasksNav = [
   { href: '/anf-tasks', label: 'Tasks', icon: Kanban },
 ]
@@ -189,7 +200,7 @@ function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?
   // Hrefs whose badge is an alert (warning tint) rather than a neutral count.
   const warnBadges = new Set(['/purchasing/stock'])
 
-  function NavLink({ href, label, icon: Icon }: { href: string; label: string; icon: React.ElementType }) {
+  function NavLink({ href, label, th, icon: Icon }: NavItem) {
     // Exact-match for /purchasing so its sub-route (/purchasing/stock) doesn't
     // light up both nav items.
     const isActive = pathname === href || (href !== '/purchasing' && pathname.startsWith(href + '/'))
@@ -211,7 +222,9 @@ function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?
             'w-[15px] h-[15px] shrink-0 transition-colors',
             isActive ? 'text-[var(--sidebar-primary)]' : 'text-muted-foreground group-hover:text-foreground/80'
           )} />
-          <span className="leading-none">{label}</span>
+          {th ? (
+            <span className="flex flex-col gap-0.5 leading-none"><span className="text-[11px] font-normal opacity-80">{th}</span><span>{label}</span></span>
+          ) : <span className="leading-none">{label}</span>}
         </div>
         {badge != null && badge > 0 && (
           <span className={cn(
@@ -264,10 +277,20 @@ function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-        <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-widest px-3 mb-1">Menu</p>
-        {navItems.map((item) => (
-          <NavLink key={item.href} {...item} />
-        ))}
+        {activeBoardId === 'anf-order' ? anfSections.map((sec) => (
+          <div key={sec.title} className="pb-2">
+            <p className="px-3 pt-1 text-[11px] text-muted-foreground leading-tight">{sec.th}</p>
+            <p className="px-3 mb-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{sec.title}</p>
+            {sec.items.map((item) => <NavLink key={item.href} {...item} />)}
+          </div>
+        )) : (
+          <>
+            <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-widest px-3 mb-1">Menu</p>
+            {navItems.map((item) => (
+              <NavLink key={item.href} {...item} />
+            ))}
+          </>
+        )}
       </nav>
 
       {/* Push notification opt-in banner */}

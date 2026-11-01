@@ -15,8 +15,8 @@ import {
 
 const input = 'h-8 w-full rounded-md border border-border bg-background px-2 text-[13px] outline-none focus:border-foreground/40 disabled:opacity-60'
 
-/** Stock & Assets → Products: what we rent out and what goes in each box (BOM). */
-export default function ProductsPage() {
+/** Event Equipment List → Event Product: what we take to events and what goes in each box (BOM). */
+export default function EventProductsPage() {
   const isHydrated = useHydrated()
   const { products, kits } = useBom()
   const [selId, setSelId] = useState<string | null>(null)
@@ -25,7 +25,7 @@ export default function ProductsPage() {
   const sel = products.find((p) => p.product_id === selId) ?? products[0] ?? null
 
   async function addProduct() {
-    const name = window.prompt('Product name (e.g. LCA iPad)')?.trim()
+    const name = window.prompt('Event product name (e.g. LCA iPad)')?.trim()
     if (!name) return
     if (products.some((p) => p.name.toLowerCase() === name.toLowerCase())) { setError(`“${name}” already exists.`); return }
     const p: RentalProduct = { product_id: newBomId(), name, position: products.length }
@@ -38,11 +38,11 @@ export default function ProductsPage() {
         <MobileMenuButton />
         <span className="w-3.5 h-3.5 rounded-[5px] shrink-0 flex items-center justify-center" style={{ backgroundColor: ANF_ACCENT }}><Package className="w-2.5 h-2.5 text-white" /></span>
         <div>
-          <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight leading-none">Products</h1>
-          <p className="font-mono text-[12px] text-muted-foreground mt-1">what we rent out · what goes in each box</p>
+          <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight leading-none">Event Product</h1>
+          <p className="font-mono text-[12px] text-muted-foreground mt-1">รายการอุปกรณ์งานอีเวนต์ · what goes in each box</p>
         </div>
-        <Link href="/purchasing/stock" className="ml-2 text-[13px] underline underline-offset-4 text-[#7A5AA5] hover:opacity-80">Stock &amp; Assets ↗</Link>
-        <button type="button" onClick={() => void addProduct()} className="ml-auto h-9 rounded-md bg-[#7A5AA5] px-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-white hover:opacity-90"><Plus className="w-4 h-4" />Add product</button>
+        <Link href="/purchasing/equipment" className="ml-2 text-[13px] underline underline-offset-4 text-[#7A5AA5] hover:opacity-80">Equipment ↗</Link>
+        <button type="button" onClick={() => void addProduct()} className="ml-auto h-9 rounded-md bg-[#7A5AA5] px-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-white hover:opacity-90"><Plus className="w-4 h-4" />Add event product</button>
       </div>
 
       <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -50,7 +50,7 @@ export default function ProductsPage() {
         {products.length === 0 ? (
           <div className="text-center py-20">
             <Package className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-sm font-medium">No products yet</p>
+            <p className="text-sm font-medium">No event products yet</p>
             <p className="text-[12px] text-muted-foreground mt-1">Add what you rent out (LCA iPad, Tally…), then list what goes in its box.</p>
           </div>
         ) : (

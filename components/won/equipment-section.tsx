@@ -74,7 +74,7 @@ export function EquipmentSection({ job }: { job: WonJob }) {
 
       <div className="bg-card">
         {kits.length === 0 && unsorted.length === 0 && (
-          <p className="px-4 py-3 text-[12px] text-muted-foreground">No equipment yet. Use <b>Add product</b> (e.g. LCA iPad) to get its list of what goes in the box.</p>
+          <p className="px-4 py-3 text-[12px] text-muted-foreground">No equipment yet. Use <b>Add event product</b> (e.g. LCA iPad) to get its list of what goes in the box.</p>
         )}
 
         {kits.map((k) => (
@@ -95,7 +95,7 @@ export function EquipmentSection({ job }: { job: WonJob }) {
             <ul className="divide-y divide-border">
               {unsorted.map((a) => (
                 <li key={a.asset_id} className="flex items-center gap-2 py-1.5 text-[13px]">
-                  <Link href={`/purchasing/stock?asset=${encodeURIComponent(a.code)}`} className="font-mono font-semibold hover:underline">{a.code}</Link>
+                  <Link href={`/purchasing/equipment?asset=${encodeURIComponent(a.code)}`} className="font-mono font-semibold hover:underline">{a.code}</Link>
                   <span className="min-w-0 flex-1 truncate">{prod.get(a.product_id)?.name ?? '—'}</span>
                   <span className={cn('rounded px-1.5 py-0.5 font-mono text-[11px] font-bold', locMeta('event').cls)}>{a.location_slot || 'EV'}</span>
                   <button type="button" onClick={() => void run(() => back([a]))} title="Return to where it came from" className="h-7 w-7 rounded-md inline-flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"><Undo2 className="w-3.5 h-3.5" /></button>
@@ -159,7 +159,7 @@ function KitBlock({ kit, open, onToggle, assets, prod, jobId, jobNo, isOut, onRe
       </div>
       {open && (
         <ul className="pb-1.5">
-          {lines.length === 0 && <li className="px-11 py-1.5 text-[12px] text-muted-foreground">This product has no BOM yet. Add lines in Stock &amp; Assets → Products.</li>}
+          {lines.length === 0 && <li className="px-11 py-1.5 text-[12px] text-muted-foreground">This event product has no BOM yet. Add lines in Event Product.</li>}
           {lines.map((l) => {
             const a = l.asset_id ? assets.find((x) => x.asset_id === l.asset_id) : undefined
             const out = isOut(a)
@@ -230,7 +230,7 @@ function UnitPicker({ line, current, assets, prod, jobId, jobNo, taken, locked, 
       <PopoverContent align="end" className="w-[290px] p-1 gap-0">
         <div className="px-2 py-1.5 field-label m-0 flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />{categoryMeta(line.category ?? 'asset_other').en || line.label}</div>
         <div className="max-h-60 overflow-y-auto">
-          {options.length === 0 && <p className="px-2 py-2 text-[12px] text-muted-foreground">No {line.label.toLowerCase()} units yet. Add them in Stock &amp; Assets → Assets.</p>}
+          {options.length === 0 && <p className="px-2 py-2 text-[12px] text-muted-foreground">No {line.label.toLowerCase()} units yet. Add them in Equipment.</p>}
           {options.map(({ a, busy, why, pref }) => (
             <button key={a.asset_id} type="button" disabled={busy} onClick={() => { onPick(a.asset_id); setOpen(false) }}
               className={cn('flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px]', busy ? 'opacity-45' : 'hover:bg-muted', a.asset_id === current?.asset_id && 'bg-muted')}>
@@ -258,10 +258,10 @@ function AddProduct({ products, job, onAdd }: { products: RentalProduct[]; job: 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger className="h-7 rounded-md border border-border bg-card px-2 inline-flex items-center gap-1 text-[12px] font-medium hover:bg-muted">
-        <Plus className="w-3.5 h-3.5" />Add product
+        <Plus className="w-3.5 h-3.5" />Add event product
       </PopoverTrigger>
       <PopoverContent align="end" className="w-60 p-1 gap-0">
-        {list.length === 0 && <p className="px-2 py-2 text-[12px] text-muted-foreground">No products yet. Set them up in Stock &amp; Assets → Products.</p>}
+        {list.length === 0 && <p className="px-2 py-2 text-[12px] text-muted-foreground">No event products yet. Set them up in Event Product.</p>}
         <div className="max-h-72 overflow-y-auto">
           {list.map((p) => (
             <button key={p.product_id} type="button" onClick={() => { onAdd(p); setOpen(false) }}

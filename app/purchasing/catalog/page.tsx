@@ -33,7 +33,7 @@ export default function CatalogPage() {
       <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex flex-wrap items-center gap-3">
         <MobileMenuButton />
         <span className="w-3.5 h-3.5 rounded-[5px] shrink-0 flex items-center justify-center" style={{ backgroundColor: ANF_ACCENT }}><BookOpen className="w-2.5 h-2.5 text-white" /></span>
-        <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight leading-none">Catalog</h1>
+        <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight leading-none">Items &amp; Suppliers</h1>
         <div className="flex rounded-lg border border-border p-0.5 ml-2">
           {(['items', 'suppliers'] as const).map((t) => (
             <button key={t} type="button" onClick={() => { setTab(t); window.history.replaceState(null, '', t === 'suppliers' ? '?tab=suppliers' : window.location.pathname) }}
@@ -243,7 +243,7 @@ function ItemDrawer({ product, canEdit, onEdit, onReorder, onClose }: { product:
         <div className="overflow-y-auto px-5 py-4">
           {tab === 'suppliers' && <ProductSuppliers productId={product.product_id} unit={product.unit} canEdit={canEdit} />}
           {tab === 'stock' && (asset ? (
-            <p className="text-[13px] text-muted-foreground">Each unit has its own ID and location. See <a href="/purchasing/stock" className="underline">Stock → Assets</a>.</p>
+            <p className="text-[13px] text-muted-foreground">Each unit has its own ID and location. See <a href="/purchasing/equipment" className="underline">Equipment</a>.</p>
           ) : stock.length === 0 ? <p className="text-[13px] text-muted-foreground">Not stocked at any branch yet.</p> : (
             <table className="w-full text-[13px]">
               <thead><tr className="text-left font-mono text-[10px] tracking-wide text-muted-foreground border-b border-border"><th className="py-2">BRANCH</th><th className="py-2 text-right">QTY</th><th className="py-2 text-right">ALERT AT</th><th className="py-2 pl-3">STATE</th></tr></thead>
