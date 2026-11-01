@@ -36,21 +36,21 @@ const capturesNav = [
   { href: '/leads-opportunities',  label: 'Leads & Opps',     icon: FileText },
   { href: '/won-ready-op',         label: 'Won & Ready for OP', icon: Kanban },
 ]
-// Purchasing board: grouped, Thai name above the English one.
+// Inventory board: grouped sections; short items show their Thai name inline.
 type NavItem = { href: string; label: string; th?: string; icon: React.ElementType }
 type NavSection = { title: string; th: string; items: NavItem[] }
 const anfSections: NavSection[] = [
   { title: 'Buying', th: 'จัดซื้อ', items: [
-    { href: '/purchasing', label: 'Requests', th: 'คำขอซื้อ', icon: ClipboardList },
-    { href: '/purchasing/pos', label: 'POs', th: 'ใบสั่งซื้อ', icon: FileText },
+    { href: '/inventory', label: 'Requests', th: 'คำขอซื้อ', icon: ClipboardList },
+    { href: '/inventory/pos', label: 'POs', th: 'ใบสั่งซื้อ', icon: FileText },
   ] },
   { title: 'Warehouse', th: 'คลัง', items: [
-    { href: '/purchasing/stock', label: 'Supplies', th: 'ของสิ้นเปลือง', icon: Boxes },
-    { href: '/purchasing/equipment', label: 'Equipment', th: 'อุปกรณ์', icon: Camera },
-    { href: '/purchasing/catalog', label: 'Items & Suppliers', th: 'รายการของ & ผู้ขาย', icon: BookOpen },
+    { href: '/inventory/stock', label: 'Supplies', th: 'ของสิ้นเปลือง', icon: Boxes },
+    { href: '/inventory/equipment', label: 'Equipment', th: 'อุปกรณ์', icon: Camera },
+    { href: '/inventory/catalog', label: 'Items & Suppliers', icon: BookOpen },
   ] },
-  { title: 'Event equipment list', th: 'รายการอุปกรณ์งานอีเวนต์', items: [
-    { href: '/purchasing/event-products', label: 'Event Product', th: 'โปรดักต์งานอีเวนต์', icon: Package },
+  { title: 'Event equipment list', th: 'อุปกรณ์อีเวนต์', items: [
+    { href: '/inventory/event-products', label: 'Event Product', icon: Package },
   ] },
 ]
 const anfNav = anfSections.flatMap((s) => s.items)
@@ -194,16 +194,16 @@ function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?
   const badges: Record<string, number> = {
     '/leads-opportunities': openLeadsCount,
     '/won-ready-op':        activeOPJobs,
-    ...(onOrderBoard ? { '/purchasing': requestsBadge, '/purchasing/pos': posBadge } : {}),
-    '/purchasing/stock':     lowStockCount,
+    ...(onOrderBoard ? { '/inventory': requestsBadge, '/inventory/pos': posBadge } : {}),
+    '/inventory/stock':     lowStockCount,
   }
   // Hrefs whose badge is an alert (warning tint) rather than a neutral count.
-  const warnBadges = new Set(['/purchasing/stock'])
+  const warnBadges = new Set(['/inventory/stock'])
 
   function NavLink({ href, label, th, icon: Icon }: NavItem) {
-    // Exact-match for /purchasing so its sub-route (/purchasing/stock) doesn't
+    // Exact-match for /inventory so its sub-route (/inventory/stock) doesn't
     // light up both nav items.
-    const isActive = pathname === href || (href !== '/purchasing' && pathname.startsWith(href + '/'))
+    const isActive = pathname === href || (href !== '/inventory' && pathname.startsWith(href + '/'))
     const badge = badges[href]
 
     return (
@@ -217,13 +217,13 @@ function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?
             : 'text-muted-foreground hover:text-foreground hover:bg-muted'
         )}
       >
-        <div className="flex items-center gap-2.5">
+        <div className="flex min-w-0 items-center gap-2.5">
           <Icon className={cn(
             'w-[15px] h-[15px] shrink-0 transition-colors',
             isActive ? 'text-[var(--sidebar-primary)]' : 'text-muted-foreground group-hover:text-foreground/80'
           )} />
           {th ? (
-            <span className="flex flex-col gap-0.5 leading-none"><span className="text-[11px] font-normal opacity-80">{th}</span><span>{label}</span></span>
+            <span className="flex min-w-0 items-baseline gap-1 leading-none whitespace-nowrap"><span>{label}</span><span className="min-w-0 truncate text-[11px] font-normal opacity-70">{th}</span></span>
           ) : <span className="leading-none">{label}</span>}
         </div>
         {badge != null && badge > 0 && (
@@ -278,9 +278,8 @@ function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?
       {/* Navigation */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
         {activeBoardId === 'anf-order' ? anfSections.map((sec) => (
-          <div key={sec.title} className="pb-2">
-            <p className="px-3 pt-1 text-[11px] text-muted-foreground leading-tight">{sec.th}</p>
-            <p className="px-3 mb-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{sec.title}</p>
+          <div key={sec.title} className="pb-1 [&+&]:mt-2 [&+&]:pt-2 [&+&]:border-t [&+&]:border-[var(--sidebar-border)]">
+            <p className="px-3 pb-1 text-[10px] tracking-[.02em] text-muted-foreground/70 leading-snug">{sec.title.toUpperCase()} · {sec.th}</p>
             {sec.items.map((item) => <NavLink key={item.href} {...item} />)}
           </div>
         )) : (

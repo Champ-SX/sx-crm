@@ -147,7 +147,7 @@ export function StockView({ kind }: { kind: ProductKind }) {
     setEditing(copy)  // reopen on the copy
   }
 
-  // Deep link: /purchasing/stock?item=<id> opens that item's card (Share).
+  // Deep link: /inventory/stock?item=<id> opens that item's card (Share).
   useEffect(() => {
     if (typeof window === 'undefined') return
     const id = new URLSearchParams(window.location.search).get('item')
@@ -185,8 +185,8 @@ export function StockView({ kind }: { kind: ProductKind }) {
         {kind === 'asset' && <button type="button" onClick={() => setTab(WAREHOUSE)} className={`text-[13px] underline underline-offset-4 transition-colors ${!isCatalog ? 'text-foreground font-semibold' : 'text-[#7A5AA5] hover:opacity-80'}`}>Units</button>}
         {kind === 'supply' && branches.map((b) => <Tab key={b} label={b} color={branchColor(b)} on={tab === b} onClick={() => setTab(b)} />)}
         {kind === 'supply' && <button type="button" onClick={() => setTab('TOTAL')} className={`text-[13px] underline underline-offset-4 transition-colors ${isTotal ? 'text-foreground font-semibold' : 'text-[#7A5AA5] hover:opacity-80'}`}>TOTAL ↗</button>}
-        <Link href="/purchasing/catalog" className="text-[13px] underline underline-offset-4 text-[#7A5AA5] hover:opacity-80">Items &amp; Suppliers ↗</Link>
-        {kind === 'asset' && <Link href="/purchasing/event-products" className="text-[13px] underline underline-offset-4 text-[#7A5AA5] hover:opacity-80">Event Product ↗</Link>}
+        <Link href="/inventory/catalog" className="text-[13px] underline underline-offset-4 text-[#7A5AA5] hover:opacity-80">Items &amp; Suppliers ↗</Link>
+        {kind === 'asset' && <Link href="/inventory/event-products" className="text-[13px] underline underline-offset-4 text-[#7A5AA5] hover:opacity-80">Event Product ↗</Link>}
         <span className="flex-1" />
         {kind === 'supply' && <button type="button" onClick={() => setLowOnly((v) => !v)} className={`inline-flex items-center gap-1.5 text-[12px] rounded-full px-3 py-1 border transition-colors ${lowOnly ? 'bg-[#FF5B3F] text-white border-transparent font-medium' : 'border-border bg-card text-[#FF5B3F] font-semibold hover:bg-muted'}`}>
           ⚠ Low only{lowCount > 0 && ` (${lowCount})`}
@@ -602,7 +602,7 @@ function StockDialog({ row, onClose, onRaise, onTransfer, onDuplicate }: {
   const [copied, setCopied] = useState(false)
   function share() {
     if (!row) return
-    const link = `${window.location.origin}/purchasing/stock?item=${row.stock_id}`
+    const link = `${window.location.origin}/inventory/stock?item=${row.stock_id}`
     void navigator.clipboard?.writeText(link).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) }).catch(() => {})
   }
   // Identity comes from the catalog product (read-only here; edit in catalog).

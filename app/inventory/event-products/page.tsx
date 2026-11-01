@@ -41,7 +41,7 @@ export default function EventProductsPage() {
           <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight leading-none">Event Product</h1>
           <p className="font-mono text-[12px] text-muted-foreground mt-1">รายการอุปกรณ์งานอีเวนต์ · what goes in each box</p>
         </div>
-        <Link href="/purchasing/equipment" className="ml-2 text-[13px] underline underline-offset-4 text-[#7A5AA5] hover:opacity-80">Equipment ↗</Link>
+        <Link href="/inventory/equipment" className="ml-2 text-[13px] underline underline-offset-4 text-[#7A5AA5] hover:opacity-80">Equipment ↗</Link>
         <button type="button" onClick={() => void addProduct()} className="ml-auto h-9 rounded-md bg-[#7A5AA5] px-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-white hover:opacity-90"><Plus className="w-4 h-4" />Add event product</button>
       </div>
 

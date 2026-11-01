@@ -95,7 +95,7 @@ export function EquipmentSection({ job }: { job: WonJob }) {
             <ul className="divide-y divide-border">
               {unsorted.map((a) => (
                 <li key={a.asset_id} className="flex items-center gap-2 py-1.5 text-[13px]">
-                  <Link href={`/purchasing/equipment?asset=${encodeURIComponent(a.code)}`} className="font-mono font-semibold hover:underline">{a.code}</Link>
+                  <Link href={`/inventory/equipment?asset=${encodeURIComponent(a.code)}`} className="font-mono font-semibold hover:underline">{a.code}</Link>
                   <span className="min-w-0 flex-1 truncate">{prod.get(a.product_id)?.name ?? '—'}</span>
                   <span className={cn('rounded px-1.5 py-0.5 font-mono text-[11px] font-bold', locMeta('event').cls)}>{a.location_slot || 'EV'}</span>
                   <button type="button" onClick={() => void run(() => back([a]))} title="Return to where it came from" className="h-7 w-7 rounded-md inline-flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"><Undo2 className="w-3.5 h-3.5" /></button>
