@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { LOST_REASONS, LEAD_SOURCES } from '@/lib/insights'
 import { DealValueField, DealValueText } from '@/components/shared/deal-value'
 import { useRouter } from 'next/navigation'
 import { useCRMStore } from '@/store/crm-store'
@@ -322,6 +323,8 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
   const isMobile = useIsMobile()
   const [confirmWon, setConfirmWon] = useState(false)
   const [confirmLost, setConfirmLost] = useState(false)
+  const [lostReason, setLostReason] = useState<string | null>(null)
+  const [lostNote, setLostNote] = useState('')
   const [quotationOpen, setQuotationOpen] = useState(false)
   const [openAccount, setOpenAccount] = useState(false)
   // Expand Activity & History by default on mobile for better discoverability
@@ -383,8 +386,9 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
   }
   async function handleMarkLost() {
     if (!item) return
-    await markAsLost(item.lead_op_id)
-    setConfirmLost(false)
+    if (!lostReason) return
+    await markAsLost(item.lead_op_id, lostReason, lostNote)
+    setConfirmLost(false); setLostReason(null); setLostNote('')
     onClose()
   }
 
@@ -584,6 +588,9 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
 
               {/* Event details */}
               <div className="space-y-2">
+                {item.status === 'lost' && item.lost_reason && (
+                  <p className="mb-2 rounded-md bg-muted px-2.5 py-1.5 text-[12.5px]"><b>Lost:</b> {item.lost_reason}{item.lost_note && <span className="text-muted-foreground"> — {item.lost_note}</span>}</p>
+                )}
                 <p className="field-label">Event Details</p>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
@@ -619,6 +626,14 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
                         onSave={(v) => updateLeadOpportunity(item.lead_op_id, { venue: v })}
                       />
                     )}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="w-3.5 shrink-0 text-center text-[11px] text-muted-foreground" aria-hidden>↘</span>
+                    <select value={item.source ?? ''} onChange={(e) => void updateLeadOpportunity(item.lead_op_id, { source: e.target.value || null })}
+                      aria-label="Lead source" className={`h-7 rounded border border-transparent bg-transparent px-1 text-sm hover:border-input ${item.source ? '' : 'text-muted-foreground'}`}>
+                      <option value="">Add source…</option>
+                      {LEAD_SOURCES.map((x) => <option key={x} value={x}>{x}</option>)}
+                    </select>
                   </div>
                 </div>
               </div>
@@ -927,14 +942,29 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
       <Dialog open={confirmLost} onOpenChange={setConfirmLost}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Mark as Lost</DialogTitle>
+            <DialogTitle>Mark “{item.name}” as Lost?</DialogTitle>
             <DialogDescription>
-              This lead/opportunity will be closed as lost. You can still view it with the Lost filter.
+              Pick why we lost it. It feeds “Why we lose” on the dashboard. You can still view it with the Lost filter.
             </DialogDescription>
           </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <p className="field-label">Why did we lose it? *</p>
+              <div className="flex flex-wrap gap-1.5">
+                {LOST_REASONS.map((r) => (
+                  <button key={r} type="button" onClick={() => setLostReason(r)}
+                    className={`h-8 rounded-full border px-3 text-[12.5px] ${lostReason === r ? 'border-foreground bg-foreground text-background font-semibold' : 'border-border hover:bg-muted'}`}>{r}</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="field-label">Note (optional)</p>
+              <Input value={lostNote} onChange={(e) => setLostNote(e.target.value)} placeholder="e.g. Competitor quoted ฿38k, we were ฿52k" className="h-9 text-sm" />
+            </div>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmLost(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleMarkLost}>Mark as Lost</Button>
+            <Button variant="destructive" onClick={handleMarkLost} disabled={!lostReason}>Mark as Lost</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

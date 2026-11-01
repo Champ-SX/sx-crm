@@ -22,6 +22,7 @@ import {
 import { blankWonJobFields, companyToAccount, customerToAccount, parseJobNumber, parseJobDates } from '@/lib/jobs'
 import { WAREHOUSE, inferCategory } from '@/lib/anf'
 import * as db from '@/lib/supabase/db'
+import { logStageChange } from '@/lib/supabase/stage-history'
 
 // Stock-in always lands in the central WAREHOUSE row for an item; auto-create
 // it if none exists yet. Used by the order-received loop (add + update).
@@ -271,7 +272,7 @@ interface CRMStore {
   deleteLeadOpportunity: (id: string) => Promise<void>
   duplicateLeadOpportunity: (id: string) => Promise<string | null>
   markAsWon: (leadOpId: string) => Promise<WonJob>
-  markAsLost: (leadOpId: string) => Promise<void>
+  markAsLost: (leadOpId: string, reason?: string | null, note?: string | null) => Promise<void>
 
   // Won Jobs (OP Kanban)
   addWonJob: (job: WonJob) => Promise<void>
@@ -834,6 +835,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
   addLeadOpportunity: async (lop) => {
     // Stamp the active board so new leads land on the board you're viewing.
     if (!lop.board_id && get().activeBoardId) lop = { ...lop, board_id: get().activeBoardId! }
+    logStageChange({ entity_type: 'lead_opportunity', entity_id: lop.lead_op_id, from_stage: null, to_stage: lop.status, changed_by: get().currentUserName })
     set((s) => ({
       leadOpportunities: [...s.leadOpportunities, lop],
     }))
@@ -849,6 +851,8 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
   },
 
   updateLeadOpportunity: async (id, updates) => {
+    const before = get().leadOpportunities.find((l) => l.lead_op_id === id)
+    if (before && updates.status && updates.status !== before.status) logStageChange({ entity_type: 'lead_opportunity', entity_id: id, from_stage: before.status, to_stage: updates.status, changed_by: get().currentUserName })
     set((s) => ({
       leadOpportunities: s.leadOpportunities.map((l) =>
         l.lead_op_id === id ? { ...l, ...updates, updated_at: new Date().toISOString() } : l
@@ -901,6 +905,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
     const lop = state.leadOpportunities.find((l) => l.lead_op_id === leadOpId)
     if (!lop) throw new Error('Lead/Opportunity not found')
     const now = new Date().toISOString()
+    logStageChange({ entity_type: 'lead_opportunity', entity_id: leadOpId, from_stage: lop.status, to_stage: 'won', changed_by: state.currentUserName })
 
     // Job number comes from the event name (planning sheet), not a counter.
     // NULL when the title has no number — flagged in the UI, editable later.
@@ -988,6 +993,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
 
         // Create wonJob FIRST - this is the critical operation
         await db.wonJobQueries.create(jobToCreate as WonJob)
+        logStageChange({ entity_type: 'won_job', entity_id: newJob.job_id, from_stage: null, to_stage: newJob.op_stage, changed_by: state.currentUserName })
         console.log('[CRM Store] Successfully created wonJob:', newJob.job_id)
 
         // Then update lead status and create activity
@@ -1057,13 +1063,15 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
     return newJob
   },
 
-  markAsLost: async (leadOpId) => {
+  markAsLost: async (leadOpId, reason = null, note = null) => {
     const now = new Date().toISOString()
     const lop = get().leadOpportunities.find((l) => l.lead_op_id === leadOpId)
     if (!lop) return
+    const why = reason ? { lost_reason: reason, lost_note: note?.trim() || null } : {}
+    logStageChange({ entity_type: 'lead_opportunity', entity_id: leadOpId, from_stage: lop.status, to_stage: 'lost', changed_by: get().currentUserName })
     set((s) => ({
       leadOpportunities: s.leadOpportunities.map((l) =>
-        l.lead_op_id === leadOpId ? { ...l, status: 'lost', updated_at: now } : l
+        l.lead_op_id === leadOpId ? { ...l, status: 'lost', ...why, updated_at: now } : l
       ),
       activities: [
         ...s.activities,
@@ -1073,7 +1081,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
           entity_id: leadOpId,
           activity_type: 'deal_lost' as const,
           title: 'Marked as Lost',
-          description: 'Opportunity closed as lost.',
+          description: reason ? `Lost: ${reason}${note?.trim() ? ` — ${note.trim()}` : ''}` : 'Opportunity closed as lost.',
           created_by: lop.owner,
           created_at: now,
         },
@@ -1084,14 +1092,14 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
     if (USE_SUPABASE) {
       try {
         await Promise.all([
-          db.leadOpportunityQueries.update(leadOpId, { status: 'lost' }),
+          db.leadOpportunityQueries.update(leadOpId, { status: 'lost', ...why }),
           db.activityQueries.create({
             activity_id: crypto.randomUUID(),
             entity_type: 'lead_opportunity',
             entity_id: leadOpId,
             activity_type: 'deal_lost',
             title: 'Marked as Lost',
-            description: 'Opportunity closed as lost.',
+            description: reason ? `Lost: ${reason}${note?.trim() ? ` — ${note.trim()}` : ''}` : 'Opportunity closed as lost.',
             created_by: lop.owner,
             created_at: now,
           }),
@@ -1104,6 +1112,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
 
   // ── Won Jobs ───────────────────────────────────────────────────────────────
   addWonJob: async (job) => {
+    logStageChange({ entity_type: 'won_job', entity_id: job.job_id, from_stage: null, to_stage: job.op_stage, changed_by: get().currentUserName })
     if (!job.board_id && get().activeBoardId) job = { ...job, board_id: get().activeBoardId! }
     set((s) => ({ wonJobs: [...s.wonJobs, job] }))
     if (USE_SUPABASE) {
@@ -1116,6 +1125,8 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
   },
 
   updateWonJob: async (id, updates) => {
+    const before = get().wonJobs.find((j) => j.job_id === id)
+    if (before && updates.op_stage && updates.op_stage !== before.op_stage) logStageChange({ entity_type: 'won_job', entity_id: id, from_stage: before.op_stage, to_stage: updates.op_stage, changed_by: get().currentUserName })
     set((s) => ({
       wonJobs: s.wonJobs.map((j) =>
         j.job_id === id ? { ...j, ...updates, updated_at: new Date().toISOString() } : j
@@ -1134,6 +1145,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
     const now = new Date().toISOString()
     const job = get().wonJobs.find((j) => j.job_id === id)
     if (!job) return
+    logStageChange({ entity_type: 'won_job', entity_id: id, from_stage: job.op_stage, to_stage: stage, changed_by: get().currentUserName })
     set((s) => ({
       wonJobs: s.wonJobs.map((j) =>
         j.job_id === id ? { ...j, op_stage: stage, updated_at: now } : j

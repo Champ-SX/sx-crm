@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { LEAD_SOURCES } from '@/lib/insights'
 import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
 import { Button } from '@/components/ui/button'
@@ -155,6 +156,7 @@ export function AddLeadOpForm({
     estimated_value: '',
     owner: defaultOwner,
     notes: '',
+    source: '',
   })
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | undefined>(resolveInitialCustomerId)
@@ -243,6 +245,7 @@ export function AddLeadOpForm({
       estimated_value: parseFloat(form.estimated_value) || 0,
       owner: form.owner,
       notes: form.notes,
+      source: form.source || null,
       status: 'open',
       created_at: now,
       updated_at: now,
@@ -369,6 +372,17 @@ export function AddLeadOpForm({
                 <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent><OwnerSelectItems /></SelectContent>
               </Select>
+            </div>
+          </div>
+
+          {/* Lead source */}
+          <div className="space-y-1">
+            <Label className="text-xs">Where did this lead come from?</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {LEAD_SOURCES.map((x) => (
+                <button key={x} type="button" onClick={() => setForm({ ...form, source: form.source === x ? '' : x })}
+                  className={`h-7 rounded-full border px-2.5 text-[12px] ${form.source === x ? 'border-foreground bg-foreground text-background font-semibold' : 'border-border text-muted-foreground hover:text-foreground'}`}>{x}</button>
+              ))}
             </div>
           </div>
 

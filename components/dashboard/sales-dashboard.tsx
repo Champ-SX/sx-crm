@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { StatCard, SectionHeader, fmtBaht } from './shared'
 import { UserAvatar } from '@/components/shared/user-avatar'
+import { StaleLeadsCard, WinRateCard, LostReasonsCard } from './insights'
 
 // Monthly revenue goal used for the target-progress bar.
 // There is no per-user target field in the data model yet, so this is a
@@ -112,6 +113,13 @@ export function SalesDashboard({ userName }: { userName: string }) {
           iconColor="text-muted-foreground"
           valueColor="text-foreground"
         />
+      </div>
+
+      {/* ── Follow-ups + win / loss ── */}
+      <StaleLeadsCard leads={myLeads} activities={activities} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+        <WinRateCard leads={myLeads} />
+        <LostReasonsCard leads={myLeads} />
       </div>
 
       {/* ── Target progress + Recent activity ── */}

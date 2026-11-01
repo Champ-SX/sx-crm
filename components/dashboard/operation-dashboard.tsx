@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { StatCard, SectionHeader, StatusDot, stageConfig, fmtBaht } from './shared'
 import { UserAvatar } from '@/components/shared/user-avatar'
+import { OpsAlerts, ReadinessCard, ClosingCard } from './insights'
 
 /**
  * Operation Dashboard — pipeline health and team workload view.
@@ -108,6 +109,11 @@ export function OperationDashboard() {
           valueColor="text-red-600"
         />
       </div>
+
+      {/* ── Readiness + closing ── */}
+      <OpsAlerts jobs={wonJobs} />
+      <ReadinessCard jobs={wonJobs} />
+      <ClosingCard jobs={wonJobs} />
 
       {/* ── Pipeline health + Bottleneck alerts ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">

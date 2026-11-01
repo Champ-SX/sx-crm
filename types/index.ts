@@ -344,6 +344,9 @@ export interface LeadOpportunity {
   status: LeadOpStatus
   assignee_ids?: string[] | null  // users.id[] assigned to work this lead (Assign-to)
   is_archived?: boolean       // hidden from the board when true (Phase 5 card actions)
+  source?: string | null      // where the lead came from (LINE OA, Website, Repeat client…)
+  lost_reason?: string | null // why it was lost (required when marking Lost)
+  lost_note?: string | null
   created_at: string
   updated_at: string
 }

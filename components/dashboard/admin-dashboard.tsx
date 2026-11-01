@@ -12,6 +12,7 @@ import {
   Users, FileText, Trophy, TrendingUp, BarChart3, Activity, User, ChevronLeft, ChevronRight, CalendarDays,
 } from 'lucide-react'
 import { StatCard, SectionHeader, fmtBaht } from './shared'
+import { StaleLeadsCard, WinRateCard, LostReasonsCard, OpsAlerts, ReadinessCard } from './insights'
 
 /**
  * Admin Dashboard — system-wide view.
@@ -126,6 +127,15 @@ export function AdminDashboard() {
           valueColor="text-foreground"
         />
       </div>
+
+      {/* ── Sales: follow-ups + win / loss · Ops: readiness ── */}
+      <StaleLeadsCard leads={leadOpportunities} activities={activities} showOwner />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+        <WinRateCard leads={leadOpportunities} withOwner />
+        <LostReasonsCard leads={leadOpportunities} />
+      </div>
+      <OpsAlerts jobs={wonJobs} />
+      <ReadinessCard jobs={wonJobs} />
 
       {/* ── Monthly won summary ── */}
       <div>
