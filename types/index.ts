@@ -412,6 +412,12 @@ export interface StaffMember {
   bank_branch: string
   fee_thb?: number // ค่าจ้าง — per-job staff fee in THB (lives on the job's staff_list entry, not the registry)
   paid?: boolean   // per-job payment status — has this staff member been paid for this job
+  // Registry-only profile (Staff page)
+  line_id?: string | null
+  skills?: string[]
+  default_fee_thb?: number | null  // fills fee_thb when added to a job
+  note?: string | null
+  is_active?: boolean              // false = hidden from the job staff picker
 }
 
 // ── Company Account (for billing/invoicing) ───────────────────────────────────

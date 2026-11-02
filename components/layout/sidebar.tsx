@@ -15,6 +15,7 @@ import { Camera, Package, ClipboardList, BookOpen,
   LogOut,
   Boxes,
   Building2,
+  UserRound,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCRMStore } from '@/store/crm-store'
@@ -35,6 +36,7 @@ const capturesNav = [
   { href: '/customers',            label: 'Customers',        icon: Users },
   { href: '/leads-opportunities',  label: 'Leads & Opps',     icon: FileText },
   { href: '/won-ready-op',         label: 'Won & Ready for OP', icon: Kanban },
+  { href: '/staff',                label: 'Staff · ทีมงาน',   icon: UserRound },
 ]
 // Inventory board: grouped sections; short items show their Thai name inline.
 type NavItem = { href: string; label: string; th?: string; icon: React.ElementType }

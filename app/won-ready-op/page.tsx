@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useEffect, useMemo, useRef, useCallback, type ReactNode } from 'react'
 import { DealValueField, DealValueText } from '@/components/shared/deal-value'
 import { AddOpsJobDialog } from '@/components/won/add-ops-job-dialog'
@@ -522,6 +523,12 @@ function KanbanColumn({
   )
 }
 
+// Job snapshot of a registry member: identity + bank, fee pre-filled from their default.
+function toJobStaff(m: StaffMember): StaffMember {
+  const { line_id: _l, skills: _s, default_fee_thb, note: _n, is_active: _a, ...rest } = m
+  return { ...rest, ...(default_fee_thb != null ? { fee_thb: default_fee_thb } : {}) }
+}
+
 // ── Staff Sheet ───────────────────────────────────────────────────────────────
 function StaffSheet({ jobId, onClose }: { jobId: string; onClose: () => void }) {
   const { staff: allStaff, addStaff, updateWonJob, wonJobs, deleteStaff } = useCRMStore()
@@ -539,12 +546,12 @@ function StaffSheet({ jobId, onClose }: { jobId: string; onClose: () => void }) 
 
   const assignedIds = new Set((job.staff_list || []).map((s) => s.staff_id))
   const available = allStaff.filter(
-    (s) => !assignedIds.has(s.staff_id) &&
+    (s) => s.is_active !== false && !assignedIds.has(s.staff_id) &&
       (s.name.toLowerCase().includes(search.toLowerCase()) || s.nickname.toLowerCase().includes(search.toLowerCase()))
   )
 
   function handleAddFromRegistry(member: StaffMember) {
-    updateWonJob(job.job_id, { staff_list: [...(job.staff_list || []), member] })
+    updateWonJob(job.job_id, { staff_list: [...(job.staff_list || []), toJobStaff(member)] })
   }
 
   function handleCreateNew(e: React.FormEvent) {
@@ -568,7 +575,7 @@ function StaffSheet({ jobId, onClose }: { jobId: string; onClose: () => void }) 
         <div className="px-6 py-5 space-y-6 overflow-y-auto flex-1">
           {/* Add from registry */}
           <div>
-            <p className="text-sm font-semibold mb-2">Add from registry</p>
+            <p className="text-sm font-semibold mb-2 flex items-center justify-between">Add from registry<Link href="/staff" className="text-xs font-normal text-muted-foreground hover:text-foreground hover:underline">Manage staff →</Link></p>
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -961,7 +968,7 @@ function JobDetail({
                   className={`flex items-start justify-between p-3 rounded-lg border ${s.paid && !ops ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-500/30 dark:bg-emerald-500/10' : 'border-border/60 bg-muted/20'}`}
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-medium">{s.name} <span className="text-muted-foreground">({s.nickname})</span></p>
+                    <p className="text-sm font-medium"><Link href={`/staff?open=${encodeURIComponent(s.staff_id)}`} className="hover:underline">{s.name}</Link> <span className="text-muted-foreground">({s.nickname})</span></p>
                     <p className="text-xs text-muted-foreground">{s.phone}</p>
                     <p className="text-xs text-muted-foreground">{s.bank_name} · {s.bank_account_number} · {s.bank_account_name}</p>
                     {s.bank_branch && <p className="text-xs text-muted-foreground">สาขา: {s.bank_branch}</p>}
