@@ -14,6 +14,7 @@ import {
   type JobKit, type JobKitLine, type RentalProduct,
 } from '@/lib/supabase/bom'
 import type { AnfAsset, AnfProduct, WonJob } from '@/types'
+import { EquipmentPrintButton } from '@/components/won/equipment-print'
 
 /**
  * Won drawer — equipment by product. Add a product (LCA iPad, Tally…), it
@@ -114,6 +115,7 @@ export function EquipmentSection({ job }: { job: WonJob }) {
               <button type="button" onClick={() => { if (window.confirm(`Return all ${out.length} unit(s) to where they came from?`)) void run(() => back(out)) }}
                 className="h-8 rounded-md border border-border px-2.5 inline-flex items-center gap-1 text-[12px] font-medium hover:bg-muted"><Undo2 className="w-3.5 h-3.5" />Return all</button>
             )}
+            {kits.length > 0 && <EquipmentPrintButton job={job} kits={kits} lines={jobLines} assets={assets} done={done} total={total} by={me} />}
             {toSend.length > 0 && (
               <button type="button" onClick={() => void run(sendOut)}
                 className="h-8 rounded-md bg-[#7A5AA5] px-3 inline-flex items-center gap-1 text-[12px] font-semibold text-white hover:opacity-90"><Send className="w-3.5 h-3.5" />Send out {toSend.length}</button>

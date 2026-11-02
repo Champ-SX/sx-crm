@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Equipment Print Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1c1b19;--mute:#6b6862;--line:#d9d5cc;--soft:#f4f2ee;--acc:#5b3fb5;--bg:#e9e6df}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Inter,"IBM Plex Sans Thai",sans-serif;color:var(--ink);padding:24px 16px}
+.cap{max-width:794px;margin:0 auto 12px;font-size:13px;color:var(--mute)}
+.cap b{color:var(--ink)}
+/* drawer footer mock */
+.drawer{max-width:794px;margin:0 auto 28px;background:#f7f6f3;border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:8px}
+.drawer span{flex:1;font-size:13px;color:var(--mute)}
+.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;font:500 13px Inter;display:inline-flex;gap:6px;align-items:center}
+.btn.p{background:var(--acc);color:#fff;border-color:var(--acc)}
+.btn.hl{outline:2px dashed #e0703d;outline-offset:3px}
+/* A4 */
+.a4{width:794px;max-width:100%;min-height:1123px;margin:0 auto;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.12);padding:40px 44px;font-size:12px;line-height:1.45}
+.top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--ink);padding-bottom:12px}
+.jobno{font:600 34px "IBM Plex Mono";letter-spacing:-1px;line-height:1}
+.title{font-size:18px;font-weight:700;margin-top:6px}
+.sub{color:var(--mute);font-size:12px}
+.qr{width:74px;height:74px;border:1px solid var(--ink);display:grid;place-items:center;font-size:9px;color:var(--mute);text-align:center;background:repeating-linear-gradient(45deg,#fff 0 4px,#eee 4px 8px)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;margin:14px 0}
+.k{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.v{font-size:13px;font-weight:500}
+h3{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;margin:18px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
+h3 em{font-style:normal;color:var(--mute);font-weight:500;letter-spacing:0;text-transform:none}
+table{width:100%;border-collapse:collapse}
+th{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);text-align:left;font-weight:600;padding:4px 6px;border-bottom:1px solid var(--line)}
+td{padding:6px;border-bottom:1px solid #eee;vertical-align:middle}
+.prod td{background:var(--soft);font-weight:700;font-size:13px}
+.box{display:inline-block;width:13px;height:13px;border:1.4px solid var(--ink);border-radius:2px}
+.mono{font-family:"IBM Plex Mono";font-weight:500}
+.tag{font-size:9px;border:1px solid var(--line);border-radius:3px;padding:0 4px;color:var(--mute);margin-left:4px}
+.c{text-align:center}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.note{border:1px solid var(--line);border-radius:6px;padding:8px 10px;min-height:46px;background:#fffdf6}
+.sign{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:22px}
+.sign div{border-top:1px solid var(--ink);padding-top:4px;font-size:10px;color:var(--mute)}
+.foot{margin-top:18px;font-size:9.5px;color:var(--mute);display:flex;justify-content:space-between}
+@media print{body{background:#fff;padding:0}.cap,.drawer{display:none}.a4{box-shadow:none;padding:12mm 14mm;width:auto;min-height:0}}
+@media(max-width:820px){.a4{padding:20px 16px}.grid,.two{grid-template-columns:1fr}.sign{grid-template-columns:1fr}}
+</style></head><body>
+
+<p class="cap"><b>1 · In the drawer:</b> a <b>Print</b> button sits left of <b>Send out</b>. It opens this sheet and the print dialog. It works before everything is packed, so the sheet can be used as the packing list.</p>
+<div class="drawer"><span>Everything packed ✓</span><button class="btn hl">🖨 Print</button><button class="btn p">➤ Send out 1</button></div>
+
+<p class="cap"><b>2 · The A4 sheet</b> (sample data). One sheet per job (card), with every event product on it. Labels are English · Thai. Tape it to the case.</p>
+<div class="a4">
+  <div class="top">
+    <div>
+      <div class="jobno">#2614</div>
+      <div class="title">Sephora Staff Party 2026</div>
+      <div class="sub">Sephora (Thailand) Co., Ltd. · Owner: Champ</div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:flex-start">
+      <div style="text-align:right"><div class="k">Event · วันงาน</div><div style="font-size:20px;font-weight:700">Mon 12 Oct</div><div class="sub">ถึง Tue 13 Oct · 2 วัน</div></div>
+      <div class="qr">QR<br>เปิดงาน<br>ใน CRM</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div><div class="k">Venue · สถานที่</div><div class="v">Eastin Grand Hotel Phayathai</div><div class="sub">Ballroom, 2F · 18 Phaya Thai Rd</div></div>
+    <div><div class="k">Onsite contact · ผู้ติดต่อหน้างาน</div><div class="v">K. Ploy · 081-234-5678</div><div class="sub">LINE: ploy.sephora</div></div>
+    <div><div class="k">Team meets · เวลานัดทีม</div><div class="v">Mon 12 Oct · 07:30</div></div>
+    <div><div class="k">Out → due back · ออก → กำหนดคืน</div><div class="v">Sun 11 Oct → Wed 14 Oct</div></div>
+  </div>
+
+  <h3>Equipment · อุปกรณ์ <em>จัดแล้ว 3 / 3 ตอนพิมพ์</em></h3>
+  <table>
+    <tr><th style="width:40px">Out<br>ออก</th><th>Item · รายการ</th><th>Unit / Qty · จำนวน</th><th class="c" style="width:52px">Back<br>คืน</th></tr>
+    <tr class="prod"><td></td><td colspan="3">Popup Studio #1</td></tr>
+    <tr><td><span class="box"></span></td><td>Camera</td><td class="mono">CAM-001</td><td class="c"><span class="box"></span></td></tr>
+    <tr><td><span class="box"></span></td><td>Cable bag <span class="tag">Accessory</span></td><td>1</td><td class="c"><span class="box"></span></td></tr>
+    <tr><td><span class="box"></span></td><td>DNP 4×6 paper <span class="tag">Consumable</span></td><td>1 box</td><td class="c">ใช้ไป: ___</td></tr>
+  </table>
+
+  <div class="two">
+    <div>
+      <h3>Staff · ทีมงาน <em>2 / 2</em></h3>
+      <table>
+        <tr><td>Nice (Nattapong)</td><td class="mono">089-111-2222</td></tr>
+        <tr><td>Bank (Thanakorn)</td><td class="mono">086-333-4444</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Setup / Teardown · ติดตั้ง / รื้อถอน <em>Cosmo</em></h3>
+      <table>
+        <tr><td><b>Setup</b> · Sun 11 Oct 20:00</td><td>Team A</td></tr>
+        <tr><td><b>Teardown</b> · Tue 13 Oct 22:00</td><td>Team B</td></tr>
+      </table>
+      <div class="sub" style="margin-top:4px">ไม่แสดงถ้างานนี้ไม่มีใน Cosmo</div>
+    </div>
+  </div>
+
+  <h3>Notes · หมายเหตุ</h3>
+  <div class="note">Load-in through the B1 service lift. Bring a spare HDMI cable. </div>
+
+  <div class="sign"><div>Packed by · ผู้จัดของ / วันที่</div><div>Checked out by · ผู้ตรวจก่อนออก / วันที่</div><div>Returned by · ผู้รับคืน / วันที่</div></div>
+  <div class="foot"><span>SX-CRM · พิมพ์ 2 Nov 2026 14:05 โดย Champ</span><span>1 / 1</span></div>
+</div>
+</body></html>

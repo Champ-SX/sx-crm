@@ -1504,7 +1504,8 @@ export default function WonReadyOpPage() {
   const reorderStages = useCRMStore((s) => s.reorderStages)
   const reorderWonJobWithinStage = useCRMStore((s) => s.reorderWonJobWithinStage)
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  // ?open=<job_id> (dashboard links, equipment sheet QR) opens that job's drawer
+  const [selectedId, setSelectedId] = useState<string | null>(() => (typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('open')))
   const [showArchived, setShowArchived] = useState(false)
   const [assigneeFilter, setAssigneeFilter] = useState<string>(ASSIGNEE_FILTER_ALL)
   const [search, setSearch] = useState('')
