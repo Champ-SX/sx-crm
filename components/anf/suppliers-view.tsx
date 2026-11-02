@@ -15,7 +15,7 @@ import { ANF_ACCENT, categoryMeta, baht, kindOf } from '@/lib/anf'
 import { useSuppliers, saveSupplier, deleteSupplier, newSupplierId, telHref, lineHref } from '@/lib/supabase/suppliers'
 import type { AnfOrder, AnfSupplier } from '@/types'
 
-/** Catalog → Suppliers: who we buy from, what they sell, and one click to request their low items. Admin edits, everyone views. */
+/** Catalog → Suppliers: who we buy from, what they sell, and one click to request their low items. Everyone adds and edits (like customers); only an admin deletes. */
 export function SuppliersView() {
   const isHydrated = useHydrated()
   const { role } = useAuth()
@@ -48,7 +48,7 @@ export function SuppliersView() {
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search supplier or item…"
             className="h-9 w-full rounded-lg border border-border bg-background pl-8 pr-2 text-[13px] outline-none focus:border-foreground/40" />
         </div>
-        {isAdmin && (
+        {(
           <Button size="sm" className="h-9 gap-1.5 bg-[#7A5AA5] hover:opacity-90 text-white" onClick={() => setEditing({ supplier_id: newSupplierId(), board_id: activeBoardId || 'anf-order', name: '' })}>
             <Plus className="w-4 h-4" /> Add supplier
           </Button>
@@ -60,7 +60,7 @@ export function SuppliersView() {
           <div className="text-center py-20">
             <Truck className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-sm font-medium text-foreground">{q ? 'No match' : 'No suppliers yet'}</p>
-            <p className="text-[12px] text-muted-foreground mt-1">{isAdmin ? 'Add a supplier, then link it to items in Stock → product.' : 'An admin can add suppliers.'}</p>
+            <p className="text-[12px] text-muted-foreground mt-1">Add a supplier, then link it to items in Items & Suppliers → item.</p>
           </div>
         ) : (
           <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -96,7 +96,7 @@ export function SuppliersView() {
         )}
       </div>
 
-      {editing && <SupplierDialog supplier={editing} canEdit={isAdmin} linked={links.filter((l) => l.supplier_id === editing.supplier_id).length} onClose={() => setEditing(null)} />}
+      {editing && <SupplierDialog supplier={editing} canEdit canDelete={isAdmin} linked={links.filter((l) => l.supplier_id === editing.supplier_id).length} onClose={() => setEditing(null)} />}
     </div>
   )
 }
@@ -114,7 +114,7 @@ const FIELDS: { k: keyof AnfSupplier; label: string; ph?: string; wide?: boolean
   { k: 'notes', label: 'Notes', ph: 'Order cut-off, delivery days…', wide: true, area: true },
 ]
 
-function SupplierDialog({ supplier, canEdit, linked, onClose }: { supplier: AnfSupplier; canEdit: boolean; linked: number; onClose: () => void }) {
+function SupplierDialog({ supplier, canEdit, canDelete, linked, onClose }: { supplier: AnfSupplier; canEdit: boolean; canDelete: boolean; linked: number; onClose: () => void }) {
   const isNewSupplier = !supplier.name
   const [tab, setTab] = useState<'items' | 'details'>(isNewSupplier ? 'details' : 'items')
   const [d, setD] = useState<AnfSupplier>(supplier)
@@ -167,7 +167,7 @@ function SupplierDialog({ supplier, canEdit, linked, onClose }: { supplier: AnfS
         {error && <p className="px-5 pb-2 text-[12px] text-destructive">{error}</p>}
         {canEdit && tab === 'details' && (
           <div className="flex items-center gap-2 px-5 py-3 border-t border-border">
-            {!isNew && <button onClick={remove} className="text-destructive hover:opacity-80 text-sm mr-auto">Delete</button>}
+            {!isNew && canDelete && <button onClick={remove} className="text-destructive hover:opacity-80 text-sm mr-auto">Delete</button>}
             <span className={isNew ? 'mr-auto' : ''} />
             <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
             <Button size="sm" className="bg-[#7A5AA5] hover:opacity-90 text-white" onClick={save} disabled={!d.name?.trim()}>Save</Button>

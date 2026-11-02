@@ -241,7 +241,7 @@ function ItemDrawer({ product, canEdit, onEdit, onReorder, onClose }: { product:
           ))}
         </div>
         <div className="overflow-y-auto px-5 py-4">
-          {tab === 'suppliers' && <ProductSuppliers productId={product.product_id} unit={product.unit} canEdit={canEdit} />}
+          {tab === 'suppliers' && <ProductSuppliers productId={product.product_id} unit={product.unit} canEdit />}
           {tab === 'stock' && (asset ? (
             <p className="text-[13px] text-muted-foreground">Each unit has its own ID and location. See <a href="/inventory/equipment" className="underline">Equipment</a>.</p>
           ) : stock.length === 0 ? <p className="text-[13px] text-muted-foreground">Not stocked at any branch yet.</p> : (
