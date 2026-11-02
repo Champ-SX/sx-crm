@@ -1,0 +1,138 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard History Charts</title>
+<style>
+:root{--bg:#f2f0ea;--card:#faf9f6;--fg:#18181b;--mut:#71717a;--bd:#e4e2da;--sub:#ebe9e2;--gr:#15803d;--grb:#e7f4ec;--am:#b45309;--amb:#fdf1dc;--rd:#dc2626;--rdb:#fdeaea;--bl:#3F6EA5;--pu:#7A5AA5}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c0c0d;--card:#18181b;--fg:#fafafa;--mut:#a1a1aa;--bd:#2a2a2e;--sub:#232327;--gr:#4ade80;--grb:#13261b;--am:#fbbf24;--amb:#2a210c;--rd:#f87171;--rdb:#2a1414;--bl:#7aa2d6;--pu:#a98bd6}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,"Noto Sans Thai",sans-serif;padding:24px 16px}
+.w{max-width:1100px;margin:0 auto}
+h1{font-size:21px;margin:0 0 4px}.lead{color:var(--mut);margin:0 0 8px;max-width:820px}
+h2{font-size:12px;letter-spacing:.07em;color:var(--mut);margin:34px 0 10px;font-weight:700}
+.mono{font-family:ui-monospace,monospace}.small{font-size:12px;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px 16px}
+.ch{display:flex;align-items:baseline;gap:8px;margin-bottom:12px}.ch b{font-size:14px}.ch .r{margin-left:auto}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.funnel .st{display:grid;grid-template-columns:120px 1fr 120px;gap:12px;align-items:center;margin:6px 0}
+.funnel .bar{height:30px;border-radius:7px;background:var(--bl);display:flex;align-items:center;padding:0 10px;color:#fff;font:700 13px ui-monospace,monospace}
+.drop{display:grid;grid-template-columns:120px 1fr 120px;gap:12px;font-size:12px;color:var(--mut)}
+.drop span:nth-child(2){color:var(--rd)}
+.tabs{display:flex;gap:6px;margin-bottom:12px}.tabs span{border-radius:99px;padding:3px 10px;font-size:12px;background:var(--sub);color:var(--mut)}.tabs .on{background:var(--fg);color:var(--bg)}
+.big{font:700 30px ui-monospace,monospace}
+.cols{display:flex;align-items:flex-end;gap:10px;height:140px;padding:0 4px;border-bottom:1px solid var(--bd)}
+.col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%}
+.col i{width:100%;max-width:38px;border-radius:5px 5px 0 0;display:block}
+.col b{font:700 11px ui-monospace,monospace}
+.xl{display:flex;gap:10px;padding:4px 4px 0}.xl span{flex:1;text-align:center;font-size:11px;color:var(--mut)}
+.goal{position:relative}
+.goal::after{content:"goal 90%";position:absolute;left:0;right:0;top:14px;border-top:1.5px dashed var(--gr);font-size:10px;color:var(--gr);text-align:right}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font:600 10px ui-monospace,monospace;letter-spacing:.06em;color:var(--mut);padding:6px 8px;border-bottom:1px solid var(--bd)}
+td{padding:7px 8px;border-bottom:1px solid var(--bd)}tr:last-child td{border-bottom:0}
+.r{text-align:right}
+.pill{display:inline-block;font-size:11.5px;font-weight:700;border-radius:99px;padding:1px 8px}
+.ok{background:var(--grb);color:var(--gr)}.warn{background:var(--amb);color:var(--am)}.bad{background:var(--rdb);color:var(--rd)}
+.hb{display:grid;grid-template-columns:110px 1fr 70px;gap:10px;align-items:center;margin:8px 0;font-size:13px}
+.hb .t{height:10px;background:var(--sub);border-radius:9px;overflow:hidden}.hb .t i{display:block;height:100%}
+.insight{margin-top:12px;background:var(--sub);border-radius:10px;padding:9px 12px;font-size:13px}
+.empty{border:1.5px dashed var(--bd);border-radius:12px;padding:16px;text-align:center;color:var(--mut);font-size:13px}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px 16px}
+ul.k{margin:0;padding-left:18px;font-size:13px}ul.k li{margin:4px 0}
+</style></head><body><div class="w">
+<h1>History charts: funnel, on-time rate, speed to first reply</h1>
+<p class="lead">These need the stage history that starts recording on deploy day, so they switch on after about <b>1–2 months</b>. Until then each card shows how much history it has. Sample data.</p>
+
+<h2>1 · SALES FUNNEL (SALES + ADMIN)</h2>
+<div class="grid2">
+ <div class="card funnel">
+  <div class="ch"><b>Lead → Won</b><span class="small">leads created in the last 90 days</span></div>
+  <div class="tabs"><span class="on">All</span><span>LCA iPad</span><span>Tally</span><span>Box Shot</span><span>…</span></div>
+  <div class="st"><span>Open</span><div><div class="bar" style="width:100%">120</div></div><span class="small">avg 3 days here</span></div>
+  <div class="drop"><span></span><span>↓ 38 dropped (lost or no reply)</span><span></span></div>
+  <div class="st"><span>Negotiating</span><div><div class="bar" style="width:68%;background:var(--pu)">82</div></div><span class="small">avg 9 days here</span></div>
+  <div class="drop"><span></span><span>↓ 31 lost · top reason: Price too high</span><span></span></div>
+  <div class="st"><span>Won</span><div><div class="bar" style="width:42%;background:var(--gr)">51</div></div><span class="small">43% of leads</span></div>
+  <div class="insight">💡 Most loss happens <b>after</b> a quote (31 of 69). Look at pricing and quote follow-up, not lead volume.</div>
+ </div>
+ <div class="card">
+  <div class="ch"><b>Days from lead to won</b><span class="r small">median</span></div>
+  <div class="big">16 <span class="small">days</span></div>
+  <div class="small" style="margin-bottom:10px">was 21 days the quarter before ↓</div>
+  <table>
+   <tr><th>SERVICE</th><th class="r">MEDIAN</th><th class="r">WON</th></tr>
+   <tr><td>LCA iPad</td><td class="r mono">11 d</td><td class="r mono">22</td></tr>
+   <tr><td>Tally</td><td class="r mono">18 d</td><td class="r mono">12</td></tr>
+   <tr><td>Box Shot</td><td class="r mono">27 d</td><td class="r mono">6</td></tr>
+  </table>
+  <p class="small" style="margin-top:8px">Tells sales how early to start chasing a date: Box Shot needs about a month.</p>
+ </div>
+</div>
+
+<h2>2 · ON-TIME RATE (OPERATION + ADMIN)</h2>
+<div class="grid2">
+ <div class="card">
+  <div class="ch"><b>Ready on time</b><span class="small">job reached “พร้อมออกงาน” at least 1 day before the event</span></div>
+  <div class="big">86% <span class="small">this month · 19 of 22</span></div>
+  <div class="cols goal" style="margin-top:12px">
+   <div class="col"><b>71%</b><i style="height:71%;background:var(--am)"></i></div>
+   <div class="col"><b>78%</b><i style="height:78%;background:var(--am)"></i></div>
+   <div class="col"><b>83%</b><i style="height:83%;background:var(--am)"></i></div>
+   <div class="col"><b>92%</b><i style="height:92%;background:var(--gr)"></i></div>
+   <div class="col"><b>86%</b><i style="height:86%;background:var(--am)"></i></div>
+  </div>
+  <div class="xl"><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span></div>
+ </div>
+ <div class="card">
+  <div class="ch"><b>Where jobs wait</b><span class="r small">median days in each stage</span></div>
+  <div class="hb"><span>Won Job List</span><div class="t"><i style="width:45%;background:var(--bl)"></i></div><span class="mono r">4.5 d</span></div>
+  <div class="hb"><span>AW Done</span><div class="t"><i style="width:30%;background:var(--bl)"></i></div><span class="mono r">3 d</span></div>
+  <div class="hb"><span>พร้อมออกงาน</span><div class="t"><i style="width:20%;background:var(--bl)"></i></div><span class="mono r">2 d</span></div>
+  <div class="hb"><span>จบงาน → closed</span><div class="t"><i style="width:92%;background:var(--rd)"></i></div><span class="mono r">9 d</span></div>
+  <div class="insight">💡 Prep is fine; <b>closing after the event</b> is the slow part (staff pay + docs).</div>
+ </div>
+</div>
+<div class="card" style="margin-top:14px">
+ <div class="ch"><b>Late jobs this month</b><span class="small">not ready the day before the event</span></div>
+ <table>
+  <tr><th>JOB</th><th>EVENT</th><th>READY ON</th><th>STUCK IN</th><th>OWNER</th></tr>
+  <tr><td><b>Asus@The Okura</b> <span class="small mono">#131</span></td><td class="small">3 Nov</td><td><span class="pill bad">same day</span></td><td class="small">Won Job List (artwork)</td><td>Nong</td></tr>
+  <tr><td><b>Grab Rider Day</b> <span class="small mono">#123</span></td><td class="small">20 Nov</td><td><span class="pill warn">not yet</span></td><td class="small">AW Done (staff)</td><td>Fern</td></tr>
+ </table>
+</div>
+
+<h2>3 · SPEED TO FIRST REPLY (SALES + ADMIN)</h2>
+<div class="grid2">
+ <div class="card">
+  <div class="ch"><b>Win rate by how fast we first replied</b></div>
+  <div class="hb"><span>Same day</span><div class="t"><i style="width:58%;background:var(--gr)"></i></div><span class="mono r">58%</span></div>
+  <div class="hb"><span>Next day</span><div class="t"><i style="width:41%;background:var(--am)"></i></div><span class="mono r">41%</span></div>
+  <div class="hb"><span>2–3 days</span><div class="t"><i style="width:27%;background:var(--am)"></i></div><span class="mono r">27%</span></div>
+  <div class="hb"><span>4+ days</span><div class="t"><i style="width:12%;background:var(--rd)"></i></div><span class="mono r">12%</span></div>
+  <div class="insight">💡 Replying the same day roughly <b>doubles</b> the win rate vs 2–3 days.</div>
+ </div>
+ <div class="card">
+  <div class="ch"><b>First reply time by owner</b><span class="r small">median · last 90 days</span></div>
+  <table>
+   <tr><th>OWNER</th><th class="r">MEDIAN</th><th class="r">SAME DAY</th><th class="r">LEADS</th></tr>
+   <tr><td>Vitta</td><td class="r mono">2 h</td><td class="r"><span class="pill ok">84%</span></td><td class="r mono">31</td></tr>
+   <tr><td>Sale A</td><td class="r mono">6 h</td><td class="r"><span class="pill ok">71%</span></td><td class="r mono">44</td></tr>
+   <tr><td>Fern</td><td class="r mono">1.5 d</td><td class="r"><span class="pill bad">38%</span></td><td class="r mono">18</td></tr>
+  </table>
+  <p class="small" style="margin-top:8px">First reply = the first note, call log or quotation on the lead after it's created.</p>
+ </div>
+</div>
+
+<h2>BEFORE THERE'S ENOUGH HISTORY</h2>
+<div class="grid2">
+ <div class="empty">📈 <b>Funnel</b> is collecting history · 12 days so far<br><span class="small">Shows from ~30 days and 20+ closed leads.</span></div>
+ <div class="empty">⏱ <b>On-time rate</b> is collecting history · 12 days so far<br><span class="small">Shows once 10 jobs have had their event.</span></div>
+</div>
+
+<h2>NOTES</h2>
+<div class="box"><ul class="k">
+ <li><b>Data:</b> funnel and stage times come from the stage history recording since deploy. First reply uses existing activity notes (already recorded), so that one can show sooner.</li>
+ <li><b>On time</b> = the job moved to “พร้อมออกงาน” at least 1 day before the event date. The goal line (90%) can be changed.</li>
+ <li><b>Who sees:</b> Sales sees their own funnel + reply speed; Operation sees on-time + where jobs wait; Admin sees all, by person.</li>
+ <li>No new SQL: it uses the stage_history table from the current build.</li>
+</ul></div>
+</div></body></html>
