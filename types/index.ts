@@ -190,6 +190,8 @@ export interface AnfSupplier {
   tax_id?: string | null
   payment_terms?: string | null
   notes?: string | null
+  code?: string | null              // SUP-001 — auto-numbered
+  channels?: string[]               // Shopee · LINE · Email · Facebook…
   created_at?: string
   updated_at?: string
 }
@@ -289,6 +291,8 @@ export interface AnfProductSupplier {
   min_order?: string | null
   order_via?: string | null
   note?: string | null
+  product_url?: string | null       // exact listing to reorder from
+  spec?: string | null              // material / size / artwork + Drive link (custom items)
 }
 
 // ─── ANF Stock movement log (receive / transfer / check) ────────────────────

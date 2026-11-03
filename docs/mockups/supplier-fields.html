@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Supplier Fields</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Thai:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f1ec;--ink:#1c1b19;--mute:#6b6862;--line:#e2ded5;--acc:#7A5AA5;--new:#e0703d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:13px/1.45 Inter,"IBM Plex Sans Thai",sans-serif;color:var(--ink);padding:20px 16px}
+.wrap{max-width:1180px;margin:0 auto}
+h1{font-size:18px;margin:0 0 4px}.lead{color:var(--mute);margin:0 0 18px}
+.step{font:600 11px "IBM Plex Mono";color:var(--mute);letter-spacing:.06em;margin:22px 0 8px}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.bar{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line);align-items:center}
+.chip{border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:12px}.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.row{display:grid;grid-template-columns:80px 1.5fr 110px 1.4fr 1fr 60px;gap:10px;padding:9px 14px;border-bottom:1px solid #f0ede7;align-items:center}
+.row.h{font:500 10.5px "IBM Plex Mono";color:var(--mute)}
+.mono{font-family:"IBM Plex Mono";font-size:12px}
+.ch{display:inline-flex;gap:4px;align-items:center;font-size:11.5px;border-radius:5px;padding:1px 7px;font-weight:600}
+.shopee{background:#fde7df;color:#c2410c}.line{background:#dcfce7;color:#15803d}.fb{background:#dbeafe;color:#1d4ed8}.ali{background:#ffedd5;color:#9a3412}
+.mute{color:var(--mute)}.warn{color:#b45309;font-weight:600}
+a{color:var(--acc)}
+.new{font-size:9px;background:var(--new);color:#fff;border-radius:3px;padding:0 4px;margin-left:4px;vertical-align:middle;font-weight:600}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.dlg{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.dlg h2{font-size:15px;margin:0 0 10px}
+.f{margin-bottom:10px}.f label{display:block;font-size:10.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.f .i{border:1px solid var(--line);border-radius:7px;padding:7px 9px;background:#fcfbf9}
+.f.n .i{border-color:var(--new);background:#fff8f3}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;flex-wrap:wrap;gap:5px}.seg span{border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:12px}.seg .on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.link{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.link .t{display:flex;justify-content:space-between;font-weight:600}
+.small{font-size:12px}
+.legend{font-size:12px;color:var(--mute);margin-top:6px}
+.imp td,.imp th{padding:6px 8px;border-bottom:1px solid #f0ede7;text-align:left;font-size:12px}
+.imp th{font:500 10.5px "IBM Plex Mono";color:var(--mute)}
+.imp{width:100%;border-collapse:collapse}
+@media(max-width:860px){.two{grid-template-columns:1fr}.row{grid-template-columns:70px 1fr 90px}.row>:nth-child(n+4){display:none}.g2{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<h1>Suppliers: new fields</h1>
+<p class="lead">Sample data from <b>SX_Order Supplier List.xlsx</b>. New fields are marked <span class="new">NEW</span> and outlined in orange.</p>
+
+<div class="step">1 · SUPPLIERS LIST: channel chips + code + shop link</div>
+<div class="card">
+  <div class="bar"><span class="chip on">All 7</span><span class="chip">Shopee 4</span><span class="chip">LINE / Email 1</span><span class="chip">Facebook 1</span><span class="chip">Alibaba 1</span><span style="margin-left:auto" class="mute small">Search supplier or item…</span></div>
+  <div class="row h"><span>CODE <span class="new">NEW</span></span><span>SUPPLIER</span><span>CHANNEL <span class="new">NEW</span></span><span>CONTACT / SHOP</span><span>SUPPLIES</span><span>ITEMS</span></div>
+  <div class="row"><span class="mono">SUP-001</span><b>Sahasang Plastic</b><span class="ch line">LINE · Email</span><span class="small">sahasangplastic@gmail.com · @ftr6389a</span><span class="small mute">Packaging</span><span>1</span></div>
+  <div class="row"><span class="mono">SUP-002</span><b>COZII.TH</b><span class="ch shopee">Shopee</span><a class="small">Open shop ↗</a><span class="small mute">Frames</span><span>1</span></div>
+  <div class="row"><span class="mono">SUP-003</span><b>KS_DIY_SHOP</b><span class="ch shopee">Shopee</span><a class="small">Open shop ↗</a><span class="small mute">Accessories</span><span>1</span></div>
+  <div class="row"><span class="mono">SUP-004</span><b>Good Life</b><span class="ch shopee">Shopee</span><a class="small">Open shop ↗</a><span class="small mute">Frames</span><span>1</span></div>
+  <div class="row"><span class="mono">SUP-005</span><b>Nicknakshop</b><span class="ch shopee">Shopee</span><a class="small">Open shop ↗</a><span class="small mute">Keychains</span><span>1</span></div>
+  <div class="row"><span class="mono">SUP-006</span><span class="warn">⚠ No name yet</span><span class="ch ali">Alibaba</span><a class="small">Open listing ↗</a><span class="small mute">Keychains</span><span>1</span></div>
+  <div class="row"><span class="mono">SUP-007</span><b>Siam Digital Photo (Siam Square)</b><span class="ch fb">Facebook</span><a class="small">Open page ↗</a><span class="small mute">Film</span><span>1</span></div>
+</div>
+
+<div class="two">
+<div>
+<div class="step">2 · SUPPLIER DIALOG</div>
+<div class="dlg">
+  <h2>Sahasang Plastic <span class="mono mute" style="font-size:12px;font-weight:500">SUP-001</span></h2>
+  <div class="f n"><label>Channel · ช่องทางสั่ง <span class="new">NEW</span></label><div class="seg"><span>Shopee</span><span>Lazada</span><span class="on">LINE</span><span class="on">Email</span><span>Facebook</span><span>Alibaba</span><span>Walk-in</span><span>Other</span></div></div>
+  <div class="f n"><label>Shop / page link <span class="new">NEW</span></label><div class="i">https://line.me/R/ti/p/@ftr6389a</div></div>
+  <div class="g2">
+    <div class="f"><label>Contact person</label><div class="i mute">—</div></div>
+    <div class="f"><label>Phone</label><div class="i mute">—</div></div>
+    <div class="f"><label>LINE ID</label><div class="i">@ftr6389a</div></div>
+    <div class="f"><label>Email</label><div class="i">sahasangplastic@gmail.com</div></div>
+  </div>
+  <div class="f"><label>Payment terms · Tax ID · Address</label><div class="i mute">(unchanged)</div></div>
+  <div class="f"><label>Notes</label><div class="i">Custom print. Production 30–45 days.</div></div>
+  <p class="legend">For Shopee shops, usually only <b>Channel</b> and <b>Shop link</b> are filled in.</p>
+</div>
+</div>
+
+<div>
+<div class="step">3 · ITEM → SUPPLIERS TAB (same item, several shops)</div>
+<div class="dlg">
+  <h2>ANF. ซองใสใส่รูป 4×6</h2>
+  <div class="link">
+    <div class="t"><span>★ Sahasang Plastic <span class="ch line">LINE</span></span><span>฿ — / ชุด</span></div>
+    <div class="small mute">Lead time 30–45 days · min order —</div>
+    <div class="f n" style="margin-top:8px"><label>Product link <span class="new">NEW</span></label><div class="i mute">— (custom made, no listing)</div></div>
+    <div class="f n"><label>Spec / artwork <span class="new">NEW</span></label><div class="i small">Clear OPP / white screen print, words + logo in white<br>Sleeve H 16.5 × W 11 cm (for 4×6 photo)<br><a>AW file on Drive ↗</a></div></div>
+  </div>
+  <div class="link">
+    <div class="t"><span>COZII.TH <span class="ch shopee">Shopee</span></span><span>฿ — / ชิ้น</span></div>
+    <div class="f n" style="margin-top:8px"><label>Product link <span class="new">NEW</span></label><div class="i"><a>s.shopee.co.th/6VNPqVLzpu ↗</a> <span class="mute small">(reorder from here)</span></div></div>
+  </div>
+  <p class="legend">The link and spec come onto the PO line, so Nice can open the exact listing when ordering.</p>
+</div>
+</div>
+</div>
+
+<div class="step">4 · IMPORT PREVIEW (before saving)</div>
+<div class="card" style="padding:4px 8px">
+<table class="imp">
+<tr><th>CODE</th><th>SUPPLIER</th><th>CHANNEL</th><th>ITEM (linked)</th><th>RESULT</th></tr>
+<tr><td class="mono">SUP-001</td><td>Sahasang Plastic</td><td>LINE · Email</td><td>ANF. ซองใสใส่รูป 4×6</td><td>New supplier, contact split into email + LINE</td></tr>
+<tr><td class="mono">SUP-002–005</td><td>4 Shopee shops</td><td>Shopee</td><td>กรอบ ID Card ใส, โซ่ไข่ปลา, กรอบซีดี, พวงกุญแจหัวใจ</td><td>New supplier + product link; emoji removed from the name</td></tr>
+<tr><td class="mono">SUP-006</td><td class="warn">(no name)</td><td>Alibaba?</td><td>กรอบพวงกุญแจ pin &amp; play</td><td class="warn">Needs a name; sheet says Shopee, link is Alibaba</td></tr>
+<tr><td class="mono">SUP-007</td><td>Siam Digital Photo</td><td>Facebook</td><td>กลักฟิล์ม</td><td>New supplier + page link</td></tr>
+</table>
+<p class="legend" style="padding:0 8px 8px">Items not in the list yet get created. Order columns (qty, price, status) are empty in the sheet, so nothing is imported for them.</p>
+</div>
+</div></body></html>

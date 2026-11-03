@@ -12,7 +12,7 @@ import { useAuth } from '@/components/auth-provider'
 import { cn } from '@/lib/utils'
 import { ANF_ACCENT, baht, fmtDate, kindOf, branchColor } from '@/lib/anf'
 import { usePurchasing, savePO, requestStatus, REQ_STATUS, requestTotal, lineTotalVat, isBuyer, logEvent, neededByAlert, thaiToday } from '@/lib/supabase/purchasing'
-import { useSuppliers, telHref, lineHref } from '@/lib/supabase/suppliers'
+import { useSuppliers, telHref, lineHref, linksFor } from '@/lib/supabase/suppliers'
 import type { AnfOrder, AnfPO, AnfRequest } from '@/types'
 
 const PO_STATUS = { draft: { label: 'Draft', cls: 'bg-muted text-muted-foreground' }, cancelled: { label: 'Cancelled', cls: 'bg-muted text-muted-foreground line-through' } }
@@ -229,7 +229,7 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
             <tbody>
               {items.map((o) => (
                 <tr key={o.order_id} className="border-b border-border">
-                  <td className="px-4 py-2"><div className="font-medium">{o.item}</div><div className="text-[11px] text-muted-foreground">{[o.description || (o.product_id ? '' : 'manual item'), reqNo(o.request_id)].filter(Boolean).join(' · ')}</div>{o.notes && <NoteBox className="mt-1">{o.notes}</NoteBox>}</td>
+                  <td className="px-4 py-2"><div className="font-medium">{o.item}</div><div className="text-[11px] text-muted-foreground">{[o.description || (o.product_id ? '' : 'manual item'), reqNo(o.request_id)].filter(Boolean).join(' · ')}</div>{o.notes && <NoteBox className="mt-1">{o.notes}</NoteBox>}<LinkInfo productId={o.product_id} supplierId={po.supplier_id ?? o.supplier_id} /></td>
                   <td className="px-2 py-2 text-right font-mono">{o.quantity}{o.unit ? ` ${o.unit}` : ''}</td>
                   <td className="px-2 py-2 text-right font-mono">{o.unit_price ? o.unit_price.toLocaleString() : '—'}</td>
                   <td className="px-2 py-2 text-right font-mono">{lineTotalVat(o) ? baht(Math.round(lineTotalVat(o))) : '—'}</td>
@@ -266,5 +266,17 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
         {receiving && <ReceiveDialog order={receiving} onClose={() => setReceiving(null)} />}
       </DialogContent>
     </Dialog>
+  )
+}
+
+/** The item's listing link + spec from this supplier, so the buyer orders the exact thing. */
+function LinkInfo({ productId, supplierId }: { productId?: string | null; supplierId?: string | null }) {
+  const l = productId && supplierId ? linksFor(productId).find((x) => x.supplier_id === supplierId) : null
+  if (!l || (!l.product_url && !l.spec)) return null
+  return (
+    <div className="mt-1 text-[11px] text-muted-foreground">
+      {/^https?:\/\//i.test(l.product_url ?? "") && <a href={l.product_url ?? undefined} target="_blank" rel="noreferrer" className="underline text-foreground">Open product ↗</a>}
+      {l.spec && <div className="whitespace-pre-wrap">{l.spec}</div>}
+    </div>
   )
 }

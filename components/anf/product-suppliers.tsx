@@ -54,6 +54,8 @@ export function ProductSuppliers({ productId, unit, canEdit }: { productId: stri
                 {l.min_order && <><span className="text-muted-foreground">Min order</span><span>{l.min_order}</span></>}
                 {l.order_via && <><span className="text-muted-foreground">Order via</span><span>{l.order_via}</span></>}
                 {l.note && <><span className="text-muted-foreground">Note</span><span>{l.note}</span></>}
+                {/^https?:\/\//i.test(l.product_url ?? "") && <><span className="text-muted-foreground">Listing</span><a href={l.product_url ?? undefined} target="_blank" rel="noreferrer" className="truncate underline">Open product ↗</a></>}
+                {l.spec && <><span className="text-muted-foreground">Spec</span><span className="whitespace-pre-wrap break-words">{l.spec}</span></>}
               </div>
               {expanded && canEdit && <LinkEditor link={l} onSave={put} onRemove={() => { setOpen(null); deleteLink(l.id).catch((e: Error) => setError(e.message)) }} />}
             </div>
@@ -95,6 +97,8 @@ function LinkEditor({ link, onSave, onRemove }: { link: AnfProductSupplier; onSa
       <div><div className="field-label">Lead time</div><input className={input} value={d.lead_time ?? ''} placeholder="3–5 days" onChange={(e) => set('lead_time', e.target.value)} /></div>
       <div><div className="field-label">Min order</div><input className={input} value={d.min_order ?? ''} placeholder="2 boxes" onChange={(e) => set('min_order', e.target.value)} /></div>
       <div className="col-span-2"><div className="field-label">How to order</div><input className={input} value={d.order_via ?? ''} placeholder="LINE / email PO / shop link" onChange={(e) => set('order_via', e.target.value)} /></div>
+      <div className="col-span-2"><div className="field-label">Product link</div><input className={input} value={d.product_url ?? ''} placeholder="https://s.shopee.co.th/… (the exact listing)" onChange={(e) => set('product_url', e.target.value)} /></div>
+      <div className="col-span-2"><div className="field-label">Spec / artwork</div><textarea rows={3} className={cn(input, 'h-auto py-1.5')} value={d.spec ?? ''} placeholder="Material, size, print + Drive link for custom items" onChange={(e) => set('spec', e.target.value)} /></div>
       <div className="col-span-2"><div className="field-label">Note</div><input className={input} value={d.note ?? ''} placeholder="Order before 14:00 for next-day dispatch" onChange={(e) => set('note', e.target.value)} /></div>
       <div className="col-span-2 flex items-center gap-2">
         <button type="button" onClick={() => setD((x) => ({ ...x, preferred: !x.preferred }))}

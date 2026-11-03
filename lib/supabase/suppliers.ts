@@ -50,6 +50,18 @@ export function useSuppliers() {
   return { suppliers, links, loaded }
 }
 
+export const SUPPLIER_CHANNELS = ['Shopee', 'Lazada', 'LINE', 'Email', 'Facebook', 'Alibaba', 'Walk-in', 'Other'] as const
+export const CHANNEL_CLS: Record<string, string> = {
+  Shopee: 'bg-orange-500/14 text-orange-700 dark:text-orange-400', Lazada: 'bg-blue-500/14 text-blue-700 dark:text-blue-400',
+  LINE: 'bg-emerald-500/14 text-emerald-700 dark:text-emerald-400', Email: 'bg-slate-500/14 text-slate-700 dark:text-slate-300',
+  Facebook: 'bg-indigo-500/14 text-indigo-700 dark:text-indigo-400', Alibaba: 'bg-amber-500/14 text-amber-800 dark:text-amber-400',
+}
+/** Next free SUP-### code. */
+export const nextSupplierCode = () => {
+  const n = Math.max(0, ...suppliers.map((s) => Number(/^SUP-(\d+)$/.exec(s.code ?? '')?.[1] ?? 0)))
+  return `SUP-${String(n + 1).padStart(3, '0')}`
+}
+
 export const supplierById = (id: string | null | undefined) => suppliers.find((s) => s.supplier_id === id) ?? null
 export const linksFor = (productId: string | null | undefined) => links.filter((l) => l.product_id === productId)
 export const preferredFor = (productId: string | null | undefined) => {
@@ -59,7 +71,7 @@ export const preferredFor = (productId: string | null | undefined) => {
 
 // ── Writes (optimistic) ─────────────────────────────────────────────────────
 export async function saveSupplier(s: AnfSupplier) {
-  const row = { ...s, updated_at: new Date().toISOString() }
+  const row = { ...s, code: s.code || nextSupplierCode(), updated_at: new Date().toISOString() }
   suppliers = [...suppliers.filter((x) => x.supplier_id !== s.supplier_id), row].sort((a, b) => a.name.localeCompare(b.name))
   emit()
   if (!isSupabaseConfigured) return

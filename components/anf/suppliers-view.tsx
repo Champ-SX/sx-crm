@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { ANF_ACCENT, categoryMeta, baht, kindOf } from '@/lib/anf'
-import { useSuppliers, saveSupplier, deleteSupplier, newSupplierId, telHref, lineHref } from '@/lib/supabase/suppliers'
+import { useSuppliers, saveSupplier, deleteSupplier, newSupplierId, telHref, lineHref, SUPPLIER_CHANNELS, CHANNEL_CLS } from '@/lib/supabase/suppliers'
 import type { AnfOrder, AnfSupplier } from '@/types'
 
 /** Catalog → Suppliers: who we buy from, what they sell, and one click to request their low items. Everyone adds and edits (like customers); only an admin deletes. */
@@ -24,6 +24,7 @@ export function SuppliersView() {
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
   const { suppliers, links, loaded } = useSuppliers()
   const [q, setQ] = useState('')
+  const [channel, setChannel] = useState<string | null>(null)
   const [editing, setEditing] = useState<AnfSupplier | null>(null)
 
   const rows = useMemo(() => {
@@ -34,8 +35,10 @@ export function SuppliersView() {
       const prods = ls.map((l) => anfProducts.find((p) => p.product_id === l.product_id)).filter(Boolean)
       const cats = [...new Set(prods.map((p) => p!.category || 'other'))]
       return { s, count: ls.length, preferred: ls.filter((l) => l.preferred).length, cats, items: prods.map((p) => p!.name) }
-    }).filter(({ s, items }) => !needle || [s.name, s.contact_person, s.phone, s.line_id, s.email, ...items].some((v) => (v ?? '').toLowerCase().includes(needle)))
-  }, [suppliers, links, anfProducts, activeBoardId, q])
+    }).filter(({ s }) => !channel || (s.channels ?? []).includes(channel))
+      .filter(({ s, items }) => !needle || [s.name, s.code, s.contact_person, s.phone, s.line_id, s.email, ...items].some((v) => (v ?? '').toLowerCase().includes(needle)))
+  }, [suppliers, links, anfProducts, activeBoardId, q, channel])
+  const usedChannels = SUPPLIER_CHANNELS.filter((c) => suppliers.some((s) => (s.channels ?? []).includes(c)))
 
   if (!isHydrated) return null
 
@@ -43,6 +46,10 @@ export function SuppliersView() {
     <div className="flex-1 flex flex-col min-w-0">
       <div className="px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center gap-3 border-b border-border/60">
         <span className="font-mono text-[12px] text-muted-foreground">{rows.length} supplier{rows.length === 1 ? '' : 's'}</span>
+        {usedChannels.map((c) => (
+          <button key={c} type="button" onClick={() => setChannel(channel === c ? null : c)}
+            className={cn('h-7 rounded-full border px-2.5 text-[12px]', channel === c ? 'bg-foreground text-background border-foreground' : 'border-border hover:bg-muted')}>{c}</button>
+        ))}
         <div className="relative ml-auto w-full sm:w-72 order-last sm:order-none">
           <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search supplier or item…"
@@ -73,7 +80,8 @@ export function SuppliersView() {
                 <button key={s.supplier_id} type="button" onClick={() => setEditing(s)}
                   className="w-full text-left grid grid-cols-1 sm:grid-cols-[1.4fr_1.2fr_1fr_70px] gap-1 sm:gap-3 px-4 py-3 border-b border-border last:border-b-0 hover:bg-muted/40">
                   <span className="min-w-0">
-                    <b className="text-[14px]">{s.name}</b>
+                    {s.code && <span className="mr-1.5 font-mono text-[11px] text-muted-foreground">{s.code}</span>}<b className="text-[14px]">{s.name}</b>
+                    {(s.channels ?? []).map((c) => <span key={c} className={cn('ml-1.5 rounded px-1.5 py-px text-[10.5px] font-semibold', CHANNEL_CLS[c] ?? 'bg-muted text-muted-foreground')}>{c}</span>)}
                     {s.payment_terms && <span className="ml-2 text-[11px] text-muted-foreground">{s.payment_terms}</span>}
                     {items.length > 0 && <span className="block text-[12px] text-muted-foreground truncate">{items.slice(0, 3).join(', ')}{items.length > 3 ? ` +${items.length - 3}` : ''}</span>}
                   </span>
@@ -107,7 +115,7 @@ const FIELDS: { k: keyof AnfSupplier; label: string; ph?: string; wide?: boolean
   { k: 'phone', label: 'Phone', ph: '08x-xxx-xxxx' },
   { k: 'line_id', label: 'LINE', ph: '@shop or LINE ID' },
   { k: 'email', label: 'Email', ph: 'sales@…' },
-  { k: 'website', label: 'Website / shop link', ph: 'https://…', wide: true },
+  { k: 'website', label: 'Shop / page link', ph: 'Shopee shop, Facebook page, LINE link…', wide: true },
   { k: 'address', label: 'Address', wide: true, area: true },
   { k: 'tax_id', label: 'Tax ID', ph: 'for invoices' },
   { k: 'payment_terms', label: 'Payment terms', ph: 'cash / credit 30' },
@@ -149,6 +157,16 @@ function SupplierDialog({ supplier, canEdit, canDelete, linked, onClose }: { sup
         )}
         {tab === 'items' && !isNew ? <SupplierItems supplier={supplier} onDone={onClose} /> : (
         <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto">
+          <div className="sm:col-span-2">
+            <label className="field-label">Channel · ช่องทางสั่ง{d.code && <span className="ml-2 font-mono normal-case text-muted-foreground">{d.code}</span>}</label>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {(canEdit ? SUPPLIER_CHANNELS : d.channels ?? []).map((c) => {
+                const on = (d.channels ?? []).includes(c)
+                return <button key={c} type="button" disabled={!canEdit} onClick={() => setD((x) => ({ ...x, channels: on ? (x.channels ?? []).filter((y) => y !== c) : [...(x.channels ?? []), c] }))}
+                  className={cn('h-7 rounded-md border px-2.5 text-[12px]', on ? 'bg-foreground text-background border-foreground' : 'border-border text-muted-foreground hover:bg-muted')}>{c}</button>
+              })}
+            </div>
+          </div>
           {FIELDS.map((f) => (
             <div key={f.k} className={f.wide ? 'sm:col-span-2' : ''}>
               <label className="field-label">{f.label}</label>
