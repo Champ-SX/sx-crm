@@ -591,13 +591,29 @@ export function CreatePODialog({ items, emergency, onClose, onDone }: { items: A
   const [joinOpen, setJoinOpen] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pick, setPick] = useState<Record<string, string>>({})   // order_id → supplier picked here
+  const [perItem, setPerItem] = useState(false)
+  const [newFor, setNewFor] = useState<string[] | null>(null)     // order ids getting a ＋ New supplier
   const eligible = items.filter((o) => o.status !== 'received' && !o.po_id)
   const groups = useMemo(() => {
     const m = new Map<string, AnfOrder[]>()
-    for (const o of eligible) { const k = o.supplier_id ?? ''; m.set(k, [...(m.get(k) ?? []), o]) }
+    for (const o of eligible) { const k = pick[o.order_id] ?? o.supplier_id ?? ''; m.set(k, [...(m.get(k) ?? []), o]) }
     return [...m.entries()].map(([sid, list]) => ({ sid, list, supplier: suppliers.find((s) => s.supplier_id === sid) ?? null, open: pos.find((p) => p.supplier_id === sid && p.status === 'draft') ?? null }))
       .sort((a, b) => Number(!a.sid) - Number(!b.sid))
-  }, [eligible, suppliers, pos])
+  }, [eligible, suppliers, pos, pick])
+  const assign = (ids: string[], sid: string) => { if (sid === '__new') { setNewFor(ids); return } setPick((p) => { const n = { ...p }; for (const id of ids) { if (sid) n[id] = sid; else delete n[id] } return n }) }
+  // Suppliers that sell these items first (★), then everyone else.
+  const options = (list: AnfOrder[]) => {
+    const linked = new Set(list.flatMap((o) => linksFor(o.product_id).map((l) => l.supplier_id)))
+    return [...suppliers].sort((a, b) => Number(linked.has(b.supplier_id)) - Number(linked.has(a.supplier_id)) || a.name.localeCompare(b.name)).map((s) => ({ s, star: linked.has(s.supplier_id) }))
+  }
+  const pickSelect = (ids: string[], list: AnfOrder[], placeholder: string, cls?: string) => (
+    <select value="" onChange={(e) => assign(ids, e.target.value)} className={cn(inputCls, 'h-8', cls)}>
+      <option value="">{placeholder}</option>
+      {options(list).map(({ s, star }) => <option key={s.supplier_id} value={s.supplier_id}>{star ? '★ ' : ''}{s.name}</option>)}
+      <option value="__new">＋ New supplier…</option>
+    </select>
+  )
   const real = groups.filter((g) => g.sid)
 
   async function create() {
@@ -614,7 +630,14 @@ export function CreatePODialog({ items, emergency, onClose, onDone }: { items: A
           await savePO(po)
           if (emergency) notifyEmergencyPO(po, requestTotal(g.list), g.list[0]?.request_id ?? null)
         }
-        for (const o of g.list) await updateAnfOrder(o.order_id, { po_id: po.po_id })
+        for (const o of g.list) {
+          const picked = pick[o.order_id]
+          await updateAnfOrder(o.order_id, picked ? { po_id: po.po_id, supplier_id: picked } : { po_id: po.po_id })
+          // Picked here → remember it for the item so it's suggested next time.
+          if (picked && o.product_id && !linksFor(o.product_id).some((l) => l.supplier_id === picked)) {
+            await saveLink({ ...newLink(o.product_id, picked, linksFor(o.product_id).length === 0), price: o.unit_price || null, unit: o.unit ?? null })
+          }
+        }
         for (const rid of new Set(g.list.map((o) => o.request_id).filter(Boolean))) {
           void logEvent(rid, 'added_to_po', `${po.number} · ${g.supplier?.name ?? 'supplier'}${emergency ? ` · EMERGENCY: “${emergency}”` : ''}`)
         }
@@ -642,8 +665,28 @@ export function CreatePODialog({ items, emergency, onClose, onDone }: { items: A
               </div>
               <div className="text-[12px] text-muted-foreground">
                 {g.list.length} item{g.list.length > 1 ? 's' : ''} · {g.list.map((o) => o.item).slice(0, 3).join(', ')}{g.list.length > 3 ? '…' : ''}
-                {g.sid ? (g.open && joinOpen && !emergency ? ` · add to ${g.open.number} (draft)` : ' · new PO') : ' · order later'}
+                {g.sid ? (g.open && joinOpen && !emergency ? ` · add to ${g.open.number} (draft)` : ' · new PO') : ''}
               </div>
+              {g.sid && g.list.some((o) => pick[o.order_id]) && (
+                <div className="mt-1 text-[11.5px] text-muted-foreground">✓ Saved on the request line too. <button type="button" onClick={() => setPick((p) => { const n = { ...p }; for (const o of g.list) delete n[o.order_id]; return n })} className="underline">Change</button></div>
+              )}
+              {!g.sid && (perItem && g.list.length > 1 ? (
+                <div className="mt-2 divide-y divide-border">
+                  {g.list.map((o) => (
+                    <div key={o.order_id} className="flex items-center justify-between gap-2 py-1.5 text-[12.5px]">
+                      <span className="min-w-0 truncate">{o.item}</span>
+                      {pickSelect([o.order_id], [o], '— pick —', 'w-44 shrink-0')}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="field-label shrink-0">Supplier</span>
+                  {pickSelect(g.list.map((o) => o.order_id), g.list, g.list.length > 1 ? `— pick for all ${g.list.length} —` : '— pick —')}
+                </div>
+              ))}
+              {!g.sid && g.list.length > 1 && <button type="button" onClick={() => setPerItem(!perItem)} className="mt-1 text-[12px] text-[#7A5AA5] underline">{perItem ? 'Same supplier for all' : 'Set per item'}</button>}
+              {!g.sid && <div className="mt-1 text-[11.5px] text-muted-foreground">Or leave it: these stay “To order”.</div>}
             </div>
           ))}
           {emergency && <p className="rounded-md bg-red-500/10 px-2.5 py-1.5 text-[12px] text-red-700 dark:text-red-400">Emergency: “{emergency}”. Champ and the buyer will be notified.</p>}
@@ -658,6 +701,8 @@ export function CreatePODialog({ items, emergency, onClose, onDone }: { items: A
             {real.length === 0 ? 'Pick suppliers first' : `Create ${real.length} PO${real.length > 1 ? 's' : ''}`}
           </Button>
         </div>
+        {newFor && <QuickSupplierDialog productId={newFor.length === 1 ? eligible.find((o) => o.order_id === newFor[0])?.product_id : null} boardId={activeBoardId || undefined}
+          onClose={() => setNewFor(null)} onPick={(id) => assign(newFor, id)} />}
       </DialogContent>
     </Dialog>
   )
