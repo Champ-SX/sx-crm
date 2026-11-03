@@ -18,6 +18,10 @@ import { usePurchasing, approvalOf } from '@/lib/supabase/purchasing'
 import { ProductPicker } from '@/components/anf/product-picker'
 import { ProductDialog } from '@/components/anf/product-dialog'
 import { AssetsView } from '@/components/anf/assets-view'
+import { ItemDrawer } from '@/components/anf/item-drawer'
+import { useSuppliers } from '@/lib/supabase/suppliers'
+import { useAuth } from '@/components/auth-provider'
+import type { AnfProductSupplier, AnfSupplier } from '@/types'
 import { ANF_ACCENT, SEED_BRANCHES, WAREHOUSE, branchColor, fmtDate, statusMeta, CATEGORIES, categoryMeta, orderedCategories, inferCategory, kindOf, type ProductKind } from '@/lib/anf'
 
 const catOf = (r: { category?: string | null; item: string }): string =>
@@ -51,6 +55,11 @@ export function StockView({ kind }: { kind: ProductKind }) {
   const [poEmergency, setPoEmergency] = useState<string | undefined>(undefined)
   const [transferRow, setTransferRow] = useState<AnfStock | null>(null)
   const [editProductRow, setEditProductRow] = useState<AnfProduct | null>(null)
+  const [drawer, setDrawer] = useState<AnfProduct | null>(null)        // item drawer (suppliers & price)
+  const [view, setView] = useState<'all' | 'nosup' | 'notstocked'>('all')
+  const [supFilter, setSupFilter] = useState('')
+  const { suppliers, links } = useSuppliers()
+  const { role } = useAuth()
 
   // Supplies | Assets — products carry a kind; rows follow their product (no product = supply).
   // ?asset=CAM-001 (asset card deep link — future QR) opens the Assets view on that unit.
@@ -158,6 +167,21 @@ export function StockView({ kind }: { kind: ProductKind }) {
     window.history.replaceState({}, '', window.location.pathname)
   }, [anfStock])
 
+  // Who sells each row's item (★ preferred first) + the Stock filters.
+  const sellersOf = (r: AnfStock) => {
+    const pid = r.product_id ?? anfProducts.find((p) => p.name === r.item)?.product_id
+    return pid ? links.filter((l) => l.product_id === pid).sort((a, b) => Number(b.preferred) - Number(a.preferred)) : []
+  }
+  const pass = (r: AnfStock) =>
+    (view !== 'nosup' || sellersOf(r).length === 0) &&
+    (view !== 'notstocked' || r.stock_id.startsWith('virtual:')) &&
+    (!supFilter || sellersOf(r).some((l) => l.supplier_id === supFilter))
+  const openDrawer = (r: AnfStock) => {
+    const p = anfProducts.find((x) => x.product_id === r.product_id) ?? anfProducts.find((x) => x.name === r.item)
+    if (p) setDrawer(p)
+  }
+  const sellerProps = { sellersOf, suppliers, onSellers: openDrawer }
+
   if (!isHydrated) return null
   const isTotal = tab === 'TOTAL'
   const isCatalog = tab === 'CATALOG'
@@ -185,13 +209,24 @@ export function StockView({ kind }: { kind: ProductKind }) {
         {kind === 'asset' && <button type="button" onClick={() => setTab(WAREHOUSE)} className={`text-[13px] underline underline-offset-4 transition-colors ${!isCatalog ? 'text-foreground font-semibold' : 'text-[#7A5AA5] hover:opacity-80'}`}>Units</button>}
         {kind === 'supply' && branches.map((b) => <Tab key={b} label={b} color={branchColor(b)} on={tab === b} onClick={() => setTab(b)} />)}
         {kind === 'supply' && <button type="button" onClick={() => setTab('TOTAL')} className={`text-[13px] underline underline-offset-4 transition-colors ${isTotal ? 'text-foreground font-semibold' : 'text-[#7A5AA5] hover:opacity-80'}`}>TOTAL ↗</button>}
-        <Link href="/inventory/catalog" className="text-[13px] underline underline-offset-4 text-[#7A5AA5] hover:opacity-80">Items &amp; Suppliers ↗</Link>
+        <Link href="/inventory/suppliers" className="text-[13px] underline underline-offset-4 text-[#7A5AA5] hover:opacity-80">Suppliers ↗</Link>
         {kind === 'asset' && <Link href="/inventory/event-products" className="text-[13px] underline underline-offset-4 text-[#7A5AA5] hover:opacity-80">Event Product ↗</Link>}
         <span className="flex-1" />
         {kind === 'supply' && <button type="button" onClick={() => setLowOnly((v) => !v)} className={`inline-flex items-center gap-1.5 text-[12px] rounded-full px-3 py-1 border transition-colors ${lowOnly ? 'bg-[#FF5B3F] text-white border-transparent font-medium' : 'border-border bg-card text-[#FF5B3F] font-semibold hover:bg-muted'}`}>
           ⚠ Low only{lowCount > 0 && ` (${lowCount})`}
         </button>}
       </div>
+      {kind === 'supply' && !isTotal && (
+        <div className="px-4 sm:px-6 lg:px-8 py-2 flex flex-wrap items-center gap-2 border-b border-border/60">
+          {([['all', 'All'], ['nosup', 'No supplier yet'], ['notstocked', 'Not stocked']] as const).map(([k, l]) => (
+            <button key={k} type="button" onClick={() => setView(k)} className={`text-[12px] rounded-full px-3 py-1 border ${view === k ? 'bg-foreground text-background border-transparent' : 'border-border bg-card hover:bg-muted'}`}>{l}</button>
+          ))}
+          <select value={supFilter} onChange={(e) => setSupFilter(e.target.value)} className="h-7 rounded-md border border-border bg-card px-2 text-[12px]">
+            <option value="">Supplier: all</option>
+            {[...suppliers].sort((a, b) => a.name.localeCompare(b.name)).map((x) => <option key={x.supplier_id} value={x.supplier_id}>{x.name}</option>)}
+          </select>
+        </div>
+      )}
       {/* Hint — TOTAL is a read-only overview */}
       {isTotal && (
         <div className="px-4 sm:px-6 lg:px-8 pt-2.5 -mb-1 text-[12px] text-muted-foreground flex items-start gap-1.5">
@@ -215,9 +250,9 @@ export function StockView({ kind }: { kind: ProductKind }) {
         ) : isTotal ? (
           <TotalPivot rows={rows} branches={branches} lowOnly={lowOnly} onOrder={onOrder} onRaise={raiseOrder} />
         ) : tab === WAREHOUSE ? (
-          <BranchTable rows={warehouseRows} branch={WAREHOUSE} lowOnly={lowOnly} onOrder={onOrder} onOpen={openStock} onRaise={raiseOrder} onTransfer={setTransferRow} />
+          <BranchTable {...sellerProps} rows={warehouseRows.filter(pass)} branch={WAREHOUSE} lowOnly={lowOnly} onOrder={onOrder} onOpen={openStock} onRaise={raiseOrder} onTransfer={setTransferRow} />
         ) : (
-          <BranchTable rows={rows.filter((r) => r.branch === tab)} branch={tab} lowOnly={lowOnly} onOrder={onOrder} onOpen={openStock} onRaise={raiseOrder} onTransfer={setTransferRow} />
+          <BranchTable {...sellerProps} rows={rows.filter((r) => r.branch === tab).filter(pass)} branch={tab} lowOnly={lowOnly} onOrder={onOrder} onOpen={openStock} onRaise={raiseOrder} onTransfer={setTransferRow} />
         )}
       </div>
 
@@ -226,7 +261,25 @@ export function StockView({ kind }: { kind: ProductKind }) {
       {poItems && <CreatePODialog items={poItems} emergency={poEmergency} onClose={() => { setPoItems(null); setPoEmergency(undefined) }} />}
       {transferRow && <TransferDialog row={transferRow} onClose={() => setTransferRow(null)} />}
       {editProductRow && <ProductDialog product={editProductRow} onClose={() => setEditProductRow(null)} />}
+      {drawer && <ItemDrawer product={drawer} canEdit={role === 'admin'} onEdit={(p) => { setDrawer(null); setEditProductRow(p) }}
+        onReorder={() => { const p = drawer; setDrawer(null); raiseOrder(p.name, WAREHOUSE, null) }} onClose={() => setDrawer(null)} />}
     </div>
+  )
+}
+
+/** "★ COZII.TH · ฿35 +1", or "No supplier yet · link one" — opens the item's Suppliers & price. */
+function Sellers({ list, suppliers, onClick }: { list: AnfProductSupplier[]; suppliers: AnfSupplier[]; onClick: () => void }) {
+  const first = list[0]
+  const name = first && suppliers.find((x) => x.supplier_id === first.supplier_id)?.name
+  return (
+    <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); onClick() }} onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onClick() } }} className="inline-block max-w-full text-left text-[12px] cursor-pointer hover:underline">
+      {first && name ? (
+        <span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-px whitespace-nowrap max-w-full overflow-hidden text-ellipsis">
+          {first.preferred && '★ '}{name}{first.price != null && <span className="text-muted-foreground">· ฿{first.price.toLocaleString()}</span>}
+          {list.length > 1 && <span className="text-muted-foreground">+{list.length - 1}</span>}
+        </span>
+      ) : <span className="text-muted-foreground">No supplier yet · <span className="text-[#7A5AA5] underline">link one</span></span>}
+    </span>
   )
 }
 
@@ -279,7 +332,8 @@ function Tab({ label, on, onClick, color }: { label: string; on: boolean; onClic
 }
 
 // ── By-branch table ─────────────────────────────────────────────────────────
-function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransfer }: {
+function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransfer, sellersOf, suppliers, onSellers }: {
+  sellersOf: (r: AnfStock) => AnfProductSupplier[]; suppliers: AnfSupplier[]; onSellers: (r: AnfStock) => void
   rows: AnfStock[]; branch: string; lowOnly: boolean; onOrder: Map<string, string>
   onOpen: (r: AnfStock) => void; onRaise: (item: string, branch: string | null, id: string | null) => void
   onTransfer: (r: AnfStock) => void
@@ -293,9 +347,9 @@ function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransf
       {/* Desktop — one card, category header bands + a gap between sections */}
       <div className="hidden md:block border border-border rounded-xl overflow-hidden bg-card">
         <table className="w-full text-sm table-fixed">
-          <colgroup><col style={{ width: '32%' }} /><col style={{ width: '110px' }} /><col /><col /><col /><col style={{ width: '78px' }} /><col style={{ width: '96px' }} /><col style={{ width: '92px' }} /></colgroup>
+          <colgroup><col style={{ width: '26%' }} /><col style={{ width: '90px' }} /><col style={{ width: '80px' }} /><col style={{ width: '80px' }} /><col style={{ width: '100px' }} /><col style={{ width: '20%' }} /><col style={{ width: '78px' }} /><col style={{ width: '92px' }} /><col style={{ width: '92px' }} /></colgroup>
           <thead><tr className="border-b border-border">
-            {[['Product', 'สินค้า'], ['Room', 'สำหรับห้อง'], ['On hand', 'คงเหลือ'], ['Alert', 'จุดแจ้งเตือน'], ['State', 'สถานะ'], ['Checked', 'ตรวจนับ'], ['Last in', 'รับเข้าล่าสุด'], ['', '']].map(([en, th], i) => (
+            {[['Product', 'สินค้า'], ['Room', 'สำหรับห้อง'], ['On hand', 'คงเหลือ'], ['Alert', 'จุดแจ้งเตือน'], ['State', 'สถานะ'], ['Who sells it', 'ร้าน · ราคา'], ['Checked', 'ตรวจนับ'], ['Last in', 'รับเข้าล่าสุด'], ['', '']].map(([en, th], i) => (
               <th key={i} className={`px-4 py-3 whitespace-nowrap align-top ${i === 2 || i === 3 ? 'text-right' : 'text-left'}`}>
                 <span className="block font-mono text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{en}</span>
                 {th && <span className="block text-[10.5px] text-muted-foreground/75 font-normal mt-0.5">{th}</span>}
@@ -308,9 +362,9 @@ function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransf
               const lowN = crows.filter((r) => stockState(r) !== 'ok').length
               return (
                 <Fragment key={cat}>
-                  {gi > 0 && <tr aria-hidden><td colSpan={8} className="h-2.5 bg-muted/20" /></tr>}
+                  {gi > 0 && <tr aria-hidden><td colSpan={9} className="h-2.5 bg-muted/20" /></tr>}
                   <tr>
-                    <td colSpan={8} className="px-4 py-2 border-l-[3px]" style={{ borderColor: cm.color, backgroundColor: `color-mix(in srgb, ${cm.color} 8%, transparent)` }}>
+                    <td colSpan={9} className="px-4 py-2 border-l-[3px]" style={{ borderColor: cm.color, backgroundColor: `color-mix(in srgb, ${cm.color} 8%, transparent)` }}>
                       <span className="font-semibold text-[13px]">{cm.th}</span>
                       {cm.en && <span className="font-mono text-[9.5px] uppercase tracking-wider text-muted-foreground ml-2">{cm.en}</span>}
                       <span className="font-mono text-[10.5px] text-muted-foreground ml-2">— {crows.length}{lowN > 0 && <span className="text-[#FF5B3F] font-semibold"> · {lowN} low</span>}</span>
@@ -332,12 +386,13 @@ function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransf
                         <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground truncate">{r.room || '—'}</td>
                         <td className={`px-4 py-3 text-right font-mono font-bold tabular-nums ${st !== 'ok' ? 'text-[#FF5B3F]' : ''}`}>{r.qty}</td>
                         <td className="px-4 py-3 text-right font-mono text-[12px] text-muted-foreground whitespace-nowrap">{r.alert_qty ?? '—'}{r.alert_unit ? ` ${r.alert_unit.toLowerCase()}` : ''}</td>
-                        <td className="px-4 py-3">{onOrder.has(r.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5] whitespace-nowrap">● {onOrder.get(r.item)}</span> : <StateFlag s={st} />}</td>
+                        <td className="px-4 py-3">{onOrder.has(r.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5] whitespace-nowrap">● {onOrder.get(r.item)}</span> : r.stock_id.startsWith('virtual:') ? <NotStocked /> : <StateFlag s={st} />}</td>
+                        <td className="px-4 py-3 overflow-hidden"><Sellers list={sellersOf(r)} suppliers={suppliers} onClick={() => onSellers(r)} /></td>
                         <td className="px-4 py-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap">{fmtDate(r.checked_at)}{r.checked_by && <span className="block text-[10px]">by {r.checked_by}</span>}</td>
                         <td className="px-4 py-3 font-mono text-[11px] whitespace-nowrap">{r.delivered_at ? <span className="text-[#3f9d5b]">↓ {fmtDate(r.delivered_at)}{r.sign && <span className="block text-[10px] text-muted-foreground">by {r.sign}</span>}</span> : <span className="text-muted-foreground/40">— never</span>}</td>
                         <td className="px-4 py-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                           {st !== 'ok' && !onOrder.has(r.item) && (
-                            <button onClick={() => onRaise(r.item, r.branch, r.stock_id.startsWith('virtual:') ? null : r.stock_id)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1 hover:bg-[#7A5AA5]/10 whitespace-nowrap"><ShoppingCart className="w-3 h-3" />Reorder</button>
+                            <button onClick={() => onRaise(r.item, r.branch, r.stock_id.startsWith('virtual:') ? null : r.stock_id)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1 hover:bg-[#7A5AA5]/10 whitespace-nowrap"><ShoppingCart className="w-3 h-3" />{r.stock_id.startsWith('virtual:') ? 'Request' : 'Reorder'}</button>
                           )}
                         </td>
                       </tr>
@@ -368,6 +423,7 @@ function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransf
                       <span className="min-w-0 flex-1">
                         <span className="block font-semibold text-[13.5px] leading-tight truncate">{r.item}</span>
                         {r.description && <span className="block text-[12px] text-muted-foreground truncate mt-0.5">{r.description}</span>}
+                        <span className="block mt-1"><Sellers list={sellersOf(r)} suppliers={suppliers} onClick={() => onSellers(r)} /></span>
                         <span className="font-mono text-[10px] text-muted-foreground/80 block mt-0.5">{r.room || '—'} · checked {fmtDate(r.checked_at)}{r.checked_by && ` by ${r.checked_by}`}</span>
                         {r.delivered_at && <span className="font-mono text-[10px] text-[#3f9d5b] block mt-0.5">↓ last in {fmtDate(r.delivered_at)}{r.sign && ` · by ${r.sign}`}</span>}
                       </span>
@@ -377,13 +433,13 @@ function BranchTable({ rows, branch, lowOnly, onOrder, onOpen, onRaise, onTransf
                       </span>
                     </button>
                     <div className="flex items-center gap-2 mt-2">
-                      {onOrder.has(r.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5] whitespace-nowrap">● {onOrder.get(r.item)}</span> : <StateFlag s={st} />}
+                      {onOrder.has(r.item) && st !== 'ok' ? <span className="font-mono text-[9.5px] uppercase tracking-wide text-[#7A5AA5] whitespace-nowrap">● {onOrder.get(r.item)}</span> : r.stock_id.startsWith('virtual:') ? <NotStocked /> : <StateFlag s={st} />}
                       <span className="ml-auto flex items-center gap-1.5">
                         {!r.stock_id.startsWith('virtual:') && (
                           <button onClick={() => onTransfer(r)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#5B6470] text-[#5B6470] rounded-md px-2 py-1"><Package className="w-3 h-3" />Move</button>
                         )}
                         {st !== 'ok' && !onOrder.has(r.item) && (
-                          <button onClick={() => onRaise(r.item, r.branch, r.stock_id.startsWith('virtual:') ? null : r.stock_id)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1"><ShoppingCart className="w-3 h-3" />Reorder</button>
+                          <button onClick={() => onRaise(r.item, r.branch, r.stock_id.startsWith('virtual:') ? null : r.stock_id)} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide border border-[#7A5AA5] text-[#7A5AA5] rounded-md px-2 py-1"><ShoppingCart className="w-3 h-3" />{r.stock_id.startsWith('virtual:') ? 'Request' : 'Reorder'}</button>
                         )}
                       </span>
                     </div>
@@ -467,6 +523,10 @@ function TotalPivot({ rows, branches, lowOnly, onOrder, onRaise }: {
       </table>
     </div>
   )
+}
+
+function NotStocked() {
+  return <span className="inline-block rounded border border-dashed border-border px-1.5 font-mono text-[9.5px] uppercase tracking-wide text-muted-foreground whitespace-nowrap">not stocked</span>
 }
 
 function Empty() {

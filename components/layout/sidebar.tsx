@@ -45,11 +45,11 @@ const anfSections: NavSection[] = [
   { title: 'Buying', th: 'จัดซื้อ', items: [
     { href: '/inventory', label: 'Requests', th: 'คำขอซื้อ', icon: ClipboardList },
     { href: '/inventory/pos', label: 'POs', th: 'ใบสั่งซื้อ', icon: FileText },
+    { href: '/inventory/suppliers', label: 'Suppliers', th: 'ร้านค้า', icon: BookOpen },
   ] },
   { title: 'Warehouse', th: 'คลัง', items: [
     { href: '/inventory/stock', label: 'Stock', th: 'ของสิ้นเปลือง', icon: Boxes },
     { href: '/inventory/equipment', label: 'Equipment', th: 'อุปกรณ์', icon: Camera },
-    { href: '/inventory/catalog', label: 'Items & Suppliers', icon: BookOpen },
   ] },
   { title: 'Event equipment list', th: 'อุปกรณ์อีเวนต์', items: [
     { href: '/inventory/event-products', label: 'Event Product', icon: Package },

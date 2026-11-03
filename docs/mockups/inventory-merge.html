@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Inventory Merge</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Thai:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f1ec;--ink:#1c1b19;--mute:#6b6862;--line:#e2ded5;--acc:#7A5AA5}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:13px/1.45 Inter,"IBM Plex Sans Thai",sans-serif;color:var(--ink);padding:18px 16px}
+.wrap{max-width:1200px;margin:0 auto}
+.cap{font:600 11px "IBM Plex Mono";color:var(--mute);letter-spacing:.05em;margin:22px 0 8px}
+.app{display:grid;grid-template-columns:210px 1fr;background:#faf9f6;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+nav{background:#fff;border-right:1px solid var(--line);padding:12px 8px}
+nav .h{font:500 10px "IBM Plex Mono";color:var(--mute);letter-spacing:.06em;margin:12px 8px 4px;border-top:1px solid var(--line);padding-top:10px}
+nav .h:first-child{border:0;margin-top:0;padding-top:0}
+nav a{display:flex;gap:6px;align-items:baseline;padding:6px 8px;border-radius:7px;font-size:13px}
+nav a small{color:var(--mute);font-size:11px}
+nav a.on{background:#ece8f4;color:var(--acc);font-weight:600}
+nav a.gone{color:#b9b4aa;text-decoration:line-through}
+.new{font-size:9px;background:#e0703d;color:#fff;border-radius:3px;padding:0 4px;font-weight:600}
+main{padding:12px 16px;min-width:0}
+.top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.top h1{font-size:16px;margin:0}
+.search{flex:1;min-width:200px;border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:#fff;color:var(--mute)}
+.btn{border-radius:8px;padding:7px 12px;font-weight:600;background:var(--acc);color:#fff;white-space:nowrap}.btn.o{background:#fff;color:var(--ink);border:1px solid var(--line);font-weight:500}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+.chip{border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:12px;background:#fff}.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip.dd{border-radius:7px}
+.sep{width:1px;height:16px;background:var(--line)}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th{font:500 10.5px "IBM Plex Mono";color:var(--mute);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:9px 10px;border-bottom:1px solid #f0ede7;vertical-align:middle}
+.newcol{background:#fff8f3}
+.sp{display:inline-flex;gap:4px;border:1px solid var(--line);border-radius:99px;padding:1px 8px;font-size:11.5px;margin:0 4px 2px 0;white-space:nowrap}.sp.pref{border-color:var(--ink)}
+.mute{color:var(--mute)}.low{color:#b45309;font-weight:600}.out{color:#b91c1c;font-weight:600}
+.bar{display:inline-block;width:60px;height:5px;border-radius:3px;background:#eee;vertical-align:middle;margin-left:6px;overflow:hidden}.bar i{display:block;height:100%;background:#15803d}
+.ns{font-size:11px;border:1px dashed var(--line);border-radius:4px;padding:0 5px;color:var(--mute)}
+.link{color:var(--acc);text-decoration:underline}
+.ch{font-size:10px;border-radius:4px;padding:0 5px;font-weight:600;margin-left:4px}.sh{background:#fde7df;color:#c2410c}.ln{background:#dcfce7;color:#15803d}.fb{background:#dbeafe;color:#1d4ed8}
+.two{display:grid;grid-template-columns:240px 1fr;gap:12px}
+.list{background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px}
+.s{display:flex;justify-content:space-between;padding:6px 8px;border-radius:7px;font-size:12.5px}.s.on{background:#ece8f4;color:var(--acc);font-weight:600}.s i{font-style:normal;color:var(--mute);font-size:11px}
+.scard{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.pill{border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:12px}
+.q{background:#fffbea;border:1px solid #f1e3a8;border-radius:12px;padding:12px 16px;margin-top:16px}
+.q li{margin:4px 0}
+@media(max-width:860px){.app{grid-template-columns:1fr}nav{display:none}.two{grid-template-columns:1fr}.hide-m{display:none}}
+</style></head><body><div class="wrap">
+
+<p class="cap">1 · NEW MENU</p>
+<div class="app" style="grid-template-columns:1fr;max-width:300px">
+<nav style="border:0">
+  <div class="h">BUYING · จัดซื้อ</div>
+  <a>Requests <small>คำขอซื้อ</small></a><a>POs <small>ใบสั่งซื้อ</small></a>
+  <a>Suppliers <small>ร้านค้า</small> <span class="new">MOVED</span></a>
+  <div class="h">WAREHOUSE · คลัง</div>
+  <a class="on">Stock <small>ของสิ้นเปลือง</small></a><a>Equipment <small>อุปกรณ์</small></a>
+  <a class="gone">Items &amp; Suppliers</a>
+  <div class="h">EVENT EQUIPMENT LIST · อุปกรณ์อีเวนต์</div>
+  <a>Event Product</a>
+</nav>
+</div>
+
+<p class="cap">2 · STOCK PAGE: NOW ALSO SHOWS WHO SELLS IT</p>
+<div class="app">
+<nav>
+  <div class="h">BUYING · จัดซื้อ</div><a>Requests</a><a>POs</a><a>Suppliers</a>
+  <div class="h">WAREHOUSE · คลัง</div><a class="on">Stock <small>ของสิ้นเปลือง</small></a><a>Equipment</a>
+</nav>
+<main>
+  <div class="top"><h1>Stock · ของสิ้นเปลือง</h1><div class="search">Search item, code or supplier…</div><span class="btn o">Count stock</span><span class="btn">＋ Item</span></div>
+  <div class="chips">
+    <span class="chip on">All 42</span><span class="chip">Low / out 6</span><span class="chip">No supplier yet 9</span><span class="chip">Not stocked 4</span>
+    <span class="sep"></span><span class="chip dd">Supplier: all ▾</span><span class="chip dd">Branch: all ▾</span>
+  </div>
+  <table>
+    <tr><th>ITEM</th><th>IN STOCK</th><th class="hide-m">WHERE</th><th class="newcol">WHO SELLS IT · PRICE <span class="new">NEW</span></th><th></th></tr>
+    <tr><td><b>DNP 4×6 photo paper</b><div class="mute" style="font-size:11.5px">DNP-46</div></td><td class="low">2 box<span class="bar"><i style="width:20%;background:#b45309"></i></span></td><td class="hide-m mute">Warehouse · Central</td><td class="newcol"><span class="sp pref">★ Sample Photo Paper · ฿4,250</span></td><td><span class="pill">Reorder</span></td></tr>
+    <tr><td><b>ANF. ซองใสใส่รูป 4×6</b></td><td class="out">0 ชุด</td><td class="hide-m mute">Warehouse</td><td class="newcol"><span class="sp pref">★ Sahasang Plastic · ฿10,000</span></td><td><span class="pill">Reorder</span></td></tr>
+    <tr><td><b>กรอบ ID Card ใส</b></td><td>40 ชิ้น<span class="bar"><i style="width:80%"></i></span></td><td class="hide-m mute">Warehouse</td><td class="newcol"><span class="sp pref">★ COZII.TH · ฿35</span><span class="sp">Good Life · ฿39</span></td><td></td></tr>
+    <tr><td><b>Gaffer tape</b></td><td>5 roll<span class="bar"><i style="width:50%"></i></span></td><td class="hide-m mute">Warehouse</td><td class="newcol"><span class="mute">No supplier yet ·</span> <span class="link">link one</span></td><td></td></tr>
+    <tr><td><b>Backdrop print 3×2 m</b><div class="mute" style="font-size:11.5px">bought per project</div></td><td><span class="ns">not stocked</span></td><td class="hide-m mute">—</td><td class="newcol"><span class="sp pref">★ Siam Digital Photo</span></td><td><span class="pill">Request</span></td></tr>
+  </table>
+  <p class="mute" style="font-size:12px;margin-top:8px">Tap a row → the same item drawer (stock by branch · suppliers &amp; price · history). Tap a supplier chip → that supplier on the Suppliers page.</p>
+</main>
+</div>
+
+<p class="cap">3 · SUPPLIERS PAGE (UNDER BUYING): CONTACT BOOK</p>
+<div class="app">
+<nav>
+  <div class="h">BUYING · จัดซื้อ</div><a>Requests</a><a>POs</a><a class="on">Suppliers <small>ร้านค้า</small></a>
+  <div class="h">WAREHOUSE · คลัง</div><a>Stock</a><a>Equipment</a>
+</nav>
+<main>
+  <div class="top"><h1>Suppliers · ร้านค้า</h1><div class="search">Search shop or item…</div><span class="btn">＋ Supplier</span></div>
+  <div class="two">
+    <div class="list">
+      <div class="chips" style="margin:4px 4px 6px"><span class="chip on">All 7</span><span class="chip">Shopee 4</span><span class="chip">LINE 1</span><span class="chip">FB 1</span></div>
+      <div class="s"><span>Sahasang Plastic<span class="ch ln">LINE</span></span><i>1</i></div>
+      <div class="s on"><span>COZII.TH<span class="ch sh">Shopee</span></span><i>2</i></div>
+      <div class="s"><span>Good Life<span class="ch sh">Shopee</span></span><i>1</i></div>
+      <div class="s"><span>Siam Digital Photo<span class="ch fb">FB</span></span><i>2</i></div>
+      <div class="s"><span class="mute">Unnamed (Alibaba)</span><i>1</i></div>
+    </div>
+    <div>
+      <div class="scard"><div><span class="mute" style="font:500 12px 'IBM Plex Mono'">SUP-002</span> <b style="font-size:15px">COZII.TH</b> <span class="ch sh">Shopee</span><div class="mute" style="font-size:12.5px">Order in the Shopee app · no contact person</div></div><span class="pill">Open shop ↗</span><span class="pill">Edit</span><span class="btn" style="margin-left:auto">Request low items (1)</span></div>
+      <table>
+        <tr><th>WHAT THEY SELL</th><th>IN STOCK</th><th>PRICE · LINK</th></tr>
+        <tr><td><b>กรอบ ID Card ใส</b></td><td>40 ชิ้น</td><td>฿35 · <span class="link">product ↗</span></td></tr>
+        <tr><td><b>กรอบ ซีดี</b></td><td class="low">3 ชิ้น</td><td>฿59 · <span class="link">product ↗</span></td></tr>
+      </table>
+    </div>
+  </div>
+</main>
+</div>
+
+<div class="q">
+  <b>"Not stocked" items: your choice</b>
+  <ul>
+    <li><b>Option 1 · keep them on Stock (shown above):</b> they appear with a dashed "not stocked" tag and a <b>Request</b> button instead of Reorder. One list for everything we buy. A "Not stocked" chip filters them.</li>
+    <li><b>Option 2 · hide them from Stock:</b> Stock shows only counted items. Project-only items are found from the Request search and from each supplier's list. Cleaner Stock, but they have no home page of their own.</li>
+    <li>You can decide later: start with Option 1, and if the "not stocked" rows feel noisy, they can be hidden by default behind the chip.</li>
+  </ul>
+</div>
+</div></body></html>
