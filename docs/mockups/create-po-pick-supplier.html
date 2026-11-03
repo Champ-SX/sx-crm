@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Create PO Supplier</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Thai:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#dcd9d2;--ink:#1c1b19;--mute:#6b6862;--line:#e2ded5;--acc:#7A5AA5}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:13px/1.45 Inter,"IBM Plex Sans Thai",sans-serif;color:var(--ink);padding:20px 16px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.cap{font:600 11px "IBM Plex Mono";color:var(--mute);letter-spacing:.05em;margin:0 0 8px}
+.dlg{background:#faf9f6;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.15);overflow:hidden}
+.hd{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);font-weight:700;font-size:15px}
+.hd i{width:12px;height:12px;border-radius:4px;background:var(--acc)}.hd span{margin-left:auto;color:var(--mute);font-weight:400}
+.bd{padding:14px 18px}.lead{color:var(--mute);margin:0 0 10px}
+.card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff}
+.card.no{border-style:dashed;background:#fffdf7}
+.t{display:flex;justify-content:space-between;gap:8px}.t b{font-size:14px}.amt{font-family:"IBM Plex Mono";font-weight:500}
+.sub{color:var(--mute);font-size:12px}
+.sel{margin-top:8px;display:flex;align-items:center;gap:8px}
+.sel label{font-size:10.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.05em}
+.dd{flex:1;border:1px solid var(--line);border-radius:7px;padding:6px 9px;background:#fff;display:flex;justify-content:space-between}
+.menu{border:1px solid var(--line);border-radius:8px;background:#fff;box-shadow:0 6px 16px rgba(0,0,0,.1);margin-top:4px;overflow:hidden}
+.menu div{padding:6px 10px}.menu .h{font-size:10px;color:var(--mute);text-transform:uppercase;letter-spacing:.05em;padding-bottom:2px}
+.menu .on{background:#eee8f6}.menu .new{border-top:1px solid var(--line);color:var(--acc);font-weight:600}
+.per{font-size:12px;color:var(--acc);text-decoration:underline;margin-top:6px;display:inline-block}
+.items div{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;border-top:1px solid #f0ede7;font-size:12.5px}
+.mini{border:1px solid var(--line);border-radius:6px;padding:2px 7px;font-size:12px;color:var(--mute)}
+.ft{display:flex;justify-content:flex-end;gap:10px;align-items:center;padding:12px 18px;border-top:1px solid var(--line)}
+.btn{border-radius:8px;padding:7px 14px;font-weight:600}.p{background:var(--acc);color:#fff}.off{background:#b9a8d3;color:#fff}
+.tag{font-size:10.5px;border-radius:4px;padding:0 5px;font-weight:600;background:#fde7df;color:#c2410c;margin-left:4px}
+.new-b{font-size:9px;background:#e0703d;color:#fff;border-radius:3px;padding:0 4px;margin-left:4px}
+.note{grid-column:1/-1;background:#fff;border-radius:12px;padding:12px 16px;font-size:13px}
+.note li{margin:3px 0}
+@media(max-width:960px){.wrap{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+
+<div>
+  <p class="cap">1 · TODAY: DEAD END</p>
+  <div class="dlg">
+    <div class="hd"><i></i>Create PO<span>✕</span></div>
+    <div class="bd">
+      <p class="lead">Items are grouped by supplier, one PO each.</p>
+      <div class="card no"><div class="t"><b>No supplier</b><span class="amt">฿10,700</span></div><div class="sub">1 item · ซองใส ใส่รูป · order later</div></div>
+    </div>
+    <div class="ft"><span>Cancel</span><span class="btn off">Pick suppliers first</span></div>
+  </div>
+</div>
+
+<div>
+  <p class="cap">2 · PICK A SUPPLIER ON THE CARD <span class="new-b">NEW</span></p>
+  <div class="dlg">
+    <div class="hd"><i></i>Create PO<span>✕</span></div>
+    <div class="bd">
+      <p class="lead">Items are grouped by supplier, one PO each.</p>
+      <div class="card no">
+        <div class="t"><b>No supplier</b><span class="amt">฿10,700</span></div>
+        <div class="sub">1 item · ซองใส ใส่รูป</div>
+        <div class="sel"><label>Supplier</label><div class="dd"><span class="sub">— pick —</span><span>▾</span></div></div>
+        <div class="menu">
+          <div class="h">Sells this item</div>
+          <div class="on">★ Sahasang Plastic <span class="sub">฿10,000 / ชุด</span></div>
+          <div class="h">All suppliers</div>
+          <div>COZII.TH</div><div>Good Life</div><div>Siam Digital Photo</div>
+          <div class="new">＋ New supplier…</div>
+        </div>
+      </div>
+    </div>
+    <div class="ft"><span>Cancel</span><span class="btn off">Pick suppliers first</span></div>
+  </div>
+</div>
+
+<div>
+  <p class="cap">3 · PICKED: READY TO CREATE</p>
+  <div class="dlg">
+    <div class="hd"><i></i>Create PO<span>✕</span></div>
+    <div class="bd">
+      <p class="lead">Items are grouped by supplier, one PO each.</p>
+      <div class="card">
+        <div class="t"><b>Sahasang Plastic <span class="tag" style="background:#dcfce7;color:#15803d">LINE</span></b><span class="amt">฿10,700</span></div>
+        <div class="sub">1 item · ซองใส ใส่รูป</div>
+        <div class="sub" style="margin-top:4px">✓ Saved on the request line too. <span style="text-decoration:underline">Change</span></div>
+      </div>
+    </div>
+    <div class="ft"><span>Cancel</span><span class="btn p">Create 1 PO</span></div>
+  </div>
+</div>
+
+<div>
+  <p class="cap">4 · SEVERAL ITEMS, NO SUPPLIER: ONE PICK FOR ALL</p>
+  <div class="dlg">
+    <div class="hd"><i></i>Create PO<span>✕</span></div>
+    <div class="bd">
+      <div class="card"><div class="t"><b>COZII.TH <span class="tag">Shopee</span></b><span class="amt">฿1,284</span></div><div class="sub">2 items</div></div>
+      <div class="card no">
+        <div class="t"><b>No supplier</b><span class="amt">฿2,140</span></div>
+        <div class="sub">3 items</div>
+        <div class="sel"><label>Supplier</label><div class="dd"><span class="sub">— pick for all 3 —</span><span>▾</span></div></div>
+        <span class="per">Set per item</span>
+      </div>
+    </div>
+    <div class="ft"><span>Cancel</span><span class="btn p">Create 1 PO</span></div>
+  </div>
+  <p class="sub" style="margin-top:6px">Items with a supplier can already go; the rest wait.</p>
+</div>
+
+<div>
+  <p class="cap">5 · "SET PER ITEM" OPENED</p>
+  <div class="dlg">
+    <div class="hd"><i></i>Create PO<span>✕</span></div>
+    <div class="bd">
+      <div class="card no">
+        <div class="t"><b>No supplier</b><span class="amt">฿2,140</span></div>
+        <div class="items">
+          <div><span>กรอบ ซีดี</span><span class="mini">COZII.TH ▾</span></div>
+          <div><span>โซ่ไข่ปลา</span><span class="mini">KS_DIY_SHOP ▾</span></div>
+          <div><span>กลักฟิล์ม</span><span class="mini">— pick — ▾</span></div>
+        </div>
+      </div>
+      <p class="sub">กรอบ ซีดี joins the COZII.TH card (same supplier = one PO). กลักฟิล์ม stays "To order".</p>
+    </div>
+    <div class="ft"><span>Cancel</span><span class="btn p">Create 2 POs</span></div>
+  </div>
+</div>
+
+<div>
+  <p class="cap">6 · ＋ NEW SUPPLIER (same quick-add as in requests)</p>
+  <div class="dlg">
+    <div class="hd"><i></i>New supplier<span>✕</span></div>
+    <div class="bd">
+      <div class="sub">SUPPLIER NAME *</div><div class="dd" style="margin-bottom:6px">siam digital</div>
+      <div class="sub" style="background:#fef3c7;border-radius:6px;padding:5px 8px;margin-bottom:8px;color:#92400e">Did you mean <b><u>Siam Digital Photo</u></b>? Tap to use it instead.</div>
+      <div class="sub">CHANNEL · SHOP LINK · LINE / PHONE</div>
+    </div>
+    <div class="ft"><span>Cancel</span><span class="btn p">Add &amp; use</span></div>
+  </div>
+</div>
+
+<div class="note">
+  <b>What happens when you pick</b>
+  <ul>
+    <li>The card becomes a normal supplier card and the button counts the POs it will create.</li>
+    <li>The supplier is saved on the request line and linked to the item, so next time it is suggested (★).</li>
+    <li>Picking a supplier that already has a card merges the items into it: one PO per supplier.</li>
+    <li>Leaving items with no supplier still works; they stay "To order".</li>
+  </ul>
+</div>
+</div></body></html>

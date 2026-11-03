@@ -170,7 +170,7 @@ export function StockView({ kind }: { kind: ProductKind }) {
         <MobileMenuButton />
         <span className="w-3.5 h-3.5 rounded-[5px] shrink-0 flex items-center justify-center" style={{ backgroundColor: ANF_ACCENT }}><Boxes className="w-2.5 h-2.5 text-white" /></span>
         <div>
-          <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight leading-none">{kind === 'asset' ? 'Equipment' : 'Supplies'}</h1>
+          <h1 className="text-[15px] sm:text-[17px] font-semibold text-foreground tracking-tight leading-none">{kind === 'asset' ? 'Equipment' : 'Stock · ของสิ้นเปลือง'}</h1>
           <p className="font-mono text-[12px] text-muted-foreground mt-1">{kind === 'asset' ? `อุปกรณ์ · ${assetCount} item${assetCount === 1 ? '' : 's'}` : `ของสิ้นเปลือง · ${rows.length} items · ${lowCount} need reorder`}</p>
         </div>
         {kind === 'supply' ? (

@@ -47,7 +47,7 @@ const anfSections: NavSection[] = [
     { href: '/inventory/pos', label: 'POs', th: 'ใบสั่งซื้อ', icon: FileText },
   ] },
   { title: 'Warehouse', th: 'คลัง', items: [
-    { href: '/inventory/stock', label: 'Supplies', th: 'ของสิ้นเปลือง', icon: Boxes },
+    { href: '/inventory/stock', label: 'Stock', th: 'ของสิ้นเปลือง', icon: Boxes },
     { href: '/inventory/equipment', label: 'Equipment', th: 'อุปกรณ์', icon: Camera },
     { href: '/inventory/catalog', label: 'Items & Suppliers', icon: BookOpen },
   ] },
