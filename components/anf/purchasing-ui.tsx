@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { ANF_ACCENT, SEED_BRANCHES, baht, kindOf } from '@/lib/anf'
 import { jobCardName } from '@/lib/jobs'
-import { useSuppliers, preferredFor, linksFor, saveLink, newLink } from '@/lib/supabase/suppliers'
+import { useSuppliers, preferredFor, linksFor, saveLink, newLink, supplierById } from '@/lib/supabase/suppliers'
+import { QuickSupplierDialog } from '@/components/anf/quick-supplier'
 import {
   usePurchasing, saveRequest, savePO, newPurchasingId, nextRequestNumber, nextPONumber, itemTotal,
   submitRequest, approveRequest, rejectRequest, withdrawRequest, isBuyer, notifyEmergencyPO, logEvent, eventsFor, deleteRequest, requestTotal, lineTotalVat, lineRules, receivePlan, approvalOf, isApprover, requestStatus, REQ_STATUS, APPROVAL_LIMIT_THB, type ReqStatus,
@@ -120,6 +121,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
   const savedNote = useRef<string | null>(request?.notes ?? null)
   const [q, setQ] = useState('')
   const [receiving, setReceiving] = useState<AnfOrder | null>(null)
+  const [newSupFor, setNewSupFor] = useState<AnfOrder | null>(null)   // line getting a ＋ New supplier
   const [error, setError] = useState<string | null>(null)
   const items = anfOrders.filter((o) => o.request_id === r.request_id).sort((a, b) => a.created_at.localeCompare(b.created_at))
   const products = anfProducts.filter((p) => !activeBoardId || !p.board_id || p.board_id === activeBoardId)
@@ -209,7 +211,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
   }
   const upd = (o: AnfOrder, p: Partial<AnfOrder>) => {
     // Log what changed on the line (qty / price / VAT / supplier) for the request's history.
-    const sup = (id?: string | null) => suppliers.find((x) => x.supplier_id === id)?.name ?? 'none'
+    const sup = (id?: string | null) => supplierById(id)?.name ?? 'none'
     const parts = [
       p.quantity !== undefined && p.quantity !== o.quantity && `qty ${o.quantity} → ${p.quantity}`,
       p.unit_price !== undefined && p.unit_price !== o.unit_price && `price ${o.unit_price} → ${p.unit_price}`,
@@ -361,9 +363,10 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
                       <td className="px-2 py-1.5"><input disabled={!rule.editQtyPrice} defaultValue={o.unit_price || ''} placeholder="price" onBlur={(e) => num(e.target.value) !== o.unit_price && upd(o, { unit_price: num(e.target.value) })} className={cn(inputCls, 'h-8 text-right font-mono')} /></td>
                       <td className="px-2 py-2 text-center"><input type="checkbox" disabled={!rule.editQtyPrice} checked={o.with_vat} onChange={(e) => upd(o, { with_vat: e.target.checked })} className="w-4 h-4 accent-foreground" aria-label="Add 7% VAT" /></td>
                       <td className="px-2 py-1.5">
-                        <select disabled={!rule.editSupplier} value={o.supplier_id ?? ''} onChange={(e) => upd(o, { supplier_id: e.target.value || null })} className={cn(inputCls, 'h-8')}>
+                        <select disabled={!rule.editSupplier} value={o.supplier_id ?? ''} onChange={(e) => e.target.value === '__new' ? setNewSupFor(o) : upd(o, { supplier_id: e.target.value || null })} className={cn(inputCls, 'h-8')}>
                           <option value="">— pick —</option>
                           {[...suppliers].sort((a, b) => Number(linked.includes(b.supplier_id)) - Number(linked.includes(a.supplier_id))).map((s) => <option key={s.supplier_id} value={s.supplier_id}>{s.name}{linked.includes(s.supplier_id) ? ' ★' : ''}</option>)}
+                          <option value="__new">＋ New supplier…</option>
                         </select>
                       </td>
                       <td className="px-2 py-2 text-right font-mono">{lineTotalVat(o) ? baht(Math.round(lineTotalVat(o))) : '—'}</td>
@@ -420,6 +423,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
           {main}
         </div>
         {receiving && <ReceiveDialog order={receiving} onClose={() => setReceiving(null)} />}
+        {newSupFor && <QuickSupplierDialog productId={newSupFor.product_id} boardId={r.board_id} onClose={() => setNewSupFor(null)} onPick={(id) => upd(newSupFor, { supplier_id: id })} />}
       </DialogContent>
     </Dialog>
   )
