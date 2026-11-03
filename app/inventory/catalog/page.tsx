@@ -27,6 +27,7 @@ const isLow = (r: AnfStock) => r.qty <= 0 || (r.alert_qty != null && r.qty <= r.
 export default function CatalogPage() {
   const isHydrated = useHydrated()
   const [tab, setTab] = useState<'items' | 'suppliers'>(() => (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tab') === 'suppliers' ? 'suppliers' : 'items'))
+  const [openItem, setOpenItem] = useState<string | null>(null)
   if (!isHydrated) return null
   return (
     <div className="flex-1 flex flex-col min-w-0">
@@ -41,12 +42,12 @@ export default function CatalogPage() {
           ))}
         </div>
       </div>
-      {tab === 'items' ? <ItemsView /> : <SuppliersView />}
+      {tab === 'items' ? <ItemsView openId={openItem} /> : <SuppliersView onOpenItem={(id) => { setOpenItem(id); setTab('items'); window.history.replaceState(null, '', window.location.pathname) }} />}
     </div>
   )
 }
 
-function ItemsView() {
+function ItemsView({ openId }: { openId?: string | null }) {
   const { role } = useAuth()
   const isAdmin = role === 'admin'
   const anfProducts = useCRMStore((s) => s.anfProducts)
@@ -59,7 +60,7 @@ function ItemsView() {
   usePurchasing()   // seeds / loads purchase history used for "last paid"
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
-  const [open, setOpen] = useState<AnfProduct | null>(null)
+  const [open, setOpen] = useState<AnfProduct | null>(() => anfProducts.find((p) => p.product_id === openId) ?? null)
   const [editing, setEditing] = useState<AnfProduct | null>(null)
   const [prefill, setPrefill] = useState<RequestPrefill | null>(null)
   const [poItems, setPoItems] = useState<AnfOrder[] | null>(null)

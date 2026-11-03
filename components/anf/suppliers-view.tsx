@@ -5,18 +5,17 @@ import { Truck, Plus, Phone, MessageCircle, ExternalLink, Search } from 'lucide-
 import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
 import { useHydrated } from '@/hooks/use-hydrated'
-import { RequestDialog, CreatePODialog, type RequestPrefill } from '@/components/anf/purchasing-ui'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { ANF_ACCENT, categoryMeta, baht, kindOf } from '@/lib/anf'
+import { ANF_ACCENT, categoryMeta, kindOf } from '@/lib/anf'
 import { useSuppliers, saveSupplier, deleteSupplier, newSupplierId, telHref, lineHref, SUPPLIER_CHANNELS, CHANNEL_CLS } from '@/lib/supabase/suppliers'
-import type { AnfOrder, AnfSupplier } from '@/types'
+import type { AnfSupplier } from '@/types'
 
 /** Catalog → Suppliers: who we buy from, what they sell, and one click to request their low items. Everyone adds and edits (like customers); only an admin deletes. */
-export function SuppliersView() {
+export function SuppliersView({ onOpenItem }: { onOpenItem?: (productId: string) => void }) {
   const isHydrated = useHydrated()
   const { role } = useAuth()
   const isAdmin = role === 'admin'
@@ -104,7 +103,7 @@ export function SuppliersView() {
         )}
       </div>
 
-      {editing && <SupplierDialog supplier={editing} canEdit canDelete={isAdmin} linked={links.filter((l) => l.supplier_id === editing.supplier_id).length} onClose={() => setEditing(null)} />}
+      {editing && <SupplierDialog supplier={editing} canEdit canDelete={isAdmin} onOpenItem={onOpenItem ? (id) => { setEditing(null); onOpenItem(id) } : undefined} onClose={() => setEditing(null)} />}
     </div>
   )
 }
@@ -122,9 +121,16 @@ const FIELDS: { k: keyof AnfSupplier; label: string; ph?: string; wide?: boolean
   { k: 'notes', label: 'Notes', ph: 'Order cut-off, delivery days…', wide: true, area: true },
 ]
 
-function SupplierDialog({ supplier, canEdit, canDelete, linked, onClose }: { supplier: AnfSupplier; canEdit: boolean; canDelete: boolean; linked: number; onClose: () => void }) {
-  const isNewSupplier = !supplier.name
-  const [tab, setTab] = useState<'items' | 'details'>(isNewSupplier ? 'details' : 'items')
+function SupplierDialog({ supplier, canEdit, canDelete, onOpenItem, onClose }: { supplier: AnfSupplier; canEdit: boolean; canDelete: boolean; onOpenItem?: (productId: string) => void; onClose: () => void }) {
+  const { links } = useSuppliers()
+  const anfProducts = useCRMStore((s) => s.anfProducts)
+  const anfStock = useCRMStore((s) => s.anfStock)
+  const sells = links.filter((l) => l.supplier_id === supplier.supplier_id).map((l) => {
+    const p = anfProducts.find((x) => x.product_id === l.product_id)
+    const stock = anfStock.filter((r) => r.product_id === l.product_id)
+    return p && { p, qty: stock.reduce((t, r) => t + (r.qty || 0), 0), low: stock.some((r) => r.qty <= 0 || (r.alert_qty != null && r.qty <= r.alert_qty)) }
+  }).filter((x): x is NonNullable<typeof x> => !!x).sort((a, b) => Number(b.low) - Number(a.low) || a.p.name.localeCompare(b.p.name))
+  const linked = sells.length
   const [d, setD] = useState<AnfSupplier>(supplier)
   const [error, setError] = useState<string | null>(null)
   const isNew = !supplier.name
@@ -148,14 +154,6 @@ function SupplierDialog({ supplier, canEdit, canDelete, linked, onClose }: { sup
           <DialogTitle className="text-[15px] font-bold">{isNew ? 'New supplier' : canEdit ? 'Edit supplier' : supplier.name}</DialogTitle>
           <button onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground text-lg leading-none px-1">✕</button>
         </div>
-        {!isNew && (
-          <div className="flex gap-0 border-b border-border text-[13px] px-3">
-            {(['items', 'details'] as const).map((t) => (
-              <button key={t} type="button" onClick={() => setTab(t)} className={cn('px-3 py-2', tab === t ? 'font-semibold shadow-[inset_0_-2px_0_currentColor]' : 'text-muted-foreground')}>{t === 'items' ? `Items ${linked}` : 'Details'}</button>
-            ))}
-          </div>
-        )}
-        {tab === 'items' && !isNew ? <SupplierItems supplier={supplier} onDone={onClose} /> : (
         <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto">
           <div className="sm:col-span-2">
             <label className="field-label">Channel · ช่องทางสั่ง{d.code && <span className="ml-2 font-mono normal-case text-muted-foreground">{d.code}</span>}</label>
@@ -179,11 +177,21 @@ function SupplierDialog({ supplier, canEdit, canDelete, linked, onClose }: { sup
               )}
             </div>
           ))}
-          <p className="sm:col-span-2 text-[11.5px] text-muted-foreground">Linked to <b className="text-foreground">{linked}</b> item(s). Link items from Catalog → open an item. No passwords or bank logins here.</p>
+          <div className="sm:col-span-2 border-t border-border pt-3">
+            <label className="field-label">Supplies {linked} item{linked === 1 ? '' : 's'}</label>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {sells.map(({ p, qty, low }) => (
+                <button key={p.product_id} type="button" disabled={!onOpenItem} onClick={() => onOpenItem?.(p.product_id)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-0.5 text-[12px] hover:bg-muted disabled:hover:bg-transparent">
+                  {p.name}{kindOf(p) !== 'asset' && <span className={cn('text-[11px]', low ? 'font-semibold text-amber-700 dark:text-amber-400' : 'text-muted-foreground')}>{qty}</span>}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[11.5px] text-muted-foreground">{linked ? 'Tap an item to open it. ' : ''}Link more items from the item&apos;s Suppliers tab. No passwords or bank logins here.</p>
+          </div>
         </div>
-        )}
         {error && <p className="px-5 pb-2 text-[12px] text-destructive">{error}</p>}
-        {canEdit && tab === 'details' && (
+        {canEdit && (
           <div className="flex items-center gap-2 px-5 py-3 border-t border-border">
             {!isNew && canDelete && <button onClick={remove} className="text-destructive hover:opacity-80 text-sm mr-auto">Delete</button>}
             <span className={isNew ? 'mr-auto' : ''} />
@@ -193,55 +201,5 @@ function SupplierDialog({ supplier, canEdit, canDelete, linked, onClose }: { sup
         )}
       </DialogContent>
     </Dialog>
-  )
-}
-
-/** What this supplier sells, with stock — tick the low ones and request them in one go. */
-function SupplierItems({ supplier, onDone }: { supplier: AnfSupplier; onDone: () => void }) {
-  const { links } = useSuppliers()
-  const anfProducts = useCRMStore((s) => s.anfProducts)
-  const anfStock = useCRMStore((s) => s.anfStock)
-  const rows = links.filter((l) => l.supplier_id === supplier.supplier_id).map((l) => {
-    const p = anfProducts.find((x) => x.product_id === l.product_id)
-    const stock = anfStock.filter((r) => r.product_id === l.product_id)
-    const qty = stock.reduce((t, r) => t + (r.qty || 0), 0)
-    const low = stock.some((r) => r.qty <= 0 || (r.alert_qty != null && r.qty <= r.alert_qty))
-    return { l, p, qty, low, asset: kindOf(p) === 'asset' }
-  }).filter((x) => x.p).sort((a, b) => Number(b.low) - Number(a.low) || a.p!.name.localeCompare(b.p!.name))
-  const [picked, setPicked] = useState<string[]>(() => rows.filter((x) => x.low && !x.asset).map((x) => x.l.product_id))
-  const [prefill, setPrefill] = useState<RequestPrefill[] | null>(null)
-  const [po, setPo] = useState<{ items: AnfOrder[]; why?: string } | null>(null)
-
-  return (
-    <>
-      <div className="overflow-y-auto">
-        {rows.length === 0 ? <p className="px-5 py-6 text-[13px] text-muted-foreground">No items linked yet. Open an item in Catalog → Suppliers & price → Link supplier.</p> : (
-          <table className="w-full text-[13px]">
-            <thead><tr className="text-left font-mono text-[10px] tracking-wide text-muted-foreground border-b border-border"><th className="w-8" /><th className="px-2 py-2">ITEM</th><th className="px-2 py-2 text-right">PRICE</th><th className="px-2 py-2 text-right">STOCK</th></tr></thead>
-            <tbody>
-              {rows.map(({ l, p, qty, low, asset }) => {
-                const on = picked.includes(l.product_id)
-                return (
-                  <tr key={l.id} className="border-b border-border">
-                    <td className="pl-4"><input type="checkbox" checked={on} onChange={() => setPicked((x) => (on ? x.filter((id) => id !== l.product_id) : [...x, l.product_id]))} className="w-4 h-4 accent-foreground" aria-label={`Request ${p!.name}`} /></td>
-                    <td className="px-2 py-2">{l.preferred && <span className="text-amber-500">★ </span>}{p!.name}{p!.code && <span className="block text-[11px] text-muted-foreground">{p!.code}</span>}</td>
-                    <td className="px-2 py-2 text-right font-mono">{l.price != null ? baht(l.price) : '—'}</td>
-                    <td className={cn('px-2 py-2 text-right font-mono', low && 'text-[#e5401b] font-semibold')}>{asset ? 'asset' : `${qty}${low ? ' · LOW' : ''}`}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
-      <div className="flex items-center gap-2 px-5 py-3 border-t border-border">
-        <span className="mr-auto text-[12px] text-muted-foreground">{picked.length ? `${picked.length} selected` : 'Low items are pre-selected'}</span>
-        <Button size="sm" disabled={!picked.length} onClick={() => setPrefill(rows.filter((x) => picked.includes(x.l.product_id)).map((x) => ({
-          item: x.p!.name, product_id: x.p!.product_id, description: x.p!.code, unit_price: x.l.price ?? undefined, supplier_id: supplier.supplier_id,
-        })))}>Request {picked.length || ''} item{picked.length === 1 ? '' : 's'} →</Button>
-      </div>
-      {prefill && <RequestDialog request={null} prefill={prefill} onClose={() => { setPrefill(null); onDone() }} onCreatePO={(items, why) => { setPrefill(null); setPo({ items, why }) }} />}
-      {po && <CreatePODialog items={po.items} emergency={po.why} onClose={() => { setPo(null); onDone() }} />}
-    </>
   )
 }
