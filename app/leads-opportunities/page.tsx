@@ -18,6 +18,7 @@ import { MobileCardView } from '@/components/shared/mobile-card-view'
 import { OwnerSelectItems } from '@/components/shared/owner-select-items'
 import { DetailHeader } from '@/components/shared/detail-header'
 import { AddLeadOpForm } from '@/components/shared/add-lead-op-form'
+import { HoldDialog } from '@/components/shared/hold-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -45,6 +46,7 @@ const SERVICES = ['CAP*TURES', 'Andy & Fine', 'SX Event', 'Booth Rental', 'Custo
 const statusConfig: Record<LeadOpStatus, { label: string; dot: string }> = {
   open: { label: 'Open', dot: 'bg-[#D7FE3A] ring-1 ring-black/15' },
   negotiating: { label: 'Negotiating', dot: 'bg-[#FF5B3F]' },
+  hold: { label: 'Hold', dot: 'bg-amber-500 ring-1 ring-amber-700/30' },
   won: { label: 'Won', dot: 'bg-emerald-500' },
   lost: { label: 'Lost', dot: 'bg-muted-foreground/50' },
 }
@@ -60,7 +62,7 @@ function StatusDot({ status }: { status: LeadOpStatus }) {
   )
 }
 
-const STATUS_ORDER: LeadOpStatus[] = ['open', 'negotiating', 'won', 'lost']
+const STATUS_ORDER: LeadOpStatus[] = ['open', 'negotiating', 'hold', 'won', 'lost']
 
 // ── Clickable status pill ───────────────────────────────────────────────────────
 // The pill itself is the trigger: click → pick a status → it applies immediately.
@@ -323,6 +325,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
   const isMobile = useIsMobile()
   const [confirmWon, setConfirmWon] = useState(false)
   const [confirmLost, setConfirmLost] = useState(false)
+  const [confirmHold, setConfirmHold] = useState(false)
   const [lostReason, setLostReason] = useState<string | null>(null)
   const [lostNote, setLostNote] = useState('')
   const [quotationOpen, setQuotationOpen] = useState(false)
@@ -399,6 +402,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
     if (!item || next === item.status) return
     if (next === 'won') { setConfirmWon(true); return }
     if (next === 'lost') { setConfirmLost(true); return }
+    if (next === 'hold') { setConfirmHold(true); return }
     void updateLeadOpportunity(item.lead_op_id, { status: next })
   }
 
@@ -485,8 +489,11 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
             <Button size="sm" variant="outline" className="h-8 px-3 gap-2 border-primary/30 text-primary hover:bg-primary/5 text-xs font-medium" onClick={() => setQuotationOpen(true)}>
               <Send className="w-4 h-4" /> Create Quotation
             </Button>
-            {(item.status === 'open' || item.status === 'negotiating') && (
+            {(item.status === 'open' || item.status === 'negotiating' || item.status === 'hold') && (
               <>
+                <Button size="sm" variant="outline" className="h-8 px-3 gap-2 text-xs border-amber-500/60 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10" onClick={() => setConfirmHold(true)}>
+                  {item.status === 'hold' ? 'Edit hold' : 'Hold'}
+                </Button>
                 <Button size="sm" variant="success" className="h-8 px-3 gap-2 text-xs" onClick={() => setConfirmWon(true)}>
                   <Trophy className="w-4 h-4" /> Won
                 </Button>
@@ -590,6 +597,13 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
               <div className="space-y-2">
                 {item.status === 'lost' && item.lost_reason && (
                   <p className="mb-2 rounded-md bg-muted px-2.5 py-1.5 text-[12.5px]"><b>Lost:</b> {item.lost_reason}{item.lost_note && <span className="text-muted-foreground"> — {item.lost_note}</span>}</p>
+                )}
+                {item.status === 'hold' && (
+                  <div className="mb-2 rounded-md border border-dashed border-amber-500/70 bg-amber-500/10 px-2.5 py-1.5 text-[12.5px]">
+                    <b>Hold · จองไว้</b>{item.hold_product && <> · {item.hold_product}</>}{item.hold_prepare && <> · {item.hold_prepare}</>}
+                    {item.hold_until && <span className="block text-muted-foreground">Confirm or release by {item.hold_until}</span>}
+                    <span className="block text-[11.5px] text-muted-foreground">Shown on the Ops calendar.</span>
+                  </div>
                 )}
                 <p className="field-label">Event Details</p>
                 <div className="space-y-2">
@@ -969,6 +983,9 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
         </DialogContent>
       </Dialog>
 
+      {confirmHold && <HoldDialog lead={item} onClose={() => setConfirmHold(false)}
+        onSave={(patch) => { void updateLeadOpportunity(item.lead_op_id, patch); setConfirmHold(false) }} />}
+
       {/* Create Quotation Modal */}
       <CreateQuotationModal
         lead={item}
@@ -1173,7 +1190,7 @@ export default function LeadsOpportunitiesPage() {
         })()}
         {/* Status pills */}
         <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
-          {(['all', 'open', 'negotiating', 'won', 'lost'] as const).map((s) => {
+          {(['all', 'open', 'negotiating', 'hold', 'won', 'lost'] as const).map((s) => {
             const count = s === 'all' ? leadOpportunities.length : leadOpportunities.filter((l) => l.status === s).length
             return (
               <button

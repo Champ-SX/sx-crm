@@ -29,7 +29,7 @@ export function AdminDashboard() {
 
   // Active pipeline = open + negotiating (both in-flight, undecided deals)
   const activeLeads = leadOpportunities.filter(
-    (l) => l.status === 'open' || l.status === 'negotiating'
+    (l) => l.status === 'open' || l.status === 'negotiating' || l.status === 'hold'
   )
   const totalPipeline = activeLeads.reduce((s, l) => s + l.estimated_value, 0)
   const totalRevenue = wonJobs.reduce((s, j) => s + (j.estimated_value ?? 0), 0)

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CalendarPrint } from '@/components/won/calendar-print'
 import { cosmoFor, CosmoWarn, CosmoMarker, phasesOn, type CosmoState } from '@/components/won/cosmo'
+import { HoldMarker, holdsOn } from '@/components/won/hold-marker'
 import { addDays, format, isToday, isWeekend, parseISO, differenceInCalendarDays, startOfWeek } from 'date-fns'
 import { ChevronLeft, ChevronRight, Users, Palette, Package, Check, CircleCheck, ArrowRight, Minus, Plus, UserPlus, UserX, TriangleAlert, ChevronDown } from 'lucide-react'
 import { OP_STAGES, type WonJob, type InventoryStatus, type TeamMember } from '@/types'
@@ -396,6 +397,12 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
     if (typeof window === 'undefined') return 'compact'
     try { const v = localStorage.getItem('won-cal-ongoing'); return v === 'full' || v === 'hide' ? v : 'compact' } catch { return 'compact' }
   })
+  // Leads on Hold — striped info markers, hideable.
+  const leadOpportunities = useCRMStore((s) => s.leadOpportunities)
+  const [showHolds, setShowHolds] = useState(() => { try { return localStorage.getItem('won-cal-holds') !== 'off' } catch { return true } })
+  const toggleHolds = () => { setShowHolds((v) => { try { localStorage.setItem('won-cal-holds', v ? 'off' : 'on') } catch { /* private mode */ } return !v }) }
+  const holdsFor = (d: string) => (showHolds ? holdsOn(leadOpportunities, d) : [])
+  const holdCount = days.reduce((n, d) => n + holdsOn(leadOpportunities, d).length, 0)
   const pickOngoing = (v: 'compact' | 'full' | 'hide') => { setOngoingMode(v); try { localStorage.setItem('won-cal-ongoing', v) } catch { /* private mode */ } }
   const [openDays, setOpenDays] = useState<string[]>([])   // mobile: days whose folded ongoing rows are expanded
   const staffPaid = (job: WonJob) => (job.staff_list ?? []).length > 0 && (job.staff_list ?? []).every((m) => m.paid)
@@ -433,6 +440,9 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
             </select>
             <ChevronDown className="w-3.5 h-3.5 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </span>
+        </label>
+        <label className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground cursor-pointer">
+          <input type="checkbox" checked={showHolds} onChange={toggleHolds} className="accent-amber-500" />Show holds{holdCount > 0 && ` (${holdCount})`}
         </label>
         <span className="ml-auto text-[12px] text-muted-foreground">
           {totals.events} event{totals.events === 1 ? '' : 's'}
@@ -510,6 +520,7 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
             return (
               <div key={d} className={cn('flex flex-col gap-1.5 rounded-md min-h-[200px] p-0.5', isWeekend(fromISO(d)) && 'bg-muted/40')}>
                 {markersOn(d).map(marker)}
+                {holdsFor(d).map((l) => <HoldMarker key={l.lead_op_id} lead={l} />)}
                 {items.map(({ job }) => (
                   <div key={job.job_id} {...cardProps(job.job_id)}
                     style={{ borderLeftColor: edge(job) }}
@@ -564,7 +575,8 @@ export function OpCalendar({ jobs, stages, start, onStart, onOpen, onMove, pause
                   </button>
                 ))}
                 {markersOn(d).length > 0 && <div className="flex flex-wrap gap-1.5">{markersOn(d).map(marker)}</div>}
-                {items.length === 0 && ong.length === 0 && markersOn(d).length === 0 && <span className="text-[12px] text-muted-foreground pt-2">—</span>}
+                {holdsFor(d).map((l) => <HoldMarker key={l.lead_op_id} lead={l} />)}
+                {items.length === 0 && ong.length === 0 && markersOn(d).length === 0 && holdsFor(d).length === 0 && <span className="text-[12px] text-muted-foreground pt-2">—</span>}
                 {items.map(({ job, all }) => {
                   const k = all.indexOf(d)
                   return (

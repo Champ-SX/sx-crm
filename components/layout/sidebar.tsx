@@ -161,7 +161,7 @@ function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?
 
   // Active = open or negotiating (both are in-flight leads needing attention)
   const openLeadsCount = leadOpportunities.filter(
-    (l) => l.status === 'open' || l.status === 'negotiating'
+    (l) => l.status === 'open' || l.status === 'negotiating' || l.status === 'hold'
   ).length
   const today = new Date().toISOString().split('T')[0]
   const pendingTasksToday = tasks.filter(

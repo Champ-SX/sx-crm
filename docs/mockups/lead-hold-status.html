@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hold Status</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Thai:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f1ec;--ink:#1c1b19;--mute:#6b6862;--line:#e2ded5;--acc:#7A5AA5;--hold:#d97706}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:13px/1.45 Inter,"IBM Plex Sans Thai",sans-serif;color:var(--ink);padding:18px 16px}
+.wrap{max-width:1200px;margin:0 auto}
+.cap{font:600 11px "IBM Plex Mono";color:var(--mute);letter-spacing:.05em;margin:22px 0 8px}
+.flow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.st{border-radius:99px;padding:4px 12px;font-weight:600;font-size:12.5px;border:1px solid var(--line)}
+.st.open{background:#eef2ff;color:#3730a3}.st.neg{background:#f3e8ff;color:#6b21a8}.st.hold{background:#fef3c7;color:#92400e;border:1.5px dashed var(--hold)}.st.won{background:#dcfce7;color:#166534}.st.lost{background:#fee2e2;color:#991b1b}
+.ar{color:var(--mute)}
+.new{font-size:9px;background:#e0703d;color:#fff;border-radius:3px;padding:0 4px;font-weight:600;vertical-align:middle}
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.col{background:#ebe8e1;border-radius:12px;padding:8px}
+.col h4{margin:2px 4px 8px;font-size:12.5px;display:flex;gap:6px;align-items:center}.col h4 i{font-style:normal;color:var(--mute);font-weight:500}
+.card{background:#fff;border-radius:9px;padding:9px 10px;margin-bottom:8px;border:1px solid var(--line)}
+.card.h{border:1.5px dashed var(--hold);background:#fffbeb}
+.card b{display:block;font-size:13px}.card .s{color:var(--mute);font-size:11.5px}
+.badge{display:inline-block;font:600 10px "IBM Plex Mono";border-radius:4px;padding:0 5px;background:#fde68a;color:#78350f;margin-right:4px}
+.kit{font-size:11.5px;margin-top:4px}
+.dlg{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.dlg h3{margin:0 0 10px;font-size:15px}
+.f{margin-bottom:10px}.f label{display:block;font-size:10.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.i{border:1px solid var(--line);border-radius:7px;padding:7px 9px;background:#fcfbf9}
+.seg{display:flex;flex-wrap:wrap;gap:5px}
+.btn{border-radius:8px;padding:7px 12px;font-weight:600;background:var(--acc);color:#fff;display:inline-block}.btn.o{background:#fff;color:var(--ink);border:1px solid var(--line);font-weight:500}.btn.hd{background:var(--hold)}
+.two{display:grid;grid-template-columns:1fr 1.4fr;gap:14px}
+.cal{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.cal .hd{display:flex;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line);align-items:center}
+.tg{display:flex;gap:6px;align-items:center;font-size:12px}
+.sw{width:28px;height:16px;border-radius:99px;background:var(--hold);position:relative}.sw:after{content:"";position:absolute;right:2px;top:2px;width:12px;height:12px;border-radius:50%;background:#fff}
+.grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.dh{font:500 10px "IBM Plex Mono";color:var(--mute);padding:5px 6px;border-bottom:1px solid var(--line);border-right:1px solid #f0ede7}
+.d{min-height:92px;padding:4px 5px;border-right:1px solid #f0ede7;border-bottom:1px solid #f0ede7;font-size:11px}
+.d .n{font-weight:600;color:var(--mute);margin-bottom:2px}
+.ev{border-left:3px solid #7c3aed;background:#f5f3ff;border-radius:3px;padding:2px 4px;margin-bottom:3px;line-height:1.25}
+.ev.h{border-left:3px dashed var(--hold);background:repeating-linear-gradient(135deg,#fffbeb 0 6px,#fef3c7 6px 12px);color:#78350f}
+.ev small{display:block;color:var(--mute)}
+.pop{background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,.12);padding:12px 14px;max-width:340px}
+.pop .row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #f4f1ea;font-size:12.5px}
+.note{background:#fff;border-radius:12px;padding:12px 16px;margin-top:16px}.note li{margin:3px 0}
+@media(max-width:900px){.board,.two{grid-template-columns:1fr}.grid{font-size:10px}.d{min-height:70px}}
+</style></head><body><div class="wrap">
+
+<p class="cap">1 · NEW STATUS IN THE LEAD FLOW</p>
+<div class="flow">
+  <span class="st open">Open</span><span class="ar">→</span>
+  <span class="st neg">Negotiating</span><span class="ar">→</span>
+  <span class="st hold">Hold · จองไว้ <span class="new">NEW</span></span><span class="ar">→</span>
+  <span class="st won">Won</span>
+  <span class="ar" style="margin-left:14px">or</span><span class="st lost">Lost</span>
+  <span class="ar" style="margin-left:auto;font-size:12px">Hold = client is holding the date, very likely to win. Ops can see it.</span>
+</div>
+
+<p class="cap">2 · LEADS BOARD: A HOLD COLUMN</p>
+<div class="board">
+  <div class="col"><h4>Open <i>6</i></h4>
+    <div class="card"><b>Central Chidlom roadshow</b><span class="s">LCA · ฿75k · 18 Apr</span></div></div>
+  <div class="col"><h4>Negotiating <i>3</i></h4>
+    <div class="card"><b>Sephora staff party</b><span class="s">Popup · ฿150k · 21 May</span></div></div>
+  <div class="col" style="background:#fdf3d7"><h4>Hold · จองไว้ <i>2</i></h4>
+    <div class="card h"><span class="badge">HOLD</span><b>What's in my bag · Phuket</b><span class="s">K035 · Splash Beach Resort · <b style="display:inline">Fri 26 Mar 2027</b></span><div class="kit">🎒 What's in my Bag · Passport 250 ชิ้น</div></div>
+    <div class="card h"><span class="badge">HOLD</span><b>What's in my bag · คุณโย๋</b><span class="s">K035 · Bangkok · <b style="display:inline">Fri 5 Mar 2027</b></span><div class="kit">🎒 What's in my Bag · Passport 450 ชิ้น</div></div>
+  </div>
+  <div class="col"><h4>Won <i>12</i></h4>
+    <div class="card"><b>LINEMAN K Village</b><span class="s">GIF Booth · ฿48k</span></div></div>
+</div>
+
+<div class="two" style="margin-top:4px">
+<div>
+<p class="cap">3 · MARK AS HOLD (from the lead drawer)</p>
+<div class="dlg">
+  <h3>Hold this date? · จองวันไว้</h3>
+  <div class="f"><label>Event date *</label><div class="i">Fri 26 Mar 2027</div></div>
+  <div class="f"><label>Event product</label><div class="seg"><span class="btn o" style="padding:3px 9px">What's in my Bag ✓</span><span class="btn o" style="padding:3px 9px;color:var(--mute)">＋ add</span></div></div>
+  <div class="f"><label>Quantity / what to prepare</label><div class="i">Passport 250 ชิ้น</div></div>
+  <div class="f"><label>Venue</label><div class="i">Splash Beach Resort, Phuket</div></div>
+  <div class="f"><label>Hold until (optional)</label><div class="i">Fri 20 Feb 2027 <span class="s" style="color:var(--mute)">· reminds sales to confirm</span></div></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end"><span class="btn o">Cancel</span><span class="btn hd">Mark as Hold</span></div>
+</div>
+<p class="s" style="color:var(--mute);font-size:12px;margin-top:6px">When it is confirmed: <b>Mark as Won</b> as usual and the hold turns into a real job. Lost → the hold disappears from the calendar.</p>
+</div>
+
+<div>
+<p class="cap">4 · OPS CALENDAR: HOLDS SHOW STRIPED</p>
+<div class="cal">
+  <div class="hd"><b>March 2027</b><span class="tg">Show holds <span class="sw"></span></span></div>
+  <div class="grid">
+    <div class="dh">MON</div><div class="dh">TUE</div><div class="dh">WED</div><div class="dh">THU</div><div class="dh">FRI</div><div class="dh">SAT</div><div class="dh">SUN</div>
+    <div class="d"><div class="n">1</div></div><div class="d"><div class="n">2</div></div><div class="d"><div class="n">3</div><div class="ev">#K031 Sephora<small>Popup</small></div></div><div class="d"><div class="n">4</div></div>
+    <div class="d"><div class="n">5</div><div class="ev h">HOLD · What's in my bag<small>คุณโย๋ · 450 ชิ้น</small></div></div><div class="d"><div class="n">6</div></div><div class="d"><div class="n">7</div></div>
+    <div class="d"><div class="n">23</div></div><div class="d"><div class="n">24</div></div><div class="d"><div class="n">25</div><div class="ev">#K040 Central<small>LCA</small></div></div><div class="d"><div class="n">26</div></div>
+    <div class="d"><div class="n">26</div><div class="ev h">HOLD · What's in my bag<small>Phuket · 250 ชิ้น</small></div><div class="ev">#K042 LINEMAN<small>GIF Booth</small></div></div><div class="d"><div class="n">27</div></div><div class="d"><div class="n">28</div></div>
+  </div>
+</div>
+<div class="pop" style="margin-top:10px">
+  <b>HOLD · What's in my bag · Phuket</b> <span class="badge">NOT CONFIRMED</span>
+  <div class="row"><span style="color:var(--mute)">Date</span><span>Fri 26 Mar 2027</span></div>
+  <div class="row"><span style="color:var(--mute)">Venue</span><span>Splash Beach Resort</span></div>
+  <div class="row"><span style="color:var(--mute)">Product</span><span>What's in my Bag</span></div>
+  <div class="row"><span style="color:var(--mute)">Prepare</span><span>Passport 250 ชิ้น</span></div>
+  <div class="row"><span style="color:var(--mute)">Sales</span><span>Vitta</span></div>
+  <div style="font-size:11.5px;color:var(--mute);margin-top:6px">Read-only for Ops. Tap to open the lead.</div>
+</div>
+</div>
+</div>
+
+<div class="note">
+  <b>Rules</b>
+  <ul>
+    <li><b>Hold needs a date.</b> Product and quantity are strongly suggested, because that's what Ops plans equipment from.</li>
+    <li><b>Calendar:</b> holds are striped and dashed, so they never look like confirmed jobs. A "Show holds" switch hides them.</li>
+    <li><b>Not counted</b> as jobs, revenue or won in the dashboards. The funnel gets a Hold step.</li>
+    <li><b>Hold until</b> (optional): the day before, sales gets a reminder to confirm or release it.</li>
+    <li><b>Won:</b> the hold becomes the real job (date, venue, product carried over). <b>Lost:</b> it leaves the calendar.</li>
+  </ul>
+</div>
+</div></body></html>

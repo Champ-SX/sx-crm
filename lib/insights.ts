@@ -68,7 +68,7 @@ export function staleLeads(leads: LeadOpportunity[], activities: Activity[], now
   const byLead = new Map<string, Activity[]>()
   for (const a of activities) if (a.entity_type === 'lead_opportunity') byLead.set(a.entity_id, [...(byLead.get(a.entity_id) ?? []), a])
   return leads
-    .filter((l) => !l.is_archived && (l.status === 'open' || l.status === 'negotiating'))
+    .filter((l) => !l.is_archived && (l.status === 'open' || l.status === 'negotiating' || l.status === 'hold'))
     .map((l) => ({ ...l, idleDays: Math.floor((now.getTime() - Date.parse(lastTouch(l, byLead.get(l.lead_op_id) ?? []))) / DAY) }))
     .filter((l) => l.idleDays >= STALE_DAYS)
     .sort((a, b) => b.idleDays - a.idleDays)

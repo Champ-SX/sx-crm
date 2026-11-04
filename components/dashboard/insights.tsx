@@ -155,7 +155,7 @@ export function StaleLeadsCard({ leads, activities, showOwner }: { leads: LeadOp
                 <tr key={l.lead_op_id} className="border-b border-border last:border-b-0 hover:bg-muted/40">
                   <td className="px-4 py-2"><b>{l.name}</b><span className="block text-[11.5px] text-muted-foreground">{[l.customer_name, l.service_type].filter(Boolean).join(' · ')}</span></td>
                   {showOwner && <td className="px-2 py-2 text-[12.5px]">{l.owner || '—'}</td>}
-                  <td className="px-2 py-2"><span className={cn(pill, l.status === 'negotiating' ? WARN : NT)}>{l.status === 'negotiating' ? 'Negotiating' : 'Open'}</span></td>
+                  <td className="px-2 py-2"><span className={cn(pill, l.status === 'negotiating' ? WARN : NT)}>{l.status === 'negotiating' ? 'Negotiating' : l.status === 'hold' ? 'Hold' : 'Open'}</span></td>
                   <td className="px-2 py-2 text-right font-mono">{l.estimated_value ? fmtBaht(l.estimated_value) : '—'}</td>
                   <td className={cn('px-2 py-2 font-mono font-bold', l.idleDays >= 14 ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400')}>{l.idleDays} days</td>
                   <td className="px-4 py-2 text-right"><Link href={leadHref(l.lead_op_id)} className="text-[12px] font-semibold text-[#7A5AA5] hover:underline">Follow up →</Link></td>

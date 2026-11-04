@@ -92,7 +92,7 @@ export interface TeamMember {
   avatar_url?: string | null // Google profile picture, captured on login
 }
 
-export type LeadOpStatus = 'open' | 'negotiating' | 'won' | 'lost'
+export type LeadOpStatus = 'open' | 'negotiating' | 'hold' | 'won' | 'lost'
 export type ServiceType =
   | 'CAP*TURES'
   | 'Andy & Fine'
@@ -351,6 +351,9 @@ export interface LeadOpportunity {
   source?: string | null      // where the lead came from (LINE OA, Website, Repeat client…)
   lost_reason?: string | null // why it was lost (required when marking Lost)
   lost_note?: string | null
+  hold_product?: string | null  // Hold: event product (What's in my Bag…)
+  hold_prepare?: string | null  // Hold: what Ops would prepare (Passport 250 ชิ้น)
+  hold_until?: string | null    // Hold: confirm-or-release date (YYYY-MM-DD)
   created_at: string
   updated_at: string
 }

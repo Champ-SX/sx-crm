@@ -33,7 +33,7 @@ export function SalesDashboard({ userName }: { userName: string }) {
   // Personal slices
   const myLeads = leadOpportunities.filter((l) => matchesMe(l.owner))
   // Active = open + negotiating (both in-flight, undecided)
-  const myActiveLeads = myLeads.filter((l) => l.status === 'open' || l.status === 'negotiating')
+  const myActiveLeads = myLeads.filter((l) => l.status === 'open' || l.status === 'negotiating' || l.status === 'hold')
   const myWon = myLeads.filter((l) => l.status === 'won')
   const myLost = myLeads.filter((l) => l.status === 'lost')
   const myJobs = wonJobs.filter((j) => matchesMe(j.owner))
