@@ -10,12 +10,18 @@ export const requestTotal = (items: AnfOrder[]) => Math.round(items.reduce((t, o
 /** Rows from before approval existed (no status) and quick 1-item orders count as approved. */
 export const approvalOf = (r: AnfRequest | null) => (r ? r.status ?? 'approved' : 'approved')
 
-/** What can be changed on a request line in each state (the approved amount is what gets ordered). */
-export function lineRules(r: AnfRequest | null, o: Pick<AnfOrder, 'status' | 'po_id'>) {
-  const appr = approvalOf(r)
-  const open = (appr === 'draft' || appr === 'rejected') && o.status === 'to_order' && !o.po_id
-  return { editQtyPrice: open, editSupplier: open || (appr === 'approved' && o.status === 'to_order' && !o.po_id), remove: open, canAdd: appr === 'draft' || appr === 'rejected' }
+/**
+ * What can be changed on a request line. The requester (or buyer / admin = `canEdit`)
+ * can fix anything until the line is on a PO — at any approval state.
+ */
+export function lineRules(r: AnfRequest | null, o: Pick<AnfOrder, 'status' | 'po_id'>, canEdit = true) {
+  const open = canEdit && o.status === 'to_order' && !o.po_id
+  return { editQtyPrice: open, editSupplier: open, remove: open, canAdd: canEdit }
 }
+
+/** An approved request edited up to ฿10,000+ (above what was approved) goes back to the approver. */
+export const needsReapproval = (r: AnfRequest | null, newTotal: number) =>
+  approvalOf(r) === 'approved' && needsApproval(newTotal) && newTotal > (r?.total_thb ?? 0)
 
 /**
  * Receiving a line: `arrived` may be less than ordered.

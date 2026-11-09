@@ -15,7 +15,7 @@ import { useSuppliers, preferredFor, linksFor, saveLink, newLink, supplierById }
 import { QuickSupplierDialog } from '@/components/anf/quick-supplier'
 import {
   usePurchasing, saveRequest, savePO, newPurchasingId, nextRequestNumber, nextPONumber, itemTotal,
-  submitRequest, approveRequest, rejectRequest, withdrawRequest, isBuyer, notifyEmergencyPO, logEvent, eventsFor, deleteRequest, requestTotal, lineTotalVat, lineRules, receivePlan, approvalOf, isApprover, requestStatus, REQ_STATUS, APPROVAL_LIMIT_THB, type ReqStatus,
+  submitRequest, sendBackForApproval, needsReapproval, approveRequest, rejectRequest, withdrawRequest, isBuyer, notifyEmergencyPO, logEvent, eventsFor, deleteRequest, requestTotal, lineTotalVat, lineRules, receivePlan, approvalOf, isApprover, requestStatus, REQ_STATUS, APPROVAL_LIMIT_THB, type ReqStatus,
 } from '@/lib/supabase/purchasing'
 import type { AnfOrder, AnfRequest, AnfRequestEvent, AnfPO, AnfProduct, AnfAsset, WonJob } from '@/types'
 import { useAssets, saveAsset, moveAsset, newAssetId, nextCode, prefixFor, RACKS, SHELVES } from '@/lib/supabase/assets'
@@ -132,7 +132,18 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
   const grand = requestTotal(items)
   const appr = approvalOf(r)
   const st = requestStatus(items, r)
-  const editable = appr === 'draft' || appr === 'rejected'
+  const editable = appr === 'draft' || appr === 'rejected'   // not submitted yet (footer: Submit / Delete)
+  // The requester (plus buyer / admin) can fix the request until its lines are on a PO.
+  const isEditor = !saved || (!!me && r.created_by === me) || (!!user?.id && r.created_by_id === user.id) || buyer || role === 'admin'
+  const openLines = items.some((o) => o.status === 'to_order' && !o.po_id)
+  const canEdit = isEditor && (editable || items.length === 0 || openLines)
+  // Money edits on an approved request: back to Champ if it now reaches ฿10,000+.
+  const moneyEdited = useRef(false)
+  useEffect(() => {
+    if (!moneyEdited.current || !needsReapproval(r, grand)) return
+    moneyEdited.current = false
+    sendBackForApproval(r, grand).then(setR).catch((e: Error) => setError(e.message))
+  }, [grand, r])
   const orderable = appr === 'approved' ? items.filter((o) => o.status === 'to_order' && !o.po_id) : []
   const poOf = (id?: string | null) => (id ? pos.find((p) => p.po_id === id) : undefined)
 
@@ -201,6 +212,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
       await ensureSaved()
       const pref = p ? preferredFor(p.product_id) : null
       void logEvent(r.request_id, 'item_added', `${text} ×1`)
+      moneyEdited.current = true
       await addAnfOrder(newItem({
         item: text, product_id: p?.product_id ?? null, description: p?.code ?? null, unit: pref?.unit ?? p?.unit ?? null,
         unit_price: pref?.price ?? 0, supplier_id: pref?.supplier_id ?? null, request_id: r.request_id,
@@ -219,6 +231,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
       p.supplier_id !== undefined && p.supplier_id !== o.supplier_id && `supplier ${sup(o.supplier_id)} → ${sup(p.supplier_id)}`,
     ].filter(Boolean)
     if (parts.length) void logEvent(r.request_id, 'item_changed', `${o.item}: ${parts.join(', ')}`)
+    if (p.quantity !== undefined || p.unit_price !== undefined || p.with_vat !== undefined) moneyEdited.current = true
     if (p.notes !== undefined && (p.notes ?? '') !== (o.notes ?? '')) void logEvent(r.request_id, 'note_changed', `${o.item}: ${p.notes ? `“${p.notes}”` : 'note removed'}`)
     void updateAnfOrder(o.order_id, p)
   }
@@ -303,7 +316,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
               ) : (
                 <div className="flex rounded-lg border border-border p-0.5 w-max max-w-full">
                   {FOR_KINDS.map((k) => (
-                    <button key={k.key} type="button" disabled={!editable} onClick={() => patch({ project_kind: k.key })}
+                    <button key={k.key} type="button" disabled={!canEdit} onClick={() => patch({ project_kind: k.key })}
                       className={cn('h-8 px-3 rounded-md text-[13px]', r.project_kind === k.key ? 'bg-foreground text-background font-semibold' : 'text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground')}>{k.label}</button>
                   ))}
                 </div>
@@ -312,7 +325,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
             {r.project_kind !== 'job' && (
               <div className="sm:col-span-2">
                 <label className="field-label">What is this request? *</label>
-                <input disabled={!editable} value={r.project_name ?? ''} onChange={(e) => setR({ ...r, project_name: e.target.value })} onBlur={() => saved && saveRequest(r).catch((e: Error) => setError(e.message))}
+                <input disabled={!canEdit} value={r.project_name ?? ''} onChange={(e) => setR({ ...r, project_name: e.target.value })} onBlur={() => saved && saveRequest(r).catch((e: Error) => setError(e.message))}
                   placeholder={(FOR_KINDS.find((k) => k.key === r.project_kind) ?? FOR_KINDS[0]).ph} className={inputCls} />
                 <p className="mt-1 text-[11.5px] text-muted-foreground">One short line: what it&apos;s for. This becomes the title in the list.</p>
               </div>
@@ -323,10 +336,10 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
                 {SEED_BRANCHES.map((b) => <option key={b} value={b}>{b === 'WAREHOUSE' ? 'Warehouse' : b}</option>)}
               </select>
             </div>
-            {(editable || r.notes) && (
+            {(canEdit || r.notes) && (
               <div className="sm:col-span-4">
                 <label className="field-label">Note for this request</label>
-                {editable ? (
+                {canEdit ? (
                   <>
                     <textarea rows={2} value={r.notes ?? ''} onChange={(e) => setR({ ...r, notes: e.target.value })}
                       onBlur={() => { if ((r.notes ?? '').trim() !== (savedNote.current ?? '')) { const v = (r.notes ?? '').trim() || null; savedNote.current = v; setR({ ...r, notes: v }); (saved ? saveRequest({ ...r, notes: v }) : ensureSaved({ ...r, notes: v })).catch((e: Error) => setError(e.message)); void logEvent(r.request_id, 'note_changed', v ? `“${v}”` : 'note removed') } }}
@@ -346,7 +359,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
               </tr></thead>
               <tbody>
                 {items.map((o, i) => {
-                  const rule = lineRules(r, o)
+                  const rule = lineRules(r, o, canEdit)
                   const linked = linksFor(o.product_id).map((l) => l.supplier_id)
                   const po = poOf(o.po_id)
                   return (
@@ -356,7 +369,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
                         <div className="font-medium">{o.item}</div>
                         <div className="text-[11px] text-muted-foreground">{o.description || (o.product_id ? 'catalog' : 'manual item')}
                           {!o.product_id && <button type="button" onClick={() => void saveToCatalog(o)} className="ml-1.5 underline text-[#7A5AA5]">＋ Save to catalog</button>}</div>
-                        <ItemNote note={o.notes} editable={editable} onSave={(v) => upd(o, { notes: v })} />
+                        <ItemNote note={o.notes} editable={canEdit} onSave={(v) => upd(o, { notes: v })} />
                       </td>
                       <td className="px-2 py-1.5"><input disabled={!rule.editQtyPrice} defaultValue={o.quantity} onBlur={(e) => num(e.target.value) !== o.quantity && upd(o, { quantity: num(e.target.value) })} className={cn(inputCls, 'h-8 text-right font-mono')} /></td>
                       <td className="px-2 py-1.5"><input disabled={!rule.editQtyPrice} defaultValue={o.unit ?? ''} onBlur={(e) => (e.target.value || null) !== (o.unit ?? null) && upd(o, { unit: e.target.value || null })} className={cn(inputCls, 'h-8')} /></td>
@@ -382,7 +395,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
                     </tr>
                   )
                 })}
-                {editable ? (
+                {canEdit ? (
                   <tr>
                     <td />
                     <td colSpan={9} className="px-2 py-2 relative">
@@ -405,7 +418,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
                     </td>
                   </tr>
                 ) : (
-                  <tr><td /><td colSpan={9} className="px-2 py-2 text-[12px] text-muted-foreground">{appr === 'pending' ? 'Locked while waiting for approval.' : 'Approved items are locked. Need more? Start a new request.'}</td></tr>
+                  <tr><td /><td colSpan={9} className="px-2 py-2 text-[12px] text-muted-foreground">{!isEditor ? 'Only the requester, the buyer or an admin can edit this request.' : 'Everything is on a PO now. Changes go on the PO; need more? Start a new request.'}</td></tr>
                 )}
               </tbody>
             </table>

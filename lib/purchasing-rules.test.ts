@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { AnfOrder, AnfRequest } from '@/types'
-import { requestTotal, needsApproval, approvalOf, requestStatus, lineRules, receivePlan, neededByAlert, thaiToday, APPROVAL_LIMIT_THB } from './purchasing-rules'
+import { requestTotal, needsApproval, needsReapproval, approvalOf, requestStatus, lineRules, receivePlan, neededByAlert, thaiToday, APPROVAL_LIMIT_THB } from './purchasing-rules'
 
 const line = (p: Partial<AnfOrder> = {}): AnfOrder => ({
   order_id: 'o1', item: 'Paper', quantity: 1, unit_price: 100, with_vat: true, branch: null, ordered_at: null, needed_by: null,
@@ -49,13 +49,21 @@ describe('what can be edited', () => {
     expect(lineRules(req({ status: 'draft' }), line())).toEqual({ editQtyPrice: true, editSupplier: true, remove: true, canAdd: true })
     expect(lineRules(req({ status: 'rejected' }), line()).editQtyPrice).toBe(true)
   })
-  it('nothing changes while waiting for approval', () => {
-    expect(lineRules(req({ status: 'pending' }), line())).toEqual({ editQtyPrice: false, editSupplier: false, remove: false, canAdd: false })
+  it('the requester can still fix lines while waiting or after approval', () => {
+    expect(lineRules(req({ status: 'pending' }), line())).toEqual({ editQtyPrice: true, editSupplier: true, remove: true, canAdd: true })
+    expect(lineRules(req({ status: 'approved' }), line()).editQtyPrice).toBe(true)
   })
-  it('after approval only the supplier can change, until the line is on a PO', () => {
+  it('a line on a PO is locked; someone else cannot edit', () => {
     const r = req({ status: 'approved' })
-    expect(lineRules(r, line())).toEqual({ editQtyPrice: false, editSupplier: true, remove: false, canAdd: false })
-    expect(lineRules(r, line({ po_id: 'p1', status: 'ordered' })).editSupplier).toBe(false)
+    expect(lineRules(r, line({ po_id: 'p1', status: 'ordered' }))).toEqual({ editQtyPrice: false, editSupplier: false, remove: false, canAdd: true })
+    expect(lineRules(r, line(), false)).toEqual({ editQtyPrice: false, editSupplier: false, remove: false, canAdd: false })
+  })
+  it('raising an approved request to ฿10,000+ sends it back to Champ', () => {
+    const r = req({ status: 'approved', total_thb: 5000 })
+    expect(needsReapproval(r, 9000)).toBe(false)
+    expect(needsReapproval(r, 12000)).toBe(true)
+    expect(needsReapproval(req({ status: 'approved', total_thb: 15000 }), 14000)).toBe(false)
+    expect(needsReapproval(req({ status: 'pending', total_thb: 5000 }), 12000)).toBe(false)
   })
 })
 

@@ -219,6 +219,14 @@ export async function rejectRequest(r: AnfRequest, reason: string): Promise<AnfR
   return next
 }
 /** Withdraw a waiting (or rejected) request back to draft so it can be edited. */
+/** An approved request edited up to ฿10,000+ → back to Wait for approval, Champ is told what changed. */
+export async function sendBackForApproval(r: AnfRequest, total: number): Promise<AnfRequest> {
+  const next: AnfRequest = { ...r, status: 'pending', total_thb: total, approved_by: null, approved_by_id: null, approved_at: null }
+  await saveRequest(next)
+  void logEvent(r.request_id, 'submitted', `edited to ฿${total.toLocaleString('en-US')} (was ฿${(r.total_thb ?? 0).toLocaleString('en-US')}) · sent back to Champ`)
+  notifyApprover(next, total)
+  return next
+}
 export async function withdrawRequest(r: AnfRequest): Promise<AnfRequest> {
   const next: AnfRequest = { ...r, status: 'draft', submitted_at: null, approved_by: null, approved_by_id: null, approved_at: null }
   await saveRequest(next)
