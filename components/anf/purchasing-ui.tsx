@@ -15,7 +15,7 @@ import { useSuppliers, preferredFor, linksFor, saveLink, newLink, supplierById }
 import { QuickSupplierDialog } from '@/components/anf/quick-supplier'
 import {
   usePurchasing, saveRequest, savePO, newPurchasingId, nextRequestNumber, nextPONumber, itemTotal,
-  submitRequest, sendBackForApproval, needsReapproval, approveRequest, rejectRequest, withdrawRequest, isBuyer, notifyEmergencyPO, logEvent, eventsFor, deleteRequest, requestTotal, lineTotalVat, lineRules, receivePlan, approvalOf, isApprover, requestStatus, REQ_STATUS, APPROVAL_LIMIT_THB, type ReqStatus,
+  submitRequest, sendBackForApproval, canDeleteRequest, notifyCancelled, needsReapproval, approveRequest, rejectRequest, withdrawRequest, isBuyer, notifyEmergencyPO, logEvent, eventsFor, deleteRequest, requestTotal, lineTotalVat, lineRules, receivePlan, approvalOf, isApprover, requestStatus, REQ_STATUS, APPROVAL_LIMIT_THB, type ReqStatus,
 } from '@/lib/supabase/purchasing'
 import type { AnfOrder, AnfRequest, AnfRequestEvent, AnfPO, AnfProduct, AnfAsset, WonJob } from '@/types'
 import { useAssets, saveAsset, moveAsset, newAssetId, nextCode, prefixFor, RACKS, SHELVES } from '@/lib/supabase/assets'
@@ -192,8 +192,9 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
     await act(() => submitRequest(r, items))
   }
   async function deleteDraft() {
-    if (!window.confirm(`Delete ${r.number} and its ${items.length} item(s)?`)) return
-    try { for (const o of items) await deleteAnfOrder(o.order_id); await deleteRequest(r.request_id); onClose() } catch (e) { setError((e as Error).message) }
+    const tell = appr === 'pending' ? ' Champ will be told.' : appr === 'approved' ? ' Nice will be told.' : ''
+    if (!window.confirm(`Delete ${r.number}? ${items.length} item(s) · ${baht(grand)}. This can't be undone.${tell}`)) return
+    try { for (const o of items) await deleteAnfOrder(o.order_id); await deleteRequest(r.request_id); notifyCancelled([r], me || 'Someone'); onClose() } catch (e) { setError((e as Error).message) }
   }
 
   async function ensureSaved(next = r) {
@@ -435,7 +436,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
         </div>
         {error && <p className="px-5 py-2 text-[12px] text-destructive border-t border-border">{error}</p>}
         <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-t border-border">
-          {editable && saved && <button type="button" onClick={() => void deleteDraft()} className="text-[12px] text-muted-foreground hover:text-destructive">Delete</button>}
+          {isEditor && saved && canDeleteRequest(items) && <button type="button" onClick={() => void deleteDraft()} className="text-[12px] text-muted-foreground hover:text-destructive">{editable ? 'Delete' : 'Cancel request'}</button>}
           <span className="mr-auto text-[13px] min-w-0">{hint}</span>
           {main}
         </div>

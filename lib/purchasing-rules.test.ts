@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { AnfOrder, AnfRequest } from '@/types'
-import { requestTotal, needsApproval, needsReapproval, approvalOf, requestStatus, lineRules, receivePlan, neededByAlert, thaiToday, APPROVAL_LIMIT_THB } from './purchasing-rules'
+import { requestTotal, needsApproval, needsReapproval, canDeleteRequest, approvalOf, requestStatus, lineRules, receivePlan, neededByAlert, thaiToday, APPROVAL_LIMIT_THB } from './purchasing-rules'
 
 const line = (p: Partial<AnfOrder> = {}): AnfOrder => ({
   order_id: 'o1', item: 'Paper', quantity: 1, unit_price: 100, with_vat: true, branch: null, ordered_at: null, needed_by: null,
@@ -57,6 +57,11 @@ describe('what can be edited', () => {
     const r = req({ status: 'approved' })
     expect(lineRules(r, line({ po_id: 'p1', status: 'ordered' }))).toEqual({ editQtyPrice: false, editSupplier: false, remove: false, canAdd: true })
     expect(lineRules(r, line(), false)).toEqual({ editQtyPrice: false, editSupplier: false, remove: false, canAdd: false })
+  })
+  it('a request can be deleted until something is on a PO', () => {
+    expect(canDeleteRequest([line(), line()])).toBe(true)
+    expect(canDeleteRequest([])).toBe(true)
+    expect(canDeleteRequest([line(), line({ po_id: 'p1', status: 'ordered' })])).toBe(false)
   })
   it('raising an approved request to ฿10,000+ sends it back to Champ', () => {
     const r = req({ status: 'approved', total_thb: 5000 })

@@ -19,6 +19,9 @@ export function lineRules(r: AnfRequest | null, o: Pick<AnfOrder, 'status' | 'po
   return { editQtyPrice: open, editSupplier: open, remove: open, canAdd: canEdit }
 }
 
+/** A request can be deleted while nothing on it is on a PO or received. */
+export const canDeleteRequest = (items: Pick<AnfOrder, 'status' | 'po_id'>[]) => items.every((o) => o.status === 'to_order' && !o.po_id)
+
 /** An approved request edited up to ฿10,000+ (above what was approved) goes back to the approver. */
 export const needsReapproval = (r: AnfRequest | null, newTotal: number) =>
   approvalOf(r) === 'approved' && needsApproval(newTotal) && newTotal > (r?.total_thb ?? 0)

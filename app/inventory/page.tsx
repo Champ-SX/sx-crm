@@ -8,10 +8,10 @@ import { useHydrated } from '@/hooks/use-hydrated'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { Button } from '@/components/ui/button'
 import { OrderDialog } from '@/components/anf/order-dialog'
-import { RequestDialog, CreatePODialog, ImportDialog, ProjectChip, projectTitle, itemsLine, branchLabel, hasNote } from '@/components/anf/purchasing-ui'
+import { RequestDialog, CreatePODialog, ImportDialog, ProjectChip, projectTitle, itemsLine, branchLabel, hasNote, useMe } from '@/components/anf/purchasing-ui'
 import { cn } from '@/lib/utils'
 import { ANF_ACCENT, baht, fmtDate, branchColor } from '@/lib/anf'
-import { usePurchasing, requestStatus, REQ_STATUS, requestTotal, approvalOf, isApprover, isBuyer, neededByAlert, thaiToday, type ReqStatus } from '@/lib/supabase/purchasing'
+import { usePurchasing, requestStatus, REQ_STATUS, requestTotal, approvalOf, isApprover, isBuyer, neededByAlert, thaiToday, canDeleteRequest, deleteRequest, notifyCancelled, type ReqStatus } from '@/lib/supabase/purchasing'
 import { useAuth } from '@/components/auth-provider'
 import { useOpenDeepLink } from '@/hooks/use-open-deep-link'
 import { useSuppliers } from '@/lib/supabase/suppliers'
@@ -39,6 +39,12 @@ export default function RequestsPage() {
   const [poItems, setPoItems] = useState<AnfOrder[] | null>(null)
   const [poEmergency, setPoEmergency] = useState<string | undefined>(undefined)
   const [importing, setImporting] = useState(false)
+  // Select mode: tick requests made by mistake and delete them together.
+  const [selecting, setSelecting] = useState(false)
+  const [toDelete, setToDelete] = useState<string[]>([])
+  const [deleting, setDeleting] = useState(false)
+  const me = useMe()
+  const deleteAnfOrder = useCRMStore((s) => s.deleteAnfOrder)
 
   const onBoard = (b?: string | null) => !activeBoardId || !b || b === activeBoardId
   const rows: ReqRow[] = useMemo(() => {
@@ -74,6 +80,22 @@ export default function RequestsPage() {
   const bySup = new Map<string, number>()
   for (const o of selItems) bySup.set(o.supplier_id ?? '', (bySup.get(o.supplier_id ?? '') ?? 0) + 1)
 
+  const mine = (r: AnfRequest) => (!!me && r.created_by === me) || (!!user?.id && r.created_by_id === user.id)
+  const deletable = (row: ReqRow) => !!row.req && (mine(row.req) || buyer || role === 'admin') && canDeleteRequest(row.items)
+  const delRows = rows.filter((r) => toDelete.includes(r.key) && deletable(r))
+  const stopSelecting = () => { setSelecting(false); setToDelete([]) }
+  async function deleteSelected() {
+    const n = delRows.length
+    const items = delRows.flatMap((r) => r.items)
+    if (!window.confirm(`Delete ${n} request${n > 1 ? 's' : ''}? ${delRows.map((r) => r.req!.number).join(', ')} · ${items.length} item(s) · ${baht(requestTotal(items))}. This can't be undone.`)) return
+    setDeleting(true)
+    try {
+      for (const row of delRows) { for (const o of row.items) await deleteAnfOrder(o.order_id); await deleteRequest(row.req!.request_id) }
+      notifyCancelled(delRows.map((r) => r.req!), me || 'Someone')
+      stopSelecting()
+    } catch (e) { window.alert((e as Error).message) } finally { setDeleting(false) }
+  }
+
   useOpenDeepLink(loaded, 'anf_request', (id) => requests.some((r) => r.request_id === id),
     (id) => setOpenReq(requests.find((r) => r.request_id === id) ?? null))
 
@@ -102,6 +124,9 @@ export default function RequestsPage() {
 
       <div className="px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center gap-2 border-b border-border/60">
         {chip('open', 'Open')}{lateCount ? chip('late', 'Late', lateCount) : null}{chip('pending', 'Wait for approval', counts.pending)}{chip('to_order', 'To order', counts.to_order)}{chip('ordered', 'Ordered', counts.ordered)}{chip('partial', 'Partly received', counts.partial)}{chip('received', 'Received', counts.received)}{chip('rejected', 'Rejected', counts.rejected)}{counts.draft ? chip('draft', 'Draft', counts.draft) : null}{chip('all', 'All')}
+        <button type="button" onClick={() => (selecting ? stopSelecting() : setSelecting(true))}
+          className={cn('h-7 rounded-md border px-2.5 text-[12px]', selecting ? 'border-foreground bg-foreground text-background font-semibold' : 'border-border text-muted-foreground hover:text-foreground')}>{selecting ? 'Done' : 'Select'}</button>
+        {selecting && <button type="button" onClick={() => setToDelete(shown.filter((r) => deletable(r) && r.req && mine(r.req) && approvalOf(r.req) === 'draft').map((r) => r.key))} className="text-[12px] text-[#7A5AA5] underline">Select all my drafts</button>}
         <div className="relative ml-auto w-full sm:w-64">
           <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search item, project, REQ…" className="h-8 w-full rounded-lg border border-border bg-background pl-8 pr-2 text-[13px] outline-none focus:border-foreground/40" />
@@ -125,12 +150,15 @@ export default function RequestsPage() {
               const job = jobOf(r.req)
               const total = requestTotal(r.items)
               const poIds = [...new Set(r.items.map((o) => o.po_id).filter(Boolean))] as string[]
-              const canSelect = buyer && approvalOf(r.req) === 'approved' && r.items.some((o) => o.status !== 'received' && !o.po_id)
+              const canSelect = !selecting && buyer && approvalOf(r.req) === 'approved' && r.items.some((o) => o.status !== 'received' && !o.po_id)
               const on = selected.includes(r.key)
+              const del = selecting && deletable(r)
+              const delOn = toDelete.includes(r.key)
               const single = r.req ? null : r.items[0]
               return (
-                <div key={r.key} className={cn('grid grid-cols-[28px_1fr] lg:grid-cols-[28px_2.4fr_100px_96px_100px_96px_110px_120px] gap-x-3 gap-y-1 px-4 py-2.5 border-b border-border last:border-b-0 hover:bg-muted/40', on && 'bg-[#7A5AA5]/7')}>
+                <div key={r.key} className={cn('grid grid-cols-[28px_1fr] lg:grid-cols-[28px_2.4fr_100px_96px_100px_96px_110px_120px] gap-x-3 gap-y-1 px-4 py-2.5 border-b border-border last:border-b-0 hover:bg-muted/40', on && 'bg-[#7A5AA5]/7', delOn && 'bg-destructive/7', selecting && !del && 'opacity-50')}>
                   <span className="pt-0.5">
+                    {del && <input type="checkbox" checked={delOn} onChange={() => setToDelete((s) => (delOn ? s.filter((x) => x !== r.key) : [...s, r.key]))} className="w-4 h-4 accent-red-600" aria-label="Select to delete" />}
                     {canSelect && <input type="checkbox" checked={on} onChange={() => setSelected((s) => (on ? s.filter((x) => x !== r.key) : [...s, r.key]))} className="w-4 h-4 accent-foreground" aria-label="Select for PO" />}
                   </span>
                   <button type="button" onClick={() => (r.req ? setOpenReq(r.req) : setOpenItem(single))} className="text-left min-w-0">
@@ -159,7 +187,17 @@ export default function RequestsPage() {
         )}
       </div>
 
-      {selItems.length > 0 && (
+      {selecting && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 w-[min(720px,calc(100vw-2rem))] flex flex-wrap items-center gap-3 rounded-xl bg-foreground text-background px-4 py-3 shadow-xl">
+          <b className="text-[13px]">{delRows.length ? `${delRows.length} selected · ${baht(requestTotal(delRows.flatMap((r) => r.items)))}` : 'Tick the requests to delete'}</b>
+          <span className="text-[12px] opacity-75">Only requests with nothing on a PO can be deleted.</span>
+          <span className="ml-auto flex gap-2">
+            <button type="button" onClick={stopSelecting} className="h-8 rounded-md border border-background/30 px-3 text-[12px]">Cancel</button>
+            <button type="button" disabled={!delRows.length || deleting} onClick={() => void deleteSelected()} className="h-8 rounded-md bg-red-600 text-white px-3 text-[12px] font-bold disabled:opacity-40">Delete {delRows.length || ''} request{delRows.length === 1 ? '' : 's'}</button>
+          </span>
+        </div>
+      )}
+      {!selecting && selItems.length > 0 && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 w-[min(720px,calc(100vw-2rem))] flex flex-wrap items-center gap-3 rounded-xl bg-foreground text-background px-4 py-3 shadow-xl">
           <b className="text-[13px]">{selected.length} selected · {selItems.length} item{selItems.length > 1 ? 's' : ''}</b>
           <span className="text-[12px] opacity-75 truncate">→ {[...bySup.entries()].map(([sid, n]) => `${suppliers.find((s) => s.supplier_id === sid)?.name ?? 'no supplier'} (${n})`).join(' · ')}</span>

@@ -178,6 +178,20 @@ function notifyRequester(r: AnfRequest, message: string) {
   notify({ recipient_id: m.id, recipient_name: m.name || m.email, actor: st.currentUserName || 'Champ',
     entity_type: 'anf_request', entity_id: r.request_id, entity_name: r.number, message, read: false, board_id: 'anf-order' })
 }
+/** Deleted requests that Champ was approving / Nice could order → one heads-up each. */
+export function notifyCancelled(reqs: AnfRequest[], by: string) {
+  const waiting = reqs.filter((r) => approvalOf(r) === 'pending')
+  const approved = reqs.filter((r) => approvalOf(r) === 'approved')
+  const tell = (email: string, list: AnfRequest[]) => {
+    const m = memberByEmail(email)
+    if (!m || !list.length || m.id === useCRMStore.getState().currentUserId) return
+    notify({ recipient_id: m.id, recipient_name: m.name || m.email, actor: by,
+      entity_type: 'anf_request', entity_id: list[0].request_id, entity_name: list.map((r) => r.number).join(', '),
+      message: `cancelled ${list.length} request${list.length > 1 ? 's' : ''}`, read: false, board_id: 'anf-order' })
+  }
+  tell(APPROVER_EMAIL, waiting)
+  tell(BUYER_EMAIL, approved)
+}
 function notify(n: Omit<Notification, 'id' | 'created_at'>) {
   const full: Notification = { ...n, id: `notif-${Date.now()}-${n.recipient_id}`, created_at: new Date().toISOString() }
   useCRMStore.setState((s) => ({ notifications: [full, ...s.notifications] }))
