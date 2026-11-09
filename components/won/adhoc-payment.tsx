@@ -201,7 +201,7 @@ export function AdhocSheet({ kind, title, theme, list, onClose, onChanged }: {
         {/* Footer */}
         <div className="px-5 py-3 border-t flex items-center gap-2 shrink-0">
           {canArchive && <button onClick={archive} className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground"><Archive className="w-4 h-4" /> Archive {isCurrent ? 'month' : monthLabel(viewing.month)}</button>}
-          {!editable && <span className="text-[12px] text-muted-foreground italic">{viewing?.archived ? 'Archived' : 'Past month'} — read-only</span>}
+          {!editable && <span className="text-[12px] text-muted-foreground italic">{viewing?.archived ? 'Archived' : 'Past month'} — only paid / unpaid can change</span>}
           {editable && <Button size="sm" className={`ml-auto text-white gap-1.5 ${theme.btn}`} onClick={addJob}><Plus className="w-4 h-4" /> เพิ่มงานชั่วคราว · Add temp job</Button>}
         </div>
       </DialogContent>
@@ -257,9 +257,9 @@ function AdhocJobBlock({ job, editable, allStaff, addStaff, linkClass, onPatch, 
               ? <div className="flex items-center gap-0.5"><span className="text-[11px] text-muted-foreground">฿</span><input type="number" defaultValue={s.fee_thb ?? 0} onBlur={(e) => { const v = parseInt(e.target.value, 10) || 0; if (v !== (s.fee_thb ?? 0)) setRow(s.staff_id, { fee_thb: v }) }} className="w-16 h-7 text-[12px] font-mono text-right bg-transparent border border-border rounded px-1 outline-none" /></div>
               : <span className="font-mono text-[12px] font-semibold">฿{(s.fee_thb || 0).toLocaleString()}</span>}
             <button
-              disabled={!editable}
-              onClick={() => editable && setRow(s.staff_id, { paid: !s.paid })}
-              className={`inline-flex items-center gap-1 text-[10.5px] font-semibold rounded-md px-2 py-1.5 ${s.paid ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' : 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300'} ${editable ? 'cursor-pointer' : 'cursor-default'}`}
+              title={editable ? undefined : "Mark paid / unpaid"}
+              onClick={() => setRow(s.staff_id, { paid: !s.paid })}
+              className={`inline-flex items-center gap-1 text-[10.5px] font-semibold rounded-md px-2 py-1.5 ${s.paid ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' : 'bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300'} cursor-pointer`}
             >
               {s.paid ? <Check className="w-3 h-3" /> : <Clock className="w-3 h-3" />}{s.paid ? 'จ่ายแล้ว' : 'ยังไม่จ่าย'}
             </button>
