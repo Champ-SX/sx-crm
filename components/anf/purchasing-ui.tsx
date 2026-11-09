@@ -225,6 +225,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
     // Log what changed on the line (qty / price / VAT / supplier) for the request's history.
     const sup = (id?: string | null) => supplierById(id)?.name ?? 'none'
     const parts = [
+      p.item !== undefined && p.item !== o.item && `name “${o.item}” → “${p.item}”`,
       p.quantity !== undefined && p.quantity !== o.quantity && `qty ${o.quantity} → ${p.quantity}`,
       p.unit_price !== undefined && p.unit_price !== o.unit_price && `price ${o.unit_price} → ${p.unit_price}`,
       p.with_vat !== undefined && p.with_vat !== o.with_vat && (p.with_vat ? 'VAT on' : 'VAT off'),
@@ -366,7 +367,10 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
                     <tr key={o.order_id} className="border-b border-border align-top">
                       <td className="px-3 py-2 text-muted-foreground">{i + 1}</td>
                       <td className={cn('px-2 py-2', !o.product_id && 'shadow-[inset_3px_0_0_#e8f25c]')}>
-                        <div className="font-medium">{o.item}</div>
+                        {rule.editQtyPrice
+                          ? <input defaultValue={o.item} aria-label="Item name" onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== o.item) upd(o, { item: v }); else e.target.value = o.item }}
+                              className="w-full -ml-1 rounded px-1 py-0.5 font-medium bg-transparent border border-transparent hover:border-border focus:border-foreground/40 focus:bg-background outline-none" />
+                          : <div className="font-medium">{o.item}</div>}
                         <div className="text-[11px] text-muted-foreground">{o.description || (o.product_id ? 'catalog' : 'manual item')}
                           {!o.product_id && <button type="button" onClick={() => void saveToCatalog(o)} className="ml-1.5 underline text-[#7A5AA5]">＋ Save to catalog</button>}</div>
                         <ItemNote note={o.notes} editable={canEdit} onSave={(v) => upd(o, { notes: v })} />
