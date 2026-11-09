@@ -24,14 +24,23 @@ export default function POsPage() {
   const { pos } = usePurchasing()
   const { suppliers } = useSuppliers()
   const [open, setOpen] = useState<AnfPO | null>(null)
-  const [showCancelled, setShowCancelled] = useState(false)
+  const [view, setView] = useState<'open' | 'received' | 'cancelled' | 'all'>('open')
   const [onlyEmergency, setOnlyEmergency] = useState(false)
   if (!isHydrated) return null
 
-  const boardPos = pos.filter((p) => (!activeBoardId || !p.board_id || p.board_id === activeBoardId) && (showCancelled || p.status !== 'cancelled'))
+  const itemsOf = (id: string) => anfOrders.filter((o) => o.po_id === id)
+  // Old POs hide by status: Open = not fully received yet.
+  const stageOf = (p: AnfPO) => p.status === 'cancelled' ? 'cancelled' : (() => { const it = itemsOf(p.po_id); return it.length > 0 && it.every((o) => o.status === 'received') ? 'received' : 'open' })()
+  const onBoard = pos.filter((p) => !activeBoardId || !p.board_id || p.board_id === activeBoardId)
+  const counts = { open: 0, received: 0, cancelled: 0, all: onBoard.length }
+  onBoard.forEach((p) => { counts[stageOf(p)]++ })
+  const boardPos = onBoard.filter((p) => view === 'all' || stageOf(p) === view)
   const emergencyCount = boardPos.filter((p) => p.emergency_by).length
   const list = boardPos.filter((p) => !onlyEmergency || p.emergency_by)
-  const itemsOf = (id: string) => anfOrders.filter((o) => o.po_id === id)
+  const viewChip = (k: typeof view, label: string) => (
+    <button key={k} type="button" onClick={() => setView(k)}
+      className={cn('h-7 rounded-full border px-2.5 text-[12px]', view === k ? 'border-foreground bg-foreground text-background font-semibold' : 'border-border text-muted-foreground hover:text-foreground')}>{label} {counts[k]}</button>
+  )
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
@@ -45,14 +54,14 @@ export default function POsPage() {
         {emergencyCount > 0 && (
           <button type="button" onClick={() => setOnlyEmergency((v) => !v)} className={cn('ml-auto h-7 rounded-full border px-2.5 text-[12px]', onlyEmergency ? 'border-red-600 bg-red-600 text-white font-semibold' : 'border-red-600/40 text-red-700 dark:text-red-400')}>Emergency {emergencyCount}</button>
         )}
-        <label className={cn('flex items-center gap-1.5 text-[12px] text-muted-foreground', !emergencyCount && 'ml-auto')}><input type="checkbox" checked={showCancelled} onChange={(e) => setShowCancelled(e.target.checked)} className="accent-foreground" />Show cancelled</label>
+        <div className={cn('flex flex-wrap gap-1.5', !emergencyCount && 'ml-auto')}>{viewChip('open', 'Open')}{viewChip('received', 'Received')}{viewChip('cancelled', 'Cancelled')}{viewChip('all', 'All')}</div>
       </div>
       <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-4">
         {list.length === 0 ? (
           <div className="text-center py-20">
             <FileText className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-sm font-medium">No POs yet</p>
-            <p className="text-[12px] text-muted-foreground mt-1">In Requests, tick requests (or open one) → Create PO.</p>
+            <p className="text-sm font-medium">{view === 'open' && counts.all ? 'No open POs. Everything is received.' : view === 'all' || !counts.all ? 'No POs yet' : `No ${view} POs`}</p>
+            <p className="text-[12px] text-muted-foreground mt-1">{view === 'open' && counts.all ? 'Finished POs are under Received.' : 'In Requests, tick requests (or open one) → Create PO.'}</p>
           </div>
         ) : (
           <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -234,7 +243,8 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
                   <td className="px-2 py-2 text-right font-mono">{o.unit_price ? o.unit_price.toLocaleString() : '—'}</td>
                   <td className="px-2 py-2 text-right font-mono">{lineTotalVat(o) ? baht(Math.round(lineTotalVat(o))) : '—'}</td>
                   <td className="px-2 py-2">{o.status === 'received'
-                    ? <span className="inline-flex items-center gap-1 text-[12px] text-emerald-700 dark:text-emerald-400"><Check className="w-3.5 h-3.5" />{o.received_qty ?? o.quantity}</span>
+                    ? <><span className="inline-flex items-center gap-1 text-[12px] text-emerald-700 dark:text-emerald-400"><Check className="w-3.5 h-3.5" />{o.received_qty ?? o.quantity}{o.received_at && <span className="text-muted-foreground"> · {fmtDate(o.received_at.slice(0, 10))}</span>}</span>
+                    {o.received_by && <span className="block text-[11px] text-muted-foreground">by {o.received_by}</span>}</>
                     : <button type="button" disabled={po.status !== 'ordered'} onClick={() => setReceiving(o)} className="h-7 rounded-md border border-border px-2 text-[12px] hover:bg-muted disabled:opacity-40" title={po.status !== 'ordered' ? 'Mark the PO ordered first' : ''}>Receive…</button>}</td>
                 </tr>
               ))}
