@@ -17,7 +17,19 @@ import { UserAvatar } from '@/components/shared/user-avatar'
 
 type Segment = { start: number; end: number; type: 'link' | 'mention'; url?: string }
 
-export function LinkifyText({ text }: { text: string }) {
+/** "shopee.co.th/Fudonar-กล่องเก็บของ…" — host plus a decoded, clipped path. */
+export function shortUrl(url: string, max = 32): string {
+  try {
+    const u = new URL(url.startsWith('http') ? url : 'https://' + url)
+    let path = u.pathname
+    try { path = decodeURIComponent(path) } catch { /* keep raw */ }
+    path = path.replace(/\/$/, '')
+    const host = u.hostname.replace(/^www\./, '')
+    return path.length > max ? `${host}${path.slice(0, max)}…` : `${host}${path}${u.search ? '…' : ''}`
+  } catch { return url.length > 40 ? url.slice(0, 40) + '…' : url }
+}
+
+export function LinkifyText({ text, short = false }: { text: string; short?: boolean }) {
   const teamMembers = useCRMStore((s) => s.teamMembers)
   if (!text) return null
 
@@ -77,7 +89,7 @@ export function LinkifyText({ text }: { text: string }) {
           onClick={(e) => e.stopPropagation()}
           title={`Open ${seg.url}`}
         >
-          {content}
+          {short ? <>🔗 {shortUrl(content)} ↗</> : content}
         </a>
       )
     } else {

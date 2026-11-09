@@ -1,5 +1,6 @@
 'use client'
 
+import { LinkifyText, shortUrl } from '@/components/shared/linkify-text'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import * as XLSX from 'xlsx'
@@ -346,6 +347,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
                     <textarea rows={2} value={r.notes ?? ''} onChange={(e) => setR({ ...r, notes: e.target.value })}
                       onBlur={() => { if ((r.notes ?? '').trim() !== (savedNote.current ?? '')) { const v = (r.notes ?? '').trim() || null; savedNote.current = v; setR({ ...r, notes: v }); (saved ? saveRequest({ ...r, notes: v }) : ensureSaved({ ...r, notes: v })).catch((e: Error) => setError(e.message)); void logEvent(r.request_id, 'note_changed', v ? `“${v}”` : 'note removed') } }}
                       placeholder="Optional: delivery details, who to call, why it's needed…" className={cn(inputCls, 'h-auto py-1.5')} />
+                    {/https?:\/\/|www\./.test(r.notes ?? '') && <NoteLinks text={r.notes ?? ''} />}
                     <p className="mt-1 text-[11.5px] text-muted-foreground">Internal: for Champ and the buyer, not sent to the supplier.</p>
                   </>
                 ) : <NoteBox>{r.notes}</NoteBox>}
@@ -449,7 +451,22 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
 
 // ── Notes (internal: Champ + buyer, never sent to the supplier) ─────────────
 export function NoteBox({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn('rounded-md border border-amber-300/70 bg-amber-100/60 dark:border-amber-500/30 dark:bg-amber-500/10 px-2 py-1 text-[12.5px] whitespace-pre-wrap break-words', className)}>📝 {children}</div>
+  return <div className={cn('rounded-md border border-amber-300/70 bg-amber-100/60 dark:border-amber-500/30 dark:bg-amber-500/10 px-2 py-1 text-[12.5px] whitespace-pre-wrap break-words', className)}>📝 {typeof children === 'string' ? <LinkifyText text={children} short /> : children}</div>
+}
+
+/** Links found in a note being edited, as short clickable chips. */
+function NoteLinks({ text }: { text: string }) {
+  const urls = text.match(/(https?:\/\/[^\s]+|www\.[^\s]+)/g) ?? []
+  return (
+    <div className="mt-1 flex flex-wrap gap-1.5">
+      {urls.map((u, i) => (
+        <a key={i} href={u.startsWith('http') ? u : 'https://' + u} target="_blank" rel="noopener noreferrer" title={u}
+          className="inline-flex max-w-full truncate rounded-md border border-border bg-background px-2 py-0.5 text-[12px] text-blue-600 hover:underline">
+          🔗 {shortUrl(u)} ↗
+        </a>
+      ))}
+    </div>
+  )
 }
 
 /** Per-item note: "＋ note" while editable, a yellow note when set. */
@@ -464,7 +481,7 @@ function ItemNote({ note, editable, onSave }: { note: string | null | undefined;
       className={cn(inputCls, 'mt-1 h-7 text-[12.5px]')} />
   )
   return note
-    ? <button type="button" onClick={() => { setV(note); setEditing(true) }} className="mt-1 block w-full text-left"><NoteBox>{note}</NoteBox></button>
+    ? <div role="button" tabIndex={0} title="Tap to edit" onClick={() => { setV(note); setEditing(true) }} onKeyDown={(e) => { if (e.key === 'Enter') { setV(note); setEditing(true) } }} className="mt-1 block w-full text-left cursor-text"><NoteBox>{note}</NoteBox></div>
     : <button type="button" onClick={() => { setV(''); setEditing(true) }} className="mt-0.5 text-[11.5px] text-[#7A5AA5] hover:underline">＋ note</button>
 }
 
