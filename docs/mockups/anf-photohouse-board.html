@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Photohouse Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Thai:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f1ec;--ink:#1c1b19;--mute:#6b6862;--line:#e2ded5;--acc:#7A5AA5;--rd:#2563eb;--op:#d97706;--mk:#db2777;--sp:#64748b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:13px/1.45 Inter,"IBM Plex Sans Thai",sans-serif;color:var(--ink);padding:18px 16px}
+.wrap{max-width:1240px;margin:0 auto}
+.cap{font:600 11px "IBM Plex Mono";color:var(--mute);letter-spacing:.05em;margin:24px 0 8px}
+.top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.top h1{font-size:16px;margin:0}
+.tabs{display:flex;gap:4px;margin-left:12px}.tab{padding:5px 11px;border-radius:7px;font-size:12.5px;color:var(--mute)}.tab.on{background:var(--ink);color:#fff;font-weight:600}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:12px;background:#fff}.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn{border-radius:8px;padding:6px 12px;font-weight:600;background:var(--acc);color:#fff;font-size:12.5px;white-space:nowrap}.btn.o{background:#fff;color:var(--ink);border:1px solid var(--line);font-weight:500}
+.ws{display:inline-block;font:600 10px "IBM Plex Mono";border-radius:4px;padding:1px 6px;color:#fff;letter-spacing:.03em}
+.rd{background:var(--rd)}.op{background:var(--op)}.mk{background:var(--mk)}.sp{background:var(--sp)}
+.board{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:10px}
+.col{background:#ebe8e1;border-radius:12px;padding:8px;min-width:0}
+.col h4{margin:2px 4px 8px;font-size:12.5px;display:flex;gap:6px;align-items:center}.col h4 i{font-style:normal;color:var(--mute);font-weight:500}
+.dot{width:8px;height:8px;border-radius:50%}
+.card{background:#fff;border-radius:9px;padding:9px 10px;margin-bottom:8px;border:1px solid var(--line)}
+.card b{display:block;font-size:13px;margin:4px 0 2px}
+.s{color:var(--mute);font-size:11.5px}
+.bar{height:5px;border-radius:3px;background:#eee;overflow:hidden;margin:6px 0 4px}.bar i{display:block;height:100%;background:#15803d}
+.meta{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--mute)}
+.av{display:inline-flex;width:20px;height:20px;border-radius:50%;background:#ddd6f0;color:var(--acc);font-size:10px;font-weight:700;align-items:center;justify-content:center;margin-left:-4px;border:2px solid #fff}
+.health{font-size:10.5px;font-weight:600;border-radius:4px;padding:0 5px}.ok{background:#dcfce7;color:#166534}.risk{background:#fef3c7;color:#92400e}.block{background:#fee2e2;color:#991b1b}
+.thumbs{display:flex;gap:4px;margin-top:6px}.th{width:30px;height:42px;border-radius:4px;background:linear-gradient(135deg,#f5d0fe,#c4b5fd)}.th.g{background:linear-gradient(135deg,#bae6fd,#a7f3d0)}.th.w{width:54px;height:30px;background:linear-gradient(135deg,#fde68a,#fca5a5)}
+.drawer{display:grid;grid-template-columns:1.3fr 1fr;gap:0;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.dl{padding:16px 18px;border-right:1px solid var(--line)}.dr{padding:16px 18px;background:#faf9f6}
+.dl h2{margin:6px 0 4px;font-size:18px}
+.field{display:grid;grid-template-columns:110px 1fr;gap:6px;font-size:12.5px;margin:3px 0}.field span:first-child{color:var(--mute)}
+.lbl{font:600 10.5px "IBM Plex Mono";color:var(--mute);letter-spacing:.05em;margin:14px 0 6px;display:flex;justify-content:space-between}
+.sub{display:grid;grid-template-columns:18px 1fr 70px 64px 86px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #f0ede7;font-size:12.5px}
+.ck{width:15px;height:15px;border:1.5px solid #bbb;border-radius:4px}.ck.on{background:#15803d;border-color:#15803d}
+.st{font-size:10.5px;font-weight:600;border-radius:4px;padding:1px 6px;text-align:center}.st.todo{background:#f1f5f9;color:#475569}.st.doing{background:#ffedd5;color:#9a3412}.st.done{background:#dcfce7;color:#166534}.st.rev{background:#ede9fe;color:#5b21b6}
+.upd{border-left:3px solid #15803d;padding:4px 10px;margin:6px 0;font-size:12.5px}.upd.r{border-color:#d97706}
+.assets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.asset{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff;font-size:11.5px}
+.asset .pv{height:84px;background:linear-gradient(135deg,#f5d0fe,#c4b5fd);display:flex;align-items:flex-end;padding:4px}
+.asset .pv.g{background:linear-gradient(135deg,#bae6fd,#a7f3d0)}.asset .pv.w{background:linear-gradient(135deg,#fde68a,#fca5a5)}
+.asset .pv span{background:rgba(0,0,0,.6);color:#fff;font:600 9.5px "IBM Plex Mono";border-radius:3px;padding:0 4px}
+.asset div.t{padding:5px 7px}
+.ap{font-size:10px;font-weight:600;border-radius:3px;padding:0 4px}.ap.dr{background:#f1f5f9;color:#475569}.ap.av2{background:#dcfce7;color:#166534}.ap.lv{background:#1c1b19;color:#fff}
+.drop{border:1.5px dashed var(--line);border-radius:8px;padding:10px;text-align:center;color:var(--mute);font-size:12px;margin-top:8px}
+.lib{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px}
+.libgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:10px}
+.tl{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tlr{display:grid;grid-template-columns:230px 1fr;border-bottom:1px solid #f0ede7;font-size:12.5px}
+.tlr>div:first-child{padding:8px 12px;border-right:1px solid var(--line)}
+.tlg{position:relative;height:36px;background:repeating-linear-gradient(90deg,transparent 0 calc(100%/8 - 1px),#f0ede7 calc(100%/8 - 1px) calc(100%/8))}
+.gb{position:absolute;top:9px;height:18px;border-radius:5px;color:#fff;font-size:10.5px;padding:1px 6px;font-weight:600;white-space:nowrap;overflow:hidden}
+.note{background:#fff;border-radius:12px;padding:12px 16px;margin-top:16px}.note li{margin:3px 0}
+.q{background:#fffbea;border:1px solid #f1e3a8;border-radius:12px;padding:12px 16px;margin-top:12px}.q li{margin:4px 0}
+@media(max-width:900px){.board{grid-template-columns:1fr}.drawer{grid-template-columns:1fr}.libgrid{grid-template-columns:repeat(3,1fr)}.tlr{grid-template-columns:130px 1fr}.sub{grid-template-columns:18px 1fr 64px}.sub .hm{display:none}}
+</style></head><body><div class="wrap">
+
+<p class="cap">1 · BOARD: BIG TASKS (PROJECTS) MOVE ACROSS STAGES</p>
+<div class="top">
+  <h1>Andy &amp; Fine. · Photohouse</h1>
+  <div class="tabs"><span class="tab on">Board</span><span class="tab">Timeline</span><span class="tab">Calendar</span></div>
+  <div class="chips" style="margin-left:auto"><span class="chip on">All</span><span class="chip"><span class="ws rd">R&amp;D</span></span><span class="chip"><span class="ws op">OPS</span></span><span class="chip"><span class="ws mk">MKT</span></span><span class="chip">Branch ▾</span><span class="chip">Mine</span></div>
+  <span class="btn">＋ Project</span>
+</div>
+
+<div class="board">
+  <div class="col"><h4><span class="dot" style="background:#94a3b8"></span>Idea / Backlog <i>4</i></h4>
+    <div class="card"><span class="ws rd">R&amp;D</span><b>Instant sticker print test</b><span class="s">no date yet</span></div>
+    <div class="card"><span class="ws mk">MKT</span><b>Valentine 2027 campaign</b><span class="s">Feb 2027</span></div>
+  </div>
+  <div class="col"><h4><span class="dot" style="background:#378ADD"></span>Planned <i>2</i></h4>
+    <div class="card"><span class="ws op">OPS</span><b>New Year frame · all branches</b><span class="s">Due 26 Dec · 5 branches</span>
+      <div class="bar"><i style="width:0%"></i></div><div class="meta"><span>0/6 sub-tasks</span><span><span class="av">N</span><span class="av">P</span></span></div></div>
+  </div>
+  <div class="col"><h4><span class="dot" style="background:#EF9F27"></span>In progress <i>3</i></h4>
+    <div class="card"><span class="ws op">OPS</span> <span class="health ok">On track</span><b>Christmas campaign roll-out</b><span class="s">Due 1 Dec · BACC, ICS, MEGA</span>
+      <div class="bar"><i style="width:57%"></i></div><div class="meta"><span>4/7 sub-tasks · 57%</span><span><span class="av">N</span><span class="av">A</span><span class="av">F</span></span></div>
+      <div class="thumbs"><span class="th"></span><span class="th"></span><span class="th g"></span><span class="th w"></span></div></div>
+    <div class="card"><span class="ws rd">R&amp;D</span> <span class="health risk">At risk</span><b>New camera + lighting setup</b><span class="s">Due 15 Dec</span>
+      <div class="bar"><i style="width:30%;background:#d97706"></i></div><div class="meta"><span>3/10 · waiting for lens</span><span><span class="av">C</span></span></div></div>
+  </div>
+  <div class="col"><h4><span class="dot" style="background:#7A5AA5"></span>Review <i>1</i></h4>
+    <div class="card"><span class="ws mk">MKT</span> <span class="health block">Blocked</span><b>Q1 marketing plan</b><span class="s">Waiting Champ approval</span>
+      <div class="bar"><i style="width:90%"></i></div><div class="meta"><span>9/10</span><span><span class="av">M</span></span></div></div>
+  </div>
+  <div class="col"><h4><span class="dot" style="background:#639922"></span>Done <i>12</i></h4>
+    <div class="card" style="opacity:.7"><span class="ws op">OPS</span><b>Halloween frame</b><span class="s">Done 1 Nov · live 5 branches</span></div>
+  </div>
+</div>
+
+<p class="cap">2 · OPEN A PROJECT: SUB-TASKS, STATUS UPDATES, GRAPHICS</p>
+<div class="drawer">
+  <div class="dl">
+    <span class="ws op">OPS</span> <span class="health ok">On track</span>
+    <h2>Christmas campaign roll-out</h2>
+    <div class="field"><span>Owner</span><span>Nice</span></div>
+    <div class="field"><span>Dates</span><span>10 Nov → 1 Dec 2026</span></div>
+    <div class="field"><span>Branches</span><span>BACC · ICS · MEGA</span></div>
+    <div class="field"><span>Progress</span><span><b>57%</b> · 4 of 7 sub-tasks done</span></div>
+
+    <div class="lbl"><span>SUB-TASKS</span><span style="color:var(--acc)">＋ Add</span></div>
+    <div class="sub"><span class="ck on"></span><span>Brief designer</span><span class="hm s">Nice</span><span class="hm s">10 Nov</span><span class="st done">Done</span></div>
+    <div class="sub"><span class="ck on"></span><span>Design frame 4×6 (2 options)</span><span class="hm s">Fine</span><span class="hm s">15 Nov</span><span class="st done">Done</span></div>
+    <div class="sub"><span class="ck on"></span><span>GIF + welcome screen</span><span class="hm s">Fine</span><span class="hm s">18 Nov</span><span class="st done">Done</span></div>
+    <div class="sub"><span class="ck on"></span><span>Approve artwork</span><span class="hm s">Champ</span><span class="hm s">20 Nov</span><span class="st done">Done</span></div>
+    <div class="sub"><span class="ck"></span><span>Upload to booths · BACC</span><span class="hm s">Andy</span><span class="hm s">25 Nov</span><span class="st doing">Doing</span></div>
+    <div class="sub"><span class="ck"></span><span>Upload to booths · ICS, MEGA</span><span class="hm s">Andy</span><span class="hm s">26 Nov</span><span class="st todo">To do</span></div>
+    <div class="sub"><span class="ck"></span><span>Post on IG / FB</span><span class="hm s">Mint</span><span class="hm s">1 Dec</span><span class="st todo">To do</span></div>
+
+    <div class="lbl"><span>STATUS UPDATES · REPORT</span><span style="color:var(--acc)">＋ Post update</span></div>
+    <div class="upd"><b>On track</b> · Andy · 24 Nov<br>BACC uploaded and printed a test. ICS tomorrow.</div>
+    <div class="upd r"><b>At risk</b> · Nice · 19 Nov<br>Welcome screen late 1 day, artwork approved now.</div>
+  </div>
+  <div class="dr">
+    <div class="lbl" style="margin-top:0"><span>GRAPHICS · FROM DESIGNER</span><span>6 files</span></div>
+    <div class="chips" style="margin-bottom:8px"><span class="chip on">All</span><span class="chip">Frame 2</span><span class="chip">GIF 2</span><span class="chip">Welcome 2</span></div>
+    <div class="assets">
+      <div class="asset"><div class="pv"><span>FRAME 4×6</span></div><div class="t"><b>Xmas frame A</b><br><span class="ap lv">LIVE</span> v2</div></div>
+      <div class="asset"><div class="pv"><span>FRAME 2×6</span></div><div class="t"><b>Xmas strip</b><br><span class="ap av2">APPROVED</span></div></div>
+      <div class="asset"><div class="pv g"><span>GIF</span></div><div class="t"><b>Snow GIF</b><br><span class="ap lv">LIVE</span></div></div>
+      <div class="asset"><div class="pv g"><span>GIF</span></div><div class="t"><b>Santa GIF</b><br><span class="ap dr">DRAFT</span> v1</div></div>
+      <div class="asset"><div class="pv w"><span>WELCOME</span></div><div class="t"><b>Welcome 16:9</b><br><span class="ap av2">APPROVED</span></div></div>
+      <div class="asset"><div class="pv w"><span>WELCOME</span></div><div class="t"><b>Welcome 9:16</b><br><span class="ap av2">APPROVED</span></div></div>
+    </div>
+    <div class="lbl"><span>＋ ADD GRAPHIC (GOOGLE DRIVE LINK)</span></div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:12.5px">
+      <div class="chips" style="margin-bottom:6px"><span class="chip on">Frame</span><span class="chip">GIF</span><span class="chip">Welcome screen</span></div>
+      <div style="border:1px solid var(--line);border-radius:6px;padding:6px 8px;margin-bottom:6px">Xmas frame A · 4×6</div>
+      <div style="border:1px solid var(--line);border-radius:6px;padding:6px 8px;color:var(--acc)">https://drive.google.com/file/d/1Bj…/view</div>
+      <div class="s" style="margin-top:4px">Paste a file or folder link. Must be shared with SIXSHEET.</div>
+    </div>
+    <div class="lbl"><span>EACH GRAPHIC</span></div>
+    <div class="s" style="font-size:12.5px;line-height:1.6"><b>Open in Drive ↗</b> · replace link for a new version (v3, old link kept in history)<br>Draft → <b>Approve</b> → <b>Mark live</b> at BACC ☑ ICS ☐ MEGA ☐</div>
+  </div>
+</div>
+
+<p class="cap">3 · GRAPHICS TAB: EVERY FILE, ACROSS PROJECTS</p>
+<div class="lib">
+  <div class="chips"><span class="chip on">All</span><span class="chip">Frames</span><span class="chip">GIFs</span><span class="chip">Welcome screens</span><span class="chip">Live now</span><span class="chip">Branch ▾</span><span class="chip">Search…</span></div>
+  <div class="libgrid">
+    <div class="asset"><div class="pv"><span>FRAME</span></div><div class="t"><b>Xmas frame A</b><br><span class="s">Christmas roll-out</span><br><span class="ap lv">LIVE</span> BACC</div></div>
+    <div class="asset"><div class="pv g"><span>GIF</span></div><div class="t"><b>Snow GIF</b><br><span class="s">Christmas roll-out</span><br><span class="ap lv">LIVE</span> BACC</div></div>
+    <div class="asset"><div class="pv w"><span>WELCOME</span></div><div class="t"><b>Welcome 16:9</b><br><span class="s">Christmas roll-out</span><br><span class="ap av2">APPROVED</span></div></div>
+    <div class="asset"><div class="pv"><span>FRAME</span></div><div class="t"><b>Halloween</b><br><span class="s">Halloween frame</span><br><span class="ap dr">RETIRED</span></div></div>
+    <div class="asset"><div class="pv"><span>FRAME</span></div><div class="t"><b>Basic black</b><br><span class="s">Always-on</span><br><span class="ap lv">LIVE</span> all</div></div>
+    <div class="asset"><div class="pv g"><span>GIF</span></div><div class="t"><b>Confetti</b><br><span class="s">Always-on</span><br><span class="ap lv">LIVE</span> all</div></div>
+  </div>
+  <p class="s" style="margin-top:8px">“What's live at ICS right now?” → filter Live now + ICS.</p>
+</div>
+
+<p class="cap">4 · TIMELINE TAB: WHO IS DOING WHAT, WHEN</p>
+<div class="tl">
+  <div class="tlr"><div class="s">PROJECT</div><div class="s" style="padding:8px 12px;display:flex;justify-content:space-between"><span>Nov 10</span><span>Nov 24</span><span>Dec 8</span><span>Dec 22</span></div></div>
+  <div class="tlr"><div><span class="ws op">OPS</span> Christmas roll-out</div><div class="tlg"><span class="gb op" style="left:2%;width:42%">57%</span></div></div>
+  <div class="tlr"><div><span class="ws rd">R&amp;D</span> Camera + lighting</div><div class="tlg"><span class="gb rd" style="left:10%;width:62%">30% · at risk</span></div></div>
+  <div class="tlr"><div><span class="ws op">OPS</span> New Year frame</div><div class="tlg"><span class="gb op" style="left:55%;width:40%;opacity:.6">planned</span></div></div>
+  <div class="tlr"><div><span class="ws mk">MKT</span> Q1 marketing plan</div><div class="tlg"><span class="gb mk" style="left:0%;width:30%">review</span></div></div>
+</div>
+
+<div class="note">
+  <b>How it works</b>
+  <ul>
+    <li><b>Project = big task</b> with a type: <span class="ws rd">R&amp;D</span> <span class="ws op">OPS</span> <span class="ws mk">MKT</span>. It moves Idea → Planned → In progress → Review → Done.</li>
+    <li><b>Sub-tasks</b> each have an owner, due date and status (To do / Doing / Done). Progress % = done sub-tasks. Sub-tasks also show in each person's "Mine".</li>
+    <li><b>Status updates</b>: Ops posts On track / At risk / Blocked + a short note. The latest one shows on the card, so the board is the weekly report.</li>
+    <li><b>Graphics</b>: designers upload Frame / GIF / Welcome screen to the project. Files stay in Google Drive; the CRM keeps type, name, Drive link and status. Each goes Draft → Approved → Live at branches. Tiles show a type icon (no thumbnails, Drive files are private). The Graphics tab answers "what's live where".</li>
+    <li><b>Templates</b>: "New campaign" pre-fills the usual sub-tasks (brief, design frame, GIF, welcome, approve, upload per branch, post).</li>
+  </ul>
+</div>
+<div class="q" style="background:#eef6ff;border-color:#bfdbfe">
+  <b>Existing cards: moved automatically, nothing lost</b>
+  <ul>
+    <li><b>New → Idea / Backlog</b> · <b>In progress → In progress</b> · <b>Waiting → In progress</b> + status “Blocked” with the waiting reason as the note · <b>Solved → Done</b>.</li>
+    <li>Card detail stays the same: type, branch/room, dates, assignees, details, activity log on the right. Checklists become <b>Sub-tasks</b> (same items, now with owner + due).</li>
+    <li>Types (ลงเฟรม, R&amp;D, Content / PR…) stay as the colour tag. Issue level / area only show on old issue-type cards.</li>
+  </ul>
+</div>
+<div class="q">
+  <b>Decide</b>
+  <ul>
+    <li><b>Who approves</b> artwork: only Champ, or also a marketing lead?</li>
+  </ul>
+</div>
+</div></body></html>

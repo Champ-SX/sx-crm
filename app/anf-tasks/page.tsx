@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { toast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
 import {
-  ANF_COLUMNS, WAITING_REASONS, AUTO_ARCHIVE_DAYS, checklistProgress, fetchAnf, createAnfTask, updateAnfTask, deleteAnfTask, createAnfType, notifyCritical, uid,
+  ANF_COLUMNS, AUTO_ARCHIVE_DAYS, checklistProgress, fetchAnf, createAnfTask, updateAnfTask, deleteAnfTask, createAnfType, notifyCritical, uid,
   type AnfTask, type AnfTaskType, type AnfPlace, type AnfColumn,
 } from '@/lib/supabase/anf-tasks'
 import { AddTaskDialog } from '@/components/anf/add-task-dialog'
@@ -48,7 +48,7 @@ export default function AnfTasksPage() {
         if (!alive) return
         // Solved for more than AUTO_ARCHIVE_DAYS → archive, so the Solved column stays short.
         const cutoff = Date.now() - AUTO_ARCHIVE_DAYS * 86400000
-        const stale = r.tasks.filter((t) => t.column_id === 'solved' && !t.is_archived && new Date(t.solved_at ?? t.updated_at).getTime() < cutoff)
+        const stale = r.tasks.filter((t) => t.column_id === 'done' && !t.is_archived && new Date(t.solved_at ?? t.updated_at).getTime() < cutoff)
         stale.forEach((t) => { void updateAnfTask(t.task_id, { is_archived: true }) })
         const staleIds = new Set(stale.map((t) => t.task_id))
         setTasks(r.tasks.map((t) => (staleIds.has(t.task_id) ? { ...t, is_archived: true } : t)))
@@ -65,7 +65,6 @@ export default function AnfTasksPage() {
   const [showArchived, setShowArchived] = useState(false)
   const [adding, setAdding] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)
-  const [waitFor, setWaitFor] = useState<{ id: string; reason: string; note: string; position?: number } | null>(null)
   const [dragId, setDragId] = useState<string | null>(null)
   const [calStart, setCalStart] = useState(() => iso(new Date()))
 
@@ -82,17 +81,15 @@ export default function AnfTasksPage() {
     setTasks((ts) => ts.map((t) => (t.task_id === id ? { ...t, ...p } : t)))
     updateAnfTask(id, p).catch((e) => { toast(`Couldn't save — ${e instanceof Error ? e.message : 'error'}`); reload() })
   }
-  /** Column moves record who took / finished the task; Waiting asks why first. */
-  const move = (id: string, col: AnfColumn, waiting?: { reason: string; note: string }, position = -1) => {
+  /** Column moves record who started / finished the task. */
+  const move = (id: string, col: AnfColumn, position = -1) => {
     const t = tasks.find((x) => x.task_id === id)
     if (!t || t.column_id === col) return
-    if (col === 'waiting' && !waiting) { setWaitFor({ id, reason: '', note: '', position }); return }
     const now = new Date().toISOString()
     const p: Partial<AnfTask> = { column_id: col, position }
     if (col === 'progress' && !t.taken_by) Object.assign(p, { taken_by: author, taken_at: now })
-    if (col === 'solved') Object.assign(p, { solved_by: author, solved_at: now })
-    if (col !== 'solved' && t.solved_by) Object.assign(p, { solved_by: null, solved_at: null })
-    if (col === 'waiting') Object.assign(p, { waiting_reason: waiting!.reason, waiting_note: waiting!.note || null })
+    if (col === 'done') Object.assign(p, { solved_by: author, solved_at: now })
+    if (col !== 'done' && t.solved_by) Object.assign(p, { solved_by: null, solved_at: null })
     patch(id, p)
   }
   const create = (t: AnfTask) => {
@@ -143,7 +140,7 @@ export default function AnfTasksPage() {
     const order = new Map(list.map((t, i) => [t.task_id, i]))
     setTasks((ts) => ts.map((t) => (order.has(t.task_id) && t.task_id !== id ? { ...t, position: order.get(t.task_id)! } : t)))
     list.forEach((t, i) => { if (t.task_id !== id && t.position !== i) void updateAnfTask(t.task_id, { position: i }) })
-    if (col !== task.column_id) move(id, col, undefined, order.get(id))
+    if (col !== task.column_id) move(id, col, order.get(id))
     else patch(id, { position: order.get(id)! })
   }
 
@@ -163,7 +160,7 @@ export default function AnfTasksPage() {
   }).filter((x) => x.end >= first && x.start <= last)
   const ranges = dated.filter((x) => x.start !== x.end)
   const singles = dated.filter((x) => x.start === x.end)
-  const noDate = shown.filter((t) => !t.due_date && t.column_id !== 'solved')
+  const noDate = shown.filter((t) => !t.due_date && t.column_id !== 'done')
 
   return (
     <div className="flex flex-col h-[100dvh]">
@@ -172,7 +169,7 @@ export default function AnfTasksPage() {
         <MobileMenuButton />
         <div className="min-w-0">
           <h1 className="text-[15px] sm:text-[17px] font-semibold tracking-tight">Andy &amp; Fine. · Tasks</h1>
-          <p className="text-[12px] text-muted-foreground hidden sm:block">{shown.filter((t) => t.column_id !== 'solved').length} open · {byCol('solved').length} solved</p>
+          <p className="text-[12px] text-muted-foreground hidden sm:block">{shown.filter((t) => t.column_id !== 'done').length} open · {byCol('done').length} done</p>
         </div>
         <div className="inline-flex rounded-lg border border-border bg-card p-0.5" role="tablist" aria-label="View">
           {([['board', 'Board', LayoutGrid], ['calendar', 'Calendar', CalendarDays]] as const).map(([v, l, Icon]) => (
@@ -324,25 +321,6 @@ export default function AnfTasksPage() {
           onDelete={() => { setOpenId(null); setTasks((ts) => ts.filter((t) => t.task_id !== open.task_id)); void deleteAnfTask(open.task_id) }} />
       )}
 
-      {/* Waiting needs a reason */}
-      {waitFor && (
-        <Dialog open onOpenChange={(o) => !o && setWaitFor(null)}>
-          <DialogContent className="sm:max-w-[380px]">
-            <DialogTitle>Waiting for what?</DialogTitle>
-            <div className="flex flex-wrap gap-1.5">
-              {WAITING_REASONS.map((r) => (
-                <button key={r.id} type="button" onClick={() => setWaitFor({ ...waitFor, reason: r.id })}
-                  className={cn('rounded-lg border px-2.5 py-1.5 text-[13px]', waitFor.reason === r.id ? 'border-foreground font-medium' : 'border-border')}>{r.label}</button>
-              ))}
-            </div>
-            <Input value={waitFor.note} onChange={(e) => setWaitFor({ ...waitFor, note: e.target.value })} placeholder="Note — e.g. TRUE technician booked Thu" className="text-[13px]" />
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => setWaitFor(null)}>Cancel</Button>
-              <Button size="sm" disabled={!waitFor.reason} onClick={() => { move(waitFor.id, 'waiting', { reason: waitFor.reason, note: waitFor.note }, waitFor.position); setWaitFor(null) }}>Move to Waiting</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   )
 }

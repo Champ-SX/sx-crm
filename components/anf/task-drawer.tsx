@@ -11,11 +11,13 @@ import { ActivityPanel } from '@/components/shared/activity-panel'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
 import { LinkifyText } from '@/components/shared/linkify-text'
-import { Archive, ArchiveRestore, Plus, Trash2, X, UserCheck, CircleCheck, Hourglass } from 'lucide-react'
+import { Archive, ArchiveRestore, Plus, Trash2, X, UserCheck, CircleCheck, ExternalLink } from 'lucide-react'
+import { useCRMStore } from '@/store/crm-store'
+import { useAuth } from '@/components/auth-provider'
 import { cn, parseDbDate } from '@/lib/utils'
 import {
-  ANF_COLUMNS, ISSUE_LEVELS, AREAS, WAITING_REASONS, buildTaskTitle, checklistProgress, uid,
-  type AnfTask, type AnfTaskType, type AnfPlace, type AnfColumn, type Checklist,
+  ANF_COLUMNS, ISSUE_LEVELS, AREAS, HEALTH, GRAPHIC_KINDS, GRAPHIC_STATUS, buildTaskTitle, checklistProgress, uid,
+  type AnfTask, type AnfTaskType, type AnfPlace, type AnfColumn, type Checklist, type AnfHealth, type AnfGraphic, type GraphicKind,
 } from '@/lib/supabase/anf-tasks'
 import { Chip } from './task-ui'
 
@@ -38,6 +40,41 @@ export function TaskDrawer({ task, types, places, onClose, onPatch, onMove, onDe
   const branchId = branches.find((b) => b.name === task.branch)?.place_id
   const rooms = places.filter((p) => p.kind === 'room' && (!p.branch_id || !branchId || p.branch_id === branchId))
   const prog = checklistProgress(task)
+  const teamMembers = useCRMStore((s) => s.teamMembers)
+  const addActivity = useCRMStore((s) => s.addActivity)
+  const { user } = useAuth()
+  const me = user?.user_metadata?.full_name ?? user?.email ?? 'Someone'
+  const [health, setHealth] = useState<AnfHealth | null>(null)
+  const [healthNote, setHealthNote] = useState('')
+  const [gKind, setGKind] = useState<GraphicKind>('frame')
+  const [gName, setGName] = useState('')
+  const [gUrl, setGUrl] = useState('')
+  const [gOpen, setGOpen] = useState(false)
+  const graphics = task.graphics ?? []
+  const setGraphics = (g: AnfGraphic[]) => onPatch({ graphics: g })
+  const log = (title: string, description = '') => void addActivity({
+    activity_id: uid('a'), entity_type: 'anf_task', entity_id: task.task_id, activity_type: 'note',
+    title, description, created_by: me, created_at: new Date().toISOString(),
+  })
+  function postUpdate() {
+    if (!health) return
+    const h = HEALTH.find((x) => x.id === health)!
+    onPatch({ health, health_note: healthNote.trim() || null, health_by: me, health_at: new Date().toISOString() })
+    log(`📊 Status: ${h.label}`, healthNote.trim())
+    setHealth(null); setHealthNote('')
+  }
+  function addGraphic() {
+    const url = gUrl.trim()
+    if (!/^https?:\/\//.test(url) || !gName.trim()) return
+    const g: AnfGraphic = { id: uid('g'), kind: gKind, name: gName.trim(), url, status: 'draft', live_at: [], version: 1, added_by: me, added_at: new Date().toISOString() }
+    setGraphics([...graphics, g])
+    log(`🖼️ Graphic added: ${GRAPHIC_KINDS.find((k) => k.id === gKind)?.label} · ${g.name}`, url)
+    setGName(''); setGUrl(''); setGOpen(false)
+  }
+  const patchGraphic = (id: string, p: Partial<AnfGraphic>, note?: string) => {
+    setGraphics(graphics.map((g) => (g.id === id ? { ...g, ...p } : g)))
+    if (note) log(note)
+  }
 
   // Title keeps its created date; name / branch / room rebuild the rest.
   const retitle = (p: Partial<AnfTask>) => {
@@ -60,15 +97,36 @@ export function TaskDrawer({ task, types, places, onClose, onPatch, onMove, onDe
       </div>
 
       {/* Owner trail (replaces the รับเรื่อง / เสร็จสิ้น checklist) */}
-      {(task.taken_by || task.solved_by || task.column_id === 'waiting') && (
+      {(task.taken_by || task.solved_by) && (
         <div className="rounded-lg bg-muted/50 px-3 py-2 space-y-1 text-[12px]">
-          {task.taken_by && <div className="flex items-center gap-1.5"><UserCheck className="w-3.5 h-3.5 text-amber-600" />รับเรื่อง: <b>{task.taken_by}</b> · {when(task.taken_at)}</div>}
-          {task.column_id === 'waiting' && (
-            <div className="flex items-center gap-1.5"><Hourglass className="w-3.5 h-3.5 text-blue-600" />Waiting: <b>{WAITING_REASONS.find((r) => r.id === task.waiting_reason)?.label ?? '—'}</b>{task.waiting_note && <> · {task.waiting_note}</>}</div>
-          )}
-          {task.solved_by && <div className="flex items-center gap-1.5"><CircleCheck className="w-3.5 h-3.5 text-emerald-600" />เสร็จสิ้น: <b>{task.solved_by}</b> · {when(task.solved_at)}</div>}
+          {task.taken_by && <div className="flex items-center gap-1.5"><UserCheck className="w-3.5 h-3.5 text-amber-600" />Started: <b>{task.taken_by}</b> · {when(task.taken_at)}</div>}
+          {task.solved_by && <div className="flex items-center gap-1.5"><CircleCheck className="w-3.5 h-3.5 text-emerald-600" />Done: <b>{task.solved_by}</b> · {when(task.solved_at)}</div>}
         </div>
       )}
+
+      {/* Status update (report) */}
+      <div className="rounded-lg border border-border p-2.5">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={cn(label, 'mb-0')}>STATUS</span>
+          {task.health ? (() => { const h = HEALTH.find((x) => x.id === task.health)!; return (
+            <span className="flex items-center gap-1.5 min-w-0 text-[12.5px]"><span className={cn('rounded px-1.5 py-px text-[11.5px] font-semibold', h.cls)}>{h.label}</span>
+              {task.health_note && <span className="min-w-0">{task.health_note}</span>}
+              {task.health_at && <span className="text-[11px] text-muted-foreground">· {task.health_by ? `${task.health_by} · ` : ''}{when(task.health_at)}</span>}</span>
+          ) })() : <span className="text-[12px] text-muted-foreground">No update yet</span>}
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          {HEALTH.map((h) => (
+            <button key={h.id} type="button" onClick={() => setHealth(health === h.id ? null : h.id)}
+              className={cn('rounded-md border px-2 py-0.5 text-[12px]', health === h.id ? 'border-foreground font-semibold' : 'border-border text-muted-foreground hover:text-foreground')}>{h.label} · {h.th}</button>
+          ))}
+        </div>
+        {health && (
+          <div className="mt-2 flex gap-2">
+            <Input autoFocus value={healthNote} onChange={(e) => setHealthNote(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && postUpdate()} placeholder="What's happening? e.g. BACC uploaded, ICS tomorrow" className="h-8 text-[13px]" />
+            <Button size="sm" className="h-8" onClick={postUpdate}>Post update</Button>
+          </div>
+        )}
+      </div>
 
       <div>
         <span className={label}>TASK</span>
@@ -145,9 +203,9 @@ export function TaskDrawer({ task, types, places, onClose, onPatch, onMove, onDe
       {/* Checklists */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <span className={label}>CHECKLISTS {prog.total > 0 && `· ${prog.done}/${prog.total}`}</span>
-          <button type="button" onClick={() => setLists([...task.checklists, { id: uid('c'), name: 'Checklist', items: [] }])}
-            className="text-[12px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"><Plus className="w-3 h-3" />Add checklist</button>
+          <span className={label}>SUB-TASKS {prog.total > 0 && `· ${prog.done}/${prog.total} · ${Math.round((prog.done / prog.total) * 100)}%`}</span>
+          <button type="button" onClick={() => setLists([...task.checklists, { id: uid('c'), name: 'Sub-tasks', items: [] }])}
+            className="text-[12px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"><Plus className="w-3 h-3" />Add group</button>
         </div>
         {task.checklists.map((cl) => {
           const up = (items = cl.items, nm = cl.name) => setLists(task.checklists.map((c) => (c.id === cl.id ? { ...c, items, name: nm } : c)))
@@ -159,14 +217,23 @@ export function TaskDrawer({ task, types, places, onClose, onPatch, onMove, onDe
                   className="text-muted-foreground hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
               {cl.items.map((it) => (
-                <label key={it.id} className="group flex items-center gap-2 py-1 text-[13px] cursor-pointer">
-                  <input type="checkbox" checked={it.done} onChange={() => up(cl.items.map((x) => (x.id === it.id ? { ...x, done: !x.done } : x)))} className="w-4 h-4 accent-foreground" />
-                  <span className={cn('flex-1', it.done && 'line-through text-muted-foreground')}>{it.text}</span>
-                  <button type="button" aria-label="Remove item" onClick={(e) => { e.preventDefault(); up(cl.items.filter((x) => x.id !== it.id)) }}
+                <div key={it.id} className="group flex items-center gap-2 py-1 text-[13px]">
+                  <label className="flex flex-1 min-w-0 items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={it.done} onChange={() => up(cl.items.map((x) => (x.id === it.id ? { ...x, done: !x.done } : x)))} className="w-4 h-4 accent-foreground" />
+                    <span className={cn('flex-1 min-w-0', it.done && 'line-through text-muted-foreground')}>{it.text}</span>
+                  </label>
+                  <select value={it.owner ?? ''} onChange={(e) => up(cl.items.map((x) => (x.id === it.id ? { ...x, owner: e.target.value || null } : x)))}
+                    className={cn('h-6 max-w-[96px] rounded border border-transparent bg-transparent text-[11.5px] hover:border-border', it.owner ? 'text-foreground' : 'text-muted-foreground')} aria-label="Owner">
+                    <option value="">owner</option>{teamMembers.map((m) => <option key={m.id} value={m.name || m.email}>{m.name || m.email}</option>)}
+                    {it.owner && !teamMembers.some((m) => (m.name || m.email) === it.owner) && <option>{it.owner}</option>}
+                  </select>
+                  <input type="date" value={it.due ?? ''} onChange={(e) => up(cl.items.map((x) => (x.id === it.id ? { ...x, due: e.target.value || null } : x)))}
+                    className={cn('h-6 w-[108px] rounded border border-transparent bg-transparent text-[11.5px] hover:border-border', !it.due && 'text-muted-foreground', it.due && !it.done && it.due < new Date().toISOString().slice(0, 10) && 'text-red-600 font-semibold')} aria-label="Due" />
+                  <button type="button" aria-label="Remove item" onClick={() => up(cl.items.filter((x) => x.id !== it.id))}
                     className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"><X className="w-3.5 h-3.5" /></button>
-                </label>
+                </div>
               ))}
-              <input value={newItem[cl.id] ?? ''} onChange={(e) => setNewItem({ ...newItem, [cl.id]: e.target.value })} placeholder="+ Add item"
+              <input value={newItem[cl.id] ?? ''} onChange={(e) => setNewItem({ ...newItem, [cl.id]: e.target.value })} placeholder="+ Add sub-task"
                 onKeyDown={(e) => {
                   const v = (newItem[cl.id] ?? '').trim()
                   if (e.key === 'Enter' && v) { up([...cl.items, { id: uid('i'), text: v, done: false }]); setNewItem({ ...newItem, [cl.id]: '' }) }
@@ -175,6 +242,57 @@ export function TaskDrawer({ task, types, places, onClose, onPatch, onMove, onDe
             </div>
           )
         })}
+      </div>
+
+      {/* Graphics: Google Drive links */}
+      <div>
+        <div className="flex items-center justify-between">
+          <span className={label}>GRAPHICS · GOOGLE DRIVE {graphics.length > 0 && `· ${graphics.length}`}</span>
+          <button type="button" onClick={() => setGOpen((v) => !v)} className="text-[12px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"><Plus className="w-3 h-3" />Add link</button>
+        </div>
+        {gOpen && (
+          <div className="rounded-lg border border-border p-2.5 mb-2 space-y-2">
+            <div className="flex flex-wrap gap-1.5">{GRAPHIC_KINDS.map((k) => <Chip key={k.id} on={gKind === k.id} onClick={() => setGKind(k.id)} className="py-1">{k.icon} {k.label}</Chip>)}</div>
+            <Input value={gName} onChange={(e) => setGName(e.target.value)} placeholder="Name — e.g. Xmas frame A 4×6" className="h-8 text-[13px]" />
+            <div className="flex gap-2">
+              <Input value={gUrl} onChange={(e) => setGUrl(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addGraphic()} placeholder="https://drive.google.com/…" className="h-8 text-[13px]" />
+              <Button size="sm" className="h-8" disabled={!gName.trim() || !/^https?:\/\//.test(gUrl.trim())} onClick={addGraphic}>Add</Button>
+            </div>
+            <p className="text-[11px] text-muted-foreground">File or folder link. Share it with the team in Drive.</p>
+          </div>
+        )}
+        {graphics.length === 0 && !gOpen && <p className="text-[12px] text-muted-foreground">No graphics yet. Designers add Frame, GIF or Welcome screen links here.</p>}
+        <div className="space-y-1.5">
+          {graphics.map((g) => {
+            const k = GRAPHIC_KINDS.find((x) => x.id === g.kind)
+            const st = GRAPHIC_STATUS.find((x) => x.id === g.status)!
+            return (
+              <div key={g.id} className="rounded-lg border border-border px-2.5 py-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-[16px]" title={k?.label}>{k?.icon}</span>
+                  <a href={g.url} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 truncate text-[13px] font-medium hover:underline" title={g.url}>{g.name} <ExternalLink className="inline w-3 h-3 text-muted-foreground" /></a>
+                  <span className="text-[10.5px] text-muted-foreground">v{g.version}</span>
+                  <select value={g.status} onChange={(e) => patchGraphic(g.id, { status: e.target.value as AnfGraphic['status'] }, `🖼️ ${g.name}: ${GRAPHIC_STATUS.find((x) => x.id === e.target.value)?.label}`)}
+                    className={cn('h-6 rounded px-1 text-[11px] font-semibold border-0', st.cls)} aria-label="Graphic status">
+                    {GRAPHIC_STATUS.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+                  </select>
+                </div>
+                <div className="mt-1.5 flex flex-wrap items-center gap-1 text-[11.5px]">
+                  <span className="text-muted-foreground mr-0.5">{k?.label} · live at</span>
+                  {branches.map((b) => {
+                    const on = g.live_at.includes(b.name)
+                    return <button key={b.place_id} type="button" onClick={() => { const live_at = on ? g.live_at.filter((x) => x !== b.name) : [...g.live_at, b.name]; patchGraphic(g.id, { live_at, ...(!on && g.status !== 'live' ? { status: 'live' as const } : {}) }, `🖼️ ${g.name} ${on ? 'removed from' : 'live at'} ${b.name}`) }}
+                      className={cn('rounded border px-1.5 py-px', on ? 'border-foreground bg-foreground text-background' : 'border-border text-muted-foreground hover:text-foreground')}>{on ? '✓ ' : ''}{b.name}</button>
+                  })}
+                  <span className="ml-auto flex gap-2">
+                    <button type="button" className="text-muted-foreground hover:text-foreground underline" onClick={() => { const u = window.prompt('New version — paste the new Drive link', ''); if (u && /^https?:\/\//.test(u.trim())) patchGraphic(g.id, { url: u.trim(), version: g.version + 1, old_urls: [...(g.old_urls ?? []), g.url], status: 'draft' }, `🖼️ ${g.name}: new version v${g.version + 1}`) }}>New version</button>
+                    <button type="button" className="text-muted-foreground hover:text-destructive" aria-label="Remove graphic" onClick={() => window.confirm(`Remove “${g.name}”? The Drive file is not touched.`) && (setGraphics(graphics.filter((x) => x.id !== g.id)), log(`🖼️ Graphic removed: ${g.name}`))}><Trash2 className="w-3.5 h-3.5" /></button>
+                  </span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       <div className="flex items-center gap-2 pt-2 border-t border-border">

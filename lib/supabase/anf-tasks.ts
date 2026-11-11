@@ -4,13 +4,42 @@ import { format } from 'date-fns'
 // ── Andy & Fine. task board ───────────────────────────────────────────────────
 export const ANF_BOARD = 'anf'
 
-export type AnfColumn = 'new' | 'progress' | 'waiting' | 'solved'
+export type AnfColumn = 'idea' | 'planned' | 'progress' | 'review' | 'done'
 export const ANF_COLUMNS: { id: AnfColumn; label: string; th: string; dot: string }[] = [
-  { id: 'new',      label: 'New',         th: 'แจ้งใหม่',          dot: '#E24B4A' },
-  { id: 'progress', label: 'In progress', th: 'ดำเนินการอยู่',     dot: '#EF9F27' },
-  { id: 'waiting',  label: 'Waiting',     th: 'รอของ / ลูกค้า',    dot: '#378ADD' },
-  { id: 'solved',   label: 'Solved',      th: 'แก้ไขเรียบร้อย',    dot: '#639922' },
+  { id: 'idea',     label: 'Idea / Backlog', th: 'ไอเดีย',          dot: '#94a3b8' },
+  { id: 'planned',  label: 'Planned',        th: 'วางแผนแล้ว',      dot: '#378ADD' },
+  { id: 'progress', label: 'In progress',    th: 'กำลังทำ',         dot: '#EF9F27' },
+  { id: 'review',   label: 'Review',         th: 'รอตรวจ / อนุมัติ', dot: '#7A5AA5' },
+  { id: 'done',     label: 'Done',           th: 'เสร็จแล้ว',        dot: '#639922' },
 ]
+
+// Status update (Ops reports on a task). Latest one shows on the card.
+export type AnfHealth = 'on_track' | 'at_risk' | 'blocked'
+export const HEALTH: { id: AnfHealth; label: string; th: string; cls: string }[] = [
+  { id: 'on_track', label: 'On track', th: 'ตามแผน',  cls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300' },
+  { id: 'at_risk',  label: 'At risk',  th: 'เสี่ยง',   cls: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300' },
+  { id: 'blocked',  label: 'Blocked',  th: 'ติดขัด',  cls: 'bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300' },
+]
+
+// Graphics live in Google Drive; the board keeps the link + where it's live.
+export type GraphicKind = 'frame' | 'gif' | 'welcome' | 'other'
+export const GRAPHIC_KINDS: { id: GraphicKind; label: string; icon: string }[] = [
+  { id: 'frame', label: 'Frame', icon: '🖼️' }, { id: 'gif', label: 'GIF', icon: '🎞️' },
+  { id: 'welcome', label: 'Welcome screen', icon: '👋' }, { id: 'other', label: 'Other', icon: '📎' },
+]
+export type GraphicStatus = 'draft' | 'approved' | 'live' | 'retired'
+export const GRAPHIC_STATUS: { id: GraphicStatus; label: string; cls: string }[] = [
+  { id: 'draft', label: 'Draft', cls: 'bg-muted text-muted-foreground' },
+  { id: 'approved', label: 'Approved', cls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300' },
+  { id: 'live', label: 'Live', cls: 'bg-foreground text-background' },
+  { id: 'retired', label: 'Retired', cls: 'bg-muted text-muted-foreground line-through' },
+]
+export interface AnfGraphic {
+  id: string; kind: GraphicKind; name: string; url: string; status: GraphicStatus
+  live_at: string[]             // branches where it's live
+  version: number; old_urls?: string[]
+  added_by: string | null; added_at: string
+}
 
 export type IssueLevel = 'critical' | 'major' | 'minor'
 export const ISSUE_LEVELS: { id: IssueLevel; label: string; th: string; cls: string }[] = [
@@ -27,7 +56,7 @@ export const WAITING_REASONS = [
   { id: 'vendor', label: 'Vendor / ISP' }, { id: 'other', label: 'Other / อื่นๆ' },
 ]
 
-export interface ChecklistItem { id: string; text: string; done: boolean }
+export interface ChecklistItem { id: string; text: string; done: boolean; owner?: string | null; due?: string | null }
 export interface Checklist { id: string; name: string; items: ChecklistItem[] }
 
 export interface AnfTaskType { type_id: string; name: string; color: string; default_checklist: string[]; is_issue: boolean; sort_order: number }
@@ -57,6 +86,11 @@ export interface AnfTask {
   taken_at: string | null
   solved_by: string | null
   solved_at: string | null
+  health?: AnfHealth | null
+  health_note?: string | null
+  health_by?: string | null
+  health_at?: string | null
+  graphics?: AnfGraphic[]
   is_archived: boolean
   trello_id?: string | null
   created_by: string | null
@@ -101,13 +135,19 @@ const mk = (p: Partial<AnfTask> & Pick<AnfTask, 'name' | 'column_id'>): AnfTask 
   created_at: now(), updated_at: now(), ...p,
 })
 let mockTasks: AnfTask[] = [
-  mk({ name: 'Printer jams on 4×6 · DNP RX1', column_id: 'new', type_id: 'maintenance', issue_level: 'critical', area: 'printer', branch: 'BACC', room: 'A64', due_date: d(3), assignee_ids: ['u-nong'],
+  mk({ name: 'Printer jams on 4×6 · DNP RX1', column_id: 'idea', type_id: 'maintenance', issue_level: 'critical', area: 'printer', branch: 'BACC', room: 'A64', due_date: d(3), assignee_ids: ['u-nong'],
     checklists: [{ id: 'c1', name: 'Fix', items: [{ id: 'i1', text: 'Clean rollers', done: false }, { id: 'i2', text: 'Test print 10 sheets', done: false }] }] }),
-  mk({ name: 'Graduation frame — Bag, Music', column_id: 'new', type_id: 'frame', branch: 'BACC', due_date: d(6), assignee_ids: ['u-andy'],
+  mk({ name: 'Graduation frame — Bag, Music', column_id: 'progress', type_id: 'frame', health: 'on_track', health_note: 'Frame done, GIF tomorrow', health_by: 'Andy', health_at: now(),
+    graphics: [
+      { id: 'g1', kind: 'frame', name: 'Graduation frame 4×6', url: 'https://drive.google.com/file/d/mock-frame/view', status: 'live', live_at: ['BACC'], version: 2, added_by: 'Fine', added_at: now() },
+      { id: 'g2', kind: 'gif', name: 'Cap toss GIF', url: 'https://drive.google.com/file/d/mock-gif/view', status: 'draft', live_at: [], version: 1, added_by: 'Fine', added_at: now() },
+    ], branch: 'BACC', due_date: d(6), assignee_ids: ['u-andy'],
     checklists: [{ id: 'c2', name: 'SETUP', items: ['FRAME', 'GIF', 'PREVIEW', 'UI'].map((t, i) => ({ id: `s${i}`, text: t, done: i === 0 })) }] }),
+  mk({ name: 'New Year campaign · all branches', column_id: 'planned', type_id: 'frame', due_date: d(20) }),
+  mk({ name: 'Q1 marketing plan', column_id: 'review', type_id: 'content', health: 'at_risk', health_note: 'Waiting for Champ approval', health_at: now() }),
   mk({ name: 'MVP snap setup', column_id: 'progress', type_id: 'rnd', branch: 'BACC', room: 'Music room', start_date: d(0), due_date: d(4), assignee_ids: ['u-vitta'], taken_by: 'Vitta', taken_at: now() }),
-  mk({ name: 'Internet TRUE slow at store', column_id: 'waiting', type_id: 'maintenance', issue_level: 'minor', area: 'internet', branch: 'True Alpha', waiting_reason: 'vendor', waiting_note: 'TRUE technician booked Thu', due_date: d(2) }),
-  mk({ name: 'PR Promote WIMB', column_id: 'solved', type_id: 'content', branch: 'CentralWorld', due_date: d(-2), solved_by: 'Andy', solved_at: now() }),
+  mk({ name: 'Internet TRUE slow at store', column_id: 'progress', type_id: 'maintenance', issue_level: 'minor', area: 'internet', branch: 'True Alpha', health: 'blocked', health_note: 'Waiting for vendor / ISP · TRUE technician booked Thu', health_at: now(), due_date: d(2) }),
+  mk({ name: 'PR Promote WIMB', column_id: 'done', type_id: 'content', branch: 'CentralWorld', due_date: d(-2), solved_by: 'Andy', solved_at: now() }),
 ]
 
 // ── Reads ─────────────────────────────────────────────────────────────────────

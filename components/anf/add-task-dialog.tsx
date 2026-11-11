@@ -58,7 +58,7 @@ export function AddTaskDialog({ types, places, author, tasks, onClose, onCreate,
     if (missing) return
     const now = new Date().toISOString()
     onCreate({
-      task_id: uid('t'), board_id: ANF_BOARD, column_id: 'new', position: -1,
+      task_id: uid('t'), board_id: ANF_BOARD, column_id: 'idea', position: -1,
       title, name: name.trim(), type_id: typeId,
       issue_level: type?.is_issue ? level : null, area: type?.is_issue ? area : null,
       branch: branch || null, room: room || null, start_date: null, due_date: due || null,
