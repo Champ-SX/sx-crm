@@ -82,9 +82,6 @@ export function AnfSettings({ types, places, onClose, onChange }: {
                   </div>
                   <input defaultValue={t.name} onBlur={(e) => e.target.value.trim() && e.target.value !== t.name && patchType(t.type_id, { name: e.target.value.trim() })}
                     className="flex-1 bg-transparent text-[14px] font-semibold outline-none border-b border-transparent focus:border-border" />
-                  <label className="text-[12px] text-muted-foreground inline-flex items-center gap-1.5 cursor-pointer" title="Shows issue level + area when adding a task">
-                    <input type="checkbox" checked={t.is_issue} onChange={() => patchType(t.type_id, { is_issue: !t.is_issue })} className="accent-foreground" />Issue
-                  </label>
                   <button type="button" aria-label={`Delete ${t.name}`} onClick={() => removeType(t)} className="text-muted-foreground hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
                 <div>

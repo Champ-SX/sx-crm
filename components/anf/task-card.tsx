@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { GRAPHIC_KINDS, checklistProgress, type AnfTask, type AnfTaskType } from '@/lib/supabase/anf-tasks'
 import type { TeamMember } from '@/types'
-import { TypePill, LevelPill, placeLine, typeOf } from './task-ui'
+import { TypePill, placeLine, typeOf } from './task-ui'
 
 const today = () => format(new Date(), 'yyyy-MM-dd')
 
@@ -25,7 +25,7 @@ export function TaskCard({ t, types, people, onOpen, compact }: {
       className={cn('rounded-lg border border-border border-l-4 bg-card p-2.5 cursor-pointer hover:border-foreground/25 transition-colors text-left min-w-0 select-none',
         t.column_id === 'done' && 'opacity-80')}>
       <div className="flex flex-wrap gap-1">
-        <TypePill type={type} /><LevelPill level={t.issue_level} />
+        <TypePill type={type} />
         {t.tags.includes('Repeating') && <span className="inline-flex items-center gap-0.5 rounded bg-amber-500/15 px-1.5 py-px text-[11px] font-medium text-amber-800 dark:text-amber-300" title="Repeat issue"><Repeat className="w-3 h-3" />Repeat</span>}
       </div>
       <div className={cn('font-semibold leading-snug mt-1 [overflow-wrap:anywhere]', compact ? 'text-[12px] line-clamp-2' : 'text-[13px]')}>{t.name}</div>

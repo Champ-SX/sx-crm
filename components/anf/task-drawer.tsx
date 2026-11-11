@@ -15,7 +15,7 @@ import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
 import { cn, parseDbDate } from '@/lib/utils'
 import {
-  ANF_COLUMNS, ISSUE_LEVELS, AREAS, HEALTH, GRAPHIC_KINDS, GRAPHIC_STATUS, SUB_STATUS, subStatus, buildTaskTitle, checklistProgress, uid,
+  ANF_COLUMNS, HEALTH, GRAPHIC_KINDS, GRAPHIC_STATUS, SUB_STATUS, subStatus, buildTaskTitle, checklistProgress, uid,
   type AnfTask, type AnfTaskType, type AnfPlace, type AnfColumn, type Checklist, type ChecklistItem, type AnfHealth, type AnfGraphic, type GraphicKind,
 } from '@/lib/supabase/anf-tasks'
 import { Chip, TypePill } from './task-ui'
@@ -141,16 +141,10 @@ export function TaskDrawer({ task, types, places, onClose, onPatch, onMove, onDe
         {field('Type', (
           <div className="flex flex-wrap gap-1">
             {types.map((t) => (
-              <button key={t.type_id} type="button" onClick={() => onPatch({ type_id: t.type_id, ...(t.is_issue ? {} : { issue_level: null, area: null }) })}
+              <button key={t.type_id} type="button" onClick={() => onPatch({ type_id: t.type_id })}
                 className={cn('rounded px-1.5 py-0.5 font-mono text-[10.5px] font-semibold tracking-wide', task.type_id === t.type_id ? 'text-white' : 'bg-muted text-muted-foreground hover:text-foreground')}
                 style={task.type_id === t.type_id ? { backgroundColor: t.color } : undefined}>{t.name}</button>
             ))}
-          </div>
-        ))}
-        {type?.is_issue && field('Issue', (
-          <div className="flex flex-wrap gap-1">
-            {ISSUE_LEVELS.map((l) => <button key={l.id} type="button" onClick={() => onPatch({ issue_level: task.issue_level === l.id ? null : l.id })} className={cn('rounded px-1.5 py-0.5 text-[11px] font-medium', task.issue_level === l.id ? l.cls : 'bg-muted text-muted-foreground')}>{l.label}</button>)}
-            {AREAS.map((a) => <button key={a.id} type="button" onClick={() => onPatch({ area: task.area === a.id ? null : a.id })} className={cn('rounded px-1.5 py-0.5 text-[11px]', task.area === a.id ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground')}>{a.label}</button>)}
           </div>
         ))}
         {field('Owner', <AssigneePicker value={task.assignee_ids} onChange={(ids) => onPatch({ assignee_ids: ids })} />)}

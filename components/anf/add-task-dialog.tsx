@@ -10,7 +10,7 @@ import { Plus, Repeat } from 'lucide-react'
 import { format } from 'date-fns'
 import { parseDbDate } from '@/lib/utils'
 import {
-  ISSUE_LEVELS, AREAS, ANF_BOARD, buildTaskTitle, uid,
+  ANF_BOARD, buildTaskTitle, uid,
   type AnfTask, type AnfTaskType, type AnfPlace, type IssueLevel,
 } from '@/lib/supabase/anf-tasks'
 import { Chip } from './task-ui'
@@ -27,8 +27,6 @@ export function AddTaskDialog({ types, places, author, tasks, onClose, onCreate,
   onAddType: (name: string) => Promise<AnfTaskType | null>
 }) {
   const [typeId, setTypeId] = useState<string | null>(null)
-  const [level, setLevel] = useState<IssueLevel | null>(null)
-  const [area, setArea] = useState<string | null>(null)
   const [branch, setBranch] = useState('')
   const [room, setRoom] = useState('')
   const [due, setDue] = useState('')
@@ -60,7 +58,7 @@ export function AddTaskDialog({ types, places, author, tasks, onClose, onCreate,
     onCreate({
       task_id: uid('t'), board_id: ANF_BOARD, column_id: 'idea', position: -1,
       title, name: name.trim(), type_id: typeId,
-      issue_level: type?.is_issue ? level : null, area: type?.is_issue ? area : null,
+      issue_level: null, area: null,
       branch: branch || null, room: room || null, start_date: null, due_date: due || null,
       description: [repeat && `🔁 Repeat of: ${repeat.title}`, desc.trim()].filter(Boolean).join('\n\n') || null,
       assignee_ids: assignees, tags: repeat ? ['Repeating'] : [],
@@ -101,22 +99,6 @@ export function AddTaskDialog({ types, places, author, tasks, onClose, onCreate,
           </div>
         </div>
 
-        {type?.is_issue && (
-          <div className="space-y-2">
-            <span className={label}>ISSUE LEVEL</span>
-            <div className="flex flex-wrap gap-1.5">
-              {ISSUE_LEVELS.map((l) => (
-                <Chip key={l.id} on={level === l.id} onClick={() => setLevel(level === l.id ? null : l.id)}>
-                  <span className={`rounded px-1.5 py-px text-[11px] font-medium ${l.cls}`}>{l.label}</span>{l.th}
-                </Chip>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-1.5 items-center">
-              <span className="text-[12px] text-muted-foreground mr-1">Area</span>
-              {AREAS.map((a) => <Chip key={a.id} on={area === a.id} onClick={() => setArea(area === a.id ? null : a.id)} className="py-1">{a.label}</Chip>)}
-            </div>
-          </div>
-        )}
 
         <div className="grid grid-cols-3 gap-2.5">
           <div>
