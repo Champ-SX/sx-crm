@@ -985,6 +985,18 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
       }
     }
 
+    // Won before (lead was moved back, then won again)? Reuse that job, don't make a second one.
+    const existing = state.wonJobs.find((j) => j.lead_op_id === leadOpId)
+      ?? (USE_SUPABASE ? await db.wonJobQueries.getByLead(leadOpId).catch(() => null) : null)
+    if (existing) {
+      if (USE_SUPABASE) await db.leadOpportunityQueries.update(leadOpId, { status: 'won' })
+      set((s) => ({
+        leadOpportunities: s.leadOpportunities.map((l) => l.lead_op_id === leadOpId ? { ...l, status: 'won', updated_at: now } : l),
+        wonJobs: s.wonJobs.some((j) => j.job_id === existing.job_id) ? s.wonJobs : [...s.wonJobs, existing],
+      }))
+      return existing
+    }
+
     // Sync to Supabase if enabled (before optimistic update)
     if (USE_SUPABASE) {
       try {

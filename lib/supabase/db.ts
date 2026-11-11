@@ -384,6 +384,13 @@ export const wonJobQueries = {
     return (data || []) as WonJob[]
   },
 
+  /** The job already made from this lead, if any (it may have been won before). */
+  async getByLead(leadOpId: string) {
+    const { data, error } = await supabase.from('won_jobs').select('*').eq('lead_op_id', leadOpId).limit(1)
+    if (error) throw error
+    return ((data || [])[0] ?? null) as WonJob | null
+  },
+
   async getById(id: string) {
     const { data, error } = await supabase
       .from('won_jobs')
