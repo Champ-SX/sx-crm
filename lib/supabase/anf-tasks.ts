@@ -56,7 +56,19 @@ export const WAITING_REASONS = [
   { id: 'vendor', label: 'Vendor / ISP' }, { id: 'other', label: 'Other / อื่นๆ' },
 ]
 
-export interface ChecklistItem { id: string; text: string; done: boolean; owner?: string | null; due?: string | null }
+export type SubStatus = 'todo' | 'doing' | 'done'
+export const SUB_STATUS: { id: SubStatus; label: string; cls: string }[] = [
+  { id: 'todo',  label: 'To do', cls: 'bg-slate-200 text-slate-700 dark:bg-slate-500/25 dark:text-slate-200' },
+  { id: 'doing', label: 'Doing', cls: 'bg-orange-500 text-white' },
+  { id: 'done',  label: 'Done',  cls: 'bg-emerald-600 text-white' },
+]
+/** Sub-task. `done` stays in sync with status (old items only have `done`). */
+export interface ChecklistItem {
+  id: string; text: string; done: boolean
+  status?: SubStatus; owner?: string | null; due?: string | null
+  note?: string | null; note_by?: string | null; note_at?: string | null   // latest report
+}
+export const subStatus = (i: ChecklistItem): SubStatus => i.done ? 'done' : (i.status === 'doing' ? 'doing' : 'todo')
 export interface Checklist { id: string; name: string; items: ChecklistItem[] }
 
 export interface AnfTaskType { type_id: string; name: string; color: string; default_checklist: string[]; is_issue: boolean; sort_order: number }

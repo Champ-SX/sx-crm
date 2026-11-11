@@ -10,8 +10,8 @@ export function typeOf(types: AnfTaskType[], id: string | null | undefined) {
 export function TypePill({ type }: { type?: AnfTaskType }) {
   if (!type) return null
   return (
-    <span className="inline-flex items-center rounded px-1.5 py-px text-[11px] font-medium"
-      style={{ backgroundColor: `${type.color}22`, color: type.color }}>
+    <span className="inline-flex shrink-0 items-center whitespace-nowrap rounded px-1.5 py-px font-mono text-[10.5px] font-semibold tracking-wide text-white"
+      style={{ backgroundColor: type.color }}>
       {type.name}
     </span>
   )

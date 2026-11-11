@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { addDays, differenceInCalendarDays, format, isToday, isWeekend, parseISO } from 'date-fns'
-import { CalendarDays, ChevronLeft, ChevronRight, LayoutGrid, Plus, Search, X, Archive, Settings2 } from 'lucide-react'
+import { GanttChart, Images, CalendarDays, ChevronLeft, ChevronRight, LayoutGrid, Plus, Search, X, Archive, Settings2 } from 'lucide-react'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { useAuth } from '@/components/auth-provider'
 import { useCRMStore } from '@/store/crm-store'
@@ -21,6 +21,7 @@ import { TaskDrawer } from '@/components/anf/task-drawer'
 import { placeLine, typeOf } from '@/components/anf/task-ui'
 import { AnfSettings } from '@/components/anf/anf-settings'
 import { TaskCard, SortableTask, DropColumn } from '@/components/anf/task-card'
+import { GraphicsView, TimelineView } from '@/components/anf/board-views'
 import { DndContext, DragOverlay, MouseSensor, TouchSensor, pointerWithin, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 
@@ -58,7 +59,7 @@ export default function AnfTasksPage() {
     return () => { alive = false }
   }, [loadKey])
 
-  const [view, setView] = useState<'board' | 'calendar'>('board')
+  const [view, setView] = useState<'board' | 'timeline' | 'graphics' | 'calendar'>('board')
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [branchFilter, setBranchFilter] = useState('')
@@ -168,11 +169,11 @@ export default function AnfTasksPage() {
       <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 shrink-0 flex flex-wrap items-center gap-x-3 gap-y-2">
         <MobileMenuButton />
         <div className="min-w-0">
-          <h1 className="text-[15px] sm:text-[17px] font-semibold tracking-tight">Andy &amp; Fine. · Tasks</h1>
+          <h1 className="text-[15px] sm:text-[17px] font-semibold tracking-tight">Andy &amp; Fine. · Photohouse</h1>
           <p className="text-[12px] text-muted-foreground hidden sm:block">{shown.filter((t) => t.column_id !== 'done').length} open · {byCol('done').length} done</p>
         </div>
         <div className="inline-flex rounded-lg border border-border bg-card p-0.5" role="tablist" aria-label="View">
-          {([['board', 'Board', LayoutGrid], ['calendar', 'Calendar', CalendarDays]] as const).map(([v, l, Icon]) => (
+          {([['board', 'Board', LayoutGrid], ['timeline', 'Timeline', GanttChart], ['graphics', 'Graphics', Images], ['calendar', 'Calendar', CalendarDays]] as const).map(([v, l, Icon]) => (
             <button key={v} type="button" role="tab" aria-selected={view === v} aria-label={l} onClick={() => setView(v)}
               className={cn('h-7 px-2 sm:px-2.5 rounded-md inline-flex items-center gap-1.5 text-[12px] font-medium', view === v ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}>
               <Icon className="w-3.5 h-3.5" /><span className="hidden sm:inline">{l}</span>
@@ -208,7 +209,11 @@ export default function AnfTasksPage() {
 
       {loadError && <div className="px-6 py-2 text-[13px] text-destructive">Couldn&apos;t load tasks: {loadError}. Has the A&amp;F migration been run?</div>}
 
-      {view === 'board' ? (
+      {view === 'timeline' ? (
+        <TimelineView tasks={shown} types={types} onOpen={setOpenId} />
+      ) : view === 'graphics' ? (
+        <GraphicsView tasks={shown} types={types} places={places} onOpen={setOpenId} />
+      ) : view === 'board' ? (
         <div className="flex-1 min-h-0 overflow-x-auto bg-background">
           <div className="flex gap-3 p-4 sm:p-6 h-full min-w-max items-start">
             <DndContext sensors={sensors} collisionDetection={pointerWithin}
