@@ -992,7 +992,19 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
         const { staff_list: _staffList, ...jobToCreate } = newJob
 
         // Create wonJob FIRST - this is the critical operation
-        await db.wonJobQueries.create(jobToCreate as WonJob)
+        // The number comes from the lead title, so it can clash with another job
+        // (same number typed twice, or a job that's no longer loaded). Don't block
+        // the win: save it without a number, Ops sets the right one on the card.
+        try {
+          await db.wonJobQueries.create(jobToCreate as WonJob)
+        } catch (e) {
+          const msg = String((e as { message?: string })?.message ?? e)
+          if (!newJob.job_number || !msg.includes('job_number')) throw e
+          const taken = newJob.job_number
+          newJob.job_number = null
+          await db.wonJobQueries.create({ ...(jobToCreate as WonJob), job_number: null })
+          set({ error: `Won ✓ — but job #${taken} is already used by another job, so this one was saved without a number. Set the right number on the job card.` })
+        }
         logStageChange({ entity_type: 'won_job', entity_id: newJob.job_id, from_stage: null, to_stage: newJob.op_stage, changed_by: state.currentUserName })
         console.log('[CRM Store] Successfully created wonJob:', newJob.job_id)
 
@@ -1005,7 +1017,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
             entity_id: leadOpId,
             activity_type: 'deal_won',
             title: '🎉 Marked as Won',
-            description: `Job #${newJobNumber} created and added to Won Job List.`,
+            description: `Job #${newJob.job_number ?? '—'} created and added to Won Job List.`,
             created_by: lop.owner,
             created_at: now,
           }),
@@ -1053,7 +1065,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
           entity_id: leadOpId,
           activity_type: 'deal_won' as const,
           title: '🎉 Marked as Won',
-          description: `Job #${newJobNumber} created and added to Won Job List.`,
+          description: `Job #${newJob.job_number ?? '—'} created and added to Won Job List.`,
           created_by: lop.owner,
           created_at: now,
         },
