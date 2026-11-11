@@ -1,5 +1,6 @@
 'use client'
 
+import { JobNumberHint } from '@/components/shared/job-number-hint'
 import { useState, useRef, useEffect } from 'react'
 import { LEAD_SOURCES } from '@/lib/insights'
 import { useCRMStore } from '@/store/crm-store'
@@ -273,6 +274,7 @@ export function AddLeadOpForm({
               className="h-9 text-sm"
               placeholder="e.g. Sephora Annual Campaign 2026"
             />
+            <JobNumberHint title={form.name} onChange={(name) => setForm({ ...form, name })} />
           </div>
 
           {/* Company combobox */}

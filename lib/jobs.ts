@@ -290,3 +290,46 @@ export function formatEventDate(isoDate: string): string {
     return isoDate
   }
 }
+
+// ─── Job number guard ────────────────────────────────────────────────────────
+// Sales type the job number into the lead title, so two leads can end up with
+// the same one (usually by copying a title). These helpers find clashes and
+// the next free number. "In use" = any job, or any open lead title, other
+// than the lead itself and its own job.
+type NumJob = { job_id: string; job_number: string | null; lead_op_id?: string | null; event_display_name?: string | null; product_name?: string | null; event_date?: string | null }
+type NumLead = { lead_op_id: string; name: string; status: string; is_archived?: boolean | null }
+
+const liveLead = (l: NumLead) => l.status !== 'lost' && l.status !== 'won' && !l.is_archived
+
+/** Who already uses this number (null when free). */
+export function jobNumberOwner(num: string, jobs: NumJob[], leads: NumLead[], selfLeadId?: string | null): { kind: 'job' | 'lead'; name: string; date?: string | null } | null {
+  if (!num) return null
+  const n = Number(num)
+  const job = jobs.find((j) => j.job_number && Number(j.job_number) === n && (!selfLeadId || j.lead_op_id !== selfLeadId))
+  if (job) return { kind: 'job', name: job.event_display_name || job.product_name || `Job #${job.job_number}`, date: job.event_date }
+  const lead = leads.find((l) => l.lead_op_id !== selfLeadId && liveLead(l) && parseJobNumber(l.name) && Number(parseJobNumber(l.name)) === n)
+  return lead ? { kind: 'lead', name: lead.name } : null
+}
+
+/** One above the highest number used by any job or open lead, zero-padded to 3. */
+export function nextFreeJobNumber(jobs: NumJob[], leads: NumLead[]): string {
+  const nums = [
+    ...jobs.map((j) => Number(j.job_number)),
+    ...leads.filter(liveLead).map((l) => Number(parseJobNumber(l.name))),
+  ].filter((x) => Number.isFinite(x) && x > 0)
+  return String(Math.max(0, ...nums) + 1).padStart(3, '0')
+}
+
+/** Swap the job-number segment of a title ("2026.12.23 - 155 - …" → "… - 157 - …"). */
+export function replaceJobNumber(title: string, num: string): string {
+  const parts = title.split(' - ')
+  const i = parts.findIndex((p) => /^\d{2,4}$/.test(p.trim()))
+  if (i < 0) return title
+  parts[i] = num
+  return parts.join(' - ')
+}
+
+/** A copied lead keeps its title but gets the next free number. */
+export function renumberCopy(title: string, jobs: NumJob[], leads: NumLead[]): string {
+  return parseJobNumber(title) ? replaceJobNumber(title, nextFreeJobNumber(jobs, leads)) : title
+}

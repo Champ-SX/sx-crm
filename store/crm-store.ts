@@ -1,5 +1,6 @@
 'use client'
 
+import { renumberCopy } from '@/lib/jobs'
 import { create } from 'zustand'
 import type {
   Customer, Company, ContactPerson,
@@ -890,7 +891,7 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
     const copy: LeadOpportunity = {
       ...original,
       lead_op_id: newId,
-      name: `${original.name} (copy)`,
+      name: `${renumberCopy(original.name, get().wonJobs, get().leadOpportunities)} (copy)`,
       status: 'open',
       is_archived: false,
       created_at: now,

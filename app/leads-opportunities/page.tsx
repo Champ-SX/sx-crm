@@ -1,5 +1,7 @@
 'use client'
 
+import { JobNumberHint } from '@/components/shared/job-number-hint'
+import { parseJobNumber, jobNumberOwner, nextFreeJobNumber, replaceJobNumber, renumberCopy } from '@/lib/jobs'
 import { useState, useEffect } from 'react'
 import { LOST_REASONS, LEAD_SOURCES } from '@/lib/insights'
 import { DealValueField, DealValueText } from '@/components/shared/deal-value'
@@ -321,6 +323,7 @@ function LeadCard({
 function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }) {
   const router = useRouter()
   const { updateLeadOpportunity, deleteLeadOpportunity, duplicateLeadOpportunity, markAsWon, markAsLost, leadOpportunities, customers, updateCustomer, addLeadOpportunity } = useCRMStore()
+  const wonJobsAll = useCRMStore((s) => s.wonJobs)
   const requestOpenEntity = useCRMStore((s) => s.requestOpenEntity)
   const isMobile = useIsMobile()
   const [confirmWon, setConfirmWon] = useState(false)
@@ -381,8 +384,9 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
     onClose()
   }
 
-  async function handleMarkWon() {
+  async function handleMarkWon(renumberTo?: string) {
     if (!item) return
+    if (renumberTo) await updateLeadOpportunity(item.lead_op_id, { name: replaceJobNumber(item.name, renumberTo) })
     await markAsWon(item.lead_op_id)
     setConfirmWon(false)
     onClose()
@@ -415,6 +419,9 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
   }
 
   const cfg = statusConfig[item.status]
+  const wonNum = parseJobNumber(item.name)
+  const wonClash = wonNum ? jobNumberOwner(wonNum, wonJobsAll, leadOpportunities, item.lead_op_id) : null
+  const wonNext = nextFreeJobNumber(wonJobsAll, leadOpportunities.filter((l) => l.lead_op_id !== item.lead_op_id))
 
   return (
     <>
@@ -426,11 +433,14 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
           <DetailHeader
             onClose={onClose}
             title={
-              <InlineEdit
-                value={item.name}
-                placeholder="Lead title"
-                onSave={(v) => updateLeadOpportunity(item.lead_op_id, { name: v })}
-              />
+              <>
+                <InlineEdit
+                  value={item.name}
+                  placeholder="Lead title"
+                  onSave={(v) => updateLeadOpportunity(item.lead_op_id, { name: v })}
+                />
+                {item.status !== 'won' && !item.is_archived && <JobNumberHint title={item.name} selfLeadId={item.lead_op_id} onChange={(v) => updateLeadOpportunity(item.lead_op_id, { name: v })} />}
+              </>
             }
             subtitle={item.service_type || undefined}
             summary={
@@ -943,11 +953,23 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
               This will create a new job card in <strong>Won Job List</strong> on the OP board. The lead will be marked as Won.
             </DialogDescription>
           </DialogHeader>
+          {wonClash && (
+            <div className="rounded-lg bg-amber-100 px-3 py-2 text-[13px] text-amber-900 dark:bg-amber-500/15 dark:text-amber-200">
+              ⚠ <b>#{wonNum} is already used</b> by “{wonClash.name}”. Win this lead as <b>#{wonNext}</b>, or win now and set the number later on the job card.
+            </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmWon(false)}>Cancel</Button>
-            <Button variant="success" onClick={handleMarkWon}>
-              Confirm Win
-            </Button>
+            {wonClash ? (
+              <>
+                <Button variant="outline" onClick={() => handleMarkWon()}>Win without number</Button>
+                <Button variant="success" onClick={() => handleMarkWon(wonNext)}>Win as #{wonNext}</Button>
+              </>
+            ) : (
+              <Button variant="success" onClick={() => handleMarkWon()}>
+                Confirm Win
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1000,6 +1022,7 @@ function LeadDetail({ itemId, onClose }: { itemId: string; onClose: () => void }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function LeadsOpportunitiesPage() {
+  const wonJobsList = useCRMStore((s) => s.wonJobs)
   const isHydrated = useHydrated()
   const { leadOpportunities: allLeads, addLeadOpportunity, deleteLeadOpportunity } = useCRMStore()
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
@@ -1078,7 +1101,7 @@ export default function LeadsOpportunitiesPage() {
         addLeadOpportunity({
           ...original,
           lead_op_id: newId,
-          name: `${original.name} (copy)`,
+          name: `${renumberCopy(original.name, wonJobsList, leadOpportunities)} (copy)`,
           status: 'open',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -1160,7 +1183,7 @@ export default function LeadsOpportunitiesPage() {
                   const duplicated: LeadOpportunity = {
                     ...item,
                     lead_op_id: newId,
-                    name: `${item.name} (Copy)`,
+                    name: `${renumberCopy(item.name, wonJobsList, leadOpportunities)} (Copy)`,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
                   }

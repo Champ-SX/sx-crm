@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Job Number Guard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Thai:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#dcd9d2;--ink:#1c1b19;--mute:#6b6862;--line:#e2ded5;--acc:#7A5AA5}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:13px/1.45 Inter,"IBM Plex Sans Thai",sans-serif;color:var(--ink);padding:20px 16px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.cap{font:600 11px "IBM Plex Mono";color:var(--mute);letter-spacing:.05em;margin:0 0 8px}
+.dlg{background:#faf9f6;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.15);overflow:hidden}
+.hd{padding:14px 18px;border-bottom:1px solid var(--line);font-weight:700;font-size:15px}
+.bd{padding:14px 18px}
+label{display:block;font-size:10.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.in{border:1px solid var(--line);border-radius:7px;padding:7px 9px;background:#fff}
+.in.bad{border-color:#d97706}
+.num{background:#fde68a;border-radius:3px;padding:0 2px;font-weight:600}
+.warn{margin-top:6px;background:#fef3c7;border-radius:8px;padding:8px 10px;color:#78350f;font-size:12.5px}
+.ok{margin-top:6px;color:#15803d;font-size:12px}
+.row{display:flex;gap:8px;margin-top:7px;flex-wrap:wrap}
+.btn{border-radius:7px;padding:5px 11px;font-weight:600;font-size:12.5px;background:var(--acc);color:#fff}
+.btn.o{background:#fff;color:var(--ink);border:1px solid var(--line);font-weight:500}
+.btn.g{background:#15803d}
+.ft{display:flex;justify-content:flex-end;gap:10px;padding:12px 18px;border-top:1px solid var(--line)}
+.toast{background:#1c1b19;color:#fff;border-radius:10px;padding:10px 14px;font-size:12.5px;display:flex;gap:10px;align-items:center}
+.toast u{color:#c4b5fd}
+.sub{color:var(--mute);font-size:12px}
+.note{grid-column:1/-1;background:#fff;border-radius:12px;padding:12px 16px}
+.note li{margin:3px 0}
+@media(max-width:960px){.wrap{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+
+<div>
+  <p class="cap">1 · TYPING THE LEAD TITLE: NUMBER TAKEN</p>
+  <div class="dlg">
+    <div class="hd">New lead</div>
+    <div class="bd">
+      <label>Lead name *</label>
+      <div class="in bad">2026.12.23 - <span class="num">155</span> - LCA IPAD L1 - Event - Zense New Year Party @Sliding Doors</div>
+      <div class="warn">⚠ <b>#155 is already used</b> by “งาน Barter Connect @Sliding Doors” · 23 Dec · Won job
+        <div class="row"><span class="btn">Use #157 instead</span><span class="btn o">Keep 155</span></div>
+      </div>
+      <p class="sub" style="margin-top:8px">Checked against all jobs and open leads as you type.</p>
+    </div>
+    <div class="ft"><span class="btn o">Cancel</span><span class="btn">Save lead</span></div>
+  </div>
+</div>
+
+<div>
+  <p class="cap">2 · AFTER “USE #157”</p>
+  <div class="dlg">
+    <div class="hd">New lead</div>
+    <div class="bd">
+      <label>Lead name *</label>
+      <div class="in">2026.12.23 - <span class="num" style="background:#dcfce7">157</span> - LCA IPAD L1 - Event - Zense New Year Party @Sliding Doors</div>
+      <div class="ok">✓ #157 is free</div>
+      <label style="margin-top:14px">No number yet?</label>
+      <div class="in">2026.12.23 - LCA IPAD L1 - Event - …</div>
+      <div class="sub" style="margin-top:4px">💡 Next free number is <b>#157</b> · <u>add it</u></div>
+    </div>
+    <div class="ft"><span class="btn o">Cancel</span><span class="btn">Save lead</span></div>
+  </div>
+</div>
+
+<div>
+  <p class="cap">3 · PRESSING WON WHILE STILL TAKEN</p>
+  <div class="dlg">
+    <div class="hd">#155 is already used</div>
+    <div class="bd">
+      <p style="margin:0 0 8px">Job <b>#155</b> is “งาน Barter Connect @Sliding Doors” (23 Dec).</p>
+      <p style="margin:0" class="sub">Win this lead as a new number, or win now and set the number later on the job card.</p>
+    </div>
+    <div class="ft"><span class="btn o">Cancel</span><span class="btn o">Win without number</span><span class="btn g">Win as #157</span></div>
+  </div>
+  <p class="sub" style="margin-top:6px">“Win as #157” also updates the lead title and job title.</p>
+</div>
+
+<div>
+  <p class="cap">4 · COPY LEAD</p>
+  <div class="toast">✓ Copied as <b>#157</b>. The original keeps #155. <u>Undo number</u></div>
+  <p class="sub" style="margin-top:8px">“2026.12.23 - 155 - … (copy)” becomes “2026.12.23 - 157 - … (copy)”. Titles without a number are copied as they are.</p>
+</div>
+
+<div class="note">
+  <b>Rules</b>
+  <ul>
+    <li><b>Next free number</b> = highest number used by any job <i>or</i> any open lead title, plus 1. So two leads can't grab the same number before either is won.</li>
+    <li><b>Taken by</b> another job or another open lead (not lost/archived). The lead's own job doesn't count, so re-winning a lead is fine.</li>
+    <li><b>Keep 155</b> is allowed (warning only), for the rare case where the other one is wrong. The Won prompt asks again.</li>
+    <li>Same check when editing a lead name, not only when creating.</li>
+  </ul>
+</div>
+</div></body></html>
