@@ -2,6 +2,7 @@
 
 import { Check, Plus, UserPlus, Users, User } from 'lucide-react'
 import { useCRMStore } from '@/store/crm-store'
+import { useAuth } from '@/components/auth-provider'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
@@ -100,7 +101,8 @@ export function AssigneeFilter({
   className?: string
 }) {
   const teamMembers = useCRMStore((s) => s.teamMembers)
-  const meName = meId ? (teamMembers.find((m) => m.id === meId)?.name ?? null) : null
+  const myIds = useMyIds()
+  const meName = teamMembers.find((m) => myIds.includes(m.id))?.name ?? null
   const selected = value === ASSIGNEE_FILTER_ALL || value === ASSIGNEE_FILTER_ME
     ? null
     : teamMembers.find((m) => m.id === value)
@@ -146,13 +148,27 @@ export function AssigneeFilter({
 }
 
 /** Does a card with these assignee_ids match the given filter value? */
+/**
+ * Every id that means "me": the login (auth) id and my team-roster id. They
+ * differ for anyone an admin added before their first Google sign-in — the
+ * roster row keeps its pre-made id, and cards are assigned with that one.
+ */
+export function useMyIds(): string[] {
+  const { user } = useAuth()
+  const teamMembers = useCRMStore((s) => s.teamMembers)
+  const email = user?.email?.toLowerCase()
+  const rosterIds = email ? teamMembers.filter((m) => m.email?.toLowerCase() === email).map((m) => m.id) : []
+  return [...new Set([user?.id, ...rosterIds].filter((x): x is string => !!x))]
+}
+
 export function matchesAssigneeFilter(
   assigneeIds: string[] | null | undefined,
   filter: string,
-  meId?: string | null,
+  meId?: string | string[] | null,
 ): boolean {
   if (filter === ASSIGNEE_FILTER_ALL) return true
   const ids = assigneeIds ?? []
-  if (filter === ASSIGNEE_FILTER_ME) return meId ? ids.includes(meId) : false
+  const mine = Array.isArray(meId) ? meId : meId ? [meId] : []
+  if (filter === ASSIGNEE_FILTER_ME) return mine.some((m) => ids.includes(m))
   return ids.includes(filter)
 }

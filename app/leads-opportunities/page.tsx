@@ -39,7 +39,7 @@ import {
 import { format } from 'date-fns'
 import { useOpenFromUrl } from '@/hooks/use-open-from-url'
 import { copyCardLink, shareCardLink } from '@/lib/card-links'
-import { AssigneePicker, AssigneeFilter, ASSIGNEE_FILTER_ALL, matchesAssigneeFilter } from '@/components/shared/assignee-picker'
+import { AssigneePicker, AssigneeFilter, ASSIGNEE_FILTER_ALL, matchesAssigneeFilter, useMyIds } from '@/components/shared/assignee-picker'
 import { matchesBoard } from '@/lib/boards'
 import { useAuth } from '@/components/auth-provider'
 
@@ -1032,6 +1032,7 @@ export default function LeadsOpportunitiesPage() {
   const [statusFilter, setStatusFilter] = useState<string>('open')
   const [serviceFilter, setServiceFilter] = useState<string>('all')
   const [ownerFilter, setOwnerFilter] = useState<string>('all')
+  const myIds = useMyIds()
   const [assigneeFilter, setAssigneeFilter] = useState<string>(ASSIGNEE_FILTER_ALL)
   const { user } = useAuth()
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -1068,7 +1069,7 @@ export default function LeadsOpportunitiesPage() {
     const matchStatus = statusFilter === 'all' || l.status === statusFilter
     const matchService = serviceFilter === 'all' || l.service_type === serviceFilter
     const matchOwner = ownerFilter === 'all' || l.owner === ownerFilter
-    const matchAssignee = matchesAssigneeFilter(l.assignee_ids, assigneeFilter, user?.id)
+    const matchAssignee = matchesAssigneeFilter(l.assignee_ids, assigneeFilter, myIds)
     return matchSearch && matchStatus && matchService && matchOwner && matchAssignee
   })
 

@@ -60,7 +60,7 @@ import { EquipmentSection } from '@/components/won/equipment-section'
 import { useCosmo, cosmoFor, CosmoSection, CosmoSyncControl, type CosmoState } from '@/components/won/cosmo'
 import { useOpenFromUrl } from '@/hooks/use-open-from-url'
 import { copyCardLink, shareCardLink } from '@/lib/card-links'
-import { AssigneePicker, AssigneeFilter, ASSIGNEE_FILTER_ALL, matchesAssigneeFilter } from '@/components/shared/assignee-picker'
+import { AssigneePicker, AssigneeFilter, ASSIGNEE_FILTER_ALL, matchesAssigneeFilter, useMyIds } from '@/components/shared/assignee-picker'
 import { matchesBoard } from '@/lib/boards'
 import { format, parseISO } from 'date-fns'
 
@@ -1514,6 +1514,7 @@ export default function WonReadyOpPage() {
   // ?open=<job_id> (dashboard links, equipment sheet QR) opens that job's drawer
   const [selectedId, setSelectedId] = useState<string | null>(() => (typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('open')))
   const [showArchived, setShowArchived] = useState(false)
+  const myIds = useMyIds()
   const [assigneeFilter, setAssigneeFilter] = useState<string>(ASSIGNEE_FILTER_ALL)
   const [search, setSearch] = useState('')
   const teamMembers = useCRMStore((s) => s.teamMembers)
@@ -1739,7 +1740,7 @@ export default function WonReadyOpPage() {
   const boardJobs = wonJobs
     .filter(inBoard)
     .filter((j) => (showArchived ? j.is_archived : !j.is_archived))
-    .filter((j) => matchesAssigneeFilter(j.assignee_ids, assigneeFilter, user?.id))
+    .filter((j) => matchesAssigneeFilter(j.assignee_ids, assigneeFilter, myIds))
     .filter(matchesSearch)
     .filter((j) => kind === 'all' || (kind === 'ops' ? !!j.is_ops : !j.is_ops))
   const activeCount = boardJobs.filter((j) => j.op_stage !== 'OP_DONE_PAYMENT').length

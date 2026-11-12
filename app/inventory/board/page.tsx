@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { type AnfOrder, type AnfOrderStatus } from '@/types'
 import { Bell, Package } from 'lucide-react'
 import { OrderDialog } from '@/components/anf/order-dialog'
-import { AssigneeFilter, matchesAssigneeFilter, ASSIGNEE_FILTER_ALL } from '@/components/shared/assignee-picker'
+import { AssigneeFilter, matchesAssigneeFilter, ASSIGNEE_FILTER_ALL, useMyIds } from '@/components/shared/assignee-picker'
 import { STATUS, statusMeta, branchColor, baht, lineTotal, fmtDate } from '@/lib/anf'
 
 const assigneesOf = (o: AnfOrder): string[] => o.assignee_ids ?? (o.assignee_id ? [o.assignee_id] : [])
@@ -22,6 +22,7 @@ export default function AnfOrderPage() {
   const isHydrated = useHydrated()
   const { user } = useAuth()
   const meId = user?.id ?? null
+  const myIds = useMyIds()
   const anfOrders = useCRMStore((s) => s.anfOrders)
   const updateAnfOrder = useCRMStore((s) => s.updateAnfOrder)
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
@@ -65,7 +66,7 @@ export default function AnfOrderPage() {
   const filtered = orders.filter(
     (o) => (statusFilter === 'all' || o.status === statusFilter) &&
       (branchFilter === 'all' || o.branch === branchFilter) &&
-      matchesAssigneeFilter(assigneesOf(o), assigneeFilter, meId) &&
+      matchesAssigneeFilter(assigneesOf(o), assigneeFilter, myIds) &&
       (showArchived || !o.archived_at),
   )
   const groups = useMemo(() => {
