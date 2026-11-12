@@ -107,7 +107,7 @@ export function AddTaskDialog({ types, places, author, tasks, onClose, onCreate,
         </div>
         <div>
           <span className={label}>ROOM / BOOTH</span>
-          <PlaceMulti label="Room" value={room || null} options={[...new Set(rooms.map((r) => r.name))]} allLabel={ALL_ROOMS} onChange={(v) => setRoom(v ?? '')} />
+          <PlaceMulti label="Room" value={room || null} options={[...new Set(rooms.map((r) => r.name))]} allLabel={ALL_ROOMS} tone="orange" onChange={(v) => setRoom(v ?? '')} />
         </div>
         <div className="grid grid-cols-3 gap-2.5">
           <div>

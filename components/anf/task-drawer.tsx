@@ -12,7 +12,7 @@ import { AssigneePicker } from '@/components/shared/assignee-picker'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
 import { LinkifyText } from '@/components/shared/linkify-text'
-import { Archive, ArchiveRestore, Plus, Trash2, X, MessageSquare, Camera, Link2 } from 'lucide-react'
+import { Archive, ArchiveRestore, Plus, Trash2, X, MessageSquare, Camera, Link2, Pencil } from 'lucide-react'
 import { useCRMStore } from '@/store/crm-store'
 import { toast } from '@/lib/toast'
 import { useAuth } from '@/components/auth-provider'
@@ -23,7 +23,7 @@ import {
 } from '@/lib/supabase/anf-tasks'
 import { TypePill } from './task-ui'
 import { RequestDialog, type TaskLink } from './purchasing-ui'
-import { OrderChip, TaskOrdersSection, useOpenRequest, useTaskOrders } from './task-orders'
+import { LinkOrderPicker, OrderChip, TaskOrdersSection, unlinkOrder, useOpenRequest, useTaskOrders } from './task-orders'
 import { addDaysIso } from '@/lib/task-orders'
 import type { ActivityAttachment } from '@/types'
 import { assetPlace, type AnfAsset } from '@/lib/supabase/anf-assets'
@@ -135,8 +135,12 @@ export function TaskDrawer({ task, types, places, assets, onSaveAsset, onClose, 
       </div>
 
       <div>
-        <Input value={name} onChange={(e) => setName(e.target.value)} onBlur={() => name.trim() && name.trim() !== task.name && retitle({ name: name.trim() })}
-          className="h-auto border-transparent px-0 text-[19px] font-semibold shadow-none hover:border-border focus:px-2" />
+        <label className="group/t flex items-center gap-1.5">
+          <Input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+            onBlur={() => { const v = name.trim(); if (!v) { setName(task.name); return } if (v !== task.name) { retitle({ name: v }); log(`✎ Renamed “${task.name}” → “${v}”`) } }}
+            aria-label="Task title" className="h-auto border-transparent px-0 text-[19px] font-semibold shadow-none hover:border-border hover:px-2 focus:px-2" />
+          <Pencil className="w-3.5 h-3.5 shrink-0 text-muted-foreground opacity-60 group-hover/t:opacity-100" />
+        </label>
         <p className="font-mono text-[11px] text-muted-foreground">{task.title}</p>
       </div>
 
@@ -163,7 +167,7 @@ export function TaskDrawer({ task, types, places, assets, onSaveAsset, onClose, 
             onChange={(v) => retitle({ branch: v })} />
         ))}
         {field('Room', (
-          <PlaceMulti label="Room" value={task.room} options={[...new Set(rooms.map((r) => r.name))]} allLabel={ALL_ROOMS}
+          <PlaceMulti label="Room" value={task.room} options={[...new Set(rooms.map((r) => r.name))]} allLabel={ALL_ROOMS} tone="orange"
             onChange={(v) => retitle({ room: v })} />
         ))}
         {field('Progress', prog.total
@@ -219,9 +223,12 @@ export function TaskDrawer({ task, types, places, assets, onSaveAsset, onClose, 
         )}
         {task.checklists.map((cl) => (
           <div key={cl.id} className="mb-3">
-            {(task.checklists.length > 1 || cl.name !== 'Sub-tasks') && (
-              <div className="flex items-center gap-2 py-1">
-                <input defaultValue={cl.name} onBlur={(e) => e.target.value !== cl.name && setLists(task.checklists.map((c) => (c.id === cl.id ? { ...c, name: e.target.value } : c)))} className="flex-1 bg-transparent text-[12.5px] font-semibold outline-none" aria-label="Group name" />
+            {(
+              <div className="group/g flex items-center gap-2 py-1">
+                <input key={cl.name} defaultValue={cl.name} onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+                  onBlur={(e) => { const v = e.target.value.trim(); if (!v) { e.target.value = cl.name; return } if (v !== cl.name) setLists(task.checklists.map((c) => (c.id === cl.id ? { ...c, name: v } : c))) }}
+                  className="min-w-0 flex-1 rounded bg-transparent px-1 -mx-1 text-[12.5px] font-semibold outline-none hover:bg-muted focus:bg-muted" aria-label="Group name" />
+                <Pencil className="w-3 h-3 text-muted-foreground opacity-50 group-hover/g:opacity-100" />
                 <button type="button" aria-label="Delete group" onClick={() => window.confirm(`Delete “${cl.name}” and its sub-tasks?`) && setLists(task.checklists.filter((c) => c.id !== cl.id))}
                   className="text-muted-foreground hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
@@ -236,14 +243,19 @@ export function TaskDrawer({ task, types, places, assets, onSaveAsset, onClose, 
               const late = it.due && st !== 'done' && it.due < today()
               return (
                 <div key={it.id} className="group border-b border-border/70">
-                  <div className="grid grid-cols-[18px_1fr_auto] sm:grid-cols-[18px_1fr_92px_104px_64px] items-center gap-2 py-1.5 text-[13px]">
+                  <div className="grid grid-cols-[18px_1fr_auto_auto] sm:grid-cols-[18px_1fr_30px_92px_104px_64px] items-center gap-2 py-1.5 text-[13px]">
                     <input type="checkbox" checked={st === 'done'} onChange={() => setStatus(cl.id, it, st === 'done' ? 'todo' : 'done')} className="w-4 h-4 accent-emerald-600" aria-label="Done" />
-                    <button type="button" onClick={() => { setOpenSub(isOpen ? null : it.id); setReport(''); setReportPhotos([]) }} className="min-w-0 text-left">
+                    <div className="min-w-0">
                       <span className={cn('block truncate', st === 'done' && 'line-through text-muted-foreground')}>{it.text}</span>
-                      {reportsOf(it).length > 0 && (() => { const rs = reportsOf(it); const ph = rs.reduce((n, r) => n + r.photos.length, 0); return (
-                        <span className="flex items-center gap-1 truncate text-[11.5px] text-muted-foreground"><MessageSquare className="w-3 h-3 shrink-0" />{rs.length} report{rs.length > 1 ? 's' : ''}{ph > 0 && <> · <Camera className="w-3 h-3" />{ph}</>} · {rs[0].text || 'photo'}</span>
-                      ) })()}
-                    </button>
+                      {reportsOf(it).length > 0 && !isOpen && <span className="block truncate text-[11.5px] text-muted-foreground">{reportsOf(it)[0].by}: {reportsOf(it)[0].text || '📷 photo'}</span>}
+                    </div>
+                    {(() => { const rs = reportsOf(it); const n = rs.length; return (
+                      <button type="button" onClick={() => { setOpenSub(isOpen ? null : it.id); setReport(''); setReportPhotos([]) }} aria-label={`Reports for ${it.text}`} aria-expanded={isOpen} title="Report · photos"
+                        className={cn('relative grid h-7 w-[30px] place-items-center rounded-md border', isOpen ? 'border-[#7A5AA5] bg-[#7A5AA5]/10 text-[#7A5AA5]' : 'border-border bg-background text-muted-foreground hover:text-foreground')}>
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        {n > 0 && <span className="absolute -right-1.5 -top-1.5 rounded-full bg-[#7A5AA5] px-1 text-[9.5px] font-bold leading-[15px] text-white">{n}</span>}
+                      </button>
+                    ) })()}
                     <select value={it.owner ?? ''} onChange={(e) => setItem(cl.id, it.id, { owner: e.target.value || null })}
                       className={cn('hidden sm:block h-7 rounded border border-transparent bg-transparent text-[12px] hover:border-border', !it.owner && 'text-muted-foreground')} aria-label="Owner">
                       <option value="">owner</option>{teamMembers.map((m) => <option key={m.id} value={m.name || m.email}>{m.name || m.email}</option>)}
@@ -295,7 +307,9 @@ export function TaskDrawer({ task, types, places, assets, onSaveAsset, onClose, 
         ))}
       </div>
 
-      <TaskOrdersSection orders={orders} onOpen={openRequest} onRequest={() => requestFor()}
+      <TaskOrdersSection orders={orders} onOpen={openRequest}
+        action={<LinkOrderPicker task={task} subs={allSubs} onNew={() => requestFor()} onLinked={(m) => { log(m); toast(m) }} />}
+        onUnlink={(o) => { void unlinkOrder(o.r).then(() => { log(`🔗 Unlinked ${o.r.number}`); toast(`Unlinked ${o.r.number}`) }) }}
         subName={(id) => allSubs.find((i) => i.id === id)?.text ?? null} />
 
       {/* Status update (stays inside the task) */}

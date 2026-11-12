@@ -321,7 +321,7 @@ export function TimelineView({ tasks, types, onOpen }: { tasks: AnfTask[]; types
             const a = o.orderedAt ?? format(new Date(), 'yyyy-MM-dd')
             const w = `calc(${x(o.eta)} - ${x(a)} + ${100 / days}%)`
             return (
-              <span key={o.r.request_id} title={`${o.r.number} · ${o.orderedAt ? `ordered ${o.orderedAt}` : 'not ordered yet'} → ETA ${o.eta}${o.late ? ' · after due!' : ''}`}>
+              <span key={o.r.request_id} title={`${o.r.number}${o.r.project_name ? ` · ${o.r.project_name}` : ""}\n${o.items.map((i) => `${i.quantity}× ${i.item}`).join(", ") || "no items"}\n${o.orderedAt ? `ordered ${o.orderedAt}` : 'not ordered yet'} → ETA ${o.eta}${o.late ? ' · after due!' : ''}`}>
                 <span className="absolute top-[17px] h-1.5 rounded-full" style={{ left: x(a), width: w, background: o.late ? 'repeating-linear-gradient(90deg,#dc2626 0 6px,#fca5a5 6px 12px)' : o.etaGuess ? 'repeating-linear-gradient(90deg,#0f766e 0 3px,transparent 3px 7px)' : 'repeating-linear-gradient(90deg,#0f766e 0 6px,#5eead4 6px 12px)' }} />
                 {o.orderedAt && <span className="absolute top-[14px] h-3 w-3 -translate-x-1/2 rotate-45 bg-teal-700 ring-2 ring-card" style={{ left: x(o.orderedAt) }} />}
                 <span className={cn('absolute top-[14px] h-3 w-3 rotate-45 ring-2', o.late ? 'bg-red-600 ring-card' : 'bg-card ring-teal-700')} style={{ left: `calc(${x(o.eta)} + ${50 / days}%)`, transform: 'translateX(-50%) rotate(45deg)' }} />

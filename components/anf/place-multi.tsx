@@ -12,9 +12,9 @@ export function roomsFor(places: AnfPlace[], branchValue: string | null | undefi
 }
 
 /** Chip multi-select with an "All …" chip. Value is "BACC, BTT", "All branches" or null. */
-export function PlaceMulti({ value, options, allLabel, onChange, label }: {
+export function PlaceMulti({ value, options, allLabel, onChange, label, tone = 'purple' }: {
   value: string | null | undefined; options: string[]; allLabel: typeof ALL_BRANCHES | typeof ALL_ROOMS
-  onChange: (v: string | null) => void; label: string
+  onChange: (v: string | null) => void; label: string; tone?: 'purple' | 'orange'
 }) {
   const picked = splitPlaces(value)
   const isAll = picked.includes(allLabel)
@@ -27,7 +27,7 @@ export function PlaceMulti({ value, options, allLabel, onChange, label }: {
   const chip = (name: string, on: boolean) => (
     <button key={name} type="button" onClick={() => toggle(name)} aria-pressed={on}
       className={cn('rounded-full border px-2.5 py-0.5 text-[12.5px] font-medium transition-colors',
-        on ? 'border-[#7A5AA5] bg-[#7A5AA5] text-white' : 'border-border bg-background text-foreground hover:border-foreground/30')}>
+        on ? (tone === 'orange' ? 'border-[#E07B2E] bg-[#E07B2E] text-white' : 'border-[#7A5AA5] bg-[#7A5AA5] text-white') : 'border-border bg-background text-foreground hover:border-foreground/30')}>
       {on && '✓ '}{name}
     </button>
   )

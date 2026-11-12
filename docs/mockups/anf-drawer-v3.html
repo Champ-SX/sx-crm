@@ -1,0 +1,117 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A&F drawer v3</title>
+<style>
+:root{--bg:#FAF9F6;--card:#fff;--line:#E7E4DD;--mut:#7B776E;--fg:#1F1D1A;--pur:#7A5AA5;--org:#E07B2E;--teal:#0F8B7E;--red:#D64545}
+*{box-sizing:border-box}body{margin:0;background:#EDEBE6;font:14px/1.45 -apple-system,Inter,sans-serif;color:var(--fg);padding:24px}
+.wrap{display:grid;grid-template-columns:640px 1fr;gap:24px;max-width:1320px;margin:auto}
+.d{background:var(--bg);border-radius:14px;padding:22px 24px;box-shadow:0 2px 10px #0001}
+h2{font-size:12px;letter-spacing:.08em;color:var(--mut);font-family:ui-monospace,monospace;margin:22px 0 8px;display:flex;justify-content:space-between;align-items:center}
+.tag{background:#ECEAFB;color:#5B4FC4;font:600 11px ui-monospace;padding:2px 7px;border-radius:5px}
+.title{font-size:20px;font-weight:700;display:flex;gap:8px;align-items:center}
+.title .pen,.pen{color:var(--mut);font-size:13px;border:1px dashed var(--line);border-radius:6px;padding:1px 6px;cursor:pointer}
+.code{font:12px ui-monospace;color:var(--mut);margin-top:4px}
+.row{display:grid;grid-template-columns:90px 1fr;gap:10px;margin-top:12px;align-items:start}.row>span{color:var(--mut);padding-top:3px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.c{border:1px solid var(--line);background:#fff;border-radius:99px;padding:2px 10px;font-size:12.5px}
+.c.p{background:var(--pur);border-color:var(--pur);color:#fff}.c.o{background:var(--org);border-color:var(--org);color:#fff}
+.new{outline:2px dashed #F3A04A;outline-offset:3px;border-radius:8px}
+.note{font-size:11.5px;color:#B5651D;margin-top:4px}
+.grp{display:flex;align-items:center;gap:6px;font-weight:600;font-size:13px;margin:8px 0 4px}
+.st{display:grid;grid-template-columns:18px 1fr auto auto auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.box{width:16px;height:16px;border:1.5px solid #aaa;border-radius:4px}
+.ic{position:relative;width:30px;height:28px;border:1px solid var(--line);border-radius:7px;display:grid;place-items:center;background:#fff;cursor:pointer}
+.ic b{position:absolute;top:-6px;right:-6px;background:var(--pur);color:#fff;font-size:10px;border-radius:99px;padding:0 5px}
+.ic.on{border-color:var(--pur);background:#F2EEF8}
+.pill{background:#EEF0F4;border-radius:6px;padding:3px 10px;font-size:12px}
+.rep{margin:4px 0 6px 28px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px}
+.rep .m{font-size:12.5px;margin-bottom:6px}.rep .m i{color:var(--mut);font-style:normal;font-size:11px}
+.in{display:flex;gap:6px}.in div{flex:1;border:1px solid var(--line);border-radius:7px;padding:5px 8px;color:var(--mut);font-size:12.5px}
+.btn{border:1px solid var(--line);border-radius:7px;padding:4px 10px;background:#fff;font-size:12.5px}.btn.pr{background:var(--fg);color:#fff}
+.menu{border:1px solid var(--line);background:#fff;border-radius:10px;box-shadow:0 8px 24px #0002;padding:6px;width:360px;margin-left:auto}
+.menu .s{font:11px ui-monospace;color:var(--mut);padding:6px 8px 2px}
+.menu .i{padding:7px 8px;border-radius:7px;font-size:13px;display:flex;justify-content:space-between}.menu .i:hover,.menu .i.h{background:#F2EEF8}
+.menu .i small{color:var(--mut)}
+.ord{border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px;margin-top:8px;font-size:12.5px}
+.bar{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-top:8px}.bar i{height:5px;border-radius:9px;background:#E7E4DD}.bar i.f{background:var(--teal)}
+/* side notes */
+.n{background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 2px 10px #0001;margin-bottom:16px}
+.n h3{margin:0 0 6px;font-size:15px}.n p,.n li{color:#4A463F;font-size:13px;margin:4px 0}
+.k{display:inline-block;background:#F3A04A;color:#fff;border-radius:99px;width:20px;height:20px;text-align:center;font:700 12px/20px sans-serif;margin-right:6px}
+/* timeline */
+.tl{display:grid;grid-template-columns:150px repeat(12,1fr);font-size:11.5px;border-top:1px solid var(--line)}
+.tl>div{border-bottom:1px solid var(--line);padding:6px 4px;position:relative;min-height:28px}
+.hd{color:var(--mut);font:11px ui-monospace;text-align:center}
+.bar2{position:absolute;top:8px;height:12px;border-radius:6px}
+</style></head><body>
+<div class="wrap">
+<div class="d">
+  <div class="new" style="padding:4px">
+    <div class="title"><span class="tag">R&amp;D</span> MVP snap setup <span class="pen">✎ Rename</span></div>
+    <div class="code">261112-[BACC-Music room/A64/K11/Long Table] - MVP snap setup</div>
+  </div>
+  <div class="note">① Click the title (or ✎) to edit it — the code line rebuilds.</div>
+
+  <div class="row"><span>Branch</span><div class="chips"><span class="c">All branches</span><span class="c p">✓ BACC</span><span class="c">BTT</span><span class="c">True Alpha</span><span class="c">CentralWorld</span></div></div>
+  <div class="row new"><span>Room</span><div class="chips"><span class="c">All rooms</span><span class="c">A60</span><span class="c o">✓ A64</span><span class="c">A65</span><span class="c o">✓ Music room</span><span class="c o">✓ Long Table</span><span class="c">K05</span><span class="c o">✓ K11</span></div></div>
+  <div class="note">② Branch = purple, Room = orange.</div>
+
+  <h2>SUB-TASKS · 0/3 <span style="color:var(--pur);font-family:sans-serif;font-size:12.5px">＋ Add group</span></h2>
+  <div class="grp new" style="padding:3px 4px">Camera rig <span class="pen">✎</span> <span style="margin-left:auto;color:var(--mut)">🗑</span></div>
+  <div class="note">③ Every group header is editable, including the first “Sub-tasks” one.</div>
+  <div class="st"><span class="box"></span><span>DO A</span><span class="ic new" title="Report"><span>💬</span><b>2</b></span><span style="color:var(--mut)">20 Nov</span><span class="pill">Doing</span></div>
+  <div class="rep">
+    <div class="m">Lens arrived, testing on A64 <i>· Vitta · 2h</i></div>
+    <div class="m">Shutter lag fixed with firmware <i>· Andy · yesterday</i></div>
+    <div class="in"><div>Report — what's going on? # for an asset</div><span class="btn">📷</span><span class="btn pr">Post</span></div>
+  </div>
+  <div class="st"><span class="box"></span><span>let's do AAAA <span style="font-size:11px;color:var(--teal);border:1px solid #9DD;border-radius:5px;padding:0 4px">📦 PO-007 · ETA 18 Nov</span></span><span class="ic"><span>💬</span></span><span style="color:var(--mut)">19 Nov</span><span class="pill" style="background:#DDF3F0;color:var(--teal)">Waiting parts</span></div>
+  <div class="note">④ 💬 icon on every row with a count badge; tap to open/close the report thread (purple outline while open). Row name no longer toggles it.</div>
+
+  <h2>PARTS &amp; ORDERS · 1 <span class="btn new" style="font-family:sans-serif">🔗 Link PR / PO ▾</span></h2>
+  <div class="menu">
+    <div style="border:1px solid var(--line);border-radius:7px;padding:5px 8px;color:var(--mut);font-size:12.5px;margin:2px 2px 4px">Search REQ / PO number, supplier, item…</div>
+    <div class="s">OPEN REQUESTS (not linked)</div>
+    <div class="i h"><span>REQ-014 · Ring light 18"</span><small>Approved</small></div>
+    <div class="i"><span>REQ-016 · HDMI cables ×4</span><small>Submitted</small></div>
+    <div class="s">OPEN POs</div>
+    <div class="i"><span>PO-007 · Sample Camera Shop</span><small>Ordered · ETA 18 Nov</small></div>
+    <div class="s">LINK TO</div>
+    <div class="i"><span>◉ Whole task &nbsp; ○ let's do AAAA &nbsp; ○ DO A</span></div>
+    <div class="i" style="border-top:1px solid var(--line);margin-top:4px;color:var(--pur)"><span>＋ New request…</span></div>
+  </div>
+  <div class="ord">
+    <b style="font-family:ui-monospace">PO-007</b> ↳ let's do AAAA <span style="float:right">ETA <b>18 Nov</b> · <span style="color:#1A7F4B">before due 19 Nov</span> · <span style="color:var(--mut)">✕ unlink</span></span>
+    <div style="color:var(--mut)">1× RF 35mm f/1.8 · REQ-012</div>
+    <div class="bar"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i></div>
+  </div>
+  <div class="note">⑤ Pick an existing PR or PO (picking a PO links all its requests), or start a new one.</div>
+</div>
+
+<div>
+  <div class="n"><h3>Summary</h3>
+    <p><span class="k">1</span><b>Task title editable</b> — click title / ✎, rename inline; code line rebuilds, activity logs “Renamed”.</p>
+    <p><span class="k">2</span><b>Colours</b> — Branch chips purple, Room chips orange.</p>
+    <p><span class="k">3</span><b>Group headers editable</b> — always shown with ✎, even when there's only the default “Sub-tasks”.</p>
+    <p><span class="k">4</span><b>Report = 💬 icon</b> per sub-task with a count badge (photos counted too). Tap to open the thread + input under the row. Name click no longer toggles it — less accidental opening.</p>
+    <p><span class="k">5</span><b>Link PR / PO</b> — replaces “＋ Request items” with a picker: search open requests and POs, choose “whole task” or a sub-task, link. “＋ New request…” stays at the bottom. Each linked order gets ✕ unlink.</p>
+  </div>
+  <div class="n"><h3>Is ⑤ a good idea? — yes, with two rules</h3>
+    <ul>
+      <li>Purchasing often already made the PR/PO before R&amp;D asks — linking avoids duplicate requests. 👍</li>
+      <li><b>Link at request level.</b> A PO can carry items for several tasks, so picking a PO links its requests (you can untick ones not for this task). Keeps “one request → one task” clean.</li>
+      <li>A request already linked to another task shows as “linked to …” and can be moved, not double-linked.</li>
+      <li>No new SQL — uses the anf_task_id / anf_subtask_id columns you just added.</li>
+    </ul>
+  </div>
+  <div class="n"><h3>⑥ Timeline — expected receive date</h3>
+    <div class="tl">
+      <div></div><div class="hd">12</div><div class="hd">13</div><div class="hd">14</div><div class="hd">15</div><div class="hd">16</div><div class="hd">17</div><div class="hd">18</div><div class="hd">19</div><div class="hd">20</div><div class="hd">21</div><div class="hd">22</div><div class="hd">23</div>
+      <div><b>MVP snap setup</b></div><div style="grid-column:span 12"><span class="bar2" style="left:0;width:40%;background:#B8A6DA"></span></div>
+      <div style="padding-left:14px">↳ let's do AAAA</div><div style="grid-column:span 12"><span class="bar2" style="left:58%;width:3px;background:#555;height:16px;top:6px"></span><span style="position:absolute;left:59%;top:5px;font-size:10px;color:var(--mut)">due</span></div>
+      <div style="padding-left:28px;color:var(--teal)">📦 PO-007</div><div style="grid-column:span 12"><span class="bar2" style="left:16%;width:36%;background:repeating-linear-gradient(45deg,#0F8B7E,#0F8B7E 4px,#5FC2B7 4px,#5FC2B7 8px)"></span><span style="position:absolute;left:52%;top:3px;font-size:12px;color:var(--teal)">◇ 18 Nov</span></div>
+    </div>
+    <p style="margin-top:8px">Already built (Sub-tasks &amp; orders toggle). Linked PR/POs from ⑤ show here the same way — ◆ ordered → ◇ expected receive, red when after the sub-task due. I'll add a hover with supplier + items.</p>
+  </div>
+</div>
+</div>
+</body></html>
