@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { supabase, isSupabaseConfigured } from './client'
 import { format } from 'date-fns'
 
@@ -260,3 +261,18 @@ export function notifyCritical(task: AnfTask, actor: string, people: { id: strin
 
 /** Solved tasks older than this are archived automatically. */
 export const AUTO_ARCHIVE_DAYS = 14
+
+// ── Task list for other pages (Requests "A&F task" picker) — loaded once, shared ──
+let taskCache: AnfTask[] | null = null
+let taskLoading: Promise<void> | null = null
+const taskListeners = new Set<() => void>()
+export function useAnfTaskList(): AnfTask[] {
+  const [, force] = useState(0)
+  useEffect(() => {
+    const f = () => force((n) => n + 1)
+    taskListeners.add(f)
+    if (!taskCache && !taskLoading) taskLoading = fetchAnf().then((r) => { taskCache = r.tasks.filter((t) => !t.is_archived) }).catch(() => { taskCache = [] }).finally(() => taskListeners.forEach((l) => l()))
+    return () => { taskListeners.delete(f) }
+  }, [])
+  return taskCache ?? []
+}

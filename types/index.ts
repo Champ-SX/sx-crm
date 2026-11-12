@@ -219,6 +219,8 @@ export interface AnfRequest {
   rejected_reason?: string | null
   soon_notified_at?: string | null   // needed-by alerts (cron) — each fires once
   late_notified_at?: string | null
+  anf_task_id?: string | null        // linked Andy & Fine. task (optional)
+  anf_subtask_id?: string | null     // …and one of its sub-tasks
   created_at?: string
   updated_at?: string
 }
@@ -247,6 +249,7 @@ export interface AnfPO {
   created_by?: string | null
   notes?: string | null
   ordered_at?: string | null
+  eta?: string | null               // expected arrival (yyyy-mm-dd): order date + supplier lead time, editable
   created_at?: string
   updated_at?: string
 }

@@ -10,6 +10,8 @@ import { useAuth } from '@/components/auth-provider'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
+import { useAnfTaskList } from '@/lib/supabase/anf-tasks'
+import { addDaysIso } from '@/lib/task-orders'
 import { ANF_ACCENT, SEED_BRANCHES, baht, kindOf } from '@/lib/anf'
 import { jobCardName } from '@/lib/jobs'
 import { useSuppliers, preferredFor, linksFor, saveLink, newLink, supplierById } from '@/lib/supabase/suppliers'
@@ -89,9 +91,13 @@ export function StepBar({ status }: { status: ReqStatus }) {
 
 export interface RequestPrefill { item: string; product_id?: string | null; description?: string | null; branch?: string | null; unit_price?: number; quantity?: number; supplier_id?: string | null }
 
-export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
+/** Start a request from an Andy & Fine. task / sub-task. */
+export interface TaskLink { task_id: string; subtask_id?: string | null; title: string; needed_by?: string | null; deliver_to?: string | null }
+
+export function RequestDialog({ request, prefill, link, onClose, onCreatePO }: {
   request: AnfRequest | null      // null = new
   prefill?: RequestPrefill | RequestPrefill[]   // Stock / Catalog → Reorder: a refill request with these lines
+  link?: TaskLink                 // new request made from an A&F task
   onClose: () => void
   onCreatePO: (items: AnfOrder[], emergency?: string) => void   // emergency = reason, when not the buyer
 }) {
@@ -116,7 +122,11 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
     request_id: newPurchasingId(), board_id: activeBoardId || 'anf-order', number: nextRequestNumber(requests.map((x) => x.number)),
     project_kind: lines.length ? 'refill' : 'general', job_id: null, project_name: lines.length ? `Refill · ${firstBranch ? branchLabel(firstBranch) : 'Warehouse'}` : '', needed_by: null,
     deliver_to: firstBranch || 'WAREHOUSE', created_by: me, created_by_id: user?.id ?? null, status: 'draft',
+    ...(link ? { board_id: 'anf-order', project_kind: 'free' as const, project_name: link.title, needed_by: link.needed_by ?? null, anf_task_id: link.task_id, anf_subtask_id: link.subtask_id ?? null, ...(link.deliver_to ? { deliver_to: link.deliver_to } : {}) } : {}),
   })
+  const anfTasks = useAnfTaskList()
+  const linkedTask = anfTasks.find((t) => t.task_id === r.anf_task_id)
+  const linkedSubs = linkedTask?.checklists.flatMap((c) => c.items) ?? []
   const [rejecting, setRejecting] = useState<string | null>(null)   // reason being typed
   const [saved, setSaved] = useState(!!request)
   const savedNote = useRef<string | null>(request?.notes ?? null)
@@ -125,7 +135,7 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
   const [newSupFor, setNewSupFor] = useState<AnfOrder | null>(null)   // line getting a ＋ New supplier
   const [error, setError] = useState<string | null>(null)
   const items = anfOrders.filter((o) => o.request_id === r.request_id).sort((a, b) => a.created_at.localeCompare(b.created_at))
-  const products = anfProducts.filter((p) => !activeBoardId || !p.board_id || p.board_id === activeBoardId)
+  const products = anfProducts.filter((p) => { const b = r.board_id || activeBoardId; return !b || !p.board_id || p.board_id === b })
   const matches = q.trim() ? products.filter((p) => [p.name, p.code, ...(p.aliases ?? [])].some((v) => (v ?? '').toLowerCase().includes(q.trim().toLowerCase()))).slice(0, 6) : []
   const anfStock = useCRMStore((s) => s.anfStock)
   const stockOf = (pid: string) => anfStock.filter((x) => x.product_id === pid).reduce((t, x) => t + (x.qty || 0), 0)
@@ -333,6 +343,26 @@ export function RequestDialog({ request, prefill, onClose, onCreatePO }: {
                 <p className="mt-1 text-[11.5px] text-muted-foreground">One short line: what it&apos;s for. This becomes the title in the list.</p>
               </div>
             )}
+            <div className="sm:col-span-4">
+              <label className="field-label">Andy &amp; Fine. task <span className="font-normal normal-case text-muted-foreground">(optional · the task sees this order and its ETA)</span></label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <select disabled={!canEdit} value={r.anf_task_id ?? ''} onChange={(e) => patch({ anf_task_id: e.target.value || null, anf_subtask_id: null })} className={inputCls} aria-label="A&F task">
+                  <option value="">— not linked —</option>
+                  {r.anf_task_id && !linkedTask && <option value={r.anf_task_id}>(linked task)</option>}
+                  {anfTasks.filter((t) => t.column_id !== 'done' || t.task_id === r.anf_task_id).map((t) => <option key={t.task_id} value={t.task_id}>{t.name}{t.branch ? ` · ${[t.branch, t.room].filter(Boolean).join(' ')}` : ''}</option>)}
+                </select>
+                {r.anf_task_id && linkedSubs.length > 0 && (
+                  <select disabled={!canEdit} value={r.anf_subtask_id ?? ''} onChange={(e) => {
+                    const sub = linkedSubs.find((i) => i.id === e.target.value)
+                    const due = sub?.due ? addDaysIso(sub.due, -2) : null
+                    patch({ anf_subtask_id: e.target.value || null, ...(due && !r.needed_by ? { needed_by: due } : {}) })
+                  }} className={inputCls} aria-label="Sub-task">
+                    <option value="">Whole task</option>
+                    {linkedSubs.map((i) => <option key={i.id} value={i.id}>↳ {i.text}{i.due ? ` · due ${i.due.slice(5)}` : ''}</option>)}
+                  </select>
+                )}
+              </div>
+            </div>
             <div><label className="field-label">Needed by</label><input type="date" value={r.needed_by ?? ''} onChange={(e) => patch({ needed_by: e.target.value || null, soon_notified_at: null, late_notified_at: null })} className={inputCls} /></div>
             <div><label className="field-label">Deliver to</label>
               <select value={r.deliver_to ?? ''} onChange={(e) => patch({ deliver_to: e.target.value || null })} className={inputCls}>

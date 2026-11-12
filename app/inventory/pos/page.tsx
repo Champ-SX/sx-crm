@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils'
 import { ANF_ACCENT, baht, fmtDate, kindOf, branchColor } from '@/lib/anf'
 import { usePurchasing, savePO, requestStatus, REQ_STATUS, requestTotal, lineTotalVat, isBuyer, logEvent, neededByAlert, thaiToday } from '@/lib/supabase/purchasing'
 import { useSuppliers, telHref, lineHref, linksFor } from '@/lib/supabase/suppliers'
+import { etaFor, addDaysIso } from '@/lib/task-orders'
 import type { AnfOrder, AnfPO, AnfRequest } from '@/types'
 
 const PO_STATUS = { draft: { label: 'Draft', cls: 'bg-muted text-muted-foreground' }, cancelled: { label: 'Cancelled', cls: 'bg-muted text-muted-foreground line-through' } }
@@ -177,8 +178,12 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
 
   async function markOrdered() {
     try {
-      await savePO({ ...po, status: 'ordered', ordered_at: new Date().toISOString() })
-      for (const rid of new Set(items.map((o) => o.request_id).filter(Boolean))) void logEvent(rid, 'ordered', `${po.number} · ${sup?.name ?? 'supplier'}`)
+      // ETA = order date + the slowest line's supplier lead time (editable below).
+      const orderedAt = new Date().toISOString()
+      // No lead time on file → assume 7 days (buyer can change it).
+      const eta = livePO.eta ?? etaFor(orderedAt, items.map((o) => linksFor(o.product_id).find((l) => l.supplier_id === (po.supplier_id ?? o.supplier_id))?.lead_time)) ?? addDaysIso(orderedAt, 7)
+      await savePO({ ...po, status: 'ordered', ordered_at: orderedAt, eta })
+      for (const rid of new Set(items.map((o) => o.request_id).filter(Boolean))) void logEvent(rid, 'ordered', `${po.number} · ${sup?.name ?? 'supplier'}${eta ? ` · ETA ${fmtDate(eta)}` : ''}`)
       for (const o of items) if (o.status === 'to_order') await updateAnfOrder(o.order_id, { status: 'ordered', ordered_at: o.ordered_at ?? today, ordered_by: o.ordered_by ?? me, supplier_id: po.supplier_id ?? o.supplier_id })
     } catch (e) { setError((e as Error).message) }
   }
@@ -269,6 +274,14 @@ function PODialog({ po, onClose }: { po: AnfPO; onClose: () => void }) {
           {canOrder && po.status !== 'cancelled' && items.every((o) => o.status !== 'received') && <button type="button" onClick={cancel} className="text-destructive text-sm mr-auto">Cancel PO</button>}
           <span className="ml-auto" />
           <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
+          {livePO.status !== 'cancelled' && (
+            <label className="flex items-center gap-1.5 text-[12px] text-muted-foreground mr-auto" title="Expected arrival. Filled from the supplier lead time when marked ordered.">
+              ETA
+              <input type="date" value={livePO.eta ?? ''} disabled={!canOrder}
+                onChange={(e) => { const eta = e.target.value || null; void savePO({ ...livePO, eta }); for (const rid of new Set(items.map((o) => o.request_id).filter(Boolean))) void logEvent(rid, 'item_changed', `${po.number} ETA → ${eta ? fmtDate(eta) : 'none'}`) }}
+                className="h-8 rounded-md border border-border bg-background px-2 text-[12.5px] text-foreground disabled:opacity-60" />
+            </label>
+          )}
           {po.status === 'draft' && !canOrder && <span className="text-[12px] text-muted-foreground">Purchasing (admin) marks this ordered</span>}
           {po.status === 'draft' && canOrder && <Button size="sm" className="bg-[#7A5AA5] hover:opacity-90 text-white" onClick={markOrdered} disabled={items.length === 0}>Mark ordered →</Button>}
           {po.status === 'ordered' && bulk.length > 0 && <Button size="sm" className="bg-foreground text-background hover:opacity-90" onClick={() => void receiveAll()}>Receive all ✓</Button>}

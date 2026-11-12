@@ -162,7 +162,7 @@ export default function RequestsPage() {
                     {canSelect && <input type="checkbox" checked={on} onChange={() => setSelected((s) => (on ? s.filter((x) => x !== r.key) : [...s, r.key]))} className="w-4 h-4 accent-foreground" aria-label="Select for PO" />}
                   </span>
                   <button type="button" onClick={() => (r.req ? setOpenReq(r.req) : setOpenItem(single))} className="text-left min-w-0">
-                    <b className="block text-[14px] truncate">{projectTitle(r.req, job, single ?? undefined)}{hasNote(r.req, r.items) && <span className="ml-1.5 font-normal" title={r.req?.notes ?? 'Has item notes'}>📝</span>}</b>
+                    <b className="block text-[14px] truncate">{projectTitle(r.req, job, single ?? undefined)}{hasNote(r.req, r.items) && <span className="ml-1.5 font-normal" title={r.req?.notes ?? 'Has item notes'}>📝</span>}{r.req?.anf_task_id && <span className="ml-1.5 rounded bg-[#7F77DD] px-1.5 py-px align-middle font-mono text-[10px] font-semibold text-white" title="Linked to an Andy & Fine. task">A&amp;F</span>}</b>
                     {r.req && r.items.length > 0 && <span className="block text-[12px] text-muted-foreground truncate">{itemsLine(r.items)}</span>}
                     <span className="block font-mono text-[11px] text-muted-foreground truncate">{r.req ? `${r.req.number}${r.req.created_by ? ` · ${r.req.created_by}` : ''}` : `Quick order${single?.requested_by ? ` · ${single.requested_by}` : ''}`}</span>
                   </button>

@@ -9,6 +9,7 @@ import { driveFolderId, planSync, type DriveEntry } from '@/lib/drive-sync'
 import { toast } from '@/lib/toast'
 import { AssetCard, kindLabel } from './asset-ui'
 import { TypePill, typeOf } from './task-ui'
+import { useAllTaskOrders } from './task-orders'
 
 const pill = (on: boolean) => cn('rounded-full px-2.5 py-1 text-[12px] whitespace-nowrap', on ? 'bg-foreground text-background font-semibold' : 'bg-card border border-border text-muted-foreground hover:text-foreground')
 
@@ -269,6 +270,8 @@ const WEEKS = 8
 /** Gantt-style: one row per task, bar from start to due, coloured by type. */
 export function TimelineView({ tasks, types, onOpen }: { tasks: AnfTask[]; types: AnfTaskType[]; onOpen: (taskId: string) => void }) {
   const [from, setFrom] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
+  const [showSubs, setShowSubs] = useState(true)
+  const orderMap = useAllTaskOrders(tasks)
   const days = WEEKS * 7
   const to = addDays(from, days - 1)
   const pos = (d: string) => differenceInCalendarDays(parseISO(d + 'T00:00:00'), from)
@@ -291,6 +294,7 @@ export function TimelineView({ tasks, types, onOpen }: { tasks: AnfTask[]; types
         <button type="button" onClick={() => setFrom(startOfWeek(new Date(), { weekStartsOn: 1 }))} className="h-8 rounded-lg border border-border bg-card px-3 text-[12px] font-medium">Today</button>
         <button type="button" onClick={() => setFrom(addDays(from, 28))} className="h-8 rounded-lg border border-border bg-card px-2.5 text-[12px]">4 weeks ›</button>
         <span className="text-[14px] font-semibold">{format(from, 'd MMM')} – {format(to, 'd MMM yyyy')}</span>
+        <label className="ml-auto flex items-center gap-1.5 text-[12px] text-muted-foreground"><input type="checkbox" checked={showSubs} onChange={(e) => setShowSubs(e.target.checked)} className="accent-foreground" />Sub-tasks &amp; orders</label>
       </div>
       <div className="min-w-[760px] rounded-xl border border-border bg-card overflow-hidden">
         <div className="grid grid-cols-[240px_1fr] border-b border-border">
@@ -306,8 +310,26 @@ export function TimelineView({ tasks, types, onOpen }: { tasks: AnfTask[]; types
           const prog = checklistProgress(t)
           const pct = prog.total ? Math.round((prog.done / prog.total) * 100) : null
           const late = t.due_date && t.column_id !== 'done' && pos(t.due_date) < todayX
+          const tOrders = orderMap.get(t.task_id) ?? []
+          const subs = showSubs ? t.checklists.flatMap((c) => c.items).filter((i) => i.due || tOrders.some((o) => o.r.anf_subtask_id === i.id)) : []
+          const grid = { backgroundImage: `repeating-linear-gradient(90deg, transparent 0 calc(100% / ${WEEKS} - 1px), var(--border) calc(100% / ${WEEKS} - 1px) calc(100% / ${WEEKS}))` }
+          const todayLine = todayX >= 0 && todayX < days && <span className="absolute top-0 bottom-0 w-px bg-red-500/70" style={{ left: `${((todayX + 0.5) / days) * 100}%` }} />
+          const x = (d: string) => `${(Math.min(days - 1, Math.max(0, pos(d))) / days) * 100}%`
+          const orderLines = (list: typeof tOrders) => showSubs && list.map((o) => {
+            if (o.stage === 4 || !o.eta) return null
+            const a = o.orderedAt ?? format(new Date(), 'yyyy-MM-dd')
+            const w = `calc(${x(o.eta)} - ${x(a)} + ${100 / days}%)`
+            return (
+              <span key={o.r.request_id} title={`${o.r.number} · ${o.orderedAt ? `ordered ${o.orderedAt}` : 'not ordered yet'} → ETA ${o.eta}${o.late ? ' · after due!' : ''}`}>
+                <span className="absolute top-[17px] h-1.5 rounded-full" style={{ left: x(a), width: w, background: o.late ? 'repeating-linear-gradient(90deg,#dc2626 0 6px,#fca5a5 6px 12px)' : o.etaGuess ? 'repeating-linear-gradient(90deg,#0f766e 0 3px,transparent 3px 7px)' : 'repeating-linear-gradient(90deg,#0f766e 0 6px,#5eead4 6px 12px)' }} />
+                {o.orderedAt && <span className="absolute top-[14px] h-3 w-3 -translate-x-1/2 rotate-45 bg-teal-700 ring-2 ring-card" style={{ left: x(o.orderedAt) }} />}
+                <span className={cn('absolute top-[14px] h-3 w-3 rotate-45 ring-2', o.late ? 'bg-red-600 ring-card' : 'bg-card ring-teal-700')} style={{ left: `calc(${x(o.eta)} + ${50 / days}%)`, transform: 'translateX(-50%) rotate(45deg)' }} />
+              </span>
+            )
+          })
           return (
-            <div key={t.task_id} className="grid grid-cols-[240px_1fr] border-b border-border/60 last:border-0 hover:bg-muted/30">
+            <div key={t.task_id}>
+            <div className="grid grid-cols-[240px_1fr] border-b border-border/60 last:border-0 hover:bg-muted/30">
               <button type="button" onClick={() => onOpen(t.task_id)} className="flex min-w-0 items-center gap-1.5 px-3 py-2 text-left text-[12.5px]">
                 <TypePill type={type} /><span className={cn('truncate', t.column_id === 'done' && 'text-muted-foreground line-through')}>{t.name}</span>
               </button>
@@ -320,7 +342,27 @@ export function TimelineView({ tasks, types, onOpen }: { tasks: AnfTask[]; types
                   {pct !== null && <span className="absolute inset-y-0 left-0 bg-black/15" style={{ width: `${pct}%` }} />}
                   <span className="relative">{pct !== null ? `${pct}%` : ''}{t.column_id === 'done' ? ' ✓' : ''}</span>
                 </button>
+                {orderLines(tOrders.filter((o) => !o.r.anf_subtask_id))}
               </div>
+            </div>
+            {subs.map((it) => {
+              const so = tOrders.filter((o) => o.r.anf_subtask_id === it.id)
+              return (
+                <div key={it.id} className="grid grid-cols-[240px_1fr] border-b border-border/40 bg-muted/10">
+                  <button type="button" onClick={() => onOpen(t.task_id)} className="flex min-w-0 items-center gap-1.5 py-1.5 pl-7 pr-3 text-left text-[12px] text-muted-foreground">
+                    ↳ <span className={cn('truncate', it.done && 'line-through')}>{it.text}</span>{so.some((o) => o.stage < 4) && <span className="shrink-0">📦</span>}
+                  </button>
+                  <div className="relative h-9" style={grid}>
+                    {todayLine}
+                    {orderLines(so)}
+                    {it.due && pos(it.due) >= 0 && pos(it.due) < days && (
+                      <span className={cn('absolute top-2 h-5 rounded px-1 text-[10px] font-semibold leading-5 text-white whitespace-nowrap', it.done && 'opacity-50')}
+                        style={{ left: x(it.due), width: `max(${100 / days}%, 46px)`, backgroundColor: type?.color ?? '#888', opacity: it.done ? 0.5 : 0.75 }}>due {format(parseISO(it.due + 'T00:00:00'), 'd')}</span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
             </div>
           )
         })}

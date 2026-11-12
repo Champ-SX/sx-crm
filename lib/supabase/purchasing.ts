@@ -96,9 +96,38 @@ export async function logEvent(requestId: string | null | undefined, action: Anf
   const e: AnfRequestEvent = { id: mkId(), request_id: requestId, action, detail: detail ?? null, actor: who.name, actor_id: who.id, at: new Date().toISOString() }
   events = [...events, e]
   emit()
+  mirrorToTask(requestId, action, detail ?? null, who.name)
   if (!isSupabaseConfigured) return
   const { error } = await supabase.from('anf_request_events').insert(e)
   if (error) console.warn('[purchasing] history write failed', error.message)
+}
+
+// Requests linked to an Andy & Fine. task also write to that task's activity log,
+// and "received" notifies the task's people.
+const TASK_MIRROR: Partial<Record<AnfRequestEvent['action'], string>> = {
+  created: '📦 Requested', submitted: '📦 Sent for approval', approved: '✅ Approved', rejected: '⛔ Rejected',
+  ordered: '🚚 Ordered', received: '📦 Received', po_cancelled: '↩️ PO cancelled',
+}
+function mirrorToTask(requestId: string, action: AnfRequestEvent['action'], detail: string | null, by: string) {
+  const r = requests.find((x) => x.request_id === requestId)
+  const label = TASK_MIRROR[action]
+  if (!r?.anf_task_id || !label) return
+  const st = useCRMStore.getState()
+  void st.addActivity({
+    activity_id: mkId(), entity_type: 'anf_task', entity_id: r.anf_task_id, activity_type: 'note',
+    title: `${label} · ${r.number}`, description: [r.project_name, detail].filter(Boolean).join(' — '), created_by: by || 'Purchasing', created_at: new Date().toISOString(),
+  })
+  if (action !== 'received' || !isSupabaseConfigured) return
+  void (async () => {
+    const { data } = await supabase.from('anf_tasks').select('name, assignee_ids').eq('task_id', r.anf_task_id).maybeSingle()
+    for (const id of (data?.assignee_ids as string[] | undefined) ?? []) {
+      const m = st.teamMembers.find((x) => x.id === id)
+      if (!m || m.id === st.currentUserId) continue
+      notify({ recipient_id: m.id, recipient_name: m.name || m.email, actor: by || 'Purchasing',
+        entity_type: 'anf_task', entity_id: r.anf_task_id!, entity_name: data?.name ?? r.number,
+        message: `parts arrived · ${r.number}${detail ? ` · ${detail}` : ''}`, read: false, board_id: 'anf' })
+    }
+  })()
 }
 
 // ── Numbers ──────────────────────────────────────────────────────────────────
