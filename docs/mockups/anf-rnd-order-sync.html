@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>R&amp;D Order Sync</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f1ec;--ink:#1c1b19;--mute:#6b6862;--line:#e2ded5;--acc:#7A5AA5;--rd:#7F77DD;--buy:#0f766e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:13px/1.45 Inter,"IBM Plex Sans Thai",sans-serif;color:var(--ink);padding:18px 16px}
+.wrap{max-width:1220px;margin:0 auto}
+.cap{font:600 11px "IBM Plex Mono";color:var(--mute);letter-spacing:.05em;margin:26px 0 8px}
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;align-items:stretch}
+.step{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;position:relative}
+.step b{display:block;font-size:13px;margin:4px 0 2px}.step p{margin:0;color:var(--mute);font-size:12px}
+.step .who{font:600 10px "IBM Plex Mono";border-radius:4px;padding:1px 6px;color:#fff;display:inline-block}
+.rd{background:var(--rd)}.buy{background:var(--buy)}.ops{background:#d97706}.sys{background:#1c1b19}
+.step:not(:last-child):after{content:"→";position:absolute;right:-9px;top:40%;color:var(--mute);font-weight:700}
+.drawer{display:grid;grid-template-columns:1.35fr 1fr;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.dl{padding:16px 18px;border-right:1px solid var(--line)}.dr{padding:16px 18px;background:#faf9f6}
+.pill{display:inline-block;font:600 10.5px "IBM Plex Mono";border-radius:4px;padding:1px 6px;color:#fff}
+.lbl{font:600 10.5px "IBM Plex Mono";color:var(--mute);letter-spacing:.06em;margin:16px 0 6px;display:flex;justify-content:space-between;align-items:center}
+.lbl span{color:var(--acc);font-family:Inter;letter-spacing:0;font-size:12px}
+.sub{display:grid;grid-template-columns:18px 1fr auto 64px;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid #f0ede7;font-size:12.5px}
+.ck{width:15px;height:15px;border:1.5px solid #bbb;border-radius:4px}.ck.on{background:#16a34a;border-color:#16a34a}
+.st{font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 6px;text-align:center}.todo{background:#e2e8f0;color:#334155}.doing{background:#f97316;color:#fff}.done{background:#16a34a;color:#fff}.wait{background:#0f766e;color:#fff}
+.req{display:inline-flex;gap:5px;align-items:center;border:1px solid #99f6e4;background:#f0fdfa;color:#115e59;border-radius:6px;padding:1px 7px;font-size:11.5px;font-weight:600}
+.po{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff}
+.po .hd{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.po .mono{font:600 11.5px "IBM Plex Mono"}
+.track{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin:8px 0 6px}
+.track i{height:5px;border-radius:3px;background:#e5e7eb}.track i.on{background:var(--buy)}.track i.late{background:#dc2626}
+.track-l{display:grid;grid-template-columns:repeat(5,1fr);font-size:10.5px;color:var(--mute)}
+.eta{font-size:12px}.late{color:#dc2626;font-weight:700}.ok{color:#15803d;font-weight:600}
+.warn{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:8px;padding:8px 10px;font-size:12.5px;margin-top:6px}
+.btn{border-radius:8px;padding:6px 12px;font-weight:600;background:var(--acc);color:#fff;font-size:12.5px;display:inline-block}.btn.o{background:#fff;color:var(--ink);border:1px solid var(--line);font-weight:500}.btn.t{background:var(--buy)}
+.log{border-left:2px solid var(--line);padding:2px 0 6px 10px;margin-bottom:6px;font-size:12.5px}.log small{display:block;color:var(--mute);font-size:11px}
+.tl{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tlr{display:grid;grid-template-columns:240px 1fr;border-bottom:1px solid #f0ede7;font-size:12.5px}
+.tlr>div:first-child{padding:9px 12px;border-right:1px solid var(--line)}
+.tlr.sub2>div:first-child{padding-left:30px;color:var(--mute);font-size:12px}
+.tlg{position:relative;height:40px;background:repeating-linear-gradient(90deg,transparent 0 calc(100%/6 - 1px),#f0ede7 calc(100%/6 - 1px) calc(100%/6))}
+.bar{position:absolute;top:10px;height:20px;border-radius:5px;color:#fff;font-size:10.5px;font-weight:700;padding:2px 6px;white-space:nowrap}
+.ord{position:absolute;top:16px;height:8px;border-radius:4px;background:repeating-linear-gradient(90deg,#0f766e 0 6px,#5eead4 6px 12px)}
+.dia{position:absolute;top:13px;width:14px;height:14px;transform:rotate(45deg);border:2px solid #fff;box-shadow:0 0 0 1px #0f766e}
+.dia.o{background:#0f766e}.dia.e{background:#fff;box-shadow:0 0 0 2px #0f766e}.dia.x{background:#dc2626;box-shadow:0 0 0 1px #dc2626}
+.today{position:absolute;top:0;bottom:0;width:2px;background:#ef4444}
+.hdrow{display:flex;justify-content:space-between;padding:8px 12px;font:600 10.5px "IBM Plex Mono";color:var(--mute)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--mute);margin-top:8px;align-items:center}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.dlg{background:#fff;border:1px solid var(--line);border-radius:14px;max-width:560px;overflow:hidden}
+.dlg .h{padding:12px 16px;border-bottom:1px solid var(--line);font-weight:700}
+.dlg .b{padding:12px 16px}
+.f{margin-bottom:10px}.f label{display:block;font:600 10.5px "IBM Plex Mono";color:var(--mute);letter-spacing:.05em;margin-bottom:4px}
+.in{border:1px solid var(--line);border-radius:7px;padding:7px 9px;background:#fcfbf9}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}.seg span{padding:5px 10px;font-size:12.5px;color:var(--mute)}.seg .on{background:var(--ink);color:#fff}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card{background:#fff;border:1px solid var(--line);border-left:4px solid var(--rd);border-radius:9px;padding:9px 10px;max-width:300px}
+.card b{display:block;margin:4px 0 2px}.s{color:var(--mute);font-size:11.5px}
+.pb{height:5px;border-radius:3px;background:#eee;overflow:hidden;margin:6px 0}.pb i{display:block;height:100%;background:#16a34a}
+.note{background:#fff;border-radius:12px;padding:12px 16px;margin-top:16px}.note li{margin:3px 0}
+.q{background:#fffbea;border:1px solid #f1e3a8;border-radius:12px;padding:12px 16px;margin-top:12px}.q li{margin:4px 0}
+@media(max-width:900px){.flow{grid-template-columns:1fr}.step:after{display:none}.drawer,.two{grid-template-columns:1fr}.tlr{grid-template-columns:130px 1fr}}
+</style></head><body><div class="wrap">
+
+<p class="cap">1 · THE FLOW: R&amp;D NEEDS PARTS → BUYING → R&amp;D KNOWS WHEN THEY ARRIVE</p>
+<div class="flow">
+  <div class="step"><span class="who rd">R&amp;D</span><b>Sub-task needs parts</b><p>“Test new lighting rig” needs 2× Godox AD200 + octa.</p></div>
+  <div class="step"><span class="who rd">R&amp;D</span><b>＋ Request items</b><p>From the sub-task. Request is pre-filled “For: A&amp;F task”, Needed by = sub-task due − 2 days.</p></div>
+  <div class="step"><span class="who buy">BUYING</span><b>Approve · PO · Ordered</b><p>Normal Requests / PO flow. Buyer sets <b>ETA</b> when ordering (supplier lead time pre-fills it).</p></div>
+  <div class="step"><span class="who sys">AUTO</span><b>Board stays in sync</b><p>Sub-task shows “Waiting parts”, ETA on the Timeline, red if ETA &gt; sub-task due.</p></div>
+  <div class="step"><span class="who ops">WAREHOUSE</span><b>Received</b><p>Activity: “📦 Received 2× AD200”. Sub-task pill goes back to <b>Doing</b> and R&amp;D is notified.</p></div>
+</div>
+
+<p class="cap">2 · TASK DRAWER: SUB-TASK ➜ REQUEST, AND A “PARTS &amp; ORDERS” SECTION</p>
+<div class="drawer">
+  <div class="dl">
+    <span class="pill" style="background:var(--rd)">R&amp;D</span> <b style="font-size:17px;margin-left:4px">New lighting setup · A65</b>
+    <div class="lbl">SUB-TASKS · 2/5</div>
+    <div class="sub"><span class="ck on"></span><span>Pick lights &amp; modifier</span><span></span><span class="st done">Done</span></div>
+    <div class="sub"><span class="ck on"></span><span>Get quotes</span><span></span><span class="st done">Done</span></div>
+    <div class="sub"><span class="ck"></span><span>Test new lighting rig <span class="req">📦 REQ-021 · Ordered · ETA 20 Nov</span></span><span class="s">due 22 Nov</span><span class="st wait">Waiting parts</span></div>
+    <div class="sub"><span class="ck"></span><span>Write camera + flash preset <span class="s">(→ CAM-BACC-A65)</span></span><span class="s">due 25 Nov</span><span class="st todo">To do</span></div>
+    <div class="sub"><span class="ck"></span><span>Install at A65 <span class="req" style="background:#fef2f2;border-color:#fecaca;color:#991b1b">📦 REQ-024 · To order · ETA after due!</span></span><span class="s">due 28 Nov</span><span class="st todo">To do</span></div>
+    <div style="margin:8px 0 0 26px"><span class="btn o" style="padding:3px 9px;font-size:12px">＋ Request items for this sub-task</span></div>
+
+    <div class="lbl">PARTS &amp; ORDERS · 2 requests <span>＋ Request items</span></div>
+    <div class="po">
+      <div class="hd"><span class="mono">REQ-2026-11-021</span><span class="s">→ PO-2026-11-008 · Godox Thailand</span><span style="margin-left:auto" class="eta">ETA <b>20 Nov</b> · <span class="ok">2 days before due</span></span></div>
+      <div class="s" style="margin-top:3px">2× Godox AD200 Pro · 1× Octa 90 cm · ฿24,600</div>
+      <div class="track"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+      <div class="track-l"><span>Requested</span><span>Approved</span><span>On PO</span><span>Ordered</span><span>Received</span></div>
+    </div>
+    <div class="po">
+      <div class="hd"><span class="mono">REQ-2026-11-024</span><span class="s">Light stand ×2 · no supplier yet</span><span style="margin-left:auto" class="eta">Needed by <b>27 Nov</b> · <span class="late">lead time 7 days → late</span></span></div>
+      <div class="track"><i class="on"></i><i class="on"></i><i class="late"></i><i></i><i></i></div>
+      <div class="track-l"><span>Requested</span><span>Approved</span><span>To order</span><span>Ordered</span><span>Received</span></div>
+      <div class="warn">⚠ Still not ordered. At the usual 7-day lead time it arrives after “Install at A65” is due. <u>Ping buyer</u> · <u>Move due date</u></div>
+    </div>
+  </div>
+  <div class="dr">
+    <div class="lbl" style="margin-top:0">ACTIVITY</div>
+    <div class="log"><small>Auto · 14 Nov 10:12</small>📦 REQ-021 ordered by Nice · PO-008 · ETA 20 Nov</div>
+    <div class="log"><small>Auto · 13 Nov 16:40</small>✅ REQ-021 approved by Champ</div>
+    <div class="log"><small>Vitta · 13 Nov 15:02</small>📦 Requested 3 items for “Test new lighting rig” — REQ-021</div>
+    <div class="log"><small>Auto · (later)</small>📦 Received 2× AD200, 1× Octa → “Test new lighting rig” is back to <b>Doing</b></div>
+    <p class="s">Purchase events are written here automatically, so the R&amp;D report shows what parts are in and when.</p>
+  </div>
+</div>
+
+<p class="cap">3 · TIMELINE: ORDERS SHOWN AGAINST THE R&amp;D WORK</p>
+<div class="tl">
+  <div class="tlr"><div class="s" style="font:600 10.5px 'IBM Plex Mono'">TASK / SUB-TASK</div><div class="hdrow"><span>10 Nov</span><span>14 Nov</span><span>18 Nov</span><span>22 Nov</span><span>26 Nov</span><span>30 Nov</span></div></div>
+  <div class="tlr"><div><span class="pill" style="background:var(--rd)">R&amp;D</span> New lighting setup · A65</div>
+    <div class="tlg"><span class="today" style="left:30%"></span><span class="bar" style="left:2%;width:88%;background:var(--rd)">40%</span></div></div>
+  <div class="tlr sub2"><div>↳ Test new lighting rig</div>
+    <div class="tlg"><span class="today" style="left:30%"></span><span class="ord" style="left:20%;width:30%"></span><span class="dia o" style="left:19%"></span><span class="dia e" style="left:50%"></span><span class="bar" style="left:53%;width:15%;background:#a5a1e8">due 22</span></div></div>
+  <div class="tlr sub2"><div>↳ Install at A65</div>
+    <div class="tlg"><span class="today" style="left:30%"></span><span class="ord" style="left:30%;width:52%;background:repeating-linear-gradient(90deg,#dc2626 0 6px,#fca5a5 6px 12px)"></span><span class="dia x" style="left:81%"></span><span class="bar" style="left:70%;width:12%;background:#a5a1e8">due 28</span></div></div>
+  <div class="tlr"><div><span class="pill" style="background:#D4537E">ลงเฟรม</span> Xmas frame · all branches</div>
+    <div class="tlg"><span class="today" style="left:30%"></span><span class="bar" style="left:25%;width:45%;background:#D4537E">57%</span></div></div>
+</div>
+<div class="legend">
+  <span><i class="dia o" style="position:static;display:inline-block"></i> Ordered</span>
+  <span><i class="dia e" style="position:static;display:inline-block"></i> ETA</span>
+  <span><i class="dia x" style="position:static;display:inline-block"></i> ETA after due</span>
+  <span><i style="display:inline-block;width:28px;height:8px;border-radius:4px;background:repeating-linear-gradient(90deg,#0f766e 0 6px,#5eead4 6px 12px)"></i> On the way</span>
+  <span>Toggle: <b>Show orders</b> ☑</span>
+</div>
+
+<div class="two">
+<div>
+<p class="cap">4 · REQUEST DIALOG: “FOR” GETS AN A&amp;F TASK OPTION</p>
+<div class="dlg">
+  <div class="h">New request · REQ-2026-11-021</div>
+  <div class="b">
+    <div class="f"><label>FOR</label><div class="seg"><span>General</span><span>Stock refill</span><span>Project</span><span class="on">A&amp;F task</span></div></div>
+    <div class="f"><label>TASK · SUB-TASK</label><div class="in">New lighting setup · A65 › <b>Test new lighting rig</b> ▾</div></div>
+    <div class="two" style="gap:8px"><div class="f"><label>NEEDED BY</label><div class="in">20 Nov 2026 <span class="s">(sub-task due 22 Nov − 2 days)</span></div></div><div class="f"><label>DELIVER TO</label><div class="in">BACC</div></div></div>
+    <div class="f"><label>ITEMS</label><div class="in">2× Godox AD200 Pro · 1× Octa 90 cm</div></div>
+  </div>
+</div>
+</div>
+<div>
+<p class="cap">5 · BOARD CARD + REQUESTS LIST: BOTH SIDES SEE THE LINK</p>
+<div class="card"><span class="pill" style="background:var(--rd)">R&amp;D</span><b>New lighting setup · A65</b><span class="s">due 28 Nov · BACC A65</span><div class="pb"><i style="width:40%"></i></div><span class="s">2/5 · 40% · 📦 1 on the way · <span class="late">1 late</span></span></div>
+<div style="margin-top:12px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 12px;max-width:420px">
+  <span class="mono" style="font:600 11.5px 'IBM Plex Mono'">REQ-2026-11-021</span> <span class="pill" style="background:var(--rd)">A&amp;F · R&amp;D</span><br>
+  <span>New lighting setup · A65 › Test new lighting rig</span><br><span class="s">Ordered · ETA 20 Nov · tap the chip to open the task</span>
+</div>
+</div>
+</div>
+
+<div class="note"><b>How it works</b><ul>
+<li><b>Link</b>: a request can point to an A&amp;F task and (optionally) one sub-task. Made from the sub-task, it's linked automatically; in Requests, “For → A&amp;F task” picks one.</li>
+<li><b>Needed by</b> defaults to the sub-task's due date minus 2 days.</li>
+<li><b>ETA</b>: when the buyer marks a PO ordered, ETA = order date + supplier lead time (from the supplier link), editable on the PO.</li>
+<li><b>Sub-task status</b>: while a linked request isn't fully received the pill shows <b>Waiting parts</b> (teal). On receive it returns to Doing and R&amp;D gets a notification.</li>
+<li><b>Late warning</b>: red when ETA (or needed-by + lead time, if not ordered yet) is after the sub-task due date. Shown on the sub-task, the card and the Timeline.</li>
+<li><b>Activity</b>: requested, approved, ordered (with ETA) and received are logged on the task automatically.</li>
+<li><b>Timeline</b>: “Show orders” draws each order from ordered → ETA under its sub-task.</li>
+</ul></div>
+<div class="q"><b>Decide</b><ul>
+<li><b>Sub-tasks on the Timeline</b>: show sub-task rows under each task (needed for order lines), or only the task bar with order diamonds on it?</li>
+<li><b>ETA</b>: auto from supplier lead time + editable, or buyer always types it?</li>
+<li><b>On receive</b>: just notify R&amp;D, or also auto-tick the sub-task Done?</li>
+<li><b>Which types</b> can link: only R&amp;D, or any A&amp;F task (e.g. ลงเฟรม needing printed materials)?</li>
+</ul></div>
+</div></body></html>

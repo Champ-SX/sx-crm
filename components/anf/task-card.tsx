@@ -9,13 +9,16 @@ import { cn } from '@/lib/utils'
 import { UserAvatar } from '@/components/shared/user-avatar'
 import { GRAPHIC_KINDS, checklistProgress, type AnfTask, type AnfTaskType } from '@/lib/supabase/anf-tasks'
 import type { TeamMember } from '@/types'
+import type { TaskOrder } from '@/lib/task-orders'
 import { TypePill, placeLine, typeOf } from './task-ui'
 
 const today = () => format(new Date(), 'yyyy-MM-dd')
 
-export function TaskCard({ t, types, people, onOpen, compact }: {
-  t: AnfTask; types: AnfTaskType[]; people: TeamMember[]; onOpen: () => void; compact?: boolean
+export function TaskCard({ t, types, people, onOpen, compact, orders }: {
+  t: AnfTask; types: AnfTaskType[]; people: TeamMember[]; onOpen: () => void; compact?: boolean; orders?: TaskOrder[]
 }) {
+  const onWay = orders?.filter((o) => o.stage < 4).length ?? 0
+  const lateN = orders?.filter((o) => o.late).length ?? 0
   const type = typeOf(types, t.type_id)
   const prog = checklistProgress(t)
   const overdue = t.due_date && t.column_id !== 'done' && t.due_date < today()
@@ -36,6 +39,7 @@ export function TaskCard({ t, types, people, onOpen, compact }: {
       <div className="flex items-center gap-2 mt-1.5 text-[11px] text-muted-foreground">
         {t.due_date && <span className={cn(overdue && 'text-red-600 font-semibold')}>{t.column_id === 'done' ? '✓ ' : 'due '}{format(parseISO(t.due_date + 'T00:00:00'), 'd MMM')}</span>}
         {prog.total > 0 && <span className={cn('inline-flex items-center gap-0.5', prog.done === prog.total && 'text-emerald-600')}><CheckSquare className="w-3 h-3" />{prog.done}/{prog.total} · {Math.round((prog.done / prog.total) * 100)}%</span>}
+        {onWay > 0 && <span className={cn(lateN ? 'font-semibold text-red-600' : 'text-teal-700 dark:text-teal-400')} title="Parts on order">📦 {onWay}{lateN ? ` · ${lateN} late` : ''}</span>}
         {!!t.graphics?.length && <span title={t.graphics.map((g) => `${GRAPHIC_KINDS.find((k) => k.id === g.kind)?.label}: ${g.name}`).join('\n')}>{[...new Set(t.graphics.map((g) => GRAPHIC_KINDS.find((k) => k.id === g.kind)?.icon))].join('')} {t.graphics.length}</span>}
         <span className="ml-auto flex -space-x-1.5">
           {people.slice(0, 3).map((m) => <span key={m.id} className="rounded-full ring-2 ring-card"><UserAvatar name={m.name || m.email} size={18} /></span>)}

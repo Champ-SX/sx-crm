@@ -19,6 +19,7 @@ import { typeOf } from '@/components/anf/task-ui'
 import { AnfSettings } from '@/components/anf/anf-settings'
 import { TaskCard, SortableTask, DropColumn } from '@/components/anf/task-card'
 import { AssetsView, TimelineView } from '@/components/anf/board-views'
+import { useAllTaskOrders } from '@/components/anf/task-orders'
 import { fetchAssets, saveAsset, deleteAsset, type AnfAsset } from '@/lib/supabase/anf-assets'
 import { DndContext, DragOverlay, MouseSensor, TouchSensor, pointerWithin, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
@@ -124,6 +125,7 @@ export default function AnfTasksPage() {
   const people = (ids: string[]) => teamMembers.filter((m) => ids.includes(m.id))
 
   // ── Drag & drop (same feel as the Won board: mouse after 5px, touch after a hold) ──
+  const orderMap = useAllTaskOrders(tasks)
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 8 } }),
@@ -152,7 +154,7 @@ export default function AnfTasksPage() {
   if (!hydrated) return null
 
   const card = (t: AnfTask, compact?: boolean) => (
-    <TaskCard key={t.task_id} t={t} compact={compact} types={types} people={people(t.assignee_ids)} onOpen={() => setOpenId(t.task_id)} />
+    <TaskCard key={t.task_id} t={t} compact={compact} types={types} people={people(t.assignee_ids)} orders={orderMap.get(t.task_id)} onOpen={() => setOpenId(t.task_id)} />
   )
 
 

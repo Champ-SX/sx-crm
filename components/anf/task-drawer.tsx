@@ -12,6 +12,7 @@ import { AddActivityForm } from '@/components/shared/add-activity-form'
 import { LinkifyText } from '@/components/shared/linkify-text'
 import { Archive, ArchiveRestore, Plus, Trash2, X, MessageSquare, Camera, Link2 } from 'lucide-react'
 import { useCRMStore } from '@/store/crm-store'
+import { toast } from '@/lib/toast'
 import { useAuth } from '@/components/auth-provider'
 import { cn, parseDbDate } from '@/lib/utils'
 import {
@@ -19,6 +20,9 @@ import {
   type AnfTask, type AnfTaskType, type AnfPlace, type AnfColumn, type Checklist, type ChecklistItem, type AnfHealth, type SubReport,
 } from '@/lib/supabase/anf-tasks'
 import { TypePill } from './task-ui'
+import { RequestDialog, type TaskLink } from './purchasing-ui'
+import { OrderChip, TaskOrdersSection, useOpenRequest, useTaskOrders } from './task-orders'
+import { addDaysIso } from '@/lib/task-orders'
 import type { ActivityAttachment } from '@/types'
 import { assetPlace, type AnfAsset } from '@/lib/supabase/anf-assets'
 import { AssetCard, AssetChip, MentionInput, MentionText, PhotoButton, PhotoStrip, kindLabel } from './asset-ui'
@@ -51,6 +55,15 @@ export function TaskDrawer({ task, types, places, assets, onSaveAsset, onClose, 
   const [healthNote, setHealthNote] = useState('')
   const [reportPhotos, setReportPhotos] = useState<ActivityAttachment[]>([])
   const [peek, setPeek] = useState<AnfAsset | null>(null)
+  const [reqLink, setReqLink] = useState<TaskLink | null>(null)
+  const orders = useTaskOrders(task)
+  const openRequest = useOpenRequest()
+  const allSubs = task.checklists.flatMap((c) => c.items)
+  const requestFor = (it?: ChecklistItem) => setReqLink({
+    task_id: task.task_id, subtask_id: it?.id ?? null,
+    title: it ? `${task.name} › ${it.text}` : task.name,
+    needed_by: (it?.due ?? task.due_date) ? addDaysIso((it?.due ?? task.due_date)!, -2) : null,
+  })
   const [linking, setLinking] = useState(false)
   const [linkQ, setLinkQ] = useState('')
 
@@ -219,6 +232,8 @@ export function TaskDrawer({ task, types, places, assets, onSaveAsset, onClose, 
             {cl.items.map((it) => {
               const st = subStatus(it)
               const sc = SUB_STATUS.find((x) => x.id === st)!
+              const subOrders = orders.filter((o) => o.r.anf_subtask_id === it.id)
+              const waitingParts = st !== 'done' && subOrders.some((o) => o.stage < 4)
               const next = st === 'todo' ? 'doing' : st === 'doing' ? 'done' : 'todo'
               const isOpen = openSub === it.id
               const late = it.due && st !== 'done' && it.due < today()
@@ -240,8 +255,9 @@ export function TaskDrawer({ task, types, places, assets, onSaveAsset, onClose, 
                     <input type="date" value={it.due ?? ''} onChange={(e) => setItem(cl.id, it.id, { due: e.target.value || null })}
                       className={cn('hidden sm:block h-7 rounded border border-transparent bg-transparent text-[12px] hover:border-border', !it.due && 'text-muted-foreground', late && 'text-red-600 font-semibold')} aria-label="Due" />
                     <button type="button" onClick={() => setStatus(cl.id, it, next)} title={`Tap for ${SUB_STATUS.find((x) => x.id === next)?.label}`}
-                      className={cn('rounded px-2 py-0.5 text-[11px] font-semibold text-center', sc.cls)}>{sc.label}</button>
+                      className={cn('rounded px-2 py-0.5 text-[11px] font-semibold text-center', waitingParts ? 'bg-teal-700 text-white' : sc.cls)}>{waitingParts ? 'Waiting parts' : sc.label}</button>
                   </div>
+                  {subOrders.length > 0 && <div className="-mt-0.5 mb-1.5 ml-[20px] flex flex-wrap gap-1">{subOrders.map((o) => <OrderChip key={o.r.request_id} o={o} onOpen={() => openRequest(o.r.request_id)} />)}</div>}
                   {isOpen && (
                     <div className="mb-2 ml-[26px] rounded-lg bg-muted/50 p-2 space-y-2">
                       <div className="grid grid-cols-2 gap-1.5 sm:hidden">
@@ -264,7 +280,7 @@ export function TaskDrawer({ task, types, places, assets, onSaveAsset, onClose, 
                         <Button size="sm" className="h-8" disabled={!report.trim() && !reportPhotos.length} onClick={() => postReport(cl.id, it)}>Post</Button>
                       </div>
                       <div className="flex justify-between text-[11.5px]">
-                        <span className="text-muted-foreground">Reports also go to the activity log.</span>
+                        <button type="button" onClick={() => requestFor(it)} className="font-medium text-teal-700 hover:underline dark:text-teal-400">📦 Request items for this sub-task</button>
                         <button type="button" onClick={() => window.confirm(`Delete “${it.text}”?`) && setLists(task.checklists.map((c) => (c.id === cl.id ? { ...c, items: c.items.filter((x) => x.id !== it.id) } : c)))} className="text-muted-foreground hover:text-destructive">Delete sub-task</button>
                       </div>
                     </div>
@@ -281,6 +297,9 @@ export function TaskDrawer({ task, types, places, assets, onSaveAsset, onClose, 
           </div>
         ))}
       </div>
+
+      <TaskOrdersSection orders={orders} onOpen={openRequest} onRequest={() => requestFor()}
+        subName={(id) => allSubs.find((i) => i.id === id)?.text ?? null} />
 
       {/* Status update (stays inside the task) */}
       <div>
@@ -342,6 +361,7 @@ export function TaskDrawer({ task, types, places, assets, onSaveAsset, onClose, 
           <div className="px-5 py-4 bg-muted/30 border-t lg:border-t-0 border-border lg:overflow-y-auto">{right}</div>
         </div>
       </DialogContent>
+      {reqLink && <RequestDialog request={null} link={reqLink} onClose={() => setReqLink(null)} onCreatePO={() => { setReqLink(null); toast('Approved — the buyer creates the PO in Purchasing') }} />}
       {peek && (
         <Dialog open onOpenChange={(o) => !o && setPeek(null)}>
           <DialogContent className="sm:max-w-[520px] p-4">
