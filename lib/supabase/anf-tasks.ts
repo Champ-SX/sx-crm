@@ -66,8 +66,10 @@ export const SUB_STATUS: { id: SubStatus; label: string; cls: string }[] = [
 export interface ChecklistItem {
   id: string; text: string; done: boolean
   status?: SubStatus; owner?: string | null; due?: string | null
-  note?: string | null; note_by?: string | null; note_at?: string | null   // latest report
+  note?: string | null; note_by?: string | null; note_at?: string | null   // latest report (summary)
+  reports?: SubReport[]                                                      // newest first
 }
+export interface SubReport { id: string; text: string; by: string; at: string; photos: import('@/types').ActivityAttachment[] }
 export const subStatus = (i: ChecklistItem): SubStatus => i.done ? 'done' : (i.status === 'doing' ? 'doing' : 'todo')
 export interface Checklist { id: string; name: string; items: ChecklistItem[] }
 
@@ -102,7 +104,8 @@ export interface AnfTask {
   health_note?: string | null
   health_by?: string | null
   health_at?: string | null
-  graphics?: AnfGraphic[]
+  graphics?: AnfGraphic[]          // legacy — moved to anf_assets
+  asset_ids?: string[]             // linked room-kit assets
   is_archived: boolean
   trello_id?: string | null
   created_by: string | null
@@ -151,9 +154,8 @@ let mockTasks: AnfTask[] = [
     checklists: [{ id: 'c1', name: 'Fix', items: [{ id: 'i1', text: 'Clean rollers', done: false }, { id: 'i2', text: 'Test print 10 sheets', done: false }] }] }),
   mk({ name: 'Graduation frame — Bag, Music', column_id: 'progress', type_id: 'frame', health: 'on_track', health_note: 'Frame done, GIF tomorrow', health_by: 'Andy', health_at: now(),
     graphics: [
-      { id: 'g1', kind: 'frame', name: 'Graduation frame 4×6', url: 'https://drive.google.com/file/d/mock-frame/view', status: 'live', live_at: ['BACC'], version: 2, added_by: 'Fine', added_at: now() },
-      { id: 'g2', kind: 'gif', name: 'Cap toss GIF', url: 'https://drive.google.com/file/d/mock-gif/view', status: 'draft', live_at: [], version: 1, added_by: 'Fine', added_at: now() },
-    ], branch: 'BACC', due_date: d(6), assignee_ids: ['u-andy'],
+    ],
+    asset_ids: ['as-1', 'as-2', 'as-5'], branch: 'BACC', due_date: d(6), assignee_ids: ['u-andy'],
     checklists: [{ id: 'c2', name: 'SETUP', items: ['FRAME', 'GIF', 'PREVIEW', 'UI'].map((t, i) => ({ id: `s${i}`, text: t, done: i === 0 })) }] }),
   mk({ name: 'New Year campaign · all branches', column_id: 'planned', type_id: 'frame', due_date: d(20) }),
   mk({ name: 'Q1 marketing plan', column_id: 'review', type_id: 'content', health: 'at_risk', health_note: 'Waiting for Champ approval', health_at: now() }),

@@ -10,31 +10,27 @@ import { AssigneePicker } from '@/components/shared/assignee-picker'
 import { ActivityTimeline } from '@/components/shared/activity-timeline'
 import { AddActivityForm } from '@/components/shared/add-activity-form'
 import { LinkifyText } from '@/components/shared/linkify-text'
-import { Archive, ArchiveRestore, Plus, Trash2, X, ExternalLink, MessageSquare } from 'lucide-react'
+import { Archive, ArchiveRestore, Plus, Trash2, X, MessageSquare, Camera, Link2 } from 'lucide-react'
 import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
 import { cn, parseDbDate } from '@/lib/utils'
 import {
-  ANF_COLUMNS, HEALTH, GRAPHIC_KINDS, GRAPHIC_STATUS, SUB_STATUS, subStatus, buildTaskTitle, checklistProgress, uid,
-  type AnfTask, type AnfTaskType, type AnfPlace, type AnfColumn, type Checklist, type ChecklistItem, type AnfHealth, type AnfGraphic, type GraphicKind,
+  ANF_COLUMNS, HEALTH, SUB_STATUS, subStatus, buildTaskTitle, checklistProgress, uid,
+  type AnfTask, type AnfTaskType, type AnfPlace, type AnfColumn, type Checklist, type ChecklistItem, type AnfHealth, type SubReport,
 } from '@/lib/supabase/anf-tasks'
-import { Chip, TypePill } from './task-ui'
+import { TypePill } from './task-ui'
+import type { ActivityAttachment } from '@/types'
+import { assetPlace, type AnfAsset } from '@/lib/supabase/anf-assets'
+import { AssetCard, AssetChip, MentionInput, MentionText, PhotoButton, PhotoStrip, kindLabel } from './asset-ui'
 
 const lbl = 'font-mono text-[10.5px] font-semibold tracking-[0.06em] text-muted-foreground'
 const when = (iso: string | null | undefined) => (iso ? format(parseDbDate(iso), 'd MMM HH:mm') : '')
-const isUrl = (u: string) => /^https?:\/\//.test(u.trim())
 const today = () => new Date().toISOString().slice(0, 10)
 
-/** Tile colour per graphic type (the preview stand-in; Drive files are private). */
-export const GRAPHIC_TILE: Record<GraphicKind, string> = {
-  frame: 'linear-gradient(135deg,#f5d0fe,#c4b5fd)',
-  gif: 'linear-gradient(135deg,#bae6fd,#a7f3d0)',
-  welcome: 'linear-gradient(135deg,#fde68a,#fca5a5)',
-  other: 'linear-gradient(135deg,#e5e7eb,#d1d5db)',
-}
 
-export function TaskDrawer({ task, types, places, onClose, onPatch, onMove, onDelete }: {
+export function TaskDrawer({ task, types, places, assets, onSaveAsset, onClose, onPatch, onMove, onDelete }: {
   task: AnfTask; types: AnfTaskType[]; places: AnfPlace[]
+  assets: AnfAsset[]; onSaveAsset: (a: AnfAsset) => void
   onClose: () => void
   onPatch: (patch: Partial<AnfTask>) => void
   onMove: (col: AnfColumn) => void
@@ -53,12 +49,10 @@ export function TaskDrawer({ task, types, places, onClose, onPatch, onMove, onDe
   const [report, setReport] = useState('')
   const [health, setHealth] = useState<AnfHealth | null>(null)
   const [healthNote, setHealthNote] = useState('')
-  const [side, setSide] = useState<'graphics' | 'activity'>('graphics')
-  const [gFilter, setGFilter] = useState<GraphicKind | 'all'>('all')
-  const [gOpen, setGOpen] = useState(false)
-  const [gKind, setGKind] = useState<GraphicKind>('frame')
-  const [gName, setGName] = useState('')
-  const [gUrl, setGUrl] = useState('')
+  const [reportPhotos, setReportPhotos] = useState<ActivityAttachment[]>([])
+  const [peek, setPeek] = useState<AnfAsset | null>(null)
+  const [linking, setLinking] = useState(false)
+  const [linkQ, setLinkQ] = useState('')
 
   const type = types.find((t) => t.type_id === task.type_id)
   const branches = places.filter((p) => p.kind === 'branch')
@@ -66,7 +60,13 @@ export function TaskDrawer({ task, types, places, onClose, onPatch, onMove, onDe
   const rooms = places.filter((p) => p.kind === 'room' && (!p.branch_id || !branchId || p.branch_id === branchId))
   const prog = checklistProgress(task)
   const pct = prog.total ? Math.round((prog.done / prog.total) * 100) : 0
-  const graphics = task.graphics ?? []
+  const linked = (task.asset_ids ?? []).map((id) => assets.find((a) => a.asset_id === id)).filter((a): a is AnfAsset => !!a)
+  const linkHits = assets.filter((a) => !task.asset_ids?.includes(a.asset_id))
+    .filter((a) => !linkQ.trim() || [a.code, a.name, a.branch, a.room, kindLabel(a.kind)].filter(Boolean).join(' ').toLowerCase().includes(linkQ.trim().toLowerCase()))
+    .sort((a, b) => Number(b.branch === task.branch) - Number(a.branch === task.branch)).slice(0, 8)
+  const link = (a: AnfAsset) => { onPatch({ asset_ids: [...(task.asset_ids ?? []), a.asset_id] }); log(`🔗 Linked ${a.code} · ${a.name}`) }
+  const unlink = (a: AnfAsset) => { onPatch({ asset_ids: (task.asset_ids ?? []).filter((x) => x !== a.asset_id) }); log(`🔗 Unlinked ${a.code}`) }
+  const reportsOf = (it: ChecklistItem): SubReport[] => it.reports ?? (it.note ? [{ id: 'legacy', text: it.note, by: it.note_by ?? '', at: it.note_at ?? '', photos: [] }] : [])
   const curHealth = HEALTH.find((h) => h.id === task.health)
 
   const log = (title: string, description = '') => void addActivity({
@@ -86,10 +86,12 @@ export function TaskDrawer({ task, types, places, onClose, onPatch, onMove, onDe
     log(`☑ ${it.text}: ${SUB_STATUS.find((x) => x.id === st)?.label}`)
   }
   function postReport(clId: string, it: ChecklistItem) {
-    const v = report.trim(); if (!v) return
-    setItem(clId, it.id, { note: v, note_by: me, note_at: new Date().toISOString() })
-    log(`💬 ${it.text}`, v)
-    setReport('')
+    const v = report.trim(); if (!v && !reportPhotos.length) return
+    const at = new Date().toISOString()
+    const r: SubReport = { id: uid('r'), text: v, by: me, at, photos: reportPhotos }
+    setItem(clId, it.id, { reports: [r, ...reportsOf(it).filter((x) => x.id !== 'legacy' || !it.reports)], note: v || '📷 photo', note_by: me, note_at: at })
+    void addActivity({ activity_id: uid('a'), entity_type: 'anf_task', entity_id: task.task_id, activity_type: 'note', title: `💬 ${it.text}`, description: v, created_by: me, created_at: at, attachments: reportPhotos })
+    setReport(''); setReportPhotos([])
   }
   function postHealth() {
     if (!health) return
@@ -98,19 +100,6 @@ export function TaskDrawer({ task, types, places, onClose, onPatch, onMove, onDe
     log(`📊 Status: ${h.label}`, healthNote.trim())
     setHealth(null); setHealthNote('')
   }
-  const setGraphics = (g: AnfGraphic[]) => onPatch({ graphics: g })
-  const patchGraphic = (id: string, p: Partial<AnfGraphic>, note?: string) => {
-    setGraphics(graphics.map((g) => (g.id === id ? { ...g, ...p } : g)))
-    if (note) log(note)
-  }
-  function addGraphic() {
-    if (!isUrl(gUrl) || !gName.trim()) return
-    const g: AnfGraphic = { id: uid('g'), kind: gKind, name: gName.trim(), url: gUrl.trim(), status: 'draft', live_at: [], version: 1, added_by: me, added_at: new Date().toISOString() }
-    setGraphics([...graphics, g])
-    log(`🖼️ Graphic added: ${GRAPHIC_KINDS.find((k) => k.id === gKind)?.label} · ${g.name}`, g.url)
-    setGName(''); setGUrl(''); setGOpen(false)
-  }
-
   const field = (label: string, children: React.ReactNode) => (
     <div className="grid grid-cols-[92px_1fr] items-center gap-2 py-1 text-[13px]">
       <span className="text-muted-foreground">{label}</span><div className="min-w-0">{children}</div>
@@ -172,6 +161,30 @@ export function TaskDrawer({ task, types, places, onClose, onPatch, onMove, onDe
           : <span className="text-muted-foreground">No sub-tasks yet</span>)}
       </div>
 
+      {/* Linked room-kit assets */}
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <span className={lbl}>LINKED ASSETS {linked.length > 0 && `· ${linked.length}`}</span>
+          <button type="button" onClick={() => { setLinking((v) => !v); setLinkQ('') }} className="text-[12px] font-medium text-[#7A5AA5] inline-flex items-center gap-1"><Link2 className="w-3 h-3" />Link asset</button>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {linked.map((a) => <AssetChip key={a.asset_id} a={a} onOpen={() => setPeek(a)} onRemove={() => unlink(a)} />)}
+          {linked.length === 0 && !linking && <span className="text-[12.5px] text-muted-foreground">Frames, GIFs, welcome UI or camera / flash presets this task uses. Or type # in a report.</span>}
+        </div>
+        {linking && (
+          <div className="mt-2 rounded-lg border border-border bg-background p-1.5">
+            <Input autoFocus value={linkQ} onChange={(e) => setLinkQ(e.target.value)} placeholder="Search code, name, room…" className="h-8 text-[13px] mb-1" />
+            {linkHits.map((a) => (
+              <button key={a.asset_id} type="button" onClick={() => link(a)} className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[12.5px] hover:bg-muted">
+                <span className="font-mono text-[10.5px] font-semibold text-[#7A5AA5]">{a.code}</span><span className="truncate">{a.name}</span>
+                <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">{kindLabel(a.kind)} · {assetPlace(a)}</span>
+              </button>
+            ))}
+            {linkHits.length === 0 && <p className="px-2 py-1.5 text-[12px] text-muted-foreground">Nothing found. Add assets in the “Graphic Assets and Camera Setting” tab.</p>}
+          </div>
+        )}
+      </div>
+
       <div>
         <div className={cn(lbl, 'mb-1')}>DETAILS</div>
         {editDesc ? (
@@ -213,9 +226,11 @@ export function TaskDrawer({ task, types, places, onClose, onPatch, onMove, onDe
                 <div key={it.id} className="group border-b border-border/70">
                   <div className="grid grid-cols-[18px_1fr_auto] sm:grid-cols-[18px_1fr_92px_104px_64px] items-center gap-2 py-1.5 text-[13px]">
                     <input type="checkbox" checked={st === 'done'} onChange={() => setStatus(cl.id, it, st === 'done' ? 'todo' : 'done')} className="w-4 h-4 accent-emerald-600" aria-label="Done" />
-                    <button type="button" onClick={() => { setOpenSub(isOpen ? null : it.id); setReport('') }} className="min-w-0 text-left">
+                    <button type="button" onClick={() => { setOpenSub(isOpen ? null : it.id); setReport(''); setReportPhotos([]) }} className="min-w-0 text-left">
                       <span className={cn('block truncate', st === 'done' && 'line-through text-muted-foreground')}>{it.text}</span>
-                      {it.note && <span className="flex items-center gap-1 truncate text-[11.5px] text-muted-foreground"><MessageSquare className="w-3 h-3 shrink-0" />{it.note}</span>}
+                      {reportsOf(it).length > 0 && (() => { const rs = reportsOf(it); const ph = rs.reduce((n, r) => n + r.photos.length, 0); return (
+                        <span className="flex items-center gap-1 truncate text-[11.5px] text-muted-foreground"><MessageSquare className="w-3 h-3 shrink-0" />{rs.length} report{rs.length > 1 ? 's' : ''}{ph > 0 && <> · <Camera className="w-3 h-3" />{ph}</>} · {rs[0].text || 'photo'}</span>
+                      ) })()}
                     </button>
                     <select value={it.owner ?? ''} onChange={(e) => setItem(cl.id, it.id, { owner: e.target.value || null })}
                       className={cn('hidden sm:block h-7 rounded border border-transparent bg-transparent text-[12px] hover:border-border', !it.owner && 'text-muted-foreground')} aria-label="Owner">
@@ -235,10 +250,18 @@ export function TaskDrawer({ task, types, places, onClose, onPatch, onMove, onDe
                         </select>
                         <Input type="date" value={it.due ?? ''} onChange={(e) => setItem(cl.id, it.id, { due: e.target.value || null })} className="h-8 text-[13px]" />
                       </div>
-                      {it.note && <p className="text-[12.5px]"><b>Latest:</b> {it.note} <span className="text-[11px] text-muted-foreground">· {it.note_by} · {when(it.note_at)}</span></p>}
+                      {reportsOf(it).map((r) => (
+                        <div key={r.id} className="border-l-2 border-border pl-2.5 text-[12.5px]">
+                          <div className="text-[11px] text-muted-foreground">{r.by} · {when(r.at)}</div>
+                          {r.text && <MentionText text={r.text} assets={assets} onOpen={setPeek} />}
+                          {r.photos.length > 0 && <div className="mt-1"><PhotoStrip photos={r.photos} size={72} /></div>}
+                        </div>
+                      ))}
+                      {reportPhotos.length > 0 && <PhotoStrip photos={reportPhotos} size={56} onRemove={(i) => setReportPhotos(reportPhotos.filter((_, j) => j !== i))} />}
                       <div className="flex gap-2">
-                        <Input autoFocus value={report} onChange={(e) => setReport(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && postReport(cl.id, it)} placeholder="Report — what's going on?" className="h-8 bg-background text-[13px]" />
-                        <Button size="sm" className="h-8" disabled={!report.trim()} onClick={() => postReport(cl.id, it)}>Post</Button>
+                        <MentionInput value={report} onChange={setReport} onEnter={() => postReport(cl.id, it)} assets={assets} placeholder="Report — what's going on? Type # for an asset" className="h-8 bg-background text-[13px]" />
+                        <PhotoButton onAdd={(p) => setReportPhotos([...reportPhotos, ...p])} />
+                        <Button size="sm" className="h-8" disabled={!report.trim() && !reportPhotos.length} onClick={() => postReport(cl.id, it)}>Post</Button>
                       </div>
                       <div className="flex justify-between text-[11.5px]">
                         <span className="text-muted-foreground">Reports also go to the activity log.</span>
@@ -295,79 +318,11 @@ export function TaskDrawer({ task, types, places, onClose, onPatch, onMove, onDe
     </div>
   )
 
-  // ── Right: graphics · activity ────────────────────────────────────────────
-  const shownG = graphics.filter((g) => gFilter === 'all' || g.kind === gFilter)
   const right = (
-    <div className="flex flex-col min-h-0 h-full">
-      <div className="flex gap-1 p-1 rounded-lg bg-muted mb-3 shrink-0">
-        {([['graphics', `Graphics${graphics.length ? ` · ${graphics.length}` : ''}`], ['activity', 'Activity']] as const).map(([k, l]) => (
-          <button key={k} type="button" onClick={() => setSide(k)} className={cn('flex-1 rounded-md py-1 text-[12.5px] font-medium', side === k ? 'bg-background shadow-sm' : 'text-muted-foreground')}>{l}</button>
-        ))}
-      </div>
-      {side === 'activity' ? (
-        <div className="space-y-4">
-          <AddActivityForm entityType="anf_task" entityId={task.task_id} owner={task.created_by ?? ''} entityName={task.name} />
-          <ActivityTimeline entityType="anf_task" entityId={task.task_id} entityName={task.name} />
-        </div>
-      ) : (
-        <div>
-          <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
-            {(['all', ...GRAPHIC_KINDS.map((k) => k.id)] as const).map((k) => {
-              const n = k === 'all' ? graphics.length : graphics.filter((g) => g.kind === k).length
-              if (k !== 'all' && !n) return null
-              return <button key={k} type="button" onClick={() => setGFilter(k)} className={cn('rounded-full px-2.5 py-0.5 text-[12px]', gFilter === k ? 'bg-foreground text-background font-semibold' : 'bg-background border border-border text-muted-foreground')}>{k === 'all' ? 'All' : GRAPHIC_KINDS.find((x) => x.id === k)?.label} {n}</button>
-            })}
-            <button type="button" onClick={() => setGOpen((v) => !v)} className="ml-auto text-[12px] font-medium text-[#7A5AA5] inline-flex items-center gap-1"><Plus className="w-3 h-3" />Add link</button>
-          </div>
-          {gOpen && (
-            <div className="rounded-lg border border-border bg-background p-2.5 mb-3 space-y-2">
-              <div className="flex flex-wrap gap-1.5">{GRAPHIC_KINDS.map((k) => <Chip key={k.id} on={gKind === k.id} onClick={() => setGKind(k.id)} className="py-1 text-[12px]">{k.label}</Chip>)}</div>
-              <Input value={gName} onChange={(e) => setGName(e.target.value)} placeholder="Name — e.g. Xmas frame A 4×6" className="h-8 text-[13px]" />
-              <div className="flex gap-2">
-                <Input value={gUrl} onChange={(e) => setGUrl(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addGraphic()} placeholder="https://drive.google.com/…" className="h-8 text-[13px]" />
-                <Button size="sm" className="h-8" disabled={!gName.trim() || !isUrl(gUrl)} onClick={addGraphic}>Add</Button>
-              </div>
-              <p className="text-[11px] text-muted-foreground">Google Drive file or folder link, shared with the team.</p>
-            </div>
-          )}
-          {graphics.length === 0 && !gOpen && <p className="rounded-lg border border-dashed border-border py-6 text-center text-[12.5px] text-muted-foreground">No graphics yet.<br />Designers add Frame, GIF or Welcome screen links here.</p>}
-          <div className="grid grid-cols-2 gap-2.5">
-            {shownG.map((g) => {
-              const k = GRAPHIC_KINDS.find((x) => x.id === g.kind)
-              const st = GRAPHIC_STATUS.find((x) => x.id === g.status)!
-              return (
-                <div key={g.id} className="rounded-lg border border-border bg-background overflow-hidden">
-                  <a href={g.url} target="_blank" rel="noopener noreferrer" title={`Open in Drive · ${g.url}`} className="flex h-20 items-end justify-between p-1.5" style={{ background: GRAPHIC_TILE[g.kind] }}>
-                    <span className="rounded bg-black/60 px-1 font-mono text-[9.5px] font-semibold text-white">{k?.label.toUpperCase()}</span>
-                    <ExternalLink className="w-3.5 h-3.5 text-black/50" />
-                  </a>
-                  <div className="p-2 space-y-1.5">
-                    <a href={g.url} target="_blank" rel="noopener noreferrer" className="block truncate text-[12.5px] font-semibold hover:underline">{g.name}</a>
-                    <div className="flex items-center gap-1.5">
-                      <select value={g.status} onChange={(e) => patchGraphic(g.id, { status: e.target.value as AnfGraphic['status'] }, `🖼️ ${g.name}: ${GRAPHIC_STATUS.find((x) => x.id === e.target.value)?.label}`)}
-                        className={cn('h-5 rounded px-1 text-[10.5px] font-semibold border-0', st.cls)} aria-label="Graphic status">
-                        {GRAPHIC_STATUS.map((x) => <option key={x.id} value={x.id}>{x.label.toUpperCase()}</option>)}
-                      </select>
-                      <span className="text-[10.5px] text-muted-foreground">v{g.version}</span>
-                      <button type="button" className="ml-auto text-muted-foreground hover:text-destructive" aria-label="Remove graphic" onClick={() => { if (window.confirm(`Remove “${g.name}”? The Drive file is not touched.`)) { setGraphics(graphics.filter((x) => x.id !== g.id)); log(`🖼️ Graphic removed: ${g.name}`) } }}><Trash2 className="w-3 h-3" /></button>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {branches.map((b) => {
-                        const on = g.live_at.includes(b.name)
-                        return <button key={b.place_id} type="button" title={on ? `Live at ${b.name}` : `Mark live at ${b.name}`}
-                          onClick={() => { const live_at = on ? g.live_at.filter((x) => x !== b.name) : [...g.live_at, b.name]; patchGraphic(g.id, { live_at, ...(!on && g.status !== 'live' ? { status: 'live' as const } : {}) }, `🖼️ ${g.name} ${on ? 'removed from' : 'live at'} ${b.name}`) }}
-                          className={cn('rounded px-1 py-px text-[10px]', on ? 'bg-foreground text-background font-semibold' : 'bg-muted text-muted-foreground')}>{b.name}</button>
-                      })}
-                    </div>
-                    <button type="button" className="text-[11px] text-muted-foreground underline hover:text-foreground"
-                      onClick={() => { const u = window.prompt('New version — paste the new Drive link', ''); if (u && isUrl(u)) patchGraphic(g.id, { url: u.trim(), version: g.version + 1, old_urls: [...(g.old_urls ?? []), g.url], status: 'draft' }, `🖼️ ${g.name}: new version v${g.version + 1}`) }}>New version</button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
+    <div className="space-y-4">
+      <div className={lbl}>ACTIVITY</div>
+      <AddActivityForm entityType="anf_task" entityId={task.task_id} owner={task.created_by ?? ''} entityName={task.name} />
+      <ActivityTimeline entityType="anf_task" entityId={task.task_id} entityName={task.name} />
     </div>
   )
 
@@ -387,6 +342,14 @@ export function TaskDrawer({ task, types, places, onClose, onPatch, onMove, onDe
           <div className="px-5 py-4 bg-muted/30 border-t lg:border-t-0 border-border lg:overflow-y-auto">{right}</div>
         </div>
       </DialogContent>
+      {peek && (
+        <Dialog open onOpenChange={(o) => !o && setPeek(null)}>
+          <DialogContent className="sm:max-w-[520px] p-4">
+            <DialogTitle className="text-[14px]">{peek.code} · {peek.name} <span className="font-normal text-muted-foreground">· {assetPlace(peek)}</span></DialogTitle>
+            <AssetCard a={assets.find((x) => x.asset_id === peek.asset_id) ?? peek} me={me} onSave={(a) => { onSaveAsset(a); setPeek(a) }} />
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   )
 }

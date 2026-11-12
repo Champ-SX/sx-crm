@@ -2,71 +2,137 @@
 
 import { useState } from 'react'
 import { addDays, differenceInCalendarDays, format, parseISO, startOfWeek } from 'date-fns'
-import { ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { GRAPHIC_KINDS, GRAPHIC_STATUS, checklistProgress, type AnfTask, type AnfTaskType, type AnfPlace, type GraphicKind, type GraphicStatus } from '@/lib/supabase/anf-tasks'
+import { checklistProgress, uid, type AnfTask, type AnfTaskType, type AnfPlace, type GraphicKind } from '@/lib/supabase/anf-tasks'
+import { isPreset, nextGraphicCode, presetCode, type AnfAsset } from '@/lib/supabase/anf-assets'
+import { AssetCard, kindLabel } from './asset-ui'
 import { TypePill, typeOf } from './task-ui'
-import { GRAPHIC_TILE } from './task-drawer'
 
 const pill = (on: boolean) => cn('rounded-full px-2.5 py-1 text-[12px] whitespace-nowrap', on ? 'bg-foreground text-background font-semibold' : 'bg-card border border-border text-muted-foreground hover:text-foreground')
 
-/** Every graphic link across tasks: "what's live at ICS right now?". */
-export function GraphicsView({ tasks, types, places, onOpen }: { tasks: AnfTask[]; types: AnfTaskType[]; places: AnfPlace[]; onOpen: (taskId: string) => void }) {
-  const [kind, setKind] = useState<GraphicKind | 'all'>('all')
-  const [status, setStatus] = useState<GraphicStatus | 'all'>('all')
-  const [branch, setBranch] = useState('')
-  const all = tasks.flatMap((t) => (t.graphics ?? []).map((g) => ({ g, t })))
-  const shown = all
-    .filter(({ g }) => kind === 'all' || g.kind === kind)
-    .filter(({ g }) => status === 'all' || g.status === status)
-    .filter(({ g }) => !branch || g.live_at.includes(branch))
-    .sort((a, b) => (b.g.added_at ?? '').localeCompare(a.g.added_at ?? ''))
+type Place = { branch: string | null; room: string | null }
+const samePlace = (a: Place, b: Place) => (a.branch ?? null) === (b.branch ?? null) && (a.room ?? null) === (b.room ?? null)
+
+/** Graphic Assets and Camera Setting: pick a branch / room, see its whole kit. */
+export function AssetsView({ assets, tasks, places, me, onSave, onDelete, onOpenTask }: {
+  assets: AnfAsset[]; tasks: AnfTask[]; places: AnfPlace[]; me: string
+  onSave: (a: AnfAsset) => void; onDelete: (id: string) => void; onOpenTask: (taskId: string) => void
+}) {
   const branches = places.filter((p) => p.kind === 'branch')
+  const [sel, setSel] = useState<Place>({ branch: branches[0]?.name ?? null, room: null })
+  const [kind, setKind] = useState<GraphicKind | 'all' | 'live'>('all')
+  const [adding, setAdding] = useState(false)
+  const [nk, setNk] = useState<GraphicKind>('frame')
+  const [nName, setNName] = useState('')
+  const [nUrl, setNUrl] = useState('')
+
+  const roomsOf = (b: AnfPlace) => [...new Set([
+    ...places.filter((p) => p.kind === 'room' && p.branch_id === b.place_id).map((p) => p.name),
+    ...assets.filter((a) => a.branch === b.name && a.room).map((a) => a.room!),
+  ])]
+  const count = (pl: Place) => assets.filter((a) => samePlace(a, pl))
+  const here = count(sel)
+  const graphics = here.filter((a) => !isPreset(a)).filter((a) => kind === 'all' || (kind === 'live' ? a.status === 'live' : a.kind === kind))
+  const cam = here.find((a) => a.kind === 'camera')
+  const flash = here.find((a) => a.kind === 'flash')
+  const usedIn = (a: AnfAsset) => tasks.filter((t) => t.asset_ids?.includes(a.asset_id)).map((t) => ({ id: t.task_id, name: t.name, open: () => onOpenTask(t.task_id) }))
+  const now = () => new Date().toISOString()
+  const base = (p: Partial<AnfAsset> & Pick<AnfAsset, 'code' | 'kind' | 'name'>): AnfAsset => ({
+    asset_id: uid('as'), branch: sel.branch, room: sel.room, url: null, status: 'draft', version: 1, settings: {}, photos: [], history: [],
+    created_by: me, created_at: now(), updated_by: me, updated_at: now(), ...p,
+  })
+  function addGraphic() {
+    if (!nName.trim() || !/^https?:\/\//.test(nUrl.trim())) return
+    onSave(base({ code: nextGraphicCode(assets), kind: nk, name: nName.trim(), url: nUrl.trim() }))
+    setNName(''); setNUrl(''); setAdding(false)
+  }
+  const placeBtn = (pl: Place, label: string, indent = false) => {
+    const n = count(pl)
+    const on = samePlace(pl, sel)
+    return (
+      <button key={`${pl.branch}-${pl.room}`} type="button" onClick={() => setSel(pl)}
+        className={cn('flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-[12.5px]', indent && 'pl-4', on ? 'bg-[#7A5AA5]/12 text-[#7A5AA5] font-semibold' : 'hover:bg-muted')}>
+        <span className="truncate">{label}</span>
+        <span className="shrink-0 text-[10.5px] text-muted-foreground font-normal">
+          {n.filter((a) => !isPreset(a)).length || ''}{n.some((a) => a.kind === 'camera') && ' 📷'}{n.some((a) => a.kind === 'flash') && ' ⚡'}
+        </span>
+      </button>
+    )
+  }
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
-      <div className="flex flex-wrap items-center gap-1.5 mb-4">
-        <button type="button" className={pill(kind === 'all')} onClick={() => setKind('all')}>All {all.length}</button>
-        {GRAPHIC_KINDS.map((k) => {
-          const n = all.filter(({ g }) => g.kind === k.id).length
-          return n ? <button key={k.id} type="button" className={pill(kind === k.id)} onClick={() => setKind(k.id)}>{k.label}s {n}</button> : null
-        })}
-        <span className="mx-1 h-4 w-px bg-border" />
-        <button type="button" className={pill(status === 'live')} onClick={() => setStatus(status === 'live' ? 'all' : 'live')}>Live now</button>
-        <select value={status} onChange={(e) => setStatus(e.target.value as GraphicStatus | 'all')} className="h-7 rounded-full border border-border bg-card px-2 text-[12px]" aria-label="Status">
-          <option value="all">Any status</option>{GRAPHIC_STATUS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-        </select>
-        <select value={branch} onChange={(e) => setBranch(e.target.value)} className="h-7 rounded-full border border-border bg-card px-2 text-[12px]" aria-label="Live at branch">
-          <option value="">Any branch</option>{branches.map((b) => <option key={b.place_id}>{b.name}</option>)}
-        </select>
-      </div>
-      {shown.length === 0 ? (
-        <p className="py-16 text-center text-[13px] text-muted-foreground">{all.length ? 'Nothing matches these filters.' : 'No graphics yet. Open a task → Graphics → Add link.'}</p>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-          {shown.map(({ g, t }) => {
-            const k = GRAPHIC_KINDS.find((x) => x.id === g.kind)
-            const st = GRAPHIC_STATUS.find((x) => x.id === g.status)!
-            return (
-              <div key={`${t.task_id}-${g.id}`} className="rounded-lg border border-border bg-card overflow-hidden">
-                <a href={g.url} target="_blank" rel="noopener noreferrer" title="Open in Drive" className="flex h-24 items-end justify-between p-1.5" style={{ background: GRAPHIC_TILE[g.kind] }}>
-                  <span className="rounded bg-black/60 px-1 font-mono text-[9.5px] font-semibold text-white">{k?.label.toUpperCase()}</span>
-                  <ExternalLink className="w-3.5 h-3.5 text-black/50" />
-                </a>
-                <div className="p-2">
-                  <a href={g.url} target="_blank" rel="noopener noreferrer" className="block truncate text-[12.5px] font-semibold hover:underline">{g.name}</a>
-                  <button type="button" onClick={() => onOpen(t.task_id)} className="block w-full truncate text-left text-[11.5px] text-muted-foreground hover:text-foreground hover:underline">{t.name}</button>
-                  <div className="mt-1 flex flex-wrap items-center gap-1">
-                    <span className={cn('rounded px-1 text-[10px] font-semibold', st.cls)}>{st.label.toUpperCase()}</span>
-                    <span className="truncate text-[10.5px] text-muted-foreground">{g.status === 'live' && g.live_at.length ? g.live_at.join(', ') : `v${g.version}`}</span>
-                  </div>
-                </div>
+      <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+        {/* Places */}
+        <div className="rounded-xl border border-border bg-card p-2 h-fit lg:sticky lg:top-0">
+          <select value={JSON.stringify(sel)} onChange={(e) => setSel(JSON.parse(e.target.value))} className="lg:hidden h-9 w-full rounded-md border border-border bg-background px-2 text-[13px]" aria-label="Place">
+            {branches.map((b) => [
+              <option key={b.place_id} value={JSON.stringify({ branch: b.name, room: null })}>{b.name} · whole branch</option>,
+              ...roomsOf(b).map((r) => <option key={b.place_id + r} value={JSON.stringify({ branch: b.name, room: r })}>{b.name} › {r}</option>),
+            ])}
+            <option value={JSON.stringify({ branch: null, room: null })}>All branches · shared</option>
+          </select>
+          <div className="hidden lg:block">
+            {branches.map((b) => (
+              <div key={b.place_id} className="mb-2">
+                <div className="px-2 pt-1 pb-0.5 font-mono text-[10.5px] font-semibold tracking-wide text-muted-foreground">{b.name.toUpperCase()}</div>
+                {placeBtn({ branch: b.name, room: null }, 'Whole branch', true)}
+                {roomsOf(b).map((r) => placeBtn({ branch: b.name, room: r }, r, true))}
               </div>
-            )
-          })}
+            ))}
+            <div className="px-2 pt-1 pb-0.5 font-mono text-[10.5px] font-semibold tracking-wide text-muted-foreground">ALL BRANCHES</div>
+            {placeBtn({ branch: null, room: null }, 'Shared graphics', true)}
+          </div>
         </div>
-      )}
-      {all.length > 0 && <p className="mt-4 text-[12px] text-muted-foreground">Tap a tile to open it in Google Drive · tap the task name to open the task.</p>}
+
+        {/* The kit */}
+        <div className="min-w-0 space-y-4">
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card px-4 py-3">
+            <div className="mr-2"><span className="font-mono text-[12px] text-muted-foreground">{sel.branch ?? 'All branches'}{sel.room && ' ›'}</span> <b className="text-[17px]">{sel.room ?? (sel.branch ? 'Whole branch' : 'Shared')}</b></div>
+            {(['all', 'frame', 'gif', 'welcome', 'other', 'live'] as const).map((k) => {
+              const n = k === 'all' ? here.filter((a) => !isPreset(a)).length : k === 'live' ? here.filter((a) => !isPreset(a) && a.status === 'live').length : here.filter((a) => a.kind === k).length
+              if (k !== 'all' && !n) return null
+              return <button key={k} type="button" onClick={() => setKind(k)} className={pill(kind === k)}>{k === 'all' ? 'All' : k === 'live' ? 'Live now' : kindLabel(k)} {n}</button>
+            })}
+            <button type="button" onClick={() => setAdding((v) => !v)} className="ml-auto rounded-lg bg-[#7A5AA5] px-3 py-1.5 text-[12.5px] font-semibold text-white">＋ Add graphic</button>
+          </div>
+
+          {adding && (
+            <div className="rounded-xl border border-border bg-card p-3 space-y-2">
+              <div className="flex flex-wrap gap-1.5">{(['frame', 'gif', 'welcome', 'other'] as const).map((k) => <button key={k} type="button" onClick={() => setNk(k)} className={pill(nk === k)}>{kindLabel(k)}</button>)}</div>
+              <div className="grid gap-2 sm:grid-cols-[1fr_1.4fr_auto]">
+                <input value={nName} onChange={(e) => setNName(e.target.value)} placeholder="Name — e.g. Graduation frame 4×6" className="h-9 rounded-md border border-border bg-background px-2.5 text-[13px]" />
+                <input value={nUrl} onChange={(e) => setNUrl(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addGraphic()} placeholder="https://drive.google.com/…" className="h-9 rounded-md border border-border bg-background px-2.5 text-[13px]" />
+                <button type="button" onClick={addGraphic} disabled={!nName.trim() || !/^https?:\/\//.test(nUrl.trim())} className="h-9 rounded-md bg-foreground px-4 text-[13px] font-semibold text-background disabled:opacity-40">Add</button>
+              </div>
+              <p className="text-[11.5px] text-muted-foreground">Saved under {sel.branch ?? 'All branches'}{sel.room ? ` › ${sel.room}` : ''}. Google Drive file or folder link.</p>
+            </div>
+          )}
+
+          <section>
+            <div className="mb-2 font-mono text-[10.5px] font-semibold tracking-wide text-muted-foreground">GRAPHICS · GOOGLE DRIVE</div>
+            {graphics.length === 0
+              ? <p className="rounded-xl border border-dashed border-border py-6 text-center text-[12.5px] text-muted-foreground">No graphics here yet.</p>
+              : <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">{graphics.map((a) => <AssetCard key={a.asset_id} a={a} me={me} onSave={onSave} onDelete={() => onDelete(a.asset_id)} usedIn={usedIn(a)} />)}</div>}
+          </section>
+
+          {sel.branch && (
+            <section className="grid gap-3 xl:grid-cols-2">
+              {(['camera', 'flash'] as const).map((k) => {
+                const a = k === 'camera' ? cam : flash
+                return a
+                  ? <AssetCard key={a.asset_id} a={a} me={me} onSave={onSave} onDelete={() => onDelete(a.asset_id)} usedIn={usedIn(a)} />
+                  : (
+                    <button key={k} type="button" onClick={() => onSave(base({ code: presetCode(k, sel.branch, sel.room), kind: k, name: k === 'camera' ? 'Camera preset' : 'Flash preset', status: 'live' }))}
+                      className="rounded-xl border border-dashed border-border py-8 text-[13px] text-muted-foreground hover:text-foreground">
+                      {k === 'camera' ? '📷 Set up the camera preset' : '⚡ Set up the flash preset'} for {sel.room ?? sel.branch}
+                    </button>
+                  )
+              })}
+            </section>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

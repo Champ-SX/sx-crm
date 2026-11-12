@@ -1,33 +1,28 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { addDays, differenceInCalendarDays, format, isToday, isWeekend, parseISO } from 'date-fns'
-import { GanttChart, Images, CalendarDays, ChevronLeft, ChevronRight, LayoutGrid, Plus, Search, X, Archive, Settings2 } from 'lucide-react'
+import { GanttChart, Images, LayoutGrid, Plus, Search, X, Archive, Settings2 } from 'lucide-react'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { useAuth } from '@/components/auth-provider'
 import { useCRMStore } from '@/store/crm-store'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { toast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
 import {
-  ANF_COLUMNS, AUTO_ARCHIVE_DAYS, checklistProgress, fetchAnf, createAnfTask, updateAnfTask, deleteAnfTask, createAnfType, notifyCritical, uid,
+  ANF_COLUMNS, AUTO_ARCHIVE_DAYS, fetchAnf, createAnfTask, updateAnfTask, deleteAnfTask, createAnfType, notifyCritical, uid,
   type AnfTask, type AnfTaskType, type AnfPlace, type AnfColumn,
 } from '@/lib/supabase/anf-tasks'
 import { AddTaskDialog } from '@/components/anf/add-task-dialog'
 import { TaskDrawer } from '@/components/anf/task-drawer'
-import { placeLine, typeOf } from '@/components/anf/task-ui'
+import { typeOf } from '@/components/anf/task-ui'
 import { AnfSettings } from '@/components/anf/anf-settings'
 import { TaskCard, SortableTask, DropColumn } from '@/components/anf/task-card'
-import { GraphicsView, TimelineView } from '@/components/anf/board-views'
+import { AssetsView, TimelineView } from '@/components/anf/board-views'
+import { fetchAssets, saveAsset, deleteAsset, type AnfAsset } from '@/lib/supabase/anf-assets'
 import { DndContext, DragOverlay, MouseSensor, TouchSensor, pointerWithin, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 
-const CAL_DAYS = 9
-const iso = (d: Date) => format(d, 'yyyy-MM-dd')
-const fromISO = (s: string) => parseISO(s + 'T00:00:00')
 
 export default function AnfTasksPage() {
   const hydrated = useHydrated()
@@ -39,6 +34,16 @@ export default function AnfTasksPage() {
   const [tasks, setTasks] = useState<AnfTask[]>([])
   const [types, setTypes] = useState<AnfTaskType[]>([])
   const [places, setPlaces] = useState<AnfPlace[]>([])
+  const [assets, setAssets] = useState<AnfAsset[]>([])
+  useEffect(() => { fetchAssets().then(setAssets).catch(() => setAssets([])) }, [])
+  const saveA = (a: AnfAsset) => {
+    setAssets((xs) => [...xs.filter((x) => x.asset_id !== a.asset_id), a])
+    saveAsset(a).catch((e) => toast(`Couldn't save asset — ${e instanceof Error ? e.message : 'error'}`))
+  }
+  const deleteA = (id: string) => {
+    setAssets((xs) => xs.filter((x) => x.asset_id !== id))
+    deleteAsset(id).catch((e) => toast(`Couldn't delete — ${e instanceof Error ? e.message : 'error'}`))
+  }
   const [loadError, setLoadError] = useState<string | null>(null)
   const [loadKey, setLoadKey] = useState(0)
   const reload = useCallback(() => setLoadKey((k) => k + 1), [])
@@ -59,7 +64,7 @@ export default function AnfTasksPage() {
     return () => { alive = false }
   }, [loadKey])
 
-  const [view, setView] = useState<'board' | 'timeline' | 'graphics' | 'calendar'>('board')
+  const [view, setView] = useState<'board' | 'timeline' | 'assets'>('board')
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [branchFilter, setBranchFilter] = useState('')
@@ -67,7 +72,6 @@ export default function AnfTasksPage() {
   const [adding, setAdding] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)
   const [dragId, setDragId] = useState<string | null>(null)
-  const [calStart, setCalStart] = useState(() => iso(new Date()))
 
   // ── Writes (optimistic) ──
   const patch = (id: string, p: Partial<AnfTask>) => {
@@ -151,17 +155,6 @@ export default function AnfTasksPage() {
     <TaskCard key={t.task_id} t={t} compact={compact} types={types} people={people(t.assignee_ids)} onOpen={() => setOpenId(t.task_id)} />
   )
 
-  // ── Calendar ──
-  const days = Array.from({ length: CAL_DAYS }, (_, i) => iso(addDays(fromISO(calStart), i)))
-  const first = days[0], last = days[CAL_DAYS - 1]
-  const dated = shown.filter((t) => t.due_date).map((t) => {
-    const end = t.due_date!
-    const start = t.start_date && t.start_date < end ? t.start_date : end
-    return { t, start, end }
-  }).filter((x) => x.end >= first && x.start <= last)
-  const ranges = dated.filter((x) => x.start !== x.end)
-  const singles = dated.filter((x) => x.start === x.end)
-  const noDate = shown.filter((t) => !t.due_date && t.column_id !== 'done')
 
   return (
     <div className="flex flex-col h-[100dvh]">
@@ -173,7 +166,7 @@ export default function AnfTasksPage() {
           <p className="text-[12px] text-muted-foreground hidden sm:block">{shown.filter((t) => t.column_id !== 'done').length} open · {byCol('done').length} done</p>
         </div>
         <div className="inline-flex rounded-lg border border-border bg-card p-0.5" role="tablist" aria-label="View">
-          {([['board', 'Board', LayoutGrid], ['timeline', 'Timeline', GanttChart], ['graphics', 'Graphics', Images], ['calendar', 'Calendar', CalendarDays]] as const).map(([v, l, Icon]) => (
+          {([['board', 'Board', LayoutGrid], ['timeline', 'Timeline', GanttChart], ['assets', 'Graphic Assets and Camera Setting', Images]] as const).map(([v, l, Icon]) => (
             <button key={v} type="button" role="tab" aria-selected={view === v} aria-label={l} onClick={() => setView(v)}
               className={cn('h-7 px-2 sm:px-2.5 rounded-md inline-flex items-center gap-1.5 text-[12px] font-medium', view === v ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}>
               <Icon className="w-3.5 h-3.5" /><span className="hidden sm:inline">{l}</span>
@@ -211,8 +204,8 @@ export default function AnfTasksPage() {
 
       {view === 'timeline' ? (
         <TimelineView tasks={shown} types={types} onOpen={setOpenId} />
-      ) : view === 'graphics' ? (
-        <GraphicsView tasks={shown} types={types} places={places} onOpen={setOpenId} />
+      ) : view === 'assets' ? (
+        <AssetsView assets={assets} tasks={tasks} places={places} me={author} onSave={saveA} onDelete={deleteA} onOpenTask={setOpenId} />
       ) : view === 'board' ? (
         <div className="flex-1 min-h-0 overflow-x-auto bg-background">
           <div className="flex gap-3 p-4 sm:p-6 h-full min-w-max items-start">
@@ -249,79 +242,12 @@ export default function AnfTasksPage() {
             </DndContext>
           </div>
         </div>
-      ) : (
-        <div className="flex-1 min-h-0 flex flex-col">
-          <div className="flex items-center gap-2 px-4 sm:px-6 pt-3 pb-2 shrink-0">
-            <button type="button" onClick={() => setCalStart(iso(addDays(fromISO(calStart), -CAL_DAYS)))} aria-label="Previous 9 days" className="w-8 h-8 rounded-lg border border-border bg-card flex items-center justify-center text-muted-foreground"><ChevronLeft className="w-4 h-4" /></button>
-            <button type="button" onClick={() => setCalStart(iso(new Date()))} className="h-8 px-3 rounded-lg border border-border bg-card text-[12px] font-medium">Today</button>
-            <button type="button" onClick={() => setCalStart(iso(addDays(fromISO(calStart), CAL_DAYS)))} aria-label="Next 9 days" className="w-8 h-8 rounded-lg border border-border bg-card flex items-center justify-center text-muted-foreground"><ChevronRight className="w-4 h-4" /></button>
-            <span className="text-[14px] font-semibold">{format(fromISO(first), 'd MMM')} – {format(fromISO(last), 'd MMM yyyy')}</span>
-            <span className="ml-auto text-[12px] text-muted-foreground">{dated.length} due{noDate.length > 0 && ` · ${noDate.length} without date`}</span>
-          </div>
-
-          {/* Desktop grid */}
-          <div className="hidden sm:flex flex-col flex-1 min-h-0 overflow-y-auto px-6 pb-6">
-            <div className="grid grid-cols-9 gap-1.5 sticky top-0 z-10 bg-background pb-1.5 border-b border-border">
-              {days.map((d) => (
-                <div key={d} className={cn('px-2 py-1 rounded-md', isWeekend(fromISO(d)) && 'bg-muted/60')}>
-                  <div className="text-[11px] text-muted-foreground">{format(fromISO(d), 'EEE')}</div>
-                  <div className={cn('text-[17px] font-semibold', isToday(fromISO(d)) && 'text-primary')}>{format(fromISO(d), 'd')}</div>
-                </div>
-              ))}
-            </div>
-            {ranges.length > 0 && (
-              <div className="grid grid-cols-9 gap-1.5 pt-1.5 [grid-auto-flow:row_dense]">
-                {ranges.map(({ t, start, end }) => {
-                  const s = start < first ? first : start, e = end > last ? last : end
-                  const col = days.indexOf(s) + 1, span = differenceInCalendarDays(fromISO(e), fromISO(s)) + 1
-                  const type = typeOf(types, t.type_id), prog = checklistProgress(t)
-                  return (
-                    <div key={t.task_id} role="button" tabIndex={0} onClick={() => setOpenId(t.task_id)} style={{ gridColumn: `${col} / span ${span}`, borderLeftColor: type?.color }}
-                      className="h-[26px] flex items-center gap-1.5 rounded-md border border-border border-l-4 bg-card px-2 text-[12px] cursor-pointer whitespace-nowrap overflow-hidden min-w-0">
-                      <span className="font-semibold truncate">{t.name}</span>
-                      <span className="text-muted-foreground shrink-0">· {placeLine(t) || type?.name}{prog.total > 0 && ` · ☑ ${prog.done}/${prog.total}`}</span>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-            <div className="grid grid-cols-9 gap-1.5 pt-1.5 flex-1">
-              {days.map((d) => (
-                <div key={d} className={cn('flex flex-col gap-1.5 rounded-md min-h-[180px] p-0.5', isWeekend(fromISO(d)) && 'bg-muted/40')}>
-                  {singles.filter((x) => x.end === d).map(({ t }) => card(t, true))}
-                </div>
-              ))}
-            </div>
-            {noDate.length > 0 && (
-              <div className="mt-4">
-                <p className="text-[12px] font-semibold text-muted-foreground mb-1.5">No due date ({noDate.length})</p>
-                <div className="grid grid-cols-4 lg:grid-cols-6 gap-1.5">{noDate.map((t) => card(t, true))}</div>
-              </div>
-            )}
-          </div>
-
-          {/* Mobile agenda */}
-          <div className="sm:hidden flex-1 min-h-0 overflow-y-auto px-4 pb-6">
-            {days.map((d) => {
-              const items = dated.filter((x) => x.start <= d && x.end >= d)
-              return (
-                <div key={d} className="grid grid-cols-[40px_1fr] gap-2 py-2.5 border-t border-border">
-                  <div className="text-center"><div className="text-[11px] text-muted-foreground">{format(fromISO(d), 'EEE')}</div><div className={cn('text-[18px] font-semibold', isToday(fromISO(d)) && 'text-primary')}>{format(fromISO(d), 'd')}</div></div>
-                  <div className="flex flex-col gap-1.5 min-w-0">
-                    {items.length === 0 ? <span className="text-[12px] text-muted-foreground pt-2">—</span> : items.map(({ t }) => card(t, true))}
-                  </div>
-                </div>
-              )
-            })}
-            {noDate.length > 0 && <div className="border-t border-border pt-3"><p className="text-[12px] font-semibold text-muted-foreground mb-1.5">No due date ({noDate.length})</p><div className="flex flex-col gap-1.5">{noDate.map((t) => card(t, true))}</div></div>}
-          </div>
-        </div>
-      )}
+      ) : null}
 
       {settingsOpen && <AnfSettings types={types} places={places} onClose={() => setSettingsOpen(false)} onChange={(t, p) => { setTypes(t); setPlaces(p) }} />}
       {adding && <AddTaskDialog types={types} places={places} author={author} tasks={tasks} onClose={() => setAdding(false)} onCreate={create} onAddType={addType} />}
       {open && (
-        <TaskDrawer key={open.task_id} task={open} types={types} places={places} onClose={() => setOpenId(null)}
+        <TaskDrawer key={open.task_id} task={open} types={types} places={places} assets={assets} onSaveAsset={saveA} onClose={() => setOpenId(null)}
           onPatch={(p) => patch(open.task_id, p)} onMove={(c) => move(open.task_id, c)}
           onDelete={() => { setOpenId(null); setTasks((ts) => ts.filter((t) => t.task_id !== open.task_id)); void deleteAnfTask(open.task_id) }} />
       )}

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Assets and Camera</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f1ec;--ink:#1c1b19;--mute:#6b6862;--line:#e2ded5;--acc:#7A5AA5}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:13px/1.45 Inter,"IBM Plex Sans Thai",sans-serif;color:var(--ink);padding:18px 16px}
+.wrap{max-width:1240px;margin:0 auto}
+.cap{font:600 11px "IBM Plex Mono";color:var(--mute);letter-spacing:.05em;margin:26px 0 8px}
+.top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.top h1{font-size:16px;margin:0}
+.tabs{display:flex;gap:4px}.tab{padding:5px 11px;border-radius:7px;font-size:12.5px;color:var(--mute)}.tab.on{background:var(--ink);color:#fff;font-weight:600}
+.tab.gone{text-decoration:line-through;opacity:.5}
+.chip{border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:12px;background:#fff;white-space:nowrap}.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn{border-radius:8px;padding:6px 12px;font-weight:600;background:var(--acc);color:#fff;font-size:12.5px;white-space:nowrap}.btn.o{background:#fff;color:var(--ink);border:1px solid var(--line);font-weight:500}
+.lib{display:grid;grid-template-columns:220px 1fr;gap:12px;margin-top:10px}
+.tree{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px}
+.tree .b{font:600 10.5px "IBM Plex Mono";color:var(--mute);letter-spacing:.05em;margin:10px 8px 4px}
+.tree .b:first-child{margin-top:2px}
+.tree .r{display:flex;justify-content:space-between;padding:5px 8px;border-radius:7px;font-size:12.5px}.tree .r i{font-style:normal;color:var(--mute);font-size:11px}
+.tree .r.on{background:#ece8f4;color:var(--acc);font-weight:600}
+.main{min-width:0}
+.roomhd{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.roomhd h2{margin:0;font-size:17px}
+.mono{font-family:"IBM Plex Mono";font-size:12px}
+.mute{color:var(--mute)}
+.sec{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:10px}
+.sec h3{margin:0 0 10px;font:600 10.5px "IBM Plex Mono";letter-spacing:.06em;color:var(--mute);display:flex;justify-content:space-between}
+.sec h3 span{color:var(--acc);font-family:Inter;font-size:12px;letter-spacing:0}
+.assets{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.asset{border:1px solid var(--line);border-radius:9px;overflow:hidden;font-size:11.5px}
+.pv{height:78px;display:flex;align-items:flex-end;justify-content:space-between;padding:5px}
+.pv span{background:rgba(0,0,0,.6);color:#fff;font:600 9.5px "IBM Plex Mono";border-radius:3px;padding:0 4px}
+.f{background:linear-gradient(135deg,#f5d0fe,#c4b5fd)}.g{background:linear-gradient(135deg,#bae6fd,#a7f3d0)}.w{background:linear-gradient(135deg,#fde68a,#fca5a5)}
+.asset .t{padding:6px 8px}
+.ap{font-size:10px;font-weight:700;border-radius:3px;padding:0 5px}.lv{background:#1c1b19;color:#fff}.dr{background:#e2e8f0;color:#475569}.av{background:#16a34a;color:#fff}
+.id{font:600 10px "IBM Plex Mono";color:var(--acc)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.preset{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.kv{background:#faf9f6;border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.kv b{display:block;font:600 15px "IBM Plex Mono"}.kv small{font:600 9.5px "IBM Plex Mono";color:var(--mute);letter-spacing:.05em}
+.wide{grid-column:span 2}
+.foot{font-size:11.5px;color:var(--mute);margin-top:8px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.drawer{display:grid;grid-template-columns:1.35fr 1fr;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.dl{padding:16px 18px;border-right:1px solid var(--line)}.dr2{padding:16px 18px;background:#faf9f6}
+.lbl{font:600 10.5px "IBM Plex Mono";color:var(--mute);letter-spacing:.06em;margin:14px 0 6px;display:flex;justify-content:space-between}
+.lbl span{color:var(--acc);font-family:Inter;letter-spacing:0;font-size:12px}
+.ref{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:7px;padding:3px 8px 3px 4px;font-size:12px;background:#fff;margin:0 6px 6px 0}
+.ref i{font-style:normal;width:18px;height:18px;border-radius:4px;display:inline-block}
+.ref.cam i{background:#1c1b19}.ref.fl i{background:#f59e0b}
+.sub{display:grid;grid-template-columns:18px 1fr 64px;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid #f0ede7;font-size:12.5px}
+.ck{width:15px;height:15px;border:1.5px solid #bbb;border-radius:4px}.ck.on{background:#16a34a;border-color:#16a34a}
+.st{font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 6px;text-align:center}.st.doing{background:#f97316;color:#fff}.st.done{background:#16a34a;color:#fff}
+.rep{margin:4px 0 8px 26px;background:#f5f3ef;border-radius:9px;padding:8px 10px}
+.log{border-left:2px solid var(--line);padding:2px 0 6px 10px;margin-bottom:6px;font-size:12.5px}
+.log .who{font-size:11px;color:var(--mute)}
+.ph{display:flex;gap:6px;margin-top:5px}.ph span{width:64px;height:48px;border-radius:6px;background:linear-gradient(135deg,#d6d3d1,#a8a29e)}
+.inp{display:flex;gap:6px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-top:6px;color:var(--mute)}
+.pop{background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 22px rgba(0,0,0,.12);padding:6px;width:300px;margin:6px 0 0 26px}
+.pop div{padding:5px 8px;border-radius:6px;font-size:12.5px;display:flex;gap:6px;align-items:center}.pop .on{background:#ece8f4}
+.pop small{color:var(--mute);margin-left:auto;font-size:11px}
+.cmp{display:grid;grid-template-columns:110px 1fr 1fr;gap:0;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:12.5px}
+.cmp div{padding:7px 10px;border-bottom:1px solid #f0ede7}.cmp .h{font:600 10.5px "IBM Plex Mono";color:var(--mute);background:#faf9f6}
+.note{background:#fff;border-radius:12px;padding:12px 16px;margin-top:16px}.note li{margin:3px 0}
+.q{background:#fffbea;border:1px solid #f1e3a8;border-radius:12px;padding:12px 16px;margin-top:12px}.q li{margin:4px 0}
+@media(max-width:900px){.lib,.drawer,.two{grid-template-columns:1fr}.assets{grid-template-columns:repeat(2,1fr)}.preset{grid-template-columns:repeat(2,1fr)}.tree{display:none}}
+</style></head><body><div class="wrap">
+
+<p class="cap">1 · TABS: CALENDAR MERGES INTO TIMELINE, NEW ASSETS TAB</p>
+<div class="top">
+  <h1>Andy &amp; Fine. · Photohouse</h1>
+  <div class="tabs"><span class="tab">Board</span><span class="tab">Timeline</span><span class="tab on">Graphic Assets and Camera Setting</span><span class="tab gone">Calendar</span></div>
+</div>
+
+<p class="cap">2 · GRAPHIC ASSETS AND CAMERA SETTING: PICK A ROOM, SEE ITS WHOLE KIT</p>
+<div class="lib">
+  <div class="tree">
+    <div class="b">BACC</div>
+    <div class="r on">A64 <i>5 · 📷 · ⚡</i></div>
+    <div class="r">A60 <i>3 · 📷</i></div>
+    <div class="r">A65 <i>4 · 📷 · ⚡</i></div>
+    <div class="r">Music room <i>2 · 📷</i></div>
+    <div class="b">CLOUD11</div>
+    <div class="r">Main booth <i>3 · 📷 · ⚡</i></div>
+    <div class="b">TRUE ALPHA</div>
+    <div class="r">Booth 1 <i>4 · 📷</i></div>
+    <div class="b">ALL BRANCHES</div>
+    <div class="r">Shared graphics <i>6</i></div>
+  </div>
+  <div class="main">
+    <div class="roomhd">
+      <div><span class="mono mute">BACC ›</span> <h2 style="display:inline">A64</h2> <span class="mute">· Graduation room</span></div>
+      <span class="chip on">All</span><span class="chip">Frame 2</span><span class="chip">GIF 1</span><span class="chip">Welcome UI 2</span><span class="chip">Live now</span>
+      <span class="btn" style="margin-left:auto">＋ Add asset</span>
+    </div>
+
+    <div class="sec">
+      <h3>GRAPHICS · GOOGLE DRIVE <span>＋ Add link</span></h3>
+      <div class="assets">
+        <div class="asset"><div class="pv f"><span>FRAME 4×6</span>↗</div><div class="t"><span class="id">GA-0412</span><br><b>Graduation frame</b><br><span class="ap lv">LIVE</span> v2</div></div>
+        <div class="asset"><div class="pv f"><span>FRAME 2×6</span>↗</div><div class="t"><span class="id">GA-0413</span><br><b>Graduation strip</b><br><span class="ap av">APPROVED</span></div></div>
+        <div class="asset"><div class="pv g"><span>GIF</span>↗</div><div class="t"><span class="id">GA-0414</span><br><b>Cap toss GIF</b><br><span class="ap dr">DRAFT</span> v1</div></div>
+        <div class="asset"><div class="pv w"><span>WELCOME UI</span>↗</div><div class="t"><span class="id">GA-0415</span><br><b>Welcome 16:9</b><br><span class="ap lv">LIVE</span></div></div>
+      </div>
+    </div>
+
+    <div class="two">
+      <div class="sec">
+        <h3>📷 CAMERA PRESET · CAM-A64 <span>Edit</span></h3>
+        <div class="mono mute" style="margin-bottom:8px">Canon EOS R6 II · RF 24-70 f/2.8 @ 35mm</div>
+        <div class="preset">
+          <div class="kv"><small>MODE</small><b>M</b></div>
+          <div class="kv"><small>ISO</small><b>200</b></div>
+          <div class="kv"><small>SHUTTER</small><b>1/125</b></div>
+          <div class="kv"><small>APERTURE</small><b>f/8</b></div>
+          <div class="kv"><small>WB</small><b>5500K</b></div>
+          <div class="kv"><small>PICTURE STYLE</small><b>Portrait</b></div>
+          <div class="kv"><small>FOCUS</small><b>One-Shot</b></div>
+          <div class="kv"><small>QUALITY</small><b>JPG L</b></div>
+          <div class="kv wide"><small>NOTE</small><span style="font-size:12px">Face detection ON · Exp. comp 0 · Lens 1.6 m from backdrop</span></div>
+          <div class="kv wide"><small>REFERENCE PHOTO</small><span style="font-size:12px;color:var(--acc)">Test shot 10 Nov ↗</span></div>
+        </div>
+        <div class="foot"><span>Updated by Andy · 10 Nov · v3</span><span style="color:var(--acc)">History</span></div>
+      </div>
+      <div class="sec">
+        <h3>⚡ FLASH PRESET · FL-A64 <span>Edit</span></h3>
+        <div class="mono mute" style="margin-bottom:8px">Godox AD200 Pro ×2 · trigger X2T-C</div>
+        <div class="preset">
+          <div class="kv"><small>MODE</small><b>M</b></div>
+          <div class="kv"><small>POWER</small><b>1/16</b></div>
+          <div class="kv"><small>ZOOM</small><b>35mm</b></div>
+          <div class="kv"><small>SYNC</small><b>1st curtain</b></div>
+          <div class="kv"><small>KEY</small><b>Left 45°</b></div>
+          <div class="kv"><small>FILL</small><b>1/64</b></div>
+          <div class="kv wide"><small>MODIFIER</small><span style="font-size:12px">Octa 90 cm, 1.8 m high</span></div>
+          <div class="kv wide"><small>NOTE</small><span style="font-size:12px">Group A key · Group B fill · Ch 7</span></div>
+        </div>
+        <div class="foot"><span>Updated by Andy · 10 Nov · v2</span><span style="color:var(--acc)">History</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="cap">3 · EDIT CAMERA PRESET: FIELDS FOR CANON DSLR + MIRRORLESS</p>
+<div class="cmp">
+  <div class="h">FIELD</div><div class="h">OPTIONS (dropdown)</div><div class="h">NOTES</div>
+  <div>Body / Lens</div><div>EOS R6 II · R8 · R50 · 5D IV · 6D II · 90D · M50 …</div><div>Free text allowed</div>
+  <div>Mode</div><div>M · Av · Tv · P</div><div>Booths normally M</div>
+  <div>ISO</div><div>100 · 125 · 160 · 200 · 250 · 320 · 400 · 640 · 800 · 1600 · Auto</div><div></div>
+  <div>Shutter</div><div>1/60 · 1/100 · 1/125 · 1/160 · 1/200 · 1/250</div><div>Max flash sync ≈ 1/200–1/250</div>
+  <div>Aperture</div><div>f/2.8 · 4 · 5.6 · 8 · 11</div><div></div>
+  <div>White balance</div><div>Kelvin 3200–7000 · Auto · Daylight · Flash · Tungsten</div><div></div>
+  <div>Picture style</div><div>Standard · Portrait · Neutral · Faithful · Fine detail</div><div></div>
+  <div>Focus · drive</div><div>One-Shot / Servo · Face+Eye detect · Single</div><div></div>
+  <div>Quality · ratio</div><div>JPG L / M · RAW+JPG · 3:2 / 4:3</div><div></div>
+</div>
+<p class="mute" style="font-size:12px;margin-top:6px">Flash preset: Model · Mode (M / TTL) · Power (1/1 → 1/128) · Zoom · Sync · Key / Fill position · Modifier · Group / Channel · Note. Every save keeps the previous version, so “who changed the ISO?” has an answer.</p>
+
+<p class="cap">4 · TASK DRAWER: REFERENCE ASSETS + PHOTO REPORTS ON SUB-TASKS (NO GRAPHICS TAB HERE)</p>
+<div class="drawer">
+  <div class="dl">
+    <b style="font-size:17px">Graduation campaign · BACC</b>
+    <div class="lbl">LINKED ASSETS <span>＋ Link asset</span></div>
+    <span class="ref"><i class="f"></i><span class="id">GA-0412</span> Graduation frame · A64 <span class="ap lv">LIVE</span></span>
+    <span class="ref"><i class="g"></i><span class="id">GA-0414</span> Cap toss GIF <span class="ap dr">DRAFT</span></span>
+    <span class="ref cam"><i></i><span class="id">CAM-A64</span> Camera preset</span>
+    <span class="ref fl"><i></i><span class="id">FL-A64</span> Flash preset</span>
+
+    <div class="lbl">SUB-TASKS · 2/4</div>
+    <div class="sub"><span class="ck on"></span><span>Design frame 4×6</span><span class="st done">Done</span></div>
+    <div class="sub"><span class="ck"></span><span><b>Upload to A64 + test print</b><br><span class="mute" style="font-size:11.5px">💬 2 reports · 📷 3 photos</span></span><span class="st doing">Doing</span></div>
+    <div class="rep">
+      <div class="log"><div class="who">Andy · 12 Nov 14:20</div>Uploaded <span class="ref" style="margin:0"><i class="f"></i><span class="id">GA-0412</span> Graduation frame</span>. Test print a bit dark → raised to f/5.6 on <span class="ref cam" style="margin:0"><i></i><span class="id">CAM-A64</span></span>.
+        <div class="ph"><span></span><span></span></div></div>
+      <div class="log"><div class="who">Andy · 12 Nov 15:05</div>Second print OK ✓<div class="ph"><span></span></div></div>
+      <div class="inp">📎 <span style="flex:1">Report… type <b>#</b> to mention an asset</span><span class="btn" style="padding:3px 10px">Post</span></div>
+    </div>
+    <div class="pop">
+      <div style="color:var(--mute);font-size:11px">#a64</div>
+      <div class="on"><span class="id">GA-0412</span> Graduation frame <small>Frame · A64</small></div>
+      <div><span class="id">CAM-A64</span> Camera preset <small>BACC A64</small></div>
+      <div><span class="id">FL-A64</span> Flash preset <small>BACC A64</small></div>
+    </div>
+  </div>
+  <div class="dr2">
+    <div class="lbl" style="margin-top:0">ACTIVITY</div>
+    <div class="log"><div class="who">Andy · 12 Nov 15:05</div>💬 Upload to A64 + test print — Second print OK ✓ <div class="ph"><span></span></div></div>
+    <div class="log"><div class="who">Andy · 12 Nov 14:20</div>💬 Upload to A64 + test print — Uploaded GA-0412… <div class="ph"><span></span><span></span></div></div>
+    <div class="log"><div class="who">Fine · 11 Nov</div>🔗 Linked GA-0414 Cap toss GIF</div>
+    <p class="mute" style="font-size:12px">Tap a chip → opens the asset (Drive link, or the preset card) in a side panel without leaving the task.</p>
+  </div>
+</div>
+
+<div class="note">
+  <b>How it works</b>
+  <ul>
+    <li><b>Assets belong to a room</b> (or "All branches" for shared ones), not to a task. Each gets a short ID: <b>GA-</b> for graphics, <b>CAM-</b> / <b>FL-</b> for each room's camera and flash preset.</li>
+    <li><b>Tasks reference assets</b>: “＋ Link asset” in the drawer, or type <b>#</b> in any sub-task report to mention one. Chips show live status, tap to open.</li>
+    <li><b>Asset page shows where it's used</b>: “Used in: Graduation campaign, Xmas roll-out”.</li>
+    <li><b>Sub-task reports</b> take text + photos (same photo upload as activity notes). Photos show as thumbnails, tap to enlarge. Each report also lands in Activity.</li>
+    <li><b>Presets keep history</b>: every edit is a new version with who and when.</li>
+    <li>The per-task Graphics tab goes away; graphics already added to tasks move into the library under their branch.</li>
+  </ul>
+</div>
+<div class="q">
+  <b>Decide</b>
+  <ul>
+    <li><b>Calendar vs Timeline</b>: they overlap (both show tasks by date). Proposal: <b>remove Calendar</b>, keep Timeline (better for multi-week work) and add a "This week" quick button.</li>
+    <li><b>One preset per room</b>, or several per room (e.g. "Day" / "Night", or per camera body)?</li>
+    <li><b>Who can edit presets</b>: anyone on the board, or Ops lead / admin only?</li>
+  </ul>
+</div>
+</div></body></html>
