@@ -97,18 +97,18 @@ let mockAssets: AnfAsset[] = [
 // ── Reads / writes ────────────────────────────────────────────────────────────
 export async function fetchAssets(): Promise<AnfAsset[]> {
   if (!isSupabaseConfigured) return mockAssets.map((a) => structuredClone(a))
-  const { data, error } = await supabase.from('anf_assets').select('*').order('code')
+  const { data, error } = await supabase.from('anf_room_assets').select('*').order('code')
   if (error) throw error
   return (data ?? []) as AnfAsset[]
 }
 export async function saveAsset(a: AnfAsset): Promise<void> {
   if (!isSupabaseConfigured) { mockAssets = [...mockAssets.filter((x) => x.asset_id !== a.asset_id), a]; return }
-  const { error } = await supabase.from('anf_assets').upsert(a)
+  const { error } = await supabase.from('anf_room_assets').upsert(a)
   if (error) throw error
 }
 export async function deleteAsset(id: string): Promise<void> {
   if (!isSupabaseConfigured) { mockAssets = mockAssets.filter((x) => x.asset_id !== id); return }
-  const { error } = await supabase.from('anf_assets').delete().eq('asset_id', id)
+  const { error } = await supabase.from('anf_room_assets').delete().eq('asset_id', id)
   if (error) throw error
 }
 
