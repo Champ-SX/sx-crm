@@ -33,6 +33,7 @@ export function AssetsView({ assets, tasks, places, me, onSave, onDelete, onOpen
   const count = (pl: Place) => assets.filter((a) => samePlace(a, pl))
   const here = count(sel)
   const graphics = here.filter((a) => !isPreset(a)).filter((a) => kind === 'all' || (kind === 'live' ? a.status === 'live' : a.kind === kind))
+    .sort((a, b) => a.code.localeCompare(b.code))
   const cam = here.find((a) => a.kind === 'camera')
   const flash = here.find((a) => a.kind === 'flash')
   const usedIn = (a: AnfAsset) => tasks.filter((t) => t.asset_ids?.includes(a.asset_id)).map((t) => ({ id: t.task_id, name: t.name, open: () => onOpenTask(t.task_id) }))

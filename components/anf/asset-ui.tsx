@@ -18,6 +18,28 @@ export const TILE: Record<string, string> = {
   camera: '#1c1b19', flash: '#f59e0b',
 }
 export const kindLabel = (k: string) => (k === 'camera' ? 'Camera preset' : k === 'flash' ? 'Flash preset' : k === 'welcome' ? 'Welcome UI' : GRAPHIC_KINDS.find((x) => x.id === k)?.label ?? k)
+/** Drive file id from /file/d/<id>/, ?id=<id> or /open?id=<id> links (folders have none). */
+export function driveId(url: string | null | undefined): string | null {
+  if (!url || /\/folders\//.test(url)) return null
+  return /\/d\/([\w-]{20,})/.exec(url)?.[1] ?? /[?&]id=([\w-]{20,})/.exec(url)?.[1] ?? null
+}
+
+/** Artwork preview: Drive thumbnail → uploaded preview photo → coloured tile. */
+export function GraphicPreview({ a, className }: { a: AnfAsset; className?: string }) {
+  const id = driveId(a.url)
+  const [failed, setFailed] = useState(false)
+  const src = id && !failed ? `https://drive.google.com/thumbnail?id=${id}&sz=w600` : a.photos[0] ? attachmentUrl(a.photos[0]) : null
+  return (
+    <a href={a.url ?? '#'} target="_blank" rel="noopener noreferrer" title="Open in Google Drive"
+      className={cn('relative flex items-end justify-between overflow-hidden p-1.5', className)} style={{ background: TILE[a.kind] }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {src && <img src={src} alt={a.name} referrerPolicy="no-referrer" onError={() => setFailed(true)} className="absolute inset-0 h-full w-full object-contain bg-white/60" />}
+      <span className="relative rounded bg-black/60 px-1 font-mono text-[9.5px] font-semibold text-white">{kindLabel(a.kind).toUpperCase()}</span>
+      <ExternalLink className="relative w-3.5 h-3.5 text-black/50" />
+    </a>
+  )
+}
+
 const when = (iso: string | null | undefined) => (iso ? format(parseDbDate(iso), 'd MMM HH:mm') : '')
 
 // ── Photos ────────────────────────────────────────────────────────────────────
@@ -140,10 +162,7 @@ export function AssetCard({ a, me, onSave, onDelete, usedIn }: {
 
   if (!isPreset(a)) return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
-      <a href={a.url ?? '#'} target="_blank" rel="noopener noreferrer" title="Open in Google Drive" className="flex h-24 items-end justify-between p-1.5" style={{ background: TILE[a.kind] }}>
-        <span className="rounded bg-black/60 px-1 font-mono text-[9.5px] font-semibold text-white">{kindLabel(a.kind).toUpperCase()}</span>
-        <ExternalLink className="w-3.5 h-3.5 text-black/50" />
-      </a>
+      <GraphicPreview a={a} className="h-36" />
       <div className="p-2 space-y-1.5">
         <div className="font-mono text-[10.5px] font-semibold text-[#7A5AA5]">{a.code}</div>
         <a href={a.url ?? '#'} target="_blank" rel="noopener noreferrer" className="block truncate text-[12.5px] font-semibold hover:underline">{a.name}</a>
@@ -155,8 +174,12 @@ export function AssetCard({ a, me, onSave, onDelete, usedIn }: {
           <span className="text-[10.5px] text-muted-foreground">v{a.version}</span>
           {onDelete && <button type="button" className="ml-auto text-muted-foreground hover:text-destructive" aria-label="Delete asset" onClick={() => window.confirm(`Delete ${a.code} “${a.name}”? The Drive file is not touched.`) && onDelete()}><Trash2 className="w-3 h-3" /></button>}
         </div>
+        {!driveId(a.url) && !a.photos.length && <p className="text-[10.5px] text-muted-foreground">No preview (folder link or not shared). Upload one ↓</p>}
+        <div className="flex flex-wrap items-center gap-2">
+        <PhotoButton label={a.photos.length ? 'Change preview' : 'Upload preview'} className="h-6 text-[11px]" onAdd={(p) => onSave({ ...a, photos: p.slice(0, 1), updated_by: me, updated_at: new Date().toISOString() })} />
         <button type="button" className="text-[11px] text-muted-foreground underline hover:text-foreground"
           onClick={() => { const u = window.prompt('New version — paste the new Google Drive link', ''); if (u && /^https?:\/\//.test(u.trim())) onSave(revise(a, { url: u.trim(), status: 'draft' }, me)) }}>New version</button>
+        </div>
         {usedIn && usedIn.length > 0 && <p className="text-[11px] text-muted-foreground">Used in: {usedIn.map((u, i) => <span key={u.id}>{i > 0 && ', '}<button type="button" onClick={u.open} className="underline hover:text-foreground">{u.name}</button></span>)}</p>}
       </div>
     </div>
