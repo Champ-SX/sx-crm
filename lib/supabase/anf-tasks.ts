@@ -117,8 +117,17 @@ export interface AnfTask {
 export const uid = (p = 'id') => (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${p}-${Date.now()}-${Math.round(Math.random() * 1e6)}`
 
 /** "261014-[BACC-A64] - Printer jams". Created date · [branch-room] · task. */
+// Branch / room hold one or more names ("BACC, BTT") or the word "All branches" / "All rooms".
+export const ALL_BRANCHES = 'All branches'
+export const ALL_ROOMS = 'All rooms'
+export const splitPlaces = (v: string | null | undefined): string[] => (v ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+export const joinPlaces = (names: string[]): string | null => (names.length ? names.join(', ') : null)
+export const hasPlace = (v: string | null | undefined, name: string) => splitPlaces(v).includes(name)
+export const renameInPlaces = (v: string | null, from: string, to: string | null) => joinPlaces(splitPlaces(v).flatMap((s) => (s === from ? (to ? [to] : []) : [s])))
+const titlePart = (v: string | null | undefined) => splitPlaces(v).map((s) => (s === ALL_BRANCHES ? 'ALL' : s === ALL_ROOMS ? 'ALL' : s)).join('/')
+
 export function buildTaskTitle(name: string, branch?: string | null, room?: string | null, created = new Date()): string {
-  const place = [branch, room].filter(Boolean).join('-')
+  const place = [titlePart(branch), titlePart(room)].filter(Boolean).join('-')
   return `${format(created, 'yyMMdd')}${place ? `-[${place}]` : ''} - ${name.trim()}`
 }
 

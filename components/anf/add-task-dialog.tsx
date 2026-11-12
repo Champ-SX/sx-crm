@@ -1,5 +1,7 @@
 'use client'
 
+import { PlaceMulti, roomsFor } from './place-multi'
+import { ALL_BRANCHES, ALL_ROOMS, hasPlace, splitPlaces } from '@/lib/supabase/anf-tasks'
 import { useState } from 'react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -40,12 +42,11 @@ export function AddTaskDialog({ types, places, author, tasks, onClose, onCreate,
 
   const type = types.find((t) => t.type_id === typeId)
   const branches = places.filter((p) => p.kind === 'branch')
-  const branchId = branches.find((b) => b.name === branch)?.place_id
-  const rooms = places.filter((p) => p.kind === 'room' && (!p.branch_id || !branchId || p.branch_id === branchId))
+  const rooms = roomsFor(places, branch)
   const title = name.trim() ? buildTaskTitle(name, branch || null, room || null) : ''
   // Same kind of issue at the same branch (and room, if picked) in the last 90 days.
   const similar = type?.is_issue && branch
-    ? tasks.filter((t) => t.type_id === typeId && t.branch === branch && (!room || t.room === room) && parseDbDate(t.created_at).getTime() >= since)
+    ? tasks.filter((t) => t.type_id === typeId && splitPlaces(branch).some((b) => hasPlace(t.branch, b)) && (!room || splitPlaces(room).some((r) => hasPlace(t.room, r))) && parseDbDate(t.created_at).getTime() >= since)
         .sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 4)
     : []
   const repeat = similar.find((t) => t.task_id === repeatOf)
@@ -100,19 +101,15 @@ export function AddTaskDialog({ types, places, author, tasks, onClose, onCreate,
         </div>
 
 
+        <div>
+          <span className={label}>BRANCH</span>
+          <PlaceMulti label="Branch" value={branch || null} options={branches.map((b) => b.name)} allLabel={ALL_BRANCHES} onChange={(v) => setBranch(v ?? '')} />
+        </div>
+        <div>
+          <span className={label}>ROOM / BOOTH</span>
+          <PlaceMulti label="Room" value={room || null} options={[...new Set(rooms.map((r) => r.name))]} allLabel={ALL_ROOMS} onChange={(v) => setRoom(v ?? '')} />
+        </div>
         <div className="grid grid-cols-3 gap-2.5">
-          <div>
-            <span className={label}>BRANCH</span>
-            <select value={branch} onChange={(e) => { setBranch(e.target.value); setRoom('') }} className="h-9 w-full rounded-md border border-border bg-background px-2 text-[13px]">
-              <option value="">—</option>{branches.map((b) => <option key={b.place_id}>{b.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <span className={label}>ROOM / BOOTH</span>
-            <select value={room} onChange={(e) => setRoom(e.target.value)} className="h-9 w-full rounded-md border border-border bg-background px-2 text-[13px]">
-              <option value="">—</option>{rooms.map((r) => <option key={r.place_id}>{r.name}</option>)}
-            </select>
-          </div>
           <div>
             <span className={label}>DUE DATE</span>
             <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} className="h-9 text-[13px]" />

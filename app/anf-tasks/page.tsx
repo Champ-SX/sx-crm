@@ -11,7 +11,7 @@ import { toast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
 import {
   ANF_COLUMNS, AUTO_ARCHIVE_DAYS, fetchAnf, createAnfTask, updateAnfTask, deleteAnfTask, createAnfType, notifyCritical, uid,
-  type AnfTask, type AnfTaskType, type AnfPlace, type AnfColumn,
+  type AnfTask, type AnfTaskType, type AnfPlace, type AnfColumn, hasPlace, ALL_BRANCHES
 } from '@/lib/supabase/anf-tasks'
 import { AddTaskDialog } from '@/components/anf/add-task-dialog'
 import { TaskDrawer } from '@/components/anf/task-drawer'
@@ -114,7 +114,7 @@ export default function AnfTasksPage() {
   const shown = useMemo(() => tasks
     .filter((t) => (showArchived ? t.is_archived : !t.is_archived))
     .filter((t) => !typeFilter || t.type_id === typeFilter)
-    .filter((t) => !branchFilter || t.branch === branchFilter)
+    .filter((t) => !branchFilter || hasPlace(t.branch, branchFilter) || hasPlace(t.branch, ALL_BRANCHES))
     .filter((t) => !q || [t.title, t.name, t.description, t.branch, t.room, typeOf(types, t.type_id)?.name].filter(Boolean).join(' ').toLowerCase().includes(q)),
   [tasks, showArchived, typeFilter, branchFilter, q, types])
   const byCol = (c: AnfColumn) => shown.filter((t) => t.column_id === c)

@@ -1,5 +1,7 @@
 'use client'
 
+import { PlaceMulti, roomsFor } from './place-multi'
+import { ALL_BRANCHES, ALL_ROOMS, hasPlace } from '@/lib/supabase/anf-tasks'
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
@@ -69,14 +71,13 @@ export function TaskDrawer({ task, types, places, assets, onSaveAsset, onClose, 
 
   const type = types.find((t) => t.type_id === task.type_id)
   const branches = places.filter((p) => p.kind === 'branch')
-  const branchId = branches.find((b) => b.name === task.branch)?.place_id
-  const rooms = places.filter((p) => p.kind === 'room' && (!p.branch_id || !branchId || p.branch_id === branchId))
+  const rooms = roomsFor(places, task.branch)
   const prog = checklistProgress(task)
   const pct = prog.total ? Math.round((prog.done / prog.total) * 100) : 0
   const linked = (task.asset_ids ?? []).map((id) => assets.find((a) => a.asset_id === id)).filter((a): a is AnfAsset => !!a)
   const linkHits = assets.filter((a) => !task.asset_ids?.includes(a.asset_id))
     .filter((a) => !linkQ.trim() || [a.code, a.name, a.branch, a.room, kindLabel(a.kind)].filter(Boolean).join(' ').toLowerCase().includes(linkQ.trim().toLowerCase()))
-    .sort((a, b) => Number(b.branch === task.branch) - Number(a.branch === task.branch)).slice(0, 8)
+    .sort((a, b) => Number(hasPlace(task.branch, b.branch ?? '')) - Number(hasPlace(task.branch, a.branch ?? ''))).slice(0, 8)
   const link = (a: AnfAsset) => { onPatch({ asset_ids: [...(task.asset_ids ?? []), a.asset_id] }); log(`🔗 Linked ${a.code} · ${a.name}`) }
   const unlink = (a: AnfAsset) => { onPatch({ asset_ids: (task.asset_ids ?? []).filter((x) => x !== a.asset_id) }); log(`🔗 Unlinked ${a.code}`) }
   const reportsOf = (it: ChecklistItem): SubReport[] => it.reports ?? (it.note ? [{ id: 'legacy', text: it.note, by: it.note_by ?? '', at: it.note_at ?? '', photos: [] }] : [])
@@ -158,16 +159,12 @@ export function TaskDrawer({ task, types, places, assets, onSaveAsset, onClose, 
           </div>
         ))}
         {field('Branch', (
-          <div className="grid grid-cols-2 gap-1.5">
-            <select value={task.branch ?? ''} onChange={(e) => retitle({ branch: e.target.value || null, room: null })} className={sel} aria-label="Branch">
-              <option value="">— branch</option>{branches.map((b) => <option key={b.place_id}>{b.name}</option>)}
-              {task.branch && !branches.some((b) => b.name === task.branch) && <option>{task.branch}</option>}
-            </select>
-            <select value={task.room ?? ''} onChange={(e) => retitle({ room: e.target.value || null })} className={sel} aria-label="Room">
-              <option value="">— room / booth</option>{rooms.map((r) => <option key={r.place_id}>{r.name}</option>)}
-              {task.room && !rooms.some((r) => r.name === task.room) && <option>{task.room}</option>}
-            </select>
-          </div>
+          <PlaceMulti label="Branch" value={task.branch} options={branches.map((b) => b.name)} allLabel={ALL_BRANCHES}
+            onChange={(v) => retitle({ branch: v })} />
+        ))}
+        {field('Room', (
+          <PlaceMulti label="Room" value={task.room} options={[...new Set(rooms.map((r) => r.name))]} allLabel={ALL_ROOMS}
+            onChange={(v) => retitle({ room: v })} />
         ))}
         {field('Progress', prog.total
           ? <span className="flex items-center gap-2"><b>{pct}%</b><span className="text-muted-foreground">· {prog.done} of {prog.total} sub-tasks done</span><span className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden"><span className="block h-full bg-emerald-600" style={{ width: `${pct}%` }} /></span></span>

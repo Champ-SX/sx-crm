@@ -1,5 +1,6 @@
 'use client'
 
+import { hasPlace, renameInPlaces } from '@/lib/supabase/anf-tasks'
 import { useState } from 'react'
 import { addDays, differenceInCalendarDays, format, parseISO, startOfWeek } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -31,11 +32,11 @@ export function AssetsView({ assets, tasks, places, me, onSave, onDelete, onOpen
     const clash = kind === 'branch' ? places.some((p) => p.kind === 'branch' && p.name === next) : roomsOfName(branchName).includes(next)
     if (clash) { toast(`“${next}” already exists`); return }
     const nA = assets.filter((a) => kind === 'branch' ? a.branch === oldName : a.branch === branchName && a.room === oldName)
-    const nT = tasks.filter((t) => kind === 'branch' ? t.branch === oldName : t.branch === branchName && t.room === oldName)
+    const nT = tasks.filter((t) => kind === 'branch' ? hasPlace(t.branch, oldName) : hasPlace(t.room, oldName))
     if (!window.confirm(`Rename “${oldName}” → “${next}”?${nA.length + nT.length ? `\n\nAlso updates ${nA.length} asset(s) and ${nT.length} task(s) that use it.` : ''}`)) return
     if (rec) { onPlaces(places.map((p) => (p.place_id === rec.place_id ? { ...p, name: next } : p))); updateAnfPlace(rec.place_id, { name: next }).catch(fail) }
     nA.forEach((a) => onSave(kind === 'branch' ? { ...a, branch: next } : { ...a, room: next }))
-    nT.forEach((t) => onPatchTask(t.task_id, kind === 'branch' ? { branch: next } : { room: next }))
+    nT.forEach((t) => onPatchTask(t.task_id, kind === 'branch' ? { branch: renameInPlaces(t.branch, oldName, next) } : { room: renameInPlaces(t.room, oldName, next) }))
     if (kind === 'branch' ? sel.branch === oldName : sel.branch === branchName && sel.room === oldName) setSel(kind === 'branch' ? { ...sel, branch: next } : { ...sel, room: next })
   }
   function addPlace(kind: 'branch' | 'room', b?: AnfPlace) {
