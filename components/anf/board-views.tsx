@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { addDays, differenceInCalendarDays, format, parseISO, startOfWeek } from 'date-fns'
 import { cn } from '@/lib/utils'
-import { checklistProgress, uid, type AnfTask, type AnfTaskType, type AnfPlace, type GraphicKind } from '@/lib/supabase/anf-tasks'
-import { isGraphic, nextGraphicCode, presetCode, type AnfAsset } from '@/lib/supabase/anf-assets'
+import { checklistProgress, uid, createAnfPlace, updateAnfPlace, deleteAnfPlace, type AnfTask, type AnfTaskType, type AnfPlace, type GraphicKind } from '@/lib/supabase/anf-tasks'
+import { isGraphic, isPreset, nextGraphicCode, presetCode, type AnfAsset } from '@/lib/supabase/anf-assets'
 import { driveFolderId, planSync, type DriveEntry } from '@/lib/drive-sync'
 import { toast } from '@/lib/toast'
 import { AssetCard, kindLabel } from './asset-ui'
@@ -16,10 +16,52 @@ type Place = { branch: string | null; room: string | null }
 const samePlace = (a: Place, b: Place) => (a.branch ?? null) === (b.branch ?? null) && (a.room ?? null) === (b.room ?? null)
 
 /** Graphic Assets and Camera Setting: pick a branch / room, see its whole kit. */
-export function AssetsView({ assets, tasks, places, me, onSave, onDelete, onOpenTask }: {
+export function AssetsView({ assets, tasks, places, me, onSave, onDelete, onOpenTask, onPlaces, onPatchTask }: {
   assets: AnfAsset[]; tasks: AnfTask[]; places: AnfPlace[]; me: string
   onSave: (a: AnfAsset) => void; onDelete: (id: string) => void; onOpenTask: (taskId: string) => void
+  onPlaces: (p: AnfPlace[]) => void; onPatchTask: (id: string, p: Partial<AnfTask>) => void
 }) {
+  const [editPlaces, setEditPlaces] = useState(false)
+  const fail = (e: unknown) => toast(`Couldn't save — ${e instanceof Error ? e.message : 'error'}`)
+  const clean = (v: string | null) => v?.trim() ?? ''
+  function renamePlace(kind: 'branch' | 'room', branchName: string, oldName: string, rec?: AnfPlace) {
+    const next = clean(window.prompt(`Rename ${kind} “${oldName}” to:`, oldName))
+    if (!next || next === oldName) return
+    const clash = kind === 'branch' ? places.some((p) => p.kind === 'branch' && p.name === next) : roomsOfName(branchName).includes(next)
+    if (clash) { toast(`“${next}” already exists`); return }
+    const nA = assets.filter((a) => kind === 'branch' ? a.branch === oldName : a.branch === branchName && a.room === oldName)
+    const nT = tasks.filter((t) => kind === 'branch' ? t.branch === oldName : t.branch === branchName && t.room === oldName)
+    if (!window.confirm(`Rename “${oldName}” → “${next}”?${nA.length + nT.length ? `\n\nAlso updates ${nA.length} asset(s) and ${nT.length} task(s) that use it.` : ''}`)) return
+    if (rec) { onPlaces(places.map((p) => (p.place_id === rec.place_id ? { ...p, name: next } : p))); updateAnfPlace(rec.place_id, { name: next }).catch(fail) }
+    nA.forEach((a) => onSave(kind === 'branch' ? { ...a, branch: next } : { ...a, room: next }))
+    nT.forEach((t) => onPatchTask(t.task_id, kind === 'branch' ? { branch: next } : { room: next }))
+    if (kind === 'branch' ? sel.branch === oldName : sel.branch === branchName && sel.room === oldName) setSel(kind === 'branch' ? { ...sel, branch: next } : { ...sel, room: next })
+  }
+  function addPlace(kind: 'branch' | 'room', b?: AnfPlace) {
+    const name = clean(window.prompt(kind === 'branch' ? 'New branch name:' : `New room in ${b!.name}:`, ''))
+    if (!name) return
+    if (kind === 'branch' ? places.some((p) => p.kind === 'branch' && p.name === name) : roomsOfName(b!.name).includes(name)) { toast(`“${name}” already exists`); return }
+    const rec: AnfPlace = { place_id: uid('pl'), kind, name, branch_id: kind === 'room' ? b!.place_id : null, sort_order: 100 + places.length }
+    onPlaces([...places, rec]); createAnfPlace(rec).catch(fail)
+    setSel(kind === 'branch' ? { branch: name, room: null } : { branch: b!.name, room: name })
+  }
+  function removePlace(kind: 'branch' | 'room', branchName: string, name: string, rec?: AnfPlace) {
+    const nA = assets.filter((a) => kind === 'branch' ? a.branch === name : a.branch === branchName && a.room === name)
+    if (kind === 'branch' && roomsOfName(name).length) { toast(`Remove the rooms in ${name} first`); return }
+    const where = kind === 'branch' ? 'All branches' : `${branchName} · Whole branch`
+    const kit = nA.filter((a) => isPreset(a) || a.kind === 'folder')      // one per place — can't move
+    const move = nA.filter((a) => !kit.includes(a))
+    const lines = [
+      move.length ? `${move.length} graphic / source file(s) move to “${where}”.` : '',
+      kit.length ? `Deleted: ${kit.map((a) => a.kind === 'folder' ? 'Drive folder link' : a.kind === 'camera' ? 'camera preset' : 'flash preset').join(', ')} (the files in Drive are not touched).` : '',
+      'Tasks keep their text as it is.',
+    ].filter(Boolean).join('\n')
+    if (!window.confirm(`Remove ${kind} “${name}”?\n\n${lines}`)) return
+    move.forEach((a) => onSave(kind === 'branch' ? { ...a, branch: null, room: null } : { ...a, room: null }))
+    kit.forEach((a) => onDelete(a.asset_id))
+    if (rec) { onPlaces(places.filter((p) => p.place_id !== rec.place_id)); deleteAnfPlace(rec.place_id).catch(fail) }
+    setSel(kind === 'branch' ? { branch: null, room: null } : { branch: branchName, room: null })
+  }
   const branches = places.filter((p) => p.kind === 'branch')
   const [sel, setSel] = useState<Place>({ branch: branches[0]?.name ?? null, room: null })
   const [kind, setKind] = useState<GraphicKind | 'all' | 'live'>('all')
@@ -32,6 +74,8 @@ export function AssetsView({ assets, tasks, places, me, onSave, onDelete, onOpen
     ...places.filter((p) => p.kind === 'room' && p.branch_id === b.place_id).map((p) => p.name),
     ...assets.filter((a) => a.branch === b.name && a.room).map((a) => a.room!),
   ])]
+  const roomsOfName = (bn: string) => { const b = branches.find((x) => x.name === bn); return b ? roomsOf(b) : [...new Set(assets.filter((a) => a.branch === bn && a.room).map((a) => a.room!))] }
+  const roomRec = (b: AnfPlace, r: string) => places.find((p) => p.kind === 'room' && p.branch_id === b.place_id && p.name === r)
   const count = (pl: Place) => assets.filter((a) => samePlace(a, pl))
   const here = count(sel)
   const graphics = here.filter(isGraphic).filter((a) => kind === 'all' || (kind === 'live' ? a.status === 'live' : a.kind === kind))
@@ -99,13 +143,30 @@ export function AssetsView({ assets, tasks, places, me, onSave, onDelete, onOpen
             <option value={JSON.stringify({ branch: null, room: null })}>All branches · shared</option>
           </select>
           <div className="hidden lg:block">
+            <div className="flex justify-end px-1 pb-1">
+              <button type="button" onClick={() => setEditPlaces((v) => !v)} className={cn('rounded-md px-2 py-0.5 text-[11.5px] font-medium', editPlaces ? 'bg-foreground text-background' : 'text-[#7A5AA5] hover:bg-muted')}>{editPlaces ? 'Done' : 'Edit branches & rooms'}</button>
+            </div>
             {branches.map((b) => (
               <div key={b.place_id} className="mb-2">
-                <div className="px-2 pt-1 pb-0.5 font-mono text-[10.5px] font-semibold tracking-wide text-muted-foreground">{b.name.toUpperCase()}</div>
+                <div className="group flex items-center gap-1 px-2 pt-1 pb-0.5">
+                  <span className="font-mono text-[10.5px] font-semibold tracking-wide text-muted-foreground">{b.name.toUpperCase()}</span>
+                  {editPlaces && <span className="ml-auto flex gap-1.5 text-[11px]">
+                    <button type="button" onClick={() => renamePlace('branch', b.name, b.name, b)} className="text-muted-foreground hover:text-foreground">Rename</button>
+                    <button type="button" onClick={() => removePlace('branch', b.name, b.name, b)} className="text-muted-foreground hover:text-destructive">Remove</button>
+                  </span>}
+                </div>
                 {placeBtn({ branch: b.name, room: null }, 'Whole branch', true)}
-                {roomsOf(b).map((r) => placeBtn({ branch: b.name, room: r }, r, true))}
+                {roomsOf(b).map((r) => editPlaces ? (
+                  <div key={r} className="flex items-center gap-1 rounded-md py-1 pl-4 pr-2 text-[12.5px] hover:bg-muted">
+                    <span className="flex-1 truncate">{r}</span>
+                    <button type="button" onClick={() => renamePlace('room', b.name, r, roomRec(b, r))} className="text-[11px] text-muted-foreground hover:text-foreground">Rename</button>
+                    <button type="button" onClick={() => removePlace('room', b.name, r, roomRec(b, r))} className="text-[11px] text-muted-foreground hover:text-destructive">Remove</button>
+                  </div>
+                ) : placeBtn({ branch: b.name, room: r }, r, true))}
+                {editPlaces && <button type="button" onClick={() => addPlace('room', b)} className="w-full rounded-md py-1 pl-4 text-left text-[12px] font-medium text-[#7A5AA5] hover:bg-muted">＋ Add room</button>}
               </div>
             ))}
+            {editPlaces && <button type="button" onClick={() => addPlace('branch')} className="mb-2 w-full rounded-md border border-dashed border-border py-1.5 text-[12px] font-medium text-[#7A5AA5] hover:bg-muted">＋ Add branch</button>}
             <div className="px-2 pt-1 pb-0.5 font-mono text-[10.5px] font-semibold tracking-wide text-muted-foreground">ALL BRANCHES</div>
             {placeBtn({ branch: null, room: null }, 'Shared graphics', true)}
           </div>
@@ -132,6 +193,15 @@ export function AssetsView({ assets, tasks, places, me, onSave, onDelete, onOpen
                 <span className="text-muted-foreground">{folder.settings.last_result}</span>
                 <span className="ml-auto text-muted-foreground">Synced {folder.settings.last_sync ? format(new Date(folder.settings.last_sync), 'd MMM HH:mm') : '—'}</span>
                 <button type="button" disabled={syncing} onClick={() => sync(folder.url ?? '')} className="rounded-md bg-foreground px-3 py-1 font-semibold text-background disabled:opacity-50">{syncing ? 'Syncing…' : 'Sync again'}</button>
+                <button type="button" disabled={syncing} onClick={() => {
+                  const u = window.prompt('New Google Drive folder link for this room:', '')
+                  if (!u?.trim()) return
+                  if (!driveFolderId(u)) { toast('That is not a Google Drive folder link'); return }
+                  if (window.confirm('Switch this room to the new folder and sync now?\n\nAssets already synced stay; files from the new folder are added or updated.')) void sync(u)
+                }} className="rounded-md border border-border px-2.5 py-1 hover:bg-muted">Change folder</button>
+                <button type="button" disabled={syncing} onClick={() => {
+                  if (window.confirm(`Unlink the Drive folder from ${sel.room ?? sel.branch ?? 'this place'}?\n\nSynced assets stay in the CRM — only the folder link is removed.`)) onDelete(folder.asset_id)
+                }} className="rounded-md px-2 py-1 text-muted-foreground hover:text-destructive">Unlink</button>
               </>
             ) : (
               <>

@@ -205,7 +205,7 @@ export default function AnfTasksPage() {
       {view === 'timeline' ? (
         <TimelineView tasks={shown} types={types} onOpen={setOpenId} />
       ) : view === 'assets' ? (
-        <AssetsView assets={assets} tasks={tasks} places={places} me={author} onSave={saveA} onDelete={deleteA} onOpenTask={setOpenId} />
+        <AssetsView assets={assets} tasks={tasks} places={places} me={author} onSave={saveA} onDelete={deleteA} onOpenTask={setOpenId} onPlaces={setPlaces} onPatchTask={patch} />
       ) : view === 'board' ? (
         <div className="flex-1 min-h-0 overflow-x-auto bg-background">
           <div className="flex gap-3 p-4 sm:p-6 h-full min-w-max items-start">
