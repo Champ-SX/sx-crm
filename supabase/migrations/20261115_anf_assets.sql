@@ -3,8 +3,8 @@
 
 create table if not exists anf_assets (
   asset_id    text primary key,
-  code        text not null unique,          -- GA-0412 · CAM-BACC-A64 · FL-BACC-A64
-  kind        text not null check (kind in ('frame','gif','welcome','other','camera','flash')),
+  code        text not null unique,          -- GA-0412 · CAM-BACC-A64 · FL-BACC-A64 · DIR-BACC-A62 (room Drive folder)
+  kind        text not null check (kind in ('frame','gif','welcome','other','camera','flash','source','folder')),
   branch      text,                          -- null = all branches
   room        text,                          -- null = whole branch
   name        text not null,
@@ -19,9 +19,9 @@ create table if not exists anf_assets (
   updated_by  text,
   updated_at  timestamptz not null default now()
 );
--- One camera preset and one flash preset per room.
+-- One camera preset, one flash preset and one Drive folder per room.
 create unique index if not exists anf_assets_one_preset
-  on anf_assets (kind, coalesce(branch, ''), coalesce(room, '')) where kind in ('camera','flash');
+  on anf_assets (kind, coalesce(branch, ''), coalesce(room, '')) where kind in ('camera','flash','folder');
 create index if not exists anf_assets_place on anf_assets (branch, room);
 
 alter table anf_assets enable row level security;

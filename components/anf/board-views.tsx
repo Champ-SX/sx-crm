@@ -4,7 +4,9 @@ import { useState } from 'react'
 import { addDays, differenceInCalendarDays, format, parseISO, startOfWeek } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { checklistProgress, uid, type AnfTask, type AnfTaskType, type AnfPlace, type GraphicKind } from '@/lib/supabase/anf-tasks'
-import { isPreset, nextGraphicCode, presetCode, type AnfAsset } from '@/lib/supabase/anf-assets'
+import { isGraphic, nextGraphicCode, presetCode, type AnfAsset } from '@/lib/supabase/anf-assets'
+import { driveFolderId, planSync, type DriveEntry } from '@/lib/drive-sync'
+import { toast } from '@/lib/toast'
 import { AssetCard, kindLabel } from './asset-ui'
 import { TypePill, typeOf } from './task-ui'
 
@@ -32,8 +34,31 @@ export function AssetsView({ assets, tasks, places, me, onSave, onDelete, onOpen
   ])]
   const count = (pl: Place) => assets.filter((a) => samePlace(a, pl))
   const here = count(sel)
-  const graphics = here.filter((a) => !isPreset(a)).filter((a) => kind === 'all' || (kind === 'live' ? a.status === 'live' : a.kind === kind))
+  const graphics = here.filter(isGraphic).filter((a) => kind === 'all' || (kind === 'live' ? a.status === 'live' : a.kind === kind))
     .sort((a, b) => a.code.localeCompare(b.code))
+  const sources = here.filter((a) => a.kind === 'source')
+  const folder = here.find((a) => a.kind === 'folder')
+  const [folderUrl, setFolderUrl] = useState('')
+  const [syncing, setSyncing] = useState(false)
+  async function sync(url: string) {
+    const id = driveFolderId(url)
+    if (!id) { toast('Paste a Google Drive folder link'); return }
+    setSyncing(true)
+    try {
+      const res = await fetch(`/api/drive-folder?id=${id}`)
+      const j = await res.json() as { entries?: DriveEntry[]; error?: string }
+      if (!res.ok || !j.entries) throw new Error(j.error ?? 'Could not read the folder')
+      const plan = planSync(j.entries, assets, sel, me)
+      plan.assets.forEach(onSave)
+      const stamp = new Date().toISOString()
+      const sum = `${plan.added} added · ${plan.updated} updated · ${plan.unchanged} unchanged${plan.skipped.length ? ` · skipped ${plan.skipped.join(', ')}` : ''}`
+      onSave(folder
+        ? { ...folder, url: `https://drive.google.com/drive/folders/${id}`, settings: { ...folder.settings, last_sync: stamp, last_result: sum }, updated_by: me, updated_at: stamp }
+        : base({ code: `DIR-${presetCode('camera', sel.branch, sel.room).slice(4)}`, kind: 'folder', name: 'Room folder', url: `https://drive.google.com/drive/folders/${id}`, status: 'live', settings: { last_sync: stamp, last_result: sum } }))
+      toast(`Synced · ${sum}`)
+      setFolderUrl('')
+    } catch (e) { toast(e instanceof Error ? e.message : 'Sync failed') } finally { setSyncing(false) }
+  }
   const cam = here.find((a) => a.kind === 'camera')
   const flash = here.find((a) => a.kind === 'flash')
   const usedIn = (a: AnfAsset) => tasks.filter((t) => t.asset_ids?.includes(a.asset_id)).map((t) => ({ id: t.task_id, name: t.name, open: () => onOpenTask(t.task_id) }))
@@ -55,7 +80,7 @@ export function AssetsView({ assets, tasks, places, me, onSave, onDelete, onOpen
         className={cn('flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-[12.5px]', indent && 'pl-4', on ? 'bg-[#7A5AA5]/12 text-[#7A5AA5] font-semibold' : 'hover:bg-muted')}>
         <span className="truncate">{label}</span>
         <span className="shrink-0 text-[10.5px] text-muted-foreground font-normal">
-          {n.filter((a) => !isPreset(a)).length || ''}{n.some((a) => a.kind === 'camera') && ' 📷'}{n.some((a) => a.kind === 'flash') && ' ⚡'}
+          {n.filter(isGraphic).length || ''}{n.some((a) => a.kind === 'camera') && ' 📷'}{n.some((a) => a.kind === 'flash') && ' ⚡'}
         </span>
       </button>
     )
@@ -91,11 +116,29 @@ export function AssetsView({ assets, tasks, places, me, onSave, onDelete, onOpen
           <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card px-4 py-3">
             <div className="mr-2"><span className="font-mono text-[12px] text-muted-foreground">{sel.branch ?? 'All branches'}{sel.room && ' ›'}</span> <b className="text-[17px]">{sel.room ?? (sel.branch ? 'Whole branch' : 'Shared')}</b></div>
             {(['all', 'frame', 'gif', 'welcome', 'other', 'live'] as const).map((k) => {
-              const n = k === 'all' ? here.filter((a) => !isPreset(a)).length : k === 'live' ? here.filter((a) => !isPreset(a) && a.status === 'live').length : here.filter((a) => a.kind === k).length
+              const n = k === 'all' ? here.filter(isGraphic).length : k === 'live' ? here.filter((a) => isGraphic(a) && a.status === 'live').length : here.filter((a) => a.kind === k).length
               if (k !== 'all' && !n) return null
               return <button key={k} type="button" onClick={() => setKind(k)} className={pill(kind === k)}>{k === 'all' ? 'All' : k === 'live' ? 'Live now' : kindLabel(k)} {n}</button>
             })}
             <button type="button" onClick={() => setAdding((v) => !v)} className="ml-auto rounded-lg bg-[#7A5AA5] px-3 py-1.5 text-[12.5px] font-semibold text-white">＋ Add graphic</button>
+          </div>
+
+          {/* Room Drive folder → sync */}
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-[12.5px]">
+            <span>📁 <b>Room folder</b></span>
+            {folder ? (
+              <>
+                <a href={folder.url ?? '#'} target="_blank" rel="noopener noreferrer" className="text-[#7A5AA5] hover:underline">Open in Drive ↗</a>
+                <span className="text-muted-foreground">{folder.settings.last_result}</span>
+                <span className="ml-auto text-muted-foreground">Synced {folder.settings.last_sync ? format(new Date(folder.settings.last_sync), 'd MMM HH:mm') : '—'}</span>
+                <button type="button" disabled={syncing} onClick={() => sync(folder.url ?? '')} className="rounded-md bg-foreground px-3 py-1 font-semibold text-background disabled:opacity-50">{syncing ? 'Syncing…' : 'Sync again'}</button>
+              </>
+            ) : (
+              <>
+                <input value={folderUrl} onChange={(e) => setFolderUrl(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sync(folderUrl)} placeholder="Paste the room's Google Drive folder link (shared: Anyone with the link)" className="h-8 min-w-[240px] flex-1 rounded-md border border-border bg-background px-2.5" />
+                <button type="button" disabled={syncing || !folderUrl.trim()} onClick={() => sync(folderUrl)} className="rounded-md bg-foreground px-3 py-1.5 font-semibold text-background disabled:opacity-40">{syncing ? 'Syncing…' : 'Link & sync'}</button>
+              </>
+            )}
           </div>
 
           {adding && (
@@ -116,6 +159,20 @@ export function AssetsView({ assets, tasks, places, me, onSave, onDelete, onOpen
               ? <p className="rounded-xl border border-dashed border-border py-6 text-center text-[12.5px] text-muted-foreground">No graphics here yet.</p>
               : <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">{graphics.map((a) => <AssetCard key={a.asset_id} a={a} me={me} onSave={onSave} onDelete={() => onDelete(a.asset_id)} usedIn={usedIn(a)} />)}</div>}
           </section>
+
+          {sources.length > 0 && (
+            <section>
+              <div className="mb-2 font-mono text-[10.5px] font-semibold tracking-wide text-muted-foreground">SOURCE FILES</div>
+              <div className="space-y-1.5">
+                {sources.map((a) => (
+                  <a key={a.asset_id} href={a.url ?? '#'} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-[12.5px] hover:bg-muted/40">
+                    <span className="rounded bg-orange-500 px-1.5 py-px font-mono text-[10px] font-bold text-white">{(a.settings?.ext || 'file').toUpperCase().slice(0, 4)}</span>
+                    <span className="font-mono text-[10.5px] font-semibold text-[#7A5AA5]">{a.code}</span>{a.name}<span className="ml-auto text-muted-foreground">Open ↗</span>
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
 
           {sel.branch && (
             <section className="grid gap-3 xl:grid-cols-2">

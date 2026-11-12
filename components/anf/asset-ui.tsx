@@ -17,7 +17,7 @@ export const TILE: Record<string, string> = {
   welcome: 'linear-gradient(135deg,#fde68a,#fca5a5)', other: 'linear-gradient(135deg,#e5e7eb,#d1d5db)',
   camera: '#1c1b19', flash: '#f59e0b',
 }
-export const kindLabel = (k: string) => (k === 'camera' ? 'Camera preset' : k === 'flash' ? 'Flash preset' : k === 'welcome' ? 'Welcome UI' : GRAPHIC_KINDS.find((x) => x.id === k)?.label ?? k)
+export const kindLabel = (k: string) => (k === 'camera' ? 'Camera preset' : k === 'flash' ? 'Flash preset' : k === 'source' ? 'Source file' : k === 'folder' ? 'Room folder' : k === 'welcome' ? 'Welcome UI' : GRAPHIC_KINDS.find((x) => x.id === k)?.label ?? k)
 /** Drive file id from /file/d/<id>/, ?id=<id> or /open?id=<id> links (folders have none). */
 export function driveId(url: string | null | undefined): string | null {
   if (!url || /\/folders\//.test(url)) return null
@@ -26,7 +26,7 @@ export function driveId(url: string | null | undefined): string | null {
 
 /** Artwork preview: Drive thumbnail → uploaded preview photo → coloured tile. */
 export function GraphicPreview({ a, className }: { a: AnfAsset; className?: string }) {
-  const id = driveId(a.url)
+  const id = a.settings?.preview_id || driveId(a.url)
   const [failed, setFailed] = useState(false)
   const src = id && !failed ? `https://drive.google.com/thumbnail?id=${id}&sz=w600` : a.photos[0] ? attachmentUrl(a.photos[0]) : null
   return (
@@ -165,7 +165,8 @@ export function AssetCard({ a, me, onSave, onDelete, usedIn }: {
       <GraphicPreview a={a} className="h-36" />
       <div className="p-2 space-y-1.5">
         <div className="font-mono text-[10.5px] font-semibold text-[#7A5AA5]">{a.code}</div>
-        <a href={a.url ?? '#'} target="_blank" rel="noopener noreferrer" className="block truncate text-[12.5px] font-semibold hover:underline">{a.name}</a>
+        <a href={a.url ?? '#'} target="_blank" rel="noopener noreferrer" className="block truncate text-[12.5px] font-semibold hover:underline" title={a.name}>{a.name}</a>
+        {a.settings?.preview_id && <div className="flex gap-2 text-[11px] text-muted-foreground"><a href={a.url ?? '#'} target="_blank" rel="noopener noreferrer" className="hover:underline">File ↗</a><a href={`https://drive.google.com/file/d/${a.settings.preview_id}/view`} target="_blank" rel="noopener noreferrer" className="hover:underline">Preview ↗</a></div>}
         <div className="flex items-center gap-1.5">
           <select value={a.status} onChange={(e) => onSave({ ...a, status: e.target.value as AnfAsset['status'], updated_by: me, updated_at: new Date().toISOString() })}
             className={cn('h-5 rounded px-1 text-[10.5px] font-semibold border-0', st.cls)} aria-label="Status">
@@ -174,7 +175,7 @@ export function AssetCard({ a, me, onSave, onDelete, usedIn }: {
           <span className="text-[10.5px] text-muted-foreground">v{a.version}</span>
           {onDelete && <button type="button" className="ml-auto text-muted-foreground hover:text-destructive" aria-label="Delete asset" onClick={() => window.confirm(`Delete ${a.code} “${a.name}”? The Drive file is not touched.`) && onDelete()}><Trash2 className="w-3 h-3" /></button>}
         </div>
-        {!driveId(a.url) && !a.photos.length && <p className="text-[10.5px] text-muted-foreground">No preview (folder link or not shared). Upload one ↓</p>}
+        {!driveId(a.url) && !a.settings?.preview_id && !a.photos.length && <p className="text-[10.5px] text-muted-foreground">No preview (folder link or not shared). Upload one ↓</p>}
         <div className="flex flex-wrap items-center gap-2">
         <PhotoButton label={a.photos.length ? 'Change preview' : 'Upload preview'} className="h-6 text-[11px]" onAdd={(p) => onSave({ ...a, photos: p.slice(0, 1), updated_by: me, updated_at: new Date().toISOString() })} />
         <button type="button" className="text-[11px] text-muted-foreground underline hover:text-foreground"

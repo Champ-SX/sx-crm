@@ -5,7 +5,7 @@ import type { GraphicKind, GraphicStatus } from './anf-tasks'
 // ── Andy & Fine. room kit: graphics (Drive links) + camera / flash presets ────
 // Assets belong to a branch + room (room null = whole branch, branch null = all
 // branches). Tasks reference them by asset_id. Presets are one per room.
-export type AssetKind = GraphicKind | 'camera' | 'flash'
+export type AssetKind = GraphicKind | 'camera' | 'flash' | 'source' | 'folder'
 
 export interface AssetVersion {
   version: number; at: string; by: string | null
@@ -31,6 +31,8 @@ export interface AnfAsset {
 }
 
 export const isPreset = (a: Pick<AnfAsset, 'kind'>) => a.kind === 'camera' || a.kind === 'flash'
+/** Frame / GIF / Welcome / Other — the visual assets shown as tiles. */
+export const isGraphic = (a: Pick<AnfAsset, 'kind'>) => !isPreset(a) && a.kind !== 'source' && a.kind !== 'folder'
 
 // Field lists (Canon DSLR + mirrorless). Options are suggestions; free text is allowed.
 export const CAMERA_FIELDS: { key: string; label: string; options: string[] }[] = [

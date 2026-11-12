@@ -137,7 +137,7 @@ const MOCK_TYPES: AnfTaskType[] = [
 ]
 const MOCK_PLACES: AnfPlace[] = [
   ...['BACC', 'BTT', 'True Alpha', 'CentralWorld', 'Cloud11'].map((n, i) => ({ place_id: n.toUpperCase().replace(' ', '-'), kind: 'branch' as const, name: n, branch_id: null, sort_order: i })),
-  ...['A60', 'A64', 'A65', 'A66', 'A80', 'Music room', 'Long Table'].map((n, i) => ({ place_id: n.toUpperCase(), kind: 'room' as const, name: n, branch_id: 'BACC', sort_order: 10 + i })),
+  ...['A60', 'A62', 'A64', 'A65', 'A66', 'A80', 'Music room', 'Long Table'].map((n, i) => ({ place_id: n.toUpperCase(), kind: 'room' as const, name: n, branch_id: 'BACC', sort_order: 10 + i })),
   ...['K001', 'K05', 'K11'].map((n, i) => ({ place_id: n, kind: 'room' as const, name: n, branch_id: null, sort_order: 30 + i })),
 ]
 const d = (offset: number) => format(new Date(Date.now() + offset * 86400000), 'yyyy-MM-dd')
