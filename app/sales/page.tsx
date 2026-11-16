@@ -335,6 +335,7 @@ function Upload({ onDone }: { onDone: () => void }) {
   const { user } = useAuth()
   const [pending, setPending] = useState<Pending | null>(null)
   const [busy, setBusy] = useState(false)
+  const [drag, setDrag] = useState(false)
   const [history, setHistory] = useState<SalesImport[]>([])
   const loadHistory = () => { void fetchImports().then(setHistory).catch(() => {}) }
   useEffect(loadHistory, [])
@@ -380,9 +381,12 @@ function Upload({ onDone }: { onDone: () => void }) {
   const conflicts = pending ? pending.items.filter((i) => i.kind === 'conflict').length : 0
   return (
     <div className="space-y-5">
-      <label className={cn('block cursor-pointer rounded-xl border-2 border-dashed border-border bg-card p-8 text-center text-[13px] text-muted-foreground hover:border-foreground/30', busy && 'opacity-60')}>
+      <label onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; if (!drag) setDrag(true) }} onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDrag(false) }}
+        onDrop={(e) => { e.preventDefault(); setDrag(false); if (!busy) void pick(e.dataTransfer.files) }}
+        className={cn('block cursor-pointer rounded-xl border-2 border-dashed bg-card p-8 text-center text-[13px] text-muted-foreground transition-colors hover:border-foreground/30',
+          drag ? 'border-foreground bg-foreground/[0.04] text-foreground' : 'border-border', busy && 'opacity-60')}>
         <input type="file" multiple accept=".xlsx,.xls,.csv" className="sr-only" disabled={busy} onChange={(e) => { void pick(e.target.files); e.target.value = '' }} />
-        ⬆ <b className="text-foreground">Choose files</b> — KBank, Pay Solution and ChillPay exports (.xlsx or .csv), several at once.<br />
+        ⬆ {drag ? <b className="text-foreground">Drop to read the files</b> : <><b className="text-foreground">Drag files here</b> or <b className="text-foreground underline">choose files</b></>} — KBank, Pay Solution and ChillPay exports (.xlsx or .csv), several at once.<br />
         <span className="text-[12px]">File names don&apos;t matter; the format is detected from the columns. Uploading the same rows again adds nothing.</span>
       </label>
       {pending && (
