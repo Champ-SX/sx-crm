@@ -28,7 +28,7 @@ export function byMachine(rows: SaleRow[], machines: number[]): MachineLine[] {
 export const thb = (satang: number) => satang / 100
 export const fmtTHB = (satang: number) => '฿' + (satang / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-export interface ExportOpts { paySolutionId: 'reference' | 'order' }
+export interface ExportOpts { paySolutionId: 'reference' | 'order'; includeRef?: boolean }   // includeRef: last 'ref' column (default on)
 export const DEFAULT_EXPORT: ExportOpts = { paySolutionId: 'reference' }   // confirmed by finance: client ID = ReferenceNo
 export const clientId = (r: SaleRow, o: ExportOpts) => (r.gateway === 'paysolution' && o.paySolutionId === 'order' ? (r.alt_ref ?? '') : r.txn_id)
 
@@ -128,17 +128,18 @@ export function buildWorkbook(all: SaleRow[], p: Period, machines: number[], o: 
   const lines = byMachine(rows, ms)
   const total = rows.reduce((s, r) => s + r.amount_satang, 0)
   const wsT: XLSX.WorkSheet = {}
-  DETAIL_HEADERS.forEach((h, c) => put(wsT, 0, c, { v: h, s: c === 8 ? right(S.head) : S.head }))
+  const NC = o.includeRef === false ? 12 : 13
+  DETAIL_HEADERS.slice(0, NC).forEach((h, c) => put(wsT, 0, c, { v: h, s: c === 8 ? right(S.head) : S.head }))
   const ids = clientIds(rows, all, o)
   rows.forEach((r, i) => {
     const st = i % 2 ? withFill(S.cell, ZEBRA) : S.cell
-    clientRow(r, ids.get(r.key)!).forEach((v, c) => put(wsT, i + 1, c, c === 8 ? { v, t: 'n', z: MONEY, s: right(st, MONEY) } : { v: String(v), t: 's', z: '@', s: st }))
+    clientRow(r, ids.get(r.key)!).slice(0, NC).forEach((v, c) => put(wsT, i + 1, c, c === 8 ? { v, t: 'n', z: MONEY, s: right(st, MONEY) } : { v: String(v), t: 's', z: '@', s: st }))
   })
   const TT = rows.length + 1
-  for (let c = 0; c < 13; c++) put(wsT, TT, c, c === 0 ? { v: 'TOTAL', s: S.total } : c === 7 ? { v: `${rows.length.toLocaleString('en-US')} payments`, s: S.total } : c === 8 ? { v: thb(total), t: 'n', z: MONEY, s: right(S.total, MONEY) } : { v: '', s: S.total })
-  wsT['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: TT, c: 12 } })
-  wsT['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(1, rows.length), c: 12 } }) }
-  wsT['!cols'] = [11, 11, 13, 12, 32, 13, 16, 24, 13, 15, 16, 16, 22].map((w) => ({ wch: w }))
+  for (let c = 0; c < NC; c++) put(wsT, TT, c, c === 0 ? { v: 'TOTAL', s: S.total } : c === 7 ? { v: `${rows.length.toLocaleString('en-US')} payments`, s: S.total } : c === 8 ? { v: thb(total), t: 'n', z: MONEY, s: right(S.total, MONEY) } : { v: '', s: S.total })
+  wsT['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: TT, c: NC - 1 } })
+  wsT['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(1, rows.length), c: NC - 1 } }) }
+  wsT['!cols'] = [11, 11, 13, 12, 32, 13, 16, 24, 13, 15, 16, 16, 22].slice(0, NC).map((w) => ({ wch: w }))
   ;(wsT as Record<string, unknown>)['!views'] = [{ state: 'frozen', ySplit: 1, topLeftCell: 'A2' }]
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, wsT, 'Transactions')

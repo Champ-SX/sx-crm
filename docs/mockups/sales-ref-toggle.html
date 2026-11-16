@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ref column toggle</title>
+<style>
+:root{--line:#E8E5DF;--mut:#7C776F;--fg:#1C1A17;--acc:#C8643B}
+*{box-sizing:border-box}body{margin:0;background:#E9E7E2;font:13px/1.4 -apple-system,Inter,sans-serif;color:var(--fg);padding:24px}
+.wrap{max-width:980px;margin:auto}
+.cap{font-weight:600;margin:16px 0 8px}
+.tbl{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.rows div{display:flex;gap:18px;padding:8px 14px;border-top:1px solid #F1EFEB;color:#AAA49A;font-size:12.5px}
+.foot{display:flex;align-items:center;flex-wrap:wrap;gap:14px;padding:11px 14px;border-top:1px solid var(--line);background:rgba(200,100,59,.06)}
+.foot .sp{margin-left:auto;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+.ok{color:#2B7A4B;font-size:12.5px}
+.btn{background:var(--acc);color:#fff;border-radius:8px;padding:8px 14px;font-weight:600}
+.chk{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer;user-select:none;border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px}
+.box{width:16px;height:16px;border-radius:4px;border:1.5px solid #C9C4BB;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:700}
+.chk.on .box{background:var(--acc);border-color:var(--acc)}
+.chk small{color:var(--mut)}
+.file{font:11.5px ui-monospace,monospace;color:var(--mut);padding:0 14px 10px;background:rgba(200,100,59,.06)}
+.xl{margin-top:8px;background:#fff;border-radius:8px;overflow:auto;font-family:Calibri,Arial,sans-serif;font-size:11px;border:1px solid var(--line)}
+.xl table{border-collapse:collapse;width:100%}.xl td,.xl th{border:1px solid #E3E1DC;padding:3px 6px;white-space:nowrap}
+.xl th{background:#1C1A17;color:#fff;text-align:left}.xl th.ref{background:#C8643B}
+.gone{opacity:.25;text-decoration:line-through}
+.note{background:#fff;border-radius:12px;padding:14px 18px;color:#4A463F;margin-top:16px}
+</style></head><body><div class="wrap">
+
+<p class="cap">Ticked (default) — file keeps the “ref” column</p>
+<div class="tbl">
+  <div class="rows"><div>#48 · ฿0.00 · no sales</div><div>#49 · ฿0.00 · no sales</div></div>
+  <div class="foot">
+    <span>11 machines selected · clear</span><span style="color:var(--mut)">423 sales · 1 Nov – 15 Nov</span>
+    <label class="chk on"><span class="box">✓</span>Include <b>ref</b> column <small>(gateway's own number)</small></label>
+    <span class="sp">฿1,252,050.00</span><span class="ok">✓ all IDs present</span><span class="btn">⬇ Download</span>
+  </div>
+  <div class="file">SX_2026-11_True_40-50.xlsx · 13 columns · … SettlementStatus | <b>ref</b></div>
+</div>
+<div class="xl"><table><tr><th>Date</th><th>Machine No.</th><th>…</th><th>PartnerTransactionUniqueID</th><th>Amount (THB)</th><th>Payment Channel</th><th>TransactionStatus</th><th>SettlementStatus</th><th class="ref">ref</th></tr>
+<tr><td>2026-11-01</td><td>9</td><td>…</td><td>SX00920261101-031527</td><td>250.00</td><td>Credit Card</td><td>PAID</td><td>SETTLED</td><td>009179350288</td></tr></table></div>
+
+<p class="cap">Unticked — “ref” column removed</p>
+<div class="tbl">
+  <div class="foot">
+    <span>11 machines selected · clear</span><span style="color:var(--mut)">423 sales · 1 Nov – 15 Nov</span>
+    <label class="chk"><span class="box"></span>Include <b>ref</b> column <small>(gateway's own number)</small></label>
+    <span class="sp">฿1,252,050.00</span><span class="ok">✓ all IDs present</span><span class="btn">⬇ Download</span>
+  </div>
+  <div class="file">SX_2026-11_True_40-50.xlsx · 12 columns · ends at SettlementStatus</div>
+</div>
+<div class="xl"><table><tr><th>Date</th><th>Machine No.</th><th>…</th><th>PartnerTransactionUniqueID</th><th>Amount (THB)</th><th>Payment Channel</th><th>TransactionStatus</th><th>SettlementStatus</th><th class="ref gone">ref</th></tr>
+<tr><td>2026-11-01</td><td>9</td><td>…</td><td>SX00920261101-031527</td><td>250.00</td><td>Credit Card</td><td>PAID</td><td>SETTLED</td><td class="gone">009179350288</td></tr></table></div>
+
+<div class="note">
+• Checkbox sits in the report footer, just left of the total and Download.<br>
+• <b>Ticked by default</b>; your last choice is remembered on this device.<br>
+• Unticked → the file has the original 12 columns (Date … SettlementStatus). Nothing else changes.<br>
+• The file-info line under the footer confirms which version you'll get (13 or 12 columns).
+</div>
+</div></body></html>

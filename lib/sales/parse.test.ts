@@ -117,6 +117,10 @@ describe.skipIf(!has)('sales · acceptance on supplied samples', () => {
     expect(src).toBeTruthy()
     expect(card[7]).toBe(`${src.machine === 44 || src.machine === 47 || src.machine === 46 || src.machine === 45 ? 'SX' + src.machine : 'SX0' + src.machine}${utcStamp(src.biz_date, src.biz_time)}`)
     expect(data.filter((r) => r[9] !== 'Credit Card').every((r) => (r[12] ?? '') === '')).toBe(true)
+    // ref column off → 12 columns
+    const noRef = XLSX.read(XLSX.write(buildWorkbook(all, p, ms, { paySolutionId: 'reference', includeRef: false }).wb, { type: 'buffer', bookType: 'xlsx' }))
+    const h2 = XLSX.utils.sheet_to_json<unknown[]>(noRef.Sheets.Transactions, { header: 1, raw: true, defval: null })[0]
+    expect(h2.length).toBe(12); expect(h2[11]).toBe('SettlementStatus')
   })
   it('ChillPay alone · 1–15 Nov', () => {
     const rs = all.filter((r) => r.gateway === 'chillpay' && r.biz_date >= '2026-11-01' && r.biz_date <= '2026-11-15')

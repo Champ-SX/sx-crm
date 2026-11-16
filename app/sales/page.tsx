@@ -308,7 +308,10 @@ function ReportBuilder() {
   const [sel, setSel] = useState<Set<number>>(new Set())
   const [q, setQ] = useState('')
   const [show, setShow] = useState<'selected' | 'all'>('all')
-  const opts: ExportOpts = DEFAULT_EXPORT   // Pay Solution → ReferenceNo (confirmed by finance)
+  // Pay Solution → ReferenceNo (confirmed by finance). "ref" column on/off, remembered on this device.
+  const [includeRef, setIncludeRef] = useState(() => { try { return localStorage.getItem('sx-sales-include-ref') !== '0' } catch { return true } })
+  const toggleRef = (on: boolean) => { setIncludeRef(on); try { localStorage.setItem('sx-sales-include-ref', on ? '1' : '0') } catch { /* ignore */ } }
+  const opts: ExportOpts = { ...DEFAULT_EXPORT, includeRef }
   const list = [...sel].sort((a, b) => a - b)
   const ok = useMemo(() => (rows ?? []).filter((r) => isAccepted(r) && r.biz_date >= from && r.biz_date <= to), [rows, from, to])
   const picked = useMemo(() => selectRows(rows ?? [], { from, to }, [...sel]), [rows, from, to, sel])
@@ -428,11 +431,15 @@ function ReportBuilder() {
           <span className="hidden text-[12px] text-muted-foreground md:inline">{byGateway.map((x) => `${GW[x.g]} ${kfmt(x.s)}`).join(' · ')}</span>
           <b className="ml-auto text-[16px] tabular-nums">{fmtTHB(gross)}</b>
           {list.length > 0 && (noId > 0 ? <span className="text-[12px] text-red-600">{noId} without ID</span> : <span className="text-[12px] text-emerald-700 dark:text-emerald-400">✓ all IDs present</span>)}
+          <label className="inline-flex cursor-pointer select-none items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-[12.5px]" title="ref = the gateway's own number (Pay Solution ReferenceNo, ChillPay เลขที่รายการ)">
+            <input type="checkbox" checked={includeRef} onChange={(e) => toggleRef(e.target.checked)} className="h-3.5 w-3.5" style={{ accentColor: ACC }} />
+            Include <b>ref</b> column
+          </label>
           <Button size="sm" disabled={!list.length || rows == null} onClick={download} style={list.length ? { background: ACC } : undefined} className="text-white">⬇ {list.length ? 'Download' : 'Tick machines'}</Button>
         </div>
       </div>
       {rows == null && <LoadingOverlay label="Loading sales…" />}
-      {list.length > 0 && <p className="text-[11.5px] text-muted-foreground">File: <span className="font-mono">{fileName}</span> · one Transactions sheet · Pay Solution ID: {opts.paySolutionId === 'order' ? 'OrderNo' : 'ReferenceNo'}{list.filter((n) => !stats.get(n)!.n).length > 0 && ` · ${list.filter((n) => !stats.get(n)!.n).length} zero-sale machine(s) listed as 0`}</p>}
+      {list.length > 0 && <p className="text-[11.5px] text-muted-foreground">File: <span className="font-mono">{fileName}</span> · {includeRef ? '13 columns, ends with ref' : '12 columns, ends at SettlementStatus'} · Pay Solution ID: {opts.paySolutionId === 'order' ? 'OrderNo' : 'ReferenceNo'}{list.filter((n) => !stats.get(n)!.n).length > 0 && ` · ${list.filter((n) => !stats.get(n)!.n).length} zero-sale machine(s) listed as 0`}</p>}
       {waiting > 0 && <p className="rounded-md bg-amber-50 px-3 py-1.5 text-[12px] text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">⚠ {waiting} row{waiting === 1 ? '' : 's'} for the selected machines wait in Review and are not included.</p>}
       {disputed > 0 && <p className="rounded-md bg-red-50 px-3 py-1.5 text-[12px] text-red-800 dark:bg-red-500/10 dark:text-red-300">⚠ {disputed} payment{disputed === 1 ? '' : 's'} for the selected machines have a conflicting re-upload — counted at the saved amount until decided in Review.</p>}
       {unassigned.length > 0 && <p className="text-[12px] text-muted-foreground">Sales from machines outside the groups ({unassigned.map((m) => `#${m}`).join(', ')}) are in company totals but not in client reports until assigned.</p>}
