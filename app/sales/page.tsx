@@ -12,7 +12,7 @@ import { parseSheet, type SaleRow } from '@/lib/sales/parse'
 import { SALES_GROUPS, ALL_ASSIGNED, groupOf, machinesOf, UNASSIGNED } from '@/lib/sales/groups'
 import { buildWorkbook, downloadWorkbook, byMachine, fmtTHB, isAccepted, reportFileName, selectRows, DEFAULT_EXPORT, type ExportOpts } from '@/lib/sales/report'
 import {
-  classify, commitImport, fetchDateRange, fetchImports, fetchReviewQueue, fetchSales, patchSale, useSalesAccess,
+  classify, commitImport, fetchDateRange, salesCache, fetchImports, fetchReviewQueue, fetchSales, patchSale, useSalesAccess,
   type Classified, type ImportFileSummary, type SalesImport, type StoredSale,
 } from '@/lib/supabase/sales'
 
@@ -71,13 +71,15 @@ export default function SalesPage() {
 // ── Data hook ─────────────────────────────────────────────────────────────────
 function useSales(from: string, to: string) {
   const k = `${from}|${to}`
-  const [st, setSt] = useState<{ k: string; rows: StoredSale[] | null; err: string | null }>({ k: '', rows: null, err: null })
+  const [st, setSt] = useState<{ k: string; rows: StoredSale[] | null; err: string | null }>(() => ({ k, rows: salesCache.get(k) ?? null, err: null }))
   useEffect(() => {
     let on = true
-    fetchSales(from, to).then((r) => on && setSt({ k, rows: r, err: null })).catch((e) => on && setSt({ k, rows: [], err: e instanceof Error ? e.message : String(e) }))
+    fetchSales(from, to).then((r) => { salesCache.set(k, r); if (on) setSt({ k, rows: r, err: null }) })
+      .catch((e) => on && setSt((p) => ({ k, rows: p.k === k ? p.rows ?? [] : [], err: e instanceof Error ? e.message : String(e) })))
     return () => { on = false }
   }, [from, to, k])
-  return st.k === k ? { rows: st.rows, err: st.err } : { rows: null, err: null }
+  // Same period: show what we have (cache or last fetch) while refreshing; new period: cached copy or loading.
+  return st.k === k ? { rows: st.rows, err: st.err } : { rows: salesCache.get(k) ?? null, err: null }
 }
 function useMonths(): string[] {
   const [months, setMonths] = useState<string[]>([thisMonth()])

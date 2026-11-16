@@ -175,6 +175,9 @@ let mockTasks: AnfTask[] = [
 ]
 
 // ── Reads ─────────────────────────────────────────────────────────────────────
+/** Last board seen this session — reopening the page shows it at once, then refreshes. */
+export const anfSnapshot: { tasks: AnfTask[] | null; types: AnfTaskType[]; places: AnfPlace[] } = { tasks: null, types: [], places: [] }
+
 export async function fetchAnf(): Promise<{ tasks: AnfTask[]; types: AnfTaskType[]; places: AnfPlace[] }> {
   if (!isSupabaseConfigured) return { tasks: mockTasks.map((t) => structuredClone(t)), types: MOCK_TYPES, places: MOCK_PLACES }
   const [t, ty, pl] = await Promise.all([

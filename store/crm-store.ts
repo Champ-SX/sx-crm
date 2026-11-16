@@ -555,9 +555,19 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
         set({ isLoading: true, error: null })
 
         try {
-          // Load all data in parallel
-          const [companies, contactPersons, leadOpportunities, activities, tasks, staff, opStages, wonJobs] =
-            await Promise.all([
+          // Everything in ONE parallel round (was: 8 parallel, then 9 more one after another ≈ +2 s).
+          // Optional tables fall back to [] so a missing migration never blocks start-up.
+          const optional = <T,>(label: string, p: Promise<T[]>): Promise<T[]> => p.catch((err) => {
+            console.warn(`[CRM Store] Could not load ${label}:`, err instanceof Error ? err.message : String(err)); return [] as T[]
+          })
+          const notificationsP = (async (): Promise<Notification[]> => {
+            const { supabase } = await import('@/lib/supabase/client')
+            // getSession reads the local session (no network); getUser was an extra server round trip.
+            const { data: { session } } = await supabase.auth.getSession()
+            return session?.user?.id ? db.notificationQueries.getUnread(session.user.id) : []
+          })()
+          const [companies, contactPersons, leadOpportunities, activities, tasks, staff, opStages, wonJobs,
+            customers, teamMembers, boards, anfOrders, anfStock, anfProducts, anfStockLog, notifications] = await Promise.all([
               db.companyQueries.getAll(),
               db.contactPersonQueries.getAll(),
               db.leadOpportunityQueries.getAll(),
@@ -567,87 +577,21 @@ export const useCRMStore = create<CRMStore>()((set, get) => ({
               db.staffQueries.getAll(),
               db.opStageQueries.getAll(),
               db.wonJobQueries.getAll(),
+              optional<Customer>('customers', db.customerQueries.getAll()),
+              optional<TeamMember>('team members', db.userQueries.getAll()),
+              optional<Board>('boards', db.boardQueries.getAll()),
+              optional<AnfOrder>('anf_orders', db.anfOrderQueries.getAll()),
+              optional<AnfStock>('anf_stock', db.anfStockQueries.getAll()),
+              optional<AnfProduct>('anf_products', db.anfProductQueries.getAll()),
+              optional<AnfStockLog>('anf_stock_log', db.anfStockLogQueries.getAll()),
+              optional<Notification>('notifications', notificationsP),
             ])
 
-          // Load customers separately with fallback to empty array if table doesn't exist
-          let customers: Customer[] = []
-          try {
-            customers = await db.customerQueries.getAll()
-          } catch (err) {
-            console.warn('[CRM Store] Could not load customers (table may not exist yet):',
-              err instanceof Error ? err.message : String(err))
-          }
-
-          // Load team members (signed-in users) with graceful fallback if RLS blocks
-          let teamMembers: TeamMember[] = []
-          try {
-            teamMembers = await db.userQueries.getAll()
-          } catch (err) {
-            console.warn('[CRM Store] Could not load team members from users table:',
-              err instanceof Error ? err.message : String(err))
-          }
-
-          // Load boards (Phase 4.0). Graceful fallback: if the table isn't there
-          // yet (pre-migration), leave boards empty + activeBoardId null so the
-          // app shows everything unscoped.
-          let boards: Board[] = []
-          try {
-            boards = await db.boardQueries.getAll()
-          } catch (err) {
-            console.warn('[CRM Store] Could not load boards (pre-migration?):',
-              err instanceof Error ? err.message : String(err))
-          }
           let activeBoardId: string | null = null
           if (boards.length > 0) {
             let saved: string | null = null
             try { if (typeof window !== 'undefined') saved = window.localStorage.getItem(ACTIVE_BOARD_KEY) } catch { /* ignore */ }
             activeBoardId = (saved && boards.some((b) => b.board_id === saved)) ? saved : boards[0].board_id
-          }
-
-          // Load ANF Order rows (graceful fallback if table absent pre-migration)
-          let anfOrders: AnfOrder[] = []
-          try {
-            anfOrders = await db.anfOrderQueries.getAll()
-          } catch (err) {
-            console.warn('[CRM Store] Could not load anf_orders (pre-migration?):',
-              err instanceof Error ? err.message : String(err))
-          }
-
-          // Load ANF Stock rows (graceful fallback if table absent pre-migration)
-          let anfStock: AnfStock[] = []
-          try {
-            anfStock = await db.anfStockQueries.getAll()
-          } catch (err) {
-            console.warn('[CRM Store] Could not load anf_stock (pre-migration?):',
-              err instanceof Error ? err.message : String(err))
-          }
-
-          let anfProducts: AnfProduct[] = []
-          try {
-            anfProducts = await db.anfProductQueries.getAll()
-          } catch (err) {
-            console.warn('[CRM Store] Could not load anf_products (pre-migration?):',
-              err instanceof Error ? err.message : String(err))
-          }
-
-          let anfStockLog: AnfStockLog[] = []
-          try {
-            anfStockLog = await db.anfStockLogQueries.getAll()
-          } catch (err) {
-            console.warn('[CRM Store] Could not load anf_stock_log (pre-migration?):',
-              err instanceof Error ? err.message : String(err))
-          }
-
-          // Load notifications for the current user
-          let notifications: Notification[] = []
-          try {
-            const { supabase } = await import('@/lib/supabase/client')
-            const { data: { user } } = await supabase.auth.getUser()
-            if (user?.id) {
-              notifications = await db.notificationQueries.getUnread(user.id)
-            }
-          } catch (err) {
-            console.warn('[CRM Store] Could not load notifications:', err instanceof Error ? err.message : String(err))
           }
 
           console.log('[CRM Store] Data loaded successfully:', {

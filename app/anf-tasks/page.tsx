@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
 import {
-  ANF_COLUMNS, AUTO_ARCHIVE_DAYS, fetchAnf, createAnfTask, updateAnfTask, deleteAnfTask, createAnfType, notifyCritical, uid,
+  ANF_COLUMNS, AUTO_ARCHIVE_DAYS, fetchAnf, createAnfTask, updateAnfTask, deleteAnfTask, createAnfType, notifyCritical, uid, anfSnapshot,
   type AnfTask, type AnfTaskType, type AnfPlace, type AnfColumn, hasPlace, ALL_BRANCHES
 } from '@/lib/supabase/anf-tasks'
 import { AddTaskDialog } from '@/components/anf/add-task-dialog'
@@ -32,9 +32,11 @@ export default function AnfTasksPage() {
   const teamMembers = useCRMStore((s) => s.teamMembers)
   const author = user?.user_metadata?.full_name ?? user?.email ?? 'Someone'
 
-  const [tasks, setTasks] = useState<AnfTask[]>([])
-  const [types, setTypes] = useState<AnfTaskType[]>([])
-  const [places, setPlaces] = useState<AnfPlace[]>([])
+  // Start from this session's last copy (instant on return); fetchAnf below refreshes it.
+  const [tasks, setTasks] = useState<AnfTask[]>(() => anfSnapshot.tasks ?? [])
+  const [types, setTypes] = useState<AnfTaskType[]>(() => anfSnapshot.types)
+  const [places, setPlaces] = useState<AnfPlace[]>(() => anfSnapshot.places)
+  useEffect(() => { anfSnapshot.tasks = tasks; anfSnapshot.types = types; anfSnapshot.places = places }, [tasks, types, places])
   const [assets, setAssets] = useState<AnfAsset[]>([])
   useEffect(() => { fetchAssets().then(setAssets).catch(() => setAssets([])) }, [])
   const saveA = (a: AnfAsset) => {

@@ -32,16 +32,15 @@ async function load() {
     }
     loaded = true; emit(); return
   }
-  const [r, p] = await Promise.all([
+  const [r, p, e] = await Promise.all([
     supabase.from('anf_requests').select('*').order('created_at', { ascending: false }),
     supabase.from('anf_pos').select('*').order('created_at', { ascending: false }),
+    supabase.from('anf_request_events').select('*').order('at', { ascending: true }),   // history: optional until its migration has run
   ])
   if (r.error) console.warn('[purchasing] requests load failed', r.error.message)
   if (p.error) console.warn('[purchasing] POs load failed', p.error.message)
   requests = (r.data ?? []) as AnfRequest[]
   pos = (p.data ?? []) as AnfPO[]
-  // History is optional until its migration has run.
-  const e = await supabase.from('anf_request_events').select('*').order('at', { ascending: true })
   if (e.error) console.warn('[purchasing] history load failed', e.error.message)
   events = (e.data ?? []) as AnfRequestEvent[]
   loaded = true; emit()

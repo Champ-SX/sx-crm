@@ -18,13 +18,18 @@ const toStored = (r: Record<string, unknown>): StoredSale => ({ ...(r as unknown
 
 // ── Access: admins + users ticked in Admin › Users ───────────────────────────
 export const SALES_PAGE = 'sales'
+const accessCache = new Map<string, string[]>()
 export async function fetchPageAccess(page: string): Promise<string[]> {
+  const r = await fetchPageAccessRaw(page); accessCache.set(page, r); return r
+}
+async function fetchPageAccessRaw(page: string): Promise<string[]> {
   if (!isSupabaseConfigured) return mockAccess
   const { data, error } = await supabase.from('page_access').select('user_id').eq('page', page)
   if (error) return []
   return (data ?? []).map((r) => String(r.user_id))
 }
 export async function setPageAccess(page: string, userId: string, on: boolean): Promise<void> {
+  accessCache.delete(page)
   if (!isSupabaseConfigured) { mockAccess = on ? [...mockAccess, userId] : mockAccess.filter((x) => x !== userId); return }
   const q = on ? supabase.from('page_access').upsert({ page, user_id: userId }) : supabase.from('page_access').delete().eq('page', page).eq('user_id', userId)
   const { error } = await q
@@ -34,7 +39,7 @@ export async function setPageAccess(page: string, userId: string, on: boolean): 
 export function useSalesAccess(): boolean | null {
   const { role, loading } = useAuth()
   const ids = useMyIds()
-  const [members, setMembers] = useState<string[] | null>(null)
+  const [members, setMembers] = useState<string[] | null>(() => accessCache.get(SALES_PAGE) ?? null)   // sidebar + page share one check
   useEffect(() => { let on = true; void fetchPageAccess(SALES_PAGE).then((m) => on && setMembers(m)); return () => { on = false } }, [])
   if (loading) return null
   if (role === 'admin' || !isSupabaseConfigured) return true
@@ -43,6 +48,10 @@ export function useSalesAccess(): boolean | null {
 }
 
 // ── Reads ─────────────────────────────────────────────────────────────────────
+/** Last result per period this session — reopening shows it at once, then refreshes. Cleared on any write. */
+export const salesCache = new Map<string, StoredSale[]>()
+const clearSalesCache = () => salesCache.clear()
+
 /** Every row with a business date in [from, to] (inclusive), plus undated review rows. */
 export async function fetchSales(from: string, to: string): Promise<StoredSale[]> {
   if (!isSupabaseConfigured) return mockTxns.filter((r) => !r.biz_date || (r.biz_date >= from && r.biz_date <= to))
@@ -104,6 +113,7 @@ export async function classify(rows: (SaleRow & { source_file: string })[]): Pro
 
 /** Saves new + review rows and flags conflicts. Rolls back this import's rows if any batch fails. */
 export async function commitImport(items: Classified[], files: ImportFileSummary[], by: string | null): Promise<SalesImport> {
+  clearSalesCache()
   const imp: SalesImport = {
     import_id: uid(), files, created_by: by, created_at: new Date().toISOString(),
     new_rows: items.filter((i) => i.kind === 'new').length, dup_rows: items.filter((i) => i.kind === 'dup').length,
@@ -140,6 +150,7 @@ export async function commitImport(items: Classified[], files: ImportFileSummary
 
 // ── Review decisions ──────────────────────────────────────────────────────────
 export async function patchSale(key: string, patch: Partial<StoredSale>): Promise<void> {
+  clearSalesCache()
   if (!isSupabaseConfigured) { mockTxns = mockTxns.map((r) => (r.key === key ? { ...r, ...patch } : r)); return }
   const { error } = await supabase.from('sales_txns').update({ ...patch, updated_at: new Date().toISOString() }).eq('key', key)
   if (error) throw error
