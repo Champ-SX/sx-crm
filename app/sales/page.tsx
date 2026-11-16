@@ -122,6 +122,7 @@ function Dashboard() {
   const gw = sumBy((r) => r.gateway)
   const methods = sumBy((r) => `${r.gateway}|${r.method}`)
   const groups = sumBy((r) => groupOf(r.machine))
+  const channels = sumBy((r) => r.channel)
   const allDays: string[] = []; for (let d = new Date(from + 'T00:00:00Z'); d.toISOString().slice(0, 10) <= to; d.setUTCDate(d.getUTCDate() + 1)) allDays.push(d.toISOString().slice(0, 10))
   const daily = allDays.map((d) => ({ d, by: SALES_GROUPS.map((g) => g.name).concat(UNASSIGNED).map((g) => ({ g, s: ok.filter((r) => r.biz_date === d && groupOf(r.machine) === g).reduce((a, r) => a + r.amount_satang, 0) })) }))
   const maxDay = Math.max(1, ...daily.map((x) => x.by.reduce((a, b) => a + b.s, 0)))
@@ -192,7 +193,8 @@ function Dashboard() {
         </div>
       </div>
 
-      <div className={card}>
+      <div className="grid lg:grid-cols-[1fr_320px] gap-3">
+      <div className={cn(card, 'min-w-0')}>
         <div className="flex flex-wrap items-center justify-between gap-2"><p className={lbl}>DAILY SALES · BY GROUP</p>
           <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">{Object.entries(GROUP_COLORS).map(([g, c]) => <span key={g} className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: c }} />{g}</span>)}</div></div>
         <div className="mt-3 flex h-40 items-end gap-[3px]">
@@ -209,6 +211,8 @@ function Dashboard() {
           })}
         </div>
         <div className="mt-1 flex justify-between text-[11px] text-muted-foreground"><span>{fmtDay(from)}</span><span>{fmtDay(to)}</span></div>
+      </div>
+        <ChannelDonut data={channels.map(([k, v]) => ({ name: k, satang: v.s, n: v.n }))} />
       </div>
 
       <div className="grid lg:grid-cols-[1fr_1.4fr] gap-3">
@@ -235,6 +239,50 @@ function Dashboard() {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+// Payment channel share of gross (SVG donut, no chart library).
+const CHANNEL_COLORS: Record<string, string> = { PromptPay: '#4F86D9', KPlus: '#7BC8A4', 'Credit Card': '#8478D6', QRCode: '#E8A25A', TrueMoney: '#E26D6D' }
+function ChannelDonut({ data }: { data: { name: string; satang: number; n: number }[] }) {
+  const [hover, setHover] = useState<string | null>(null)
+  const total = data.reduce((a, d) => a + d.satang, 0)
+  const R = 70, W = 26, C = 2 * Math.PI * R, GAP = data.length > 1 ? 2 : 0
+  const fracs = data.map((d) => (total ? d.satang / total : 0))
+  const segs = data.map((d, i) => ({ ...d, frac: fracs[i], start: fracs.slice(0, i).reduce((a, b) => a + b, 0) }))
+  const h = segs.find((x) => x.name === hover)
+  return (
+    <div className={cn(card, 'flex flex-col')}>
+      <p className={lbl}>PAYMENT CHANNEL DISTRIBUTION</p>
+      {total === 0 ? <p className="my-auto py-10 text-center text-[12.5px] text-muted-foreground">No sales.</p> : <>
+        <div className="relative mx-auto mt-3 h-[190px] w-[190px]">
+          <svg viewBox="0 0 190 190" className="h-full w-full -rotate-90" role="img" aria-label="Payment channel distribution">
+            {segs.map((x) => {
+              const len = Math.max(0, x.frac * C - GAP)
+              const mid = (x.start + x.frac / 2) * 2 * Math.PI
+              return (
+                <g key={x.name} onMouseEnter={() => setHover(x.name)} onMouseLeave={() => setHover(null)} className="cursor-default">
+                  <circle cx="95" cy="95" r={R} fill="none" stroke={CHANNEL_COLORS[x.name] ?? '#A8A39A'} strokeWidth={hover === x.name ? W + 4 : W}
+                    strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-x.start * C} className="transition-[stroke-width] duration-150" />
+                  {x.frac >= 0.08 && <text x={95 + R * Math.cos(mid)} y={95 + R * Math.sin(mid)} transform={`rotate(90 ${95 + R * Math.cos(mid)} ${95 + R * Math.sin(mid)})`}
+                    textAnchor="middle" dominantBaseline="central" className="fill-white text-[11px] font-semibold">{Math.round(x.frac * 100)}%</text>}
+                </g>
+              )
+            })}
+          </svg>
+          <div className="pointer-events-none absolute inset-0 grid place-items-center text-center">
+            <div>
+              <p className="text-[11px] text-muted-foreground">{h ? h.name : 'Gross'}</p>
+              <p className="text-[15px] font-bold tabular-nums">{fmtTHB(h ? h.satang : total)}</p>
+              <p className="text-[11px] text-muted-foreground">{h ? `${(h.frac * 100).toFixed(1)}% · ${h.n} txns` : `${data.reduce((a, d) => a + d.n, 0).toLocaleString()} txns`}</p>
+            </div>
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[12px]">
+          {segs.map((x) => <span key={x.name} onMouseEnter={() => setHover(x.name)} onMouseLeave={() => setHover(null)} className="inline-flex items-center gap-1.5" style={{ color: CHANNEL_COLORS[x.name] ?? '#A8A39A' }}>
+            <span className="h-2.5 w-2.5 rounded-full" style={{ background: CHANNEL_COLORS[x.name] ?? '#A8A39A' }} />{x.name} <span className="text-muted-foreground">{(x.frac * 100).toFixed(1)}%</span></span>)}
+        </div>
+      </>}
     </div>
   )
 }
