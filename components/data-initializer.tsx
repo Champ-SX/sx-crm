@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
+import { boardOfPath } from '@/lib/boards-nav'
 import { useCRMStore } from '@/store/crm-store'
 import { useAuth } from '@/components/auth-provider'
-import { LoadingAnimation } from '@/components/shared/loading-animation'
 
 /**
  * DataInitializer Component
@@ -22,6 +23,17 @@ export function DataInitializer() {
   const { isInitialized, isLoading, error, initializeData } = useCRMStore()
   const refreshTeamMembers = useCRMStore((s) => s.refreshTeamMembers)
   const [loadingTimeout, setLoadingTimeout] = useState(false)
+
+  // A direct link (notification, bookmark) to another board's page switches the
+  // board too, so the sidebar menu always matches the page.
+  const pathname = usePathname()
+  const activeBoardId = useCRMStore((s) => s.activeBoardId)
+  const boards = useCRMStore((s) => s.boards)
+  const setActiveBoard = useCRMStore((s) => s.setActiveBoard)
+  useEffect(() => {
+    const b = pathname ? boardOfPath(pathname) : null
+    if (b && activeBoardId && b !== activeBoardId && boards.some((x) => x.board_id === b)) setActiveBoard(b)
+  }, [pathname, activeBoardId, boards, setActiveBoard])
 
   useEffect(() => {
     // Only initialize if authenticated and not already initialized
@@ -107,25 +119,12 @@ export function DataInitializer() {
  */
 function LoadingOverlay() {
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
-      {/* Animated skeleton background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent animate-pulse" />
-
-      {/* Loading content */}
-      <div className="relative z-10 text-center">
-        <div className="mb-6">
-          <LoadingAnimation size={120} label="" />
-        </div>
-
-        <h2 className="text-2xl font-semibold text-foreground mb-2">Loading CRM Data</h2>
-        <p className="text-sm text-muted-foreground mb-6">Connecting to database...</p>
-
-        {/* Skeleton cards */}
-        <div className="space-y-3 w-64">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
-          ))}
-        </div>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-background" role="status" aria-busy="true">
+      <div className="rounded-2xl border border-border bg-card px-10 py-7 text-center shadow-lg">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="" width={56} height={56} className="mx-auto h-14 w-14 animate-pulse object-contain dark:invert" />
+        <h2 className="mt-4 text-[17px] font-semibold text-foreground">Loading CRM Data</h2>
+        <p className="mt-0.5 text-[12.5px] text-muted-foreground">Connecting to database…</p>
       </div>
     </div>
   )

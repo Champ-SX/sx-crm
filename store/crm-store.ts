@@ -118,7 +118,7 @@ const SEED_BOARDS: Board[] = [
   { board_id: 'anf', name: 'Andy & Fine.', slug: 'anf', color: '#FF809E', sort_order: 1 },
   { board_id: 'anf-order', name: 'Inventory', slug: 'anf-order', color: '#7A5AA5', sort_order: 2 },
 ]
-const ACTIVE_BOARD_KEY = 'sx-active-board'
+import { ACTIVE_BOARD_KEY } from '@/lib/boards-nav'
 
 // Local mock stock (used only in mock mode — real data comes from the import).
 const MOCK_ANF_STOCK: AnfStock[] = [
