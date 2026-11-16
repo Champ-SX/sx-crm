@@ -1,5 +1,5 @@
 'use client'
-import { DelayedLoading } from '@/components/shared/delayed-loading'
+import { LoadingOverlay } from '@/components/shared/delayed-loading'
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -109,7 +109,7 @@ export default function RequestsPage() {
   )
 
   return (
-    <div className="flex-1 flex flex-col min-w-0">
+    <div className="relative flex-1 flex flex-col min-w-0">
       <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex flex-wrap items-center gap-3">
         <MobileMenuButton />
         <span className="w-3.5 h-3.5 rounded-[5px] shrink-0 flex items-center justify-center" style={{ backgroundColor: ANF_ACCENT }}><ClipboardList className="w-2.5 h-2.5 text-white" /></span>
@@ -134,7 +134,8 @@ export default function RequestsPage() {
         </div>
       </div>
 
-      {!loaded ? <DelayedLoading label="Loading requests…" /> : <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-4 pb-24">
+      {!loaded && <LoadingOverlay label="Loading requests…" />}
+      <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-4 pb-24">
         {shown.length === 0 ? (
           <div className="text-center py-20">
             <ClipboardList className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
@@ -186,7 +187,7 @@ export default function RequestsPage() {
             })}
           </div>
         )}
-      </div>}
+      </div>
 
       {selecting && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 w-[min(720px,calc(100vw-2rem))] flex flex-wrap items-center gap-3 rounded-xl bg-foreground text-background px-4 py-3 shadow-xl">

@@ -1,5 +1,5 @@
 'use client'
-import { DelayedLoading } from '@/components/shared/delayed-loading'
+import { LoadingOverlay } from '@/components/shared/delayed-loading'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { GanttChart, Images, LayoutGrid, Plus, Search, X, Archive, Settings2 } from 'lucide-react'
@@ -163,7 +163,7 @@ export default function AnfTasksPage() {
 
 
   return (
-    <div className="flex flex-col h-[100dvh]">
+    <div className="relative flex flex-col h-[100dvh]">
       {/* Header */}
       <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 shrink-0 flex flex-wrap items-center gap-x-3 gap-y-2">
         <MobileMenuButton />
@@ -208,7 +208,8 @@ export default function AnfTasksPage() {
 
       {loadError && <div className="px-6 py-2 text-[13px] text-destructive">Couldn&apos;t load tasks: {loadError}. Has the A&amp;F migration been run?</div>}
 
-      {!loaded ? <div className="flex-1"><DelayedLoading label="Loading tasks…" /></div> : view === 'timeline' ? (
+      {!loaded && <LoadingOverlay label="Loading tasks…" />}
+      {view === 'timeline' ? (
         <TimelineView tasks={shown} types={types} onOpen={setOpenId} />
       ) : view === 'assets' ? (
         <AssetsView assets={assets} tasks={tasks} places={places} me={author} onSave={saveA} onDelete={deleteA} onOpenTask={setOpenId} onPlaces={setPlaces} onPatchTask={patch} />

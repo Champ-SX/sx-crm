@@ -1,5 +1,5 @@
 'use client'
-import { DelayedLoading } from '@/components/shared/delayed-loading'
+import { LoadingOverlay } from '@/components/shared/delayed-loading'
 
 import { useState } from 'react'
 import { FileText, Check } from 'lucide-react'
@@ -45,7 +45,7 @@ export default function POsPage() {
   )
 
   return (
-    <div className="flex-1 flex flex-col min-w-0">
+    <div className="relative flex-1 flex flex-col min-w-0">
       <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 lg:py-4 shrink-0 flex flex-wrap items-center gap-3">
         <MobileMenuButton />
         <span className="w-3.5 h-3.5 rounded-[5px] shrink-0 flex items-center justify-center" style={{ backgroundColor: ANF_ACCENT }}><FileText className="w-2.5 h-2.5 text-white" /></span>
@@ -58,7 +58,8 @@ export default function POsPage() {
         )}
         <div className={cn('flex flex-wrap gap-1.5', !emergencyCount && 'ml-auto')}>{viewChip('open', 'Open')}{viewChip('received', 'Received')}{viewChip('cancelled', 'Cancelled')}{viewChip('all', 'All')}</div>
       </div>
-      {!loaded ? <DelayedLoading label="Loading POs…" /> : <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-4">
+      {!loaded && <LoadingOverlay label="Loading POs…" />}
+      <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-4">
         {list.length === 0 ? (
           <div className="text-center py-20">
             <FileText className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
@@ -93,7 +94,7 @@ export default function POsPage() {
             })}
           </div>
         )}
-      </div>}
+      </div>
       {open && <PODialog po={pos.find((x) => x.po_id === open.po_id) ?? open} onClose={() => setOpen(null)} />}
     </div>
   )

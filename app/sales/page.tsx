@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import * as XLSX from 'xlsx'
-import { DelayedLoading } from '@/components/shared/delayed-loading'
+import { LoadingOverlay } from '@/components/shared/delayed-loading'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,7 +34,7 @@ export default function SalesPage() {
   const refreshReview = useCallback(() => { void fetchReviewQueue().then((r) => setReviewCount(r.length)).catch(() => {}) }, [])
   useEffect(() => { if (access) refreshReview() }, [access, refreshReview])
 
-  if (access === null) return <DelayedLoading />
+  if (access === null) return <div className="relative h-[100dvh]"><LoadingOverlay label="Checking access…" /></div>
   if (!access) return (
     <div className="p-8 max-w-md">
       <h1 className="text-lg font-semibold">Sales reports</h1>
@@ -43,7 +43,7 @@ export default function SalesPage() {
   )
   const tabs: [Tab, string][] = [['dash', 'Dashboard'], ['report', 'Client report'], ['upload', 'Upload'], ['review', `Review${reviewCount ? ` · ${reviewCount}` : ''}`]]
   return (
-    <div className="flex flex-col h-[100dvh]">
+    <div className="relative flex flex-col h-[100dvh]">
       <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center gap-3 shrink-0">
         <MobileMenuButton />
         <div className="mr-auto">
@@ -130,7 +130,7 @@ function Dashboard() {
 
   return (
     <div className="space-y-5">
-      {rows == null && <DelayedLoading label="Loading sales…" className="py-6" />}
+      {rows == null && <LoadingOverlay label="Loading sales…" />}
       <div className="flex flex-wrap items-end gap-2">
         <div className="mr-auto">
           <p className="text-[13px] text-muted-foreground">
@@ -353,8 +353,7 @@ function ReportBuilder() {
               </tr>
             </thead>
             <tbody>
-              {rows == null && <tr><td colSpan={11}><DelayedLoading label="Loading sales…" className="py-8" /></td></tr>}
-              {rows != null && visible.map((n) => {
+              {visible.map((n) => {
                 const x = stats.get(n)!; const on = sel.has(n); const grp = groupOf(n)
                 return (
                   <tr key={n} onClick={() => toggle(n)} className={cn('cursor-pointer border-t border-border/60 hover:bg-muted/40', !x.n && 'text-muted-foreground/60')} style={on ? { background: 'rgba(200,100,59,0.05)' } : undefined}>
@@ -384,6 +383,7 @@ function ReportBuilder() {
           <Button size="sm" disabled={!list.length || rows == null} onClick={download} style={list.length ? { background: ACC } : undefined} className="text-white">⬇ {list.length ? 'Download' : 'Tick machines'}</Button>
         </div>
       </div>
+      {rows == null && <LoadingOverlay label="Loading sales…" />}
       {list.length > 0 && <p className="text-[11.5px] text-muted-foreground">File: <span className="font-mono">{fileName}</span> · one Transactions sheet · Pay Solution ID: {opts.paySolutionId === 'order' ? 'OrderNo' : 'ReferenceNo'}{list.filter((n) => !stats.get(n)!.n).length > 0 && ` · ${list.filter((n) => !stats.get(n)!.n).length} zero-sale machine(s) listed as 0`}</p>}
       {waiting > 0 && <p className="rounded-md bg-amber-50 px-3 py-1.5 text-[12px] text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">⚠ {waiting} row{waiting === 1 ? '' : 's'} for the selected machines wait in Review and are not included.</p>}
       {disputed > 0 && <p className="rounded-md bg-red-50 px-3 py-1.5 text-[12px] text-red-800 dark:bg-red-500/10 dark:text-red-300">⚠ {disputed} payment{disputed === 1 ? '' : 's'} for the selected machines have a conflicting re-upload — counted at the saved amount until decided in Review.</p>}
