@@ -240,85 +240,147 @@ function Kpi({ label, value, note }: { label: string; value: string; note: strin
 }
 
 // ── ② Client report (combined Excel) ──────────────────────────────────────────
+const ACC = '#C8643B'
+const MIX: [string, string, (r: SaleRow) => boolean][] = [
+  ['PromptPay', '#2F6FDB', (r) => r.channel === 'PromptPay'],
+  ['KPlus', '#1E9E62', (r) => r.channel === 'KPlus'],
+  ['Card', '#7A5AA5', (r) => r.gateway === 'paysolution'],
+  ['ChillPay', '#D9822B', (r) => r.gateway === 'chillpay'],
+]
+const kfmt = (satang: number) => { const b = satang / 100; return b >= 1e6 ? `฿${(b / 1e6).toFixed(2)}M` : b >= 1e3 ? `฿${(b / 1e3).toFixed(1)}k` : `฿${b.toFixed(0)}` }
+
 function ReportBuilder() {
   const m = monthBounds(thisMonth())
   const [from, setFrom] = useState(m.from)
   const [to, setTo] = useState(m.to)
   const { rows } = useSales(from, to)
   const [sel, setSel] = useState<Set<number>>(new Set())
+  const [q, setQ] = useState('')
+  const [show, setShow] = useState<'selected' | 'all'>('all')
   const [opts] = useState<ExportOpts>(() => { try { return { ...DEFAULT_EXPORT, ...JSON.parse(localStorage.getItem(OPTS_KEY) ?? '{}') } } catch { return DEFAULT_EXPORT } })
   const list = [...sel].sort((a, b) => a - b)
+  const ok = useMemo(() => (rows ?? []).filter((r) => isAccepted(r) && r.biz_date >= from && r.biz_date <= to), [rows, from, to])
   const picked = useMemo(() => selectRows(rows ?? [], { from, to }, [...sel]), [rows, from, to, sel])
-  const lines = byMachine(picked, list)
   const gross = picked.reduce((s, r) => s + r.amount_satang, 0)
   const waiting = (rows ?? []).filter((r) => (r.review || r.conflict) && r.machine != null && sel.has(r.machine)).length
   const noId = picked.filter((r) => !(r.gateway === 'paysolution' && opts.paySolutionId === 'order' ? r.alt_ref : r.txn_id)).length
-  const perMachine = useMemo(() => byMachine((rows ?? []).filter((r) => isAccepted(r) && r.biz_date >= from && r.biz_date <= to), ALL_ASSIGNED), [rows, from, to])
-  const unassigned = [...new Set((rows ?? []).filter((r) => isAccepted(r) && groupOf(r.machine) === UNASSIGNED).map((r) => r.machine))]
+  const unassigned = [...new Set(ok.filter((r) => groupOf(r.machine) === UNASSIGNED).map((r) => r.machine))]
+
+  // per-machine stats for the table
+  const stats = useMemo(() => {
+    const m = new Map<number, { n: number; s: number; mix: number[]; last: string }>()
+    for (const n of ALL_ASSIGNED) m.set(n, { n: 0, s: 0, mix: [0, 0, 0, 0], last: '' })
+    for (const r of ok) {
+      const x = m.get(r.machine!); if (!x) continue
+      x.n++; x.s += r.amount_satang
+      MIX.forEach(([, , f], i) => { if (f(r)) x.mix[i]++ })
+      const t = `${r.biz_date} ${r.biz_time ?? ''}`; if (t > x.last) x.last = t
+    }
+    return m
+  }, [ok])
+  const groupTotal = (ms: number[]) => ms.reduce((a, n) => { const x = stats.get(n)!; return { n: a.n + x.n, s: a.s + x.s } }, { n: 0, s: 0 })
+  const activeGroups = SALES_GROUPS.filter((g) => machinesOf(g).some((n) => sel.has(n)))
+  const visible = ALL_ASSIGNED.filter((n) => (show === 'all' || !activeGroups.length || activeGroups.some((g) => n >= g.from && n <= g.to)) && (!q.trim() || String(n).includes(q.trim().replace('#', ''))))
   const toggle = (n: number) => setSel((s) => { const x = new Set(s); if (x.has(n)) x.delete(n); else x.add(n); return x })
-  const byGateway = (['kbank', 'paysolution', 'chillpay'] as const).map((g) => ({ g, n: picked.filter((r) => r.gateway === g).length, s: picked.filter((r) => r.gateway === g).reduce((a, r) => a + r.amount_satang, 0) }))
-  const days = [...new Set(picked.map((r) => r.biz_date))].sort()
+  const setMany = (ms: number[], on: boolean) => setSel((s) => { const x = new Set(s); ms.forEach((n) => (on ? x.add(n) : x.delete(n))); return x })
+  const allVisibleOn = visible.length > 0 && visible.every((n) => sel.has(n))
+  const byGateway = (['kbank', 'paysolution', 'chillpay'] as const).map((g) => ({ g, s: picked.filter((r) => r.gateway === g).reduce((a, r) => a + r.amount_satang, 0) }))
+  const fileName = list.length ? reportFileName({ from, to }, list) : ''
+  const lastFmt = (t: string) => t ? `${fmtDay(t.slice(0, 10))}${t.length > 11 ? `, ${t.slice(11, 16)}` : ''}` : 'no sales'
 
   function download() {
     if (!rows || !list.length) return
     const { wb } = buildWorkbook(rows, { from, to }, list, opts)
-    XLSX.writeFile(wb, reportFileName({ from, to }, list))
+    XLSX.writeFile(wb, fileName)
   }
+  const box = 'rounded-[10px] border border-border bg-card'
+  const cb = (on: boolean) => cn('inline-grid h-[15px] w-[15px] place-items-center rounded-[4px] border-[1.5px] text-[10px] font-bold leading-none text-white', on ? 'border-transparent' : 'border-muted-foreground/40 bg-background')
+
   return (
-    <div className="grid lg:grid-cols-[1fr_320px] gap-4 items-start">
-      <div className={card}>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={lbl}>PERIOD</span>
-          <Input type="date" value={from} onChange={(e) => e.target.value && setFrom(e.target.value)} className="h-8 w-auto text-[13px]" aria-label="From" />
-          <span className="text-muted-foreground">→</span>
-          <Input type="date" value={to} onChange={(e) => e.target.value && setTo(e.target.value)} className="h-8 w-auto text-[13px]" aria-label="To" />
-          {[0, 1].map((back) => { const d = new Date(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() - back); const b = monthBounds(d.toISOString().slice(0, 7)); return (
-            <button key={back} type="button" onClick={() => { setFrom(b.from); setTo(b.to) }} className="rounded-full border border-border px-2.5 py-0.5 text-[12px] hover:border-foreground/30">{back ? 'Last month' : 'This month'}</button>
-          ) })}
-        </div>
-        <p className={cn(lbl, 'mt-4 mb-2')}>GROUP PRESETS</p>
-        <div className="flex flex-wrap gap-1.5">
-          {SALES_GROUPS.map((g) => {
-            const ms = machinesOf(g), full = ms.every((n) => sel.has(n))
-            return <button key={g.id} type="button" aria-pressed={full} onClick={() => setSel((s) => { const x = new Set(s); ms.forEach((n) => (full ? x.delete(n) : x.add(n))); return x })}
-              className={cn('rounded-full border px-3 py-1 text-[12.5px] font-medium', full ? 'border-foreground bg-foreground text-background' : 'border-border hover:border-foreground/30')}>{full && '✓ '}{g.name} · {g.from}–{g.to}</button>
-          })}
-          {sel.size > 0 && <button type="button" onClick={() => setSel(new Set())} className="px-2 text-[12px] text-muted-foreground hover:text-foreground">Clear</button>}
-        </div>
-        {SALES_GROUPS.map((g) => (
-          <div key={g.id} className="mt-4">
-            <p className="mb-1.5 text-[12px] text-muted-foreground"><b className="text-foreground">{g.name}</b> {g.from}–{g.to}</p>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(88px,1fr))] gap-1.5">
-              {machinesOf(g).map((n) => { const l = perMachine.find((x) => x.machine === n)!; const on = sel.has(n); return (
-                <button key={n} type="button" aria-pressed={on} onClick={() => toggle(n)}
-                  className={cn('rounded-lg border px-2 py-1.5 text-left text-[12px]', on ? 'border-foreground bg-foreground/[0.04] ring-1 ring-foreground' : 'border-border hover:border-foreground/30')}>
-                  <b className="text-[13px]">{on ? '☑' : '☐'} #{n}</b>
-                  <span className={cn('block text-[11px]', l.count ? 'text-muted-foreground' : 'text-muted-foreground/50')}>{l.count ? `${l.count} · ${fmtTHB(l.satang)}` : 'no sales'}</span>
-                </button>
-              ) })}
-            </div>
-          </div>
-        ))}
-        {unassigned.length > 0 && <p className="mt-4 rounded-md bg-amber-50 px-3 py-2 text-[12px] text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">Sales from machines outside the groups ({unassigned.map((m) => `#${m}`).join(', ')}) count in company totals but can&apos;t go in a client report until they&apos;re assigned to a group.</p>}
+    <div className="space-y-3">
+      {/* Group cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+        {[{ id: 'all', name: 'All machines', range: `(${ALL_ASSIGNED.length})`, ms: ALL_ASSIGNED }, ...SALES_GROUPS.map((g) => ({ id: g.id, name: g.name, range: `${g.from}–${g.to}`, ms: machinesOf(g) }))].map((g) => {
+          const full = g.ms.every((n) => sel.has(n)); const t = groupTotal(g.ms)
+          return (
+            <button key={g.id} type="button" aria-pressed={full} onClick={() => { setMany(g.ms, !full); if (!full) setShow('selected') }}
+              className={cn(box, 'px-3 py-2.5 text-left transition-shadow hover:border-foreground/25')} style={full ? { borderColor: ACC, boxShadow: `0 0 0 1px ${ACC}` } : undefined}>
+              <div className="flex justify-between text-[12px] font-semibold"><span>{g.name}</span><span className="font-medium" style={{ color: ACC }}>{g.range}</span></div>
+              <div className="mt-2 flex items-center justify-between">
+                <b className="text-[18px] tabular-nums">{kfmt(t.s)}</b>
+                <span className={cn('rounded-[5px] px-1.5 py-px text-[10.5px] font-medium', full ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-muted text-muted-foreground')}>{full ? '✓ selected' : t.n.toLocaleString()}</span>
+              </div>
+            </button>
+          )
+        })}
       </div>
 
-      <div className={cn(card, 'lg:sticky lg:top-0 space-y-3')}>
-        <div>
-          <p className={lbl}>THIS REPORT</p>
-          <p className="mt-1 text-[24px] font-bold tabular-nums">{fmtTHB(gross)}</p>
-          <p className="text-[12px] text-muted-foreground">{picked.length.toLocaleString()} sales · {list.length} machine{list.length === 1 ? '' : 's'} · {fmtDay(from)} – {fmtDay(to)}</p>
-          {days.length > 0 && <p className="text-[11.5px] text-muted-foreground">Sales dated {fmtDay(days[0])} – {fmtDay(days[days.length - 1])}</p>}
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="🔍 Search machine #" className="h-8 w-[170px] text-[12.5px]" aria-label="Search machine" />
+        <div className="flex items-center gap-1 rounded-md border border-border bg-card px-2">
+          <Input type="date" value={from} onChange={(e) => e.target.value && setFrom(e.target.value)} className="h-7 w-auto border-0 px-1 text-[12.5px] shadow-none" aria-label="From" />
+          <span className="text-muted-foreground">–</span>
+          <Input type="date" value={to} onChange={(e) => e.target.value && setTo(e.target.value)} className="h-7 w-auto border-0 px-1 text-[12.5px] shadow-none" aria-label="To" />
         </div>
-        <table className="w-full text-[12.5px] tabular-nums"><tbody>
-          {byGateway.map((x) => <tr key={x.g}><td className="py-0.5 text-muted-foreground">{GW[x.g]}</td><td className="text-right">{x.n}</td><td className="text-right">{fmtTHB(x.s)}</td></tr>)}
-        </tbody></table>
-        {list.length > 0 && <p className="text-[12px] text-muted-foreground">Machines: {list.join(', ')}{lines.some((l) => !l.count) && ` · ${lines.filter((l) => !l.count).length} with no sales (listed as 0)`}</p>}
-        {waiting > 0 && <p className="rounded-md bg-amber-50 px-2.5 py-1.5 text-[12px] text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">⚠ {waiting} row{waiting === 1 ? '' : 's'} for these machines wait in Review and are not included.</p>}
-        {noId > 0 ? <p className="rounded-md bg-red-50 px-2.5 py-1.5 text-[12px] text-red-800 dark:bg-red-500/10 dark:text-red-300">{noId} row{noId === 1 ? '' : 's'} have no transaction ID.</p>
-          : list.length > 0 && <p className="text-[12px] text-emerald-700 dark:text-emerald-400">✓ Every row has a PartnerTransactionUniqueID</p>}
-        <Button className="w-full" disabled={!list.length || rows == null} onClick={download}>⬇ {list.length ? reportFileName({ from, to }, list) : 'Tick at least one machine'}</Button>
-        <p className="text-[11.5px] text-muted-foreground">One file: <b>Summary</b> (every ticked machine, zero-sale too) + <b>Transactions</b> (all rows, same columns as before). Pay Solution ID: {opts.paySolutionId === 'order' ? 'OrderNo' : 'ReferenceNo'}.</p>
+        <select onChange={(e) => { const back = Number(e.target.value); if (Number.isNaN(back)) return; const d = new Date(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() - back); const b = monthBounds(d.toISOString().slice(0, 7)); setFrom(b.from); setTo(b.to); e.target.value = '' }}
+          defaultValue="" className="h-8 rounded-md border border-border bg-card px-2 text-[12.5px]" aria-label="Quick period">
+          <option value="" disabled>Quick period</option><option value="0">This month</option><option value="1">Last month</option><option value="2">2 months ago</option>
+        </select>
+        <label className="ml-auto flex items-center gap-1.5 text-[12.5px] text-muted-foreground">Show
+          <select value={show} onChange={(e) => setShow(e.target.value as 'selected' | 'all')} className="h-8 rounded-md border border-border bg-card px-2 text-[12.5px] text-foreground">
+            <option value="selected">Selected group</option><option value="all">All machines</option>
+          </select>
+        </label>
       </div>
+
+      {/* Table */}
+      <div className={cn(box, 'overflow-hidden')}>
+        <div className="max-h-[calc(100dvh-330px)] min-h-[240px] overflow-auto">
+          <table className="w-full min-w-[760px] text-[12.5px] tabular-nums">
+            <thead className="sticky top-0 z-10 bg-muted text-[11.5px] text-muted-foreground">
+              <tr>
+                <th className="w-9 px-3 py-2 text-left"><button type="button" aria-label={allVisibleOn ? 'Untick all shown' : 'Tick all shown'} onClick={() => setMany(visible, !allVisibleOn)} className={cb(allVisibleOn)} style={allVisibleOn ? { background: ACC } : undefined}>{allVisibleOn && '✓'}</button></th>
+                <th className="px-2 text-left font-medium">Machine</th><th className="px-2 text-left font-medium">Group</th>
+                {MIX.map(([k]) => <th key={k} className="px-2 text-right font-medium">{k}</th>)}
+                <th className="px-2 text-right font-medium">Sales</th><th className="px-2 text-right font-medium">Amount</th>
+                <th className="px-2 text-left font-medium">Mix</th><th className="px-3 text-left font-medium">Last sale</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((n) => {
+                const x = stats.get(n)!; const on = sel.has(n); const grp = groupOf(n)
+                return (
+                  <tr key={n} onClick={() => toggle(n)} className={cn('cursor-pointer border-t border-border/60 hover:bg-muted/40', !x.n && 'text-muted-foreground/60')} style={on ? { background: 'rgba(200,100,59,0.05)' } : undefined}>
+                    <td className="px-3 py-1.5"><span className={cb(on)} style={on ? { background: ACC } : undefined}>{on && '✓'}</span></td>
+                    <td className="px-2 font-mono font-semibold">#{n}</td>
+                    <td className="px-2"><span className="rounded-[5px] px-1.5 py-px text-[10.5px] font-semibold" style={{ background: `${GROUP_COLORS[grp]}1A`, color: GROUP_COLORS[grp] }}>{grp}</span></td>
+                    {x.mix.map((c, i) => <td key={i} className="px-2 text-right">{c || '–'}</td>)}
+                    <td className="px-2 text-right">{x.n}</td>
+                    <td className={cn('px-2 text-right', on && x.n && 'font-semibold')}>{fmtTHB(x.s)}</td>
+                    <td className="px-2"><div className="flex h-1.5 w-[84px] overflow-hidden rounded-full bg-muted">{x.n > 0 && x.mix.map((c, i) => <span key={i} style={{ width: `${(c / x.n) * 100}%`, background: MIX[i][1] }} />)}</div></td>
+                    <td className="px-3 whitespace-nowrap">{lastFmt(x.last)}</td>
+                  </tr>
+                )
+              })}
+              {!visible.length && <tr><td colSpan={11} className="py-6 text-center text-muted-foreground">No machines match.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        {/* Footer: selection + download */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-border px-3 py-2.5" style={{ background: 'rgba(200,100,59,0.06)' }}>
+          <span className="text-[12.5px]"><b>{list.length}</b> machine{list.length === 1 ? '' : 's'} selected
+            {list.length > 0 && <> · <button type="button" className="text-muted-foreground hover:text-foreground" onClick={() => setSel(new Set())}>clear</button></>}</span>
+          <span className="text-[12.5px] text-muted-foreground">{picked.length.toLocaleString()} sales · {fmtDay(from)} – {fmtDay(to)}</span>
+          <span className="hidden text-[12px] text-muted-foreground md:inline">{byGateway.map((x) => `${GW[x.g]} ${kfmt(x.s)}`).join(' · ')}</span>
+          <b className="ml-auto text-[16px] tabular-nums">{fmtTHB(gross)}</b>
+          {list.length > 0 && (noId > 0 ? <span className="text-[12px] text-red-600">{noId} without ID</span> : <span className="text-[12px] text-emerald-700 dark:text-emerald-400">✓ all IDs present</span>)}
+          <Button size="sm" disabled={!list.length || rows == null} onClick={download} style={list.length ? { background: ACC } : undefined} className="text-white">⬇ {list.length ? 'Download' : 'Tick machines'}</Button>
+        </div>
+      </div>
+      {list.length > 0 && <p className="text-[11.5px] text-muted-foreground">File: <span className="font-mono">{fileName}</span> · Summary + Transactions · Pay Solution ID: {opts.paySolutionId === 'order' ? 'OrderNo' : 'ReferenceNo'}{list.filter((n) => !stats.get(n)!.n).length > 0 && ` · ${list.filter((n) => !stats.get(n)!.n).length} zero-sale machine(s) listed as 0`}</p>}
+      {waiting > 0 && <p className="rounded-md bg-amber-50 px-3 py-1.5 text-[12px] text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">⚠ {waiting} row{waiting === 1 ? '' : 's'} for the selected machines wait in Review and are not included.</p>}
+      {unassigned.length > 0 && <p className="text-[12px] text-muted-foreground">Sales from machines outside the groups ({unassigned.map((m) => `#${m}`).join(', ')}) are in company totals but not in client reports until assigned.</p>}
     </div>
   )
 }

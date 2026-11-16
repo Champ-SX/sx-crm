@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Client report v2</title>
+<style>
+:root{--bg:#F7F6F3;--card:#fff;--line:#E8E5DF;--mut:#7C776F;--fg:#1C1A17;--acc:#C8643B;--accbg:#FBEDE6}
+*{box-sizing:border-box}body{margin:0;background:#E9E7E2;font:13px/1.4 -apple-system,Inter,sans-serif;color:var(--fg);padding:24px}
+.win{max-width:1180px;margin:auto;background:var(--bg);border-radius:14px;overflow:hidden;box-shadow:0 8px 30px #0002;display:grid;grid-template-columns:190px 1fr}
+nav{background:#fff;border-right:1px solid var(--line);padding:14px 10px;font-size:12.5px}
+nav .b{display:flex;gap:8px;align-items:center;font-weight:700;padding:2px 6px 14px}nav .b i{width:22px;height:22px;border-radius:99px;background:var(--acc);display:inline-block}
+nav a{display:block;padding:6px 8px;border-radius:7px;color:var(--mut)}nav a.on{color:var(--acc);font-weight:600}
+nav .sub{margin-left:12px;border-left:1px solid var(--line);padding-left:6px}
+main{padding:18px 22px}
+.top{display:flex;align-items:center;gap:8px}h1{font-size:20px;margin:0 auto 0 0}
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:6px 11px;font-weight:600;font-size:12.5px;display:inline-flex;gap:6px;align-items:center}
+.btn.pr{background:var(--acc);border-color:var(--acc);color:#fff}
+.cards{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:14px 0}
+.c{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
+.c.on{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+.c .h{display:flex;justify-content:space-between;font-size:12px;font-weight:600}.c .h span{color:var(--acc);font-weight:500}
+.c .v{display:flex;justify-content:space-between;align-items:center;margin-top:8px}.c .v b{font-size:18px;font-variant-numeric:tabular-nums}
+.tag{font-size:10.5px;border-radius:5px;padding:1px 6px;background:#E8F5EC;color:#2B7A4B}.tag.n{background:#F0EEEA;color:var(--mut)}
+.bar{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.in{border:1px solid var(--line);background:#fff;border-radius:7px;padding:6px 10px;color:var(--mut);font-size:12.5px}
+.tbl{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{background:#F1EFEB;text-align:left;font-weight:500;color:var(--mut);font-size:11.5px;padding:7px 10px}
+td{padding:6px 10px;border-top:1px solid #F1EFEB;font-size:12.5px}
+.r{text-align:right}.cb{width:14px;height:14px;border:1.5px solid #C9C4BB;border-radius:4px;display:inline-block;vertical-align:middle}
+.cb.on{background:var(--acc);border-color:var(--acc);position:relative}.cb.on:after{content:'';position:absolute;left:3.5px;top:0.5px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+tr.sel td{background:#FFFAF7}tr.zero td{color:#AAA49A}
+.pill{font-size:10.5px;border-radius:5px;padding:1px 7px;font-weight:600}
+.g1{background:#E8EEFB;color:#2F5FB8}.g2{background:#FBE8E6;color:#B23A33}.g3{background:#E6F4EC;color:#1E7A4B}
+.mono{font-family:ui-monospace,monospace;font-weight:600}
+.dots{color:#B9B4AA;letter-spacing:1px}
+.foot{display:flex;align-items:center;gap:14px;padding:10px 12px;border-top:1px solid var(--line);background:#FFF8F4}
+.foot b{font-variant-numeric:tabular-nums}.foot .sp{margin-left:auto}
+.mini{display:flex;height:6px;border-radius:9px;overflow:hidden;width:90px;background:#eee}
+.note{max-width:1180px;margin:16px auto 0;background:#fff;border-radius:12px;padding:14px 18px;font-size:13px;color:#4A463F}
+.note b{color:var(--fg)}
+</style></head><body>
+<div class="win">
+<nav>
+  <div class="b"><i></i>SX CRM</div>
+  <a>Dashboard</a><a>Leads</a><a>Won &amp; Ready</a>
+  <a style="color:var(--fg);font-weight:600;margin-top:6px">Sales · Finance</a>
+  <div class="sub"><a>Dashboard</a><a class="on">Client report</a><a>Upload</a><a>Review · 2</a></div>
+</nav>
+<main>
+  <div class="top"><h1>Client report</h1>
+    <span class="btn">⬆ Upload</span><span class="btn">✉ Email <small style="color:var(--mut)">later</small></span>
+    <span class="btn pr">⬇ Download SX_2026-11_True_40-50.xlsx</span></div>
+
+  <div class="cards">
+    <div class="c"><div class="h">All machines <span>(49)</span></div><div class="v"><b>฿1.27M</b><span class="tag n">6,130</span></div></div>
+    <div class="c"><div class="h">Captures <span>1–35</span></div><div class="v"><b>฿777.0k</b><span class="tag n">3,525</span></div></div>
+    <div class="c on"><div class="h">True <span>40–50</span></div><div class="v"><b>฿70.4k</b><span class="tag">✓ selected</span></div></div>
+    <div class="c"><div class="h">BACC <span>60–66</span></div><div class="v"><b>฿252.0k</b><span class="tag n">1,346</span></div></div>
+    <div class="c"><div class="h">C11 <span>71–74</span></div><div class="v"><b>฿126.0k</b><span class="tag n">660</span></div></div>
+    <div class="c"><div class="h">BTT <span>80–86</span></div><div class="v"><b>฿26.8k</b><span class="tag n">148</span></div></div>
+  </div>
+
+  <div class="bar">
+    <span class="in" style="width:200px">🔍 Search machine #</span>
+    <span class="in">📅 1 Nov 2026 – 15 Nov 2026</span>
+    <span class="in">This month ▾</span>
+    <span style="margin-left:auto" class="in">Show: <b style="color:var(--fg)">Selected group</b> ▾</span>
+  </div>
+
+  <div class="tbl">
+  <table>
+    <tr><th style="width:34px"><span class="cb on"></span></th><th>Machine</th><th>Group</th><th class="r">PromptPay</th><th class="r">KPlus</th><th class="r">Card</th><th class="r">ChillPay</th><th class="r">Sales</th><th class="r">Amount</th><th>Mix</th><th>Last sale</th><th></th></tr>
+    <tr class="sel"><td><span class="cb on"></span></td><td class="mono">#40</td><td><span class="pill g2">True</span></td><td class="r">3</td><td class="r">2</td><td class="r">1</td><td class="r">–</td><td class="r">6</td><td class="r"><b>฿1,200.00</b></td><td><div class="mini"><span style="width:50%;background:#2F6FDB"></span><span style="width:33%;background:#1E9E62"></span><span style="width:17%;background:#7A5AA5"></span></div></td><td>14 Nov, 18:22</td><td class="dots">···</td></tr>
+    <tr class="sel"><td><span class="cb on"></span></td><td class="mono">#41</td><td><span class="pill g2">True</span></td><td class="r">7</td><td class="r">5</td><td class="r">1</td><td class="r">–</td><td class="r">13</td><td class="r"><b>฿2,340.00</b></td><td><div class="mini"><span style="width:54%;background:#2F6FDB"></span><span style="width:38%;background:#1E9E62"></span><span style="width:8%;background:#7A5AA5"></span></div></td><td>15 Nov, 20:05</td><td class="dots">···</td></tr>
+    <tr class="sel zero"><td><span class="cb on"></span></td><td class="mono">#42</td><td><span class="pill g2">True</span></td><td class="r">–</td><td class="r">–</td><td class="r">–</td><td class="r">–</td><td class="r">0</td><td class="r">฿0.00</td><td><div class="mini"></div></td><td>no sales</td><td class="dots">···</td></tr>
+    <tr class="sel"><td><span class="cb on"></span></td><td class="mono">#43</td><td><span class="pill g2">True</span></td><td class="r">41</td><td class="r">30</td><td class="r">6</td><td class="r">–</td><td class="r">77</td><td class="r"><b>฿13,920.00</b></td><td><div class="mini"><span style="width:53%;background:#2F6FDB"></span><span style="width:39%;background:#1E9E62"></span><span style="width:8%;background:#7A5AA5"></span></div></td><td>15 Nov, 21:40</td><td class="dots">···</td></tr>
+    <tr><td><span class="cb"></span></td><td class="mono">#44</td><td><span class="pill g2">True</span></td><td class="r">30</td><td class="r">20</td><td class="r">6</td><td class="r">–</td><td class="r">56</td><td class="r">฿10,080.00</td><td><div class="mini"><span style="width:54%;background:#2F6FDB"></span><span style="width:36%;background:#1E9E62"></span><span style="width:10%;background:#7A5AA5"></span></div></td><td>15 Nov, 19:12</td><td class="dots">···</td></tr>
+    <tr class="sel"><td><span class="cb on"></span></td><td class="mono">#45</td><td><span class="pill g2">True</span></td><td class="r">12</td><td class="r">8</td><td class="r">2</td><td class="r">–</td><td class="r">22</td><td class="r"><b>฿3,960.00</b></td><td><div class="mini"><span style="width:55%;background:#2F6FDB"></span><span style="width:36%;background:#1E9E62"></span><span style="width:9%;background:#7A5AA5"></span></div></td><td>13 Nov, 16:48</td><td class="dots">···</td></tr>
+    <tr><td colspan="12" style="color:var(--mut);text-align:center;font-size:12px">… #46 – #50 (5 more)</td></tr>
+  </table>
+  <div class="foot">
+    <span><b>10</b> of 11 machines selected · <span style="color:var(--acc);cursor:pointer">select all</span> · <span style="color:var(--mut)">clear</span></span>
+    <span>367 sales</span><span>KBank ฿51,8k · Card ฿8,5k · ChillPay ฿0</span>
+    <span class="sp" style="font-size:15px"><b>฿60,280.00</b></span>
+    <span style="color:#2B7A4B;font-size:12px">✓ all IDs present</span>
+    <span class="btn pr">⬇ Download</span>
+  </div>
+  </div>
+</main>
+</div>
+<div class="note">
+<b>What changes vs. now</b> — same features, about half the height:
+<br>• <b>Group cards</b> on top (like the reference's status cards) show each group's total; click one to select its machines. Replaces the preset chips.
+<br>• <b>One table</b> instead of 49 tiles: tick rows, see each machine's split (PromptPay / KPlus / Card / ChillPay), a small mix bar, and last sale time. Zero-sale machines stay as grey rows.
+<br>• <b>Filters in one line</b>: search machine, date range, quick period, and “Show: selected group / all”.
+<br>• <b>Sticky footer</b> with the selection count, totals per gateway, ID check and Download — always visible while you scroll.
+<br>• Orange accent from the reference; Download button also stays in the header.
+</div>
+</body></html>
