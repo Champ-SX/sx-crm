@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sales drill-down</title>
+<style>
+:root{--line:#E8E5DF;--mut:#7C776F;--fg:#1C1A17;--acc:#C8643B}
+*{box-sizing:border-box}body{margin:0;background:#E9E7E2;font:13px/1.4 -apple-system,Inter,sans-serif;color:var(--fg);padding:24px}
+.wrap{max-width:1100px;margin:auto}
+.cards{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.c{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;opacity:.55}
+.c.u{background:#FDF8E8;opacity:1;cursor:pointer;box-shadow:0 0 0 2px var(--acc)}
+.c .l{font:600 10px ui-monospace;color:var(--mut);letter-spacing:.05em}.c b{display:block;font-size:17px;margin-top:4px}.c small{color:var(--mut)}
+.c .go{color:var(--acc);font-size:11.5px;margin-top:4px;display:block}
+.dim{position:relative;margin-top:14px;border-radius:14px;background:rgba(28,26,23,.35);padding:22px}
+.dlg{background:#fff;border-radius:14px;box-shadow:0 20px 50px #0004;max-width:1000px;margin:auto;overflow:hidden}
+.hd{display:flex;align-items:flex-start;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.hd h3{margin:0;font-size:16px}.hd p{margin:2px 0 0;color:var(--mut);font-size:12.5px}
+.x{margin-left:auto;color:var(--mut);font-size:18px}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px 18px}
+.s{border:1px solid var(--line);border-radius:10px;padding:9px 11px}.s .l{font-size:11px;color:var(--mut)}.s b{font-size:14px}.s code{font-size:11px;color:var(--mut)}
+.bar{display:flex;gap:8px;align-items:center;padding:0 18px 10px}
+.in{border:1px solid var(--line);border-radius:7px;padding:5px 9px;color:var(--mut);font-size:12.5px}
+.chip{border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:12px}.chip.on{background:var(--fg);color:#fff;border-color:var(--fg)}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{background:#F4F3F0;text-align:left;font-weight:500;color:var(--mut);font-size:11.5px;padding:7px 10px;position:sticky;top:0}
+td{padding:6px 10px;border-top:1px solid #F1EFEB;font-size:12.5px}
+.r{text-align:right}.mono{font-family:ui-monospace,monospace;font-size:11.5px}
+.gw{font-size:10.5px;font-weight:600;border-radius:5px;padding:1px 6px}.kb{background:#E6F4EC;color:#1E7A4B}.ps{background:#EFEAFB;color:#5B46B2}.cp{background:#FDEEDD;color:#B4621A}
+.src{color:var(--mut);font-size:11.5px}.src b{color:var(--fg);font-weight:600}
+.odd td{background:#FFF7F0}
+.ft{display:flex;gap:10px;align-items:center;padding:11px 18px;border-top:1px solid var(--line);background:#FAF9F7}
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:6px 11px;font-weight:600;font-size:12.5px}
+.btn.pr{background:var(--acc);color:#fff;border-color:var(--acc)}
+.note{background:#fff;border-radius:12px;padding:14px 18px;color:#4A463F;margin-top:16px}
+</style></head><body><div class="wrap">
+
+<div class="cards">
+  <div class="c"><div class="l">CAPTURES · 1–35</div><b>฿777,000</b><small>3,525 sales</small></div>
+  <div class="c"><div class="l">TRUE · 40–50</div><b>฿70,360</b><small>423 sales</small></div>
+  <div class="c"><div class="l">BACC · 60–66</div><b>฿251,955</b><small>1,346 sales</small></div>
+  <div class="c"><div class="l">C11 · 71–74</div><b>฿125,975</b><small>660 sales</small></div>
+  <div class="c"><div class="l">BTT · 80–86</div><b>฿26,760</b><small>148 sales</small></div>
+  <div class="c u"><div class="l">UNASSIGNED · NOT IN A RANGE</div><b>฿14,620.23</b><small>28 sales · 1.2%</small><span class="go">View 28 payments →</span></div>
+</div>
+
+<div class="dim"><div class="dlg">
+  <div class="hd"><div><h3>Unassigned · 28 payments · ฿14,620.23</h3><p>November 2026 · machines outside every group (#0) · counted in company totals, never in client reports</p></div><span class="x">✕</span></div>
+  <div class="sum">
+    <div class="s"><span class="gw kb">KBank</span> <b>25 · ฿6,250.00</b><br><code>SX_AUTOMAT_NOV_2026y (1).xlsx</code></div>
+    <div class="s"><span class="gw ps">Pay Solution</span> <b>1 · ฿250.00</b><br><code>orderlist (10).xlsx</code></div>
+    <div class="s"><span class="gw cp">ChillPay</span> <b>2 · ฿8,120.23</b><br><code>M038447-settlement-…110.xlsx</code></div>
+  </div>
+  <div class="bar"><span class="in" style="width:220px">🔍 Search ID, file, amount</span><span class="chip on">All 28</span><span class="chip">KBank 25</span><span class="chip">Pay Solution 1</span><span class="chip">ChillPay 2</span></div>
+  <div style="max-height:300px;overflow:auto">
+  <table>
+    <tr><th>Date · time</th><th>Machine</th><th>Gateway</th><th>Transaction ID</th><th>Channel</th><th class="r">Amount</th><th>Source file · row</th><th></th></tr>
+    <tr><td>02 Nov 14:45</td><td class="mono">#0 <span class="src">SX000</span></td><td><span class="gw kb">KBank</span></td><td class="mono">SX00020261102-074515</td><td>PromptPay</td><td class="r">250.00</td><td class="src"><b>SX_AUTOMAT_NOV_2026y (1).xlsx</b> · row 968</td><td class="src">↗</td></tr>
+    <tr><td>02 Nov 14:47</td><td class="mono">#0 <span class="src">SX000</span></td><td><span class="gw kb">KBank</span></td><td class="mono">SX00020261102-074730</td><td>KPlus</td><td class="r">250.00</td><td class="src"><b>SX_AUTOMAT_NOV_2026y (1).xlsx</b> · row 971</td><td class="src">↗</td></tr>
+    <tr class="odd"><td>03 Nov 18:21</td><td class="mono">#0 <span class="src">SXC000</span></td><td><span class="gw cp">ChillPay</span></td><td class="mono">SXC00026110385800893</td><td>QRCode</td><td class="r"><b>7,479.30</b></td><td class="src"><b>M038447-settlement-…110.xlsx</b> · row 622</td><td class="src">↗</td></tr>
+    <tr class="odd"><td>07 Nov 12:02</td><td class="mono">#0 <span class="src">SXC000</span></td><td><span class="gw cp">ChillPay</span></td><td class="mono">SXC00026110742936478</td><td>QRCode</td><td class="r"><b>640.93</b></td><td class="src"><b>M038447-settlement-…110.xlsx</b> · row 504</td><td class="src">↗</td></tr>
+    <tr><td>09 Nov 11:05</td><td class="mono">#0 <span class="src">000</span></td><td><span class="gw ps">Pay Solution</span></td><td class="mono">000179361244</td><td>Credit Card</td><td class="r">250.00</td><td class="src"><b>orderlist (10).xlsx</b> · row 118</td><td class="src">↗</td></tr>
+    <tr><td colspan="8" class="src" style="text-align:center">… 23 more</td></tr>
+  </table></div>
+  <div class="ft"><span class="src">Tap a row → open it in Review to assign a machine or exclude.</span><span style="margin-left:auto"></span><span class="btn">⬇ Export these rows (.xlsx)</span><span class="btn pr">Open in Review</span></div>
+</div></div>
+
+<div class="note">
+<b>How it works</b><br>
+• Every card on the Sales dashboard becomes clickable (Unassigned shown here; same for Captures, True… and for each gateway card) → opens a list of exactly the payments that make up that number, for the month / filters on screen.<br>
+• Top: split by gateway with the source file name. Each row shows Thai date &amp; time, machine (+ raw code from the file), gateway, transaction ID, channel, amount, and <b>source file + row number</b> so you can find it in the original Excel.<br>
+• Unusual amounts are highlighted (much higher than that machine's normal price) — like the two ChillPay rows.<br>
+• Filter by gateway or search; total at the top always equals the card's number.<br>
+• Row ↗ opens it in Review (assign machine / exclude). Export downloads these rows for checking — internal file, not a client report.
+</div>
+</div></body></html>

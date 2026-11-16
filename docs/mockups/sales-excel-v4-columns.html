@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Client Excel v4 columns</title>
+<style>
+body{margin:0;background:#E9E7E2;font:13px/1.4 -apple-system,Inter,sans-serif;padding:24px;color:#1C1A17}
+.xl{max-width:1300px;margin:0 auto 16px;background:#fff;border-radius:10px;box-shadow:0 8px 30px #0002;overflow:hidden}
+.bar{background:#1F6E43;color:#fff;font-size:12px;padding:6px 12px}
+.grid{overflow-x:auto;font-family:Calibri,Arial,sans-serif;font-size:11.5px}
+table{border-collapse:collapse;width:100%}td,th{border:1px solid #E3E1DC;padding:3px 6px;white-space:nowrap}
+.col{background:#F4F3F0;color:#999;text-align:center;font-size:10px;font-weight:400}.rn{background:#F4F3F0;color:#999;text-align:center;font-size:10px}
+.hd th{background:#1C1A17;color:#fff;font-weight:600;text-align:left}
+.hd th.mv{background:#C8643B}.hd th.ref{background:#7C776F}
+td.mv{background:#FFF4E5;font-weight:700}
+.r{text-align:right}.z td{background:#FAF9F7}.z td.mv{background:#FFEBD2}
+.tot td{background:#FBEDE6;font-weight:700;border-top:2px solid #C8643B}
+.tabs{display:flex;background:#F4F3F0;border-top:1px solid #ddd;font-size:12px}.tabs span{padding:6px 14px;background:#fff;font-weight:700;color:#1F6E43;border-bottom:2px solid #1F6E43}
+.note{max-width:1300px;margin:auto;background:#fff;border-radius:12px;padding:14px 18px;color:#4A463F}
+.note b{color:#1C1A17}
+.old{font-family:ui-monospace,monospace;font-size:11.5px;background:#F4F3F0;border-radius:6px;padding:8px 10px;margin:6px 0;line-height:1.7}
+.old .m{color:#C8643B;font-weight:700}
+</style></head><body>
+<div class="xl"><div class="bar">SX_2026-11_True_40-50.xlsx — Transactions</div>
+<div class="grid"><table>
+<tr><th class="col"></th><th class="col">A</th><th class="col">B</th><th class="col">C</th><th class="col">D</th><th class="col">E</th><th class="col">F</th><th class="col">G</th><th class="col">H</th><th class="col">I</th><th class="col">J</th><th class="col">K</th><th class="col">L</th><th class="col">M</th></tr>
+<tr class="hd"><td class="rn">1</td><th>Date</th><th>Product Group</th><th>PartnerID</th><th>PartnerName</th><th>PartnerShopID</th><th>MerchantID</th><th>PartnerTransactionUniqueID</th><th class="mv">Machine No.</th><th class="r">Amount (THB)</th><th>Payment Channel</th><th>TransactionStatus</th><th>SettlementStatus</th><th class="ref">ref</th></tr>
+<tr><td class="rn">2</td><td>2026-11-01</td><td>True</td><td>PTR0000034</td><td>บริษัท ซิกชีท กรุ๊ป จำกัด (SIXSHEET)</td><td>SIXSIT001</td><td>KB000001662967</td><td>SX4620261101-052745</td><td class="mv r">46</td><td class="r">180.00</td><td>KPlus</td><td>PAID</td><td>SETTLED</td><td></td></tr>
+<tr class="z"><td class="rn">3</td><td>2026-11-01</td><td>True</td><td>PTR0000034</td><td>บริษัท ซิกชีท กรุ๊ป จำกัด (SIXSHEET)</td><td>SIXSIT001</td><td>KB000001662967</td><td>SX4520261101-053955</td><td class="mv r">45</td><td class="r">180.00</td><td>KPlus</td><td>PAID</td><td>SETTLED</td><td></td></tr>
+<tr><td class="rn">4</td><td>2026-11-01</td><td>True</td><td>PTR0000034</td><td>บริษัท ซิกชีท กรุ๊ป จำกัด (SIXSHEET)</td><td>SIXSIT001</td><td>KB000001662967</td><td>SX4620261101-080638</td><td class="mv r">46</td><td class="r">180.00</td><td>Credit Card</td><td>PAID</td><td>SETTLED</td><td>46179353210</td></tr>
+<tr class="z"><td class="rn">5</td><td>2026-11-03</td><td>True</td><td>PTR0000034</td><td>บริษัท ซิกชีท กรุ๊ป จำกัด (SIXSHEET)</td><td>SIXSIT001</td><td>KB000001662967</td><td>SX4620261103-082327</td><td class="mv r">46</td><td class="r">180.00</td><td>PromptPay</td><td>PAID</td><td>SETTLED</td><td></td></tr>
+<tr><td class="rn">6</td><td colspan="13" style="color:#999">…</td></tr>
+<tr class="tot"><td class="rn">7</td><td>TOTAL</td><td></td><td></td><td></td><td></td><td></td><td>423 payments</td><td></td><td class="r">70,360.00</td><td></td><td></td><td></td><td></td></tr>
+</table></div><div class="tabs"><span>Transactions</span></div></div>
+
+<div class="note">
+<b>New column order</b> — from your file:
+<div class="old">Before: Date | <span class="m">Machine No.</span> | Product Group | PartnerID | PartnerName | PartnerShopID | MerchantID | PartnerTransactionUniqueID | Amount | Channel | TransactionStatus | SettlementStatus | ref<br>
+After:&nbsp; Date | Product Group | PartnerID | PartnerName | PartnerShopID | MerchantID | PartnerTransactionUniqueID | <span class="m">Machine No.</span> | Amount | Channel | TransactionStatus | SettlementStatus | ref</div>
+• Machine No. moves from column B to column <b>H</b>, right after PartnerTransactionUniqueID — everything else keeps its order. <b>ref</b> stays last (only when “Include ref column” is ticked).<br>
+• <b>Machine No. as a real number</b> (right-aligned) — in your screenshot Excel shows green triangles on that column (“number stored as text”). Writing it as a number removes them and lets filters sort 1, 2 … 10 correctly. The IDs stay text (they need their leading zeros).<br>
+• Header filters, frozen header row, zebra rows and the TOTAL row as now.
+</div>
+</body></html>

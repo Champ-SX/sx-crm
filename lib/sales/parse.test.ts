@@ -102,20 +102,21 @@ describe.skipIf(!has)('sales · acceptance on supplied samples', () => {
     const t = XLSX.utils.sheet_to_json<unknown[]>(back.Sheets.Transactions, { header: 1, raw: true, defval: null })
     const data = t.slice(1, 1 + rs.length)
     expect(Math.round(data.reduce((s, r) => s + Number(r[8]), 0) * 100)).toBe(7036000)
-    expect(data.every((r) => typeof r[7] === 'string' && /^SX\d+\d{8}-\d{6}$/.test(String(r[7])))).toBe(true)
-    expect(new Set(data.map((r) => r[7])).size).toBe(data.length)   // every ID unique
-    expect(back.Sheets.Transactions[XLSX.utils.encode_cell({ r: 1, c: 7 })].t).toBe('s')
+    expect(data.every((r) => typeof r[6] === 'string' && /^SX\d+\d{8}-\d{6}$/.test(String(r[6])))).toBe(true)
+    expect(new Set(data.map((r) => r[6])).size).toBe(data.length)   // every ID unique
+    expect(back.Sheets.Transactions[XLSX.utils.encode_cell({ r: 1, c: 6 })].t).toBe('s')
+    expect(t[0][7]).toBe('Machine No.'); expect(data.every((r) => typeof r[7] === 'number' && r[7] >= 40 && r[7] <= 50)).toBe(true)
     expect(back.SheetNames).toEqual(['Transactions'])
     // KBank master format: every row fully filled, status PAID / SETTLED
     expect(data.every((r) => r.slice(0, 12).every((c) => c !== null && c !== ''))).toBe(true)
     expect(t[0][12]).toBe('ref')
     const card = data.find((r) => r[9] === 'Credit Card')!
-    expect(card.slice(3, 7)).toEqual(['PTR0000034', 'บริษัท ซิกชีท กรุ๊ป จำกัด (SIXSHEET)', 'SIXSIT001', 'KB000001662967'])
+    expect(card.slice(2, 6)).toEqual(['PTR0000034', 'บริษัท ซิกชีท กรุ๊ป จำกัด (SIXSHEET)', 'SIXSIT001', 'KB000001662967'])
     expect([card[10], card[11]]).toEqual(['PAID', 'SETTLED'])
     // card: KBank-format ID (machine prefix + UTC), original ReferenceNo in ref; KBank rows: ref empty
     const src = rs.find((r) => r.gateway === 'paysolution' && r.txn_id === card[12])!
     expect(src).toBeTruthy()
-    expect(card[7]).toBe(`${src.machine === 44 || src.machine === 47 || src.machine === 46 || src.machine === 45 ? 'SX' + src.machine : 'SX0' + src.machine}${utcStamp(src.biz_date, src.biz_time)}`)
+    expect(card[6]).toBe(`${src.machine === 44 || src.machine === 47 || src.machine === 46 || src.machine === 45 ? 'SX' + src.machine : 'SX0' + src.machine}${utcStamp(src.biz_date, src.biz_time)}`)
     expect(data.filter((r) => r[9] !== 'Credit Card').every((r) => (r[12] ?? '') === '')).toBe(true)
     // ref column off → 12 columns
     const noRef = XLSX.read(XLSX.write(buildWorkbook(all, p, ms, { paySolutionId: 'reference', includeRef: false }).wb, { type: 'buffer', bookType: 'xlsx' }))

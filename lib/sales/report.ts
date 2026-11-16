@@ -40,7 +40,7 @@ export function reportFileName(p: Period, machines: number[]): string {
   return `SX_${month}_${what}.xlsx`
 }
 
-export const DETAIL_HEADERS = ['Date', 'Machine No.', 'Product Group', 'PartnerID', 'PartnerName', 'PartnerShopID', 'MerchantID', 'PartnerTransactionUniqueID', 'Amount (THB)', 'Payment Channel', 'TransactionStatus', 'SettlementStatus', 'ref']
+export const DETAIL_HEADERS = ['Date', 'Product Group', 'PartnerID', 'PartnerName', 'PartnerShopID', 'MerchantID', 'PartnerTransactionUniqueID', 'Machine No.', 'Amount (THB)', 'Payment Channel', 'TransactionStatus', 'SettlementStatus', 'ref']
 
 // ── Styles (xlsx-js-style) ────────────────────────────────────────────────────
 type Style = Record<string, unknown>
@@ -114,9 +114,9 @@ export function clientRow(r: SaleRow, ids: { id: string; ref: string }): (string
   const k = r.gateway === 'kbank'
   const pick = (own: string | null, master: string) => (k && own ? own : master)
   return [
-    r.biz_date, String(r.machine), groupOf(r.machine),
+    r.biz_date, groupOf(r.machine),
     pick(r.partner_id, KBANK_MASTER.partner_id), pick(r.partner_name, KBANK_MASTER.partner_name), pick(r.partner_shop_id, KBANK_MASTER.partner_shop_id),
-    pick(r.merchant_id, KBANK_MASTER.merchant_id), ids.id, thb(r.amount_satang), r.channel,
+    pick(r.merchant_id, KBANK_MASTER.merchant_id), ids.id, r.machine ?? 0, thb(r.amount_satang), r.channel,
     r.status === 'success' ? KBANK_MASTER.txn_status : (r.txn_status ?? ''), pick(r.settle_status, KBANK_MASTER.settle_status), ids.ref,
   ]
 }
@@ -129,17 +129,20 @@ export function buildWorkbook(all: SaleRow[], p: Period, machines: number[], o: 
   const total = rows.reduce((s, r) => s + r.amount_satang, 0)
   const wsT: XLSX.WorkSheet = {}
   const NC = o.includeRef === false ? 12 : 13
-  DETAIL_HEADERS.slice(0, NC).forEach((h, c) => put(wsT, 0, c, { v: h, s: c === 8 ? right(S.head) : S.head }))
+  DETAIL_HEADERS.slice(0, NC).forEach((h, c) => put(wsT, 0, c, { v: h, s: c === 8 || c === 7 ? right(S.head) : S.head }))
   const ids = clientIds(rows, all, o)
   rows.forEach((r, i) => {
     const st = i % 2 ? withFill(S.cell, ZEBRA) : S.cell
-    clientRow(r, ids.get(r.key)!).slice(0, NC).forEach((v, c) => put(wsT, i + 1, c, c === 8 ? { v, t: 'n', z: MONEY, s: right(st, MONEY) } : { v: String(v), t: 's', z: '@', s: st }))
+    clientRow(r, ids.get(r.key)!).slice(0, NC).forEach((v, c) => put(wsT, i + 1, c,
+      c === 8 ? { v, t: 'n', z: MONEY, s: right(st, MONEY) }
+        : c === 7 ? { v: Number(v), t: 'n', z: '0', s: right(st) }   // Machine No. as a number (no "stored as text" flags)
+          : { v: String(v), t: 's', z: '@', s: st }))
   })
   const TT = rows.length + 1
-  for (let c = 0; c < NC; c++) put(wsT, TT, c, c === 0 ? { v: 'TOTAL', s: S.total } : c === 7 ? { v: `${rows.length.toLocaleString('en-US')} payments`, s: S.total } : c === 8 ? { v: thb(total), t: 'n', z: MONEY, s: right(S.total, MONEY) } : { v: '', s: S.total })
+  for (let c = 0; c < NC; c++) put(wsT, TT, c, c === 0 ? { v: 'TOTAL', s: S.total } : c === 6 ? { v: `${rows.length.toLocaleString('en-US')} payments`, s: S.total } : c === 8 ? { v: thb(total), t: 'n', z: MONEY, s: right(S.total, MONEY) } : { v: '', s: S.total })
   wsT['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: TT, c: NC - 1 } })
   wsT['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(1, rows.length), c: NC - 1 } }) }
-  wsT['!cols'] = [11, 11, 13, 12, 32, 13, 16, 24, 13, 15, 16, 16, 22].slice(0, NC).map((w) => ({ wch: w }))
+  wsT['!cols'] = [11, 13, 12, 32, 13, 16, 24, 11, 13, 15, 16, 16, 22].slice(0, NC).map((w) => ({ wch: w }))
   ;(wsT as Record<string, unknown>)['!views'] = [{ state: 'frozen', ySplit: 1, topLeftCell: 'A2' }]
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, wsT, 'Transactions')

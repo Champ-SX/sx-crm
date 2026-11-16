@@ -70,7 +70,7 @@ export default function SalesPage() {
 }
 
 // ── Data hook ─────────────────────────────────────────────────────────────────
-function useSales(from: string, to: string) {
+function useSales(from: string, to: string, bump = 0) {
   const k = `${from}|${to}`
   const [st, setSt] = useState<{ k: string; rows: StoredSale[] | null; err: string | null }>(() => ({ k, rows: salesCache.get(k) ?? null, err: null }))
   useEffect(() => {
@@ -78,7 +78,7 @@ function useSales(from: string, to: string) {
     fetchSales(from, to).then((r) => { salesCache.set(k, r); if (on) setSt({ k, rows: r, err: null }) })
       .catch((e) => on && setSt((p) => ({ k, rows: p.k === k ? p.rows ?? [] : [], err: e instanceof Error ? e.message : String(e) })))
     return () => { on = false }
-  }, [from, to, k])
+  }, [from, to, k, bump])
   // Same period: show what we have (cache or last fetch) while refreshing; new period: cached copy or loading.
   return st.k === k ? { rows: st.rows, err: st.err } : { rows: salesCache.get(k) ?? null, err: null }
 }
@@ -104,7 +104,11 @@ function Dashboard() {
   const [group, setGroup] = useState('all')
   const [machine, setMachine] = useState('all')
   const { from, to } = monthBounds(month)
-  const { rows, err } = useSales(from, to)
+  const [bump, setBump] = useState(0)
+  const { rows, err } = useSales(from, to, bump)
+  const [drill, setDrill] = useState<{ title: string; sub: string; pick: (r: StoredSale) => boolean } | null>(null)
+  const open = (title: string, sub: string, pick: (r: StoredSale) => boolean) => setDrill({ title, sub, pick })
+  const monthName = new Date(month + '-01T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' })
 
   const ok = useMemo(() => (rows ?? []).filter(isAccepted)
     .filter((r) => group === 'all' || groupOf(r.machine) === group)
@@ -151,8 +155,8 @@ function Dashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Kpi label="GROSS SALES" value={fmtTHB(gross)} note="successful payments only" />
-        <Kpi label="TRANSACTIONS" value={ok.length.toLocaleString()} note={[pending && `${pending} in review`, notSale && `${notSale} refunds/failed excluded`].filter(Boolean).join(' · ') || 'all accepted'} />
+        <Kpi label="GROSS SALES" value={fmtTHB(gross)} note="successful payments only" onOpen={() => open('All payments', monthName, () => true)} />
+        <Kpi onOpen={() => open('All payments', monthName, () => true)} label="TRANSACTIONS" value={ok.length.toLocaleString()} note={[pending && `${pending} in review`, notSale && `${notSale} refunds/failed excluded`].filter(Boolean).join(' · ') || 'all accepted'} />
         <Kpi label="ACTIVE MACHINES" value={String(machinesActive)} note={`with at least one sale`} />
         <Kpi label="AVG / DAY WITH SALES" value={fmtTHB(days.length ? Math.round(gross / days.length) : 0)} note={`÷ ${days.length} day${days.length === 1 ? '' : 's'} with sales`} />
       </div>
@@ -164,11 +168,11 @@ function Dashboard() {
             const t = gw.find(([k]) => k === g)?.[1]
             const ms = methods.filter(([k]) => k.startsWith(g + '|'))
             return (
-              <div key={g} className={card}>
+              <div key={g} role="button" tabIndex={0} onClick={() => open(GW[g], monthName, (r) => r.gateway === g)} onKeyDown={(e) => e.key === 'Enter' && open(GW[g], monthName, (r) => r.gateway === g)} className={cn(card, CLICK)}>
                 <p className={lbl}>{GW[g].toUpperCase()}</p>
                 <p className="mt-1 text-[19px] font-bold tabular-nums">{fmtTHB(t?.s ?? 0)} <span className="text-[12px] font-normal text-muted-foreground">· {t?.n ?? 0} txns</span></p>
                 <div className="mt-2 space-y-0.5">{ms.map(([k, v]) => (
-                  <div key={k} className="flex justify-between text-[12px]"><span className="text-muted-foreground">{k.split('|')[1]}</span><span className="tabular-nums">{v.n} · {fmtTHB(v.s)}</span></div>
+                  <div key={k} onClick={(e) => { e.stopPropagation(); open(`${GW[g]} · ${k.split('|')[1]}`, monthName, (r) => r.gateway === g && r.method === k.split('|')[1]) }} className="-mx-1 flex justify-between rounded px-1 text-[12px] hover:bg-muted"><span className="text-muted-foreground">{k.split('|')[1]}</span><span className="tabular-nums">{v.n} · {fmtTHB(v.s)}</span></div>
                 ))}</div>
                 {g === 'chillpay' && t && <p className="mt-1 text-[11.5px] text-muted-foreground">Net transfer {fmtTHB(ok.filter((r) => r.gateway === 'chillpay').reduce((s, r) => s + (r.net_satang ?? 0), 0))}</p>}
               </div>
@@ -183,10 +187,13 @@ function Dashboard() {
           {[...SALES_GROUPS.map((g) => [g.name, `${g.from}–${g.to}`]), [UNASSIGNED, 'not in a range']].map(([name, range]) => {
             const v = groups.find(([k]) => k === name)?.[1]
             return (
-              <div key={name} className={cn(card, name === UNASSIGNED && v && 'bg-amber-50 dark:bg-amber-500/10')}>
+              <div key={name} role="button" tabIndex={0} onClick={() => open(`${name} · ${range}`, monthName + (name === UNASSIGNED ? ' · machines outside every group — counted in company totals, never in client reports' : ''), (r) => groupOf(r.machine) === name)}
+                onKeyDown={(e) => e.key === 'Enter' && open(`${name} · ${range}`, monthName, (r) => groupOf(r.machine) === name)}
+                className={cn(card, CLICK, name === UNASSIGNED && v && 'bg-amber-50 dark:bg-amber-500/10')}>
                 <p className={lbl}>{name.toUpperCase()} · {range}</p>
                 <p className="mt-1 text-[16px] font-bold tabular-nums">{fmtTHB(v?.s ?? 0)}</p>
                 <p className="text-[11.5px] text-muted-foreground">{v?.n ?? 0} sales{gross ? ` · ${(((v?.s ?? 0) / gross) * 100).toFixed(1)}%` : ''}</p>
+                {(v?.n ?? 0) > 0 && <p className="mt-1 text-[11.5px] font-medium text-[#C8643B]">View {v!.n} payment{v!.n === 1 ? '' : 's'} →</p>}
               </div>
             )
           })}
@@ -201,7 +208,7 @@ function Dashboard() {
           {daily.map(({ d, by }) => {
             const tot = by.reduce((a, b) => a + b.s, 0)
             return (
-              <div key={d} className="flex h-full flex-1 flex-col justify-end" title={`${fmtDay(d)} · ${fmtTHB(tot)}`}>
+              <div key={d} className={cn('flex h-full flex-1 flex-col justify-end', tot && 'cursor-pointer hover:opacity-80')} title={`${fmtDay(d)} · ${fmtTHB(tot)}`} onClick={() => tot && open(fmtDay(d), monthName, (r) => r.biz_date === d)}>
                 <div className="flex flex-col-reverse overflow-hidden rounded-t-[3px]" style={{ height: `${(tot / maxDay) * 100}%` }}>
                   {by.filter((b) => b.s).map((b) => <span key={b.g} style={{ height: `${(b.s / tot) * 100}%`, background: GROUP_COLORS[b.g] }} />)}
                 </div>
@@ -212,14 +219,14 @@ function Dashboard() {
         </div>
         <div className="mt-1 flex justify-between text-[11px] text-muted-foreground"><span>{fmtDay(from)}</span><span>{fmtDay(to)}</span></div>
       </div>
-        <ChannelDonut data={channels.map(([k, v]) => ({ name: k, satang: v.s, n: v.n }))} />
+        <ChannelDonut data={channels.map(([k, v]) => ({ name: k, satang: v.s, n: v.n }))} onPick={(c) => open(c, monthName, (r) => r.channel === c)} />
       </div>
 
       <div className="grid lg:grid-cols-[1fr_1.4fr] gap-3">
         <div className={card}>
           <p className={cn(lbl, 'mb-2')}>TOP 20 MACHINES</p>
           {mlines.slice(0, 20).map((l) => (
-            <div key={l.machine} className="flex items-center gap-2 py-0.5 text-[12.5px]">
+            <div key={l.machine} onClick={() => open(`Machine #${l.machine}`, `${l.group} · ${monthName}`, (r) => r.machine === l.machine)} className="-mx-1 flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-[12.5px] hover:bg-muted">
               <span className="w-10 font-mono">#{l.machine}</span>
               <div className="h-2 flex-1 rounded-full bg-muted"><div className="h-2 rounded-full" style={{ width: `${(l.satang / (mlines[0]?.satang || 1)) * 100}%`, background: GROUP_COLORS[l.group] }} /></div>
               <span className="w-28 text-right tabular-nums">{fmtTHB(l.satang)}</span>
@@ -233,18 +240,119 @@ function Dashboard() {
             <table className="w-full text-[12.5px] tabular-nums">
               <thead className="sticky top-0 bg-card text-[11px] text-muted-foreground"><tr><th className="py-1 text-left">Machine</th><th className="text-left">Group</th><th className="text-right">Sales</th><th className="text-right">Revenue</th><th className="text-right">%</th></tr></thead>
               <tbody>{mlines.map((l) => (
-                <tr key={l.machine} className="border-t border-border/60"><td className="py-1 font-mono">#{l.machine}</td><td>{l.group}</td><td className="text-right">{l.count}</td><td className="text-right">{fmtTHB(l.satang)}</td><td className="text-right text-muted-foreground">{gross ? ((l.satang / gross) * 100).toFixed(2) : '0.00'}%</td></tr>
+                <tr key={l.machine} onClick={() => open(`Machine #${l.machine}`, `${l.group} · ${monthName}`, (r) => r.machine === l.machine)} className="cursor-pointer border-t border-border/60 hover:bg-muted/50"><td className="py-1 font-mono">#{l.machine}</td><td>{l.group}</td><td className="text-right">{l.count}</td><td className="text-right">{fmtTHB(l.satang)}</td><td className="text-right text-muted-foreground">{gross ? ((l.satang / gross) * 100).toFixed(2) : '0.00'}%</td></tr>
               ))}</tbody>
             </table>
           </div>
         </div>
       </div>
+
+      {drill && <DrillDialog title={drill.title} sub={drill.sub} rows={ok.filter(drill.pick)} onClose={() => setDrill(null)} onChanged={() => { salesCache.clear(); setBump((b) => b + 1) }} />}
     </div>
   )
 }
+// ── Drill-down: the payments behind a dashboard number ───────────────────────
+const GW_CLS: Record<string, string> = {
+  kbank: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
+  paysolution: 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300',
+  chillpay: 'bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300',
+}
+const median = (xs: number[]) => { const a = [...xs].sort((x, y) => x - y); return a.length ? a[Math.floor(a.length / 2)] : 0 }
+function DrillDialog({ title, sub, rows, onClose, onChanged }: { title: string; sub: string; rows: StoredSale[]; onClose: () => void; onChanged: () => void }) {
+  const [gw, setGw] = useState<string>('all')
+  const [q, setQ] = useState('')
+  useEffect(() => { const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose(); window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k) }, [onClose])
+  const total = rows.reduce((a, r) => a + r.amount_satang, 0)
+  const gws = (['kbank', 'paysolution', 'chillpay'] as const).map((g) => {
+    const rs = rows.filter((r) => r.gateway === g)
+    return { g, n: rs.length, s: rs.reduce((a, r) => a + r.amount_satang, 0), files: [...new Set(rs.map((r) => r.source_file).filter(Boolean))] as string[] }
+  }).filter((x) => x.n)
+  // "Unusual" = more than 3× the usual price for that machine in this list.
+  const usual = useMemo(() => {
+    const m = new Map<number, number[]>(); for (const r of rows) { const k = r.machine ?? -1; m.set(k, [...(m.get(k) ?? []), r.amount_satang]) }
+    return new Map([...m].map(([k, v]) => [k, median(v)]))
+  }, [rows])
+  const odd = (r: StoredSale) => r.amount_satang > 3 * (usual.get(r.machine ?? -1) ?? Infinity)
+  const qq = q.trim().toLowerCase()
+  const shown = rows.filter((r) => (gw === 'all' || r.gateway === gw) && (!qq || [r.txn_id, r.alt_ref, r.source_file, r.raw_machine, String(r.machine), (r.amount_satang / 100).toFixed(2), r.channel].filter(Boolean).join(' ').toLowerCase().includes(qq)))
+    .sort((a, b) => a.biz_date.localeCompare(b.biz_date) || (a.biz_time ?? '').localeCompare(b.biz_time ?? '') || a.txn_id.localeCompare(b.txn_id))
+  const LIMIT = 500
+  async function act(r: StoredSale, patch: Partial<StoredSale>, msg: string) {
+    try { await patchSale(r.key, patch); toast(msg); onChanged() } catch (e) { toast(`Failed: ${e instanceof Error ? e.message : String(e)}`) }
+  }
+  function exportRows() {
+    const aoa = [['Date', 'Time', 'Machine', 'Raw machine', 'Gateway', 'Transaction ID', 'Other ref', 'Channel', 'Amount (THB)', 'Source file', 'Source row'],
+      ...shown.map((r) => [r.biz_date, r.biz_time ?? '', r.machine ?? '', r.raw_machine ?? '', GW[r.gateway], r.txn_id, r.alt_ref ?? '', r.channel, r.amount_satang / 100, r.source_file ?? '', r.source_row])]
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Payments')
+    XLSX.writeFile(wb, `SX_check_${title.replace(/[^A-Za-z0-9#]+/g, '_').replace(/_+$/, '')}.xlsx`)
+  }
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-3 sm:p-6" onClick={onClose} role="dialog" aria-modal="true" aria-label={title}>
+      <div className="flex max-h-full w-full max-w-[1040px] flex-col overflow-hidden rounded-2xl bg-card shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start gap-3 border-b border-border px-5 py-4">
+          <div className="min-w-0">
+            <h3 className="text-[16px] font-semibold">{title} · {rows.length.toLocaleString()} payment{rows.length === 1 ? '' : 's'} · {fmtTHB(total)}</h3>
+            <p className="text-[12.5px] text-muted-foreground">{sub}</p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close" className="ml-auto text-[18px] text-muted-foreground hover:text-foreground">✕</button>
+        </div>
+        <div className="grid gap-2 px-5 pt-3 sm:grid-cols-3">
+          {gws.map((x) => (
+            <div key={x.g} className="rounded-lg border border-border px-3 py-2 text-[12.5px]">
+              <span className={cn('rounded px-1.5 py-px text-[10.5px] font-semibold', GW_CLS[x.g])}>{GW[x.g]}</span> <b className="tabular-nums">{x.n.toLocaleString()} · {fmtTHB(x.s)}</b>
+              <div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground" title={x.files.join(', ')}>{x.files.join(' · ') || '—'}</div>
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2 px-5 py-3">
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="🔍 Search ID, file, amount" className="h-8 w-[220px] text-[12.5px]" />
+          {[{ g: 'all', n: rows.length }, ...gws].map((x) => (
+            <button key={x.g} type="button" onClick={() => setGw(x.g)} className={cn('rounded-full border px-2.5 py-0.5 text-[12px]', gw === x.g ? 'border-foreground bg-foreground text-background' : 'border-border hover:border-foreground/30')}>
+              {x.g === 'all' ? 'All' : GW[x.g]} {x.n.toLocaleString()}
+            </button>
+          ))}
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto">
+          <table className="w-full min-w-[860px] text-[12.5px] tabular-nums">
+            <thead className="sticky top-0 bg-muted text-[11.5px] text-muted-foreground"><tr>
+              <th className="px-3 py-1.5 text-left font-medium">Date · time</th><th className="px-2 text-left font-medium">Machine</th><th className="px-2 text-left font-medium">Gateway</th>
+              <th className="px-2 text-left font-medium">Transaction ID</th><th className="px-2 text-left font-medium">Channel</th><th className="px-2 text-right font-medium">Amount</th>
+              <th className="px-2 text-left font-medium">Source file · row</th><th className="px-3" />
+            </tr></thead>
+            <tbody>
+              {shown.slice(0, LIMIT).map((r) => (
+                <tr key={r.key} className={cn('border-t border-border/60', odd(r) && 'bg-orange-50/70 dark:bg-orange-500/10')}>
+                  <td className="whitespace-nowrap px-3 py-1.5">{fmtDay(r.biz_date)} {r.biz_time?.slice(0, 5) ?? ''}</td>
+                  <td className="whitespace-nowrap px-2 font-mono text-[11.5px]">#{r.machine ?? '?'} <span className="text-muted-foreground">{r.raw_machine ?? ''}</span></td>
+                  <td className="px-2"><span className={cn('rounded px-1.5 py-px text-[10.5px] font-semibold', GW_CLS[r.gateway])}>{GW[r.gateway]}</span></td>
+                  <td className="px-2 font-mono text-[11.5px]">{r.txn_id || '—'}</td>
+                  <td className="px-2">{r.channel}</td>
+                  <td className={cn('px-2 text-right', odd(r) && 'font-bold')} title={odd(r) ? 'Much higher than this machine’s usual price' : undefined}>{(r.amount_satang / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                  <td className="max-w-[240px] truncate px-2 text-[11.5px] text-muted-foreground" title={`${r.source_file ?? ''} · row ${r.source_row}`}><b className="font-medium text-foreground">{r.source_file ?? '—'}</b> · row {r.source_row}</td>
+                  <td className="whitespace-nowrap px-3 text-right text-[11.5px]">
+                    <button type="button" className="text-muted-foreground hover:text-foreground" onClick={() => { const v = window.prompt(`Machine number for ${r.txn_id}:`, String(r.machine ?? '')); if (v && /^\d+$/.test(v.trim()) && Number(v) !== r.machine) void act(r, { machine: Number(v) }, `Moved to machine #${v}`) }}>Set machine</button>
+                    <span className="mx-1 text-muted-foreground/40">·</span>
+                    <button type="button" className="text-muted-foreground hover:text-destructive" onClick={() => window.confirm(`Exclude ${r.txn_id} (${fmtTHB(r.amount_satang)}) from all sales and reports?`) && void act(r, { status: 'excluded' }, 'Excluded')}>Exclude</button>
+                  </td>
+                </tr>
+              ))}
+              {!shown.length && <tr><td colSpan={8} className="py-8 text-center text-muted-foreground">No payments match.</td></tr>}
+              {shown.length > LIMIT && <tr><td colSpan={8} className="py-2 text-center text-[12px] text-muted-foreground">Showing the first {LIMIT} of {shown.length.toLocaleString()} — export to see all, or narrow with search.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 border-t border-border bg-muted/40 px-5 py-2.5">
+          <span className="text-[12px] text-muted-foreground">{shown.length.toLocaleString()} shown · {fmtTHB(shown.reduce((a, r) => a + r.amount_satang, 0))}{rows.some(odd) && ' · orange = unusually high amount'}</span>
+          <Button size="sm" variant="outline" className="ml-auto" onClick={exportRows} disabled={!shown.length}>⬇ Export these rows (.xlsx)</Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+const CLICK = 'cursor-pointer transition-colors hover:border-[#C8643B]/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8643B]/40'
 // Payment channel share of gross (SVG donut, no chart library).
 const CHANNEL_COLORS: Record<string, string> = { PromptPay: '#4F86D9', KPlus: '#7BC8A4', 'Credit Card': '#8478D6', QRCode: '#E8A25A', TrueMoney: '#E26D6D' }
-function ChannelDonut({ data }: { data: { name: string; satang: number; n: number }[] }) {
+function ChannelDonut({ data, onPick }: { data: { name: string; satang: number; n: number }[]; onPick: (channel: string) => void }) {
   const [hover, setHover] = useState<string | null>(null)
   const total = data.reduce((a, d) => a + d.satang, 0)
   const R = 70, W = 26, C = 2 * Math.PI * R, GAP = data.length > 1 ? 2 : 0
@@ -261,7 +369,7 @@ function ChannelDonut({ data }: { data: { name: string; satang: number; n: numbe
               const len = Math.max(0, x.frac * C - GAP)
               const mid = (x.start + x.frac / 2) * 2 * Math.PI
               return (
-                <g key={x.name} onMouseEnter={() => setHover(x.name)} onMouseLeave={() => setHover(null)} className="cursor-default">
+                <g key={x.name} onMouseEnter={() => setHover(x.name)} onMouseLeave={() => setHover(null)} onClick={() => onPick(x.name)} className="cursor-pointer">
                   <circle cx="95" cy="95" r={R} fill="none" stroke={CHANNEL_COLORS[x.name] ?? '#A8A39A'} strokeWidth={hover === x.name ? W + 4 : W}
                     strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-x.start * C} className="transition-[stroke-width] duration-150" />
                   {x.frac >= 0.08 && <text x={95 + R * Math.cos(mid)} y={95 + R * Math.sin(mid)} transform={`rotate(90 ${95 + R * Math.cos(mid)} ${95 + R * Math.sin(mid)})`}
@@ -279,15 +387,15 @@ function ChannelDonut({ data }: { data: { name: string; satang: number; n: numbe
           </div>
         </div>
         <div className="mt-3 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[12px]">
-          {segs.map((x) => <span key={x.name} onMouseEnter={() => setHover(x.name)} onMouseLeave={() => setHover(null)} className="inline-flex items-center gap-1.5" style={{ color: CHANNEL_COLORS[x.name] ?? '#A8A39A' }}>
+          {segs.map((x) => <span key={x.name} onMouseEnter={() => setHover(x.name)} onMouseLeave={() => setHover(null)} onClick={() => onPick(x.name)} className="inline-flex cursor-pointer items-center gap-1.5" style={{ color: CHANNEL_COLORS[x.name] ?? '#A8A39A' }}>
             <span className="h-2.5 w-2.5 rounded-full" style={{ background: CHANNEL_COLORS[x.name] ?? '#A8A39A' }} />{x.name} <span className="text-muted-foreground">{(x.frac * 100).toFixed(1)}%</span></span>)}
         </div>
       </>}
     </div>
   )
 }
-function Kpi({ label, value, note }: { label: string; value: string; note: string }) {
-  return <div className={card}><p className={lbl}>{label}</p><p className="mt-1 text-[22px] font-bold tabular-nums">{value}</p><p className="text-[11.5px] text-muted-foreground">{note}</p></div>
+function Kpi({ label, value, note, onOpen }: { label: string; value: string; note: string; onOpen?: () => void }) {
+  return <div role={onOpen ? 'button' : undefined} tabIndex={onOpen ? 0 : undefined} onClick={onOpen} onKeyDown={(e) => onOpen && e.key === 'Enter' && onOpen()} className={cn(card, onOpen && CLICK)}><p className={lbl}>{label}</p><p className="mt-1 text-[22px] font-bold tabular-nums">{value}</p><p className="text-[11.5px] text-muted-foreground">{note}</p></div>
 }
 
 // ── ② Client report (combined Excel) ──────────────────────────────────────────
