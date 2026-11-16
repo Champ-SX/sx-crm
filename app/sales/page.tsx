@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import * as XLSX from 'xlsx'
+import { DelayedLoading } from '@/components/shared/delayed-loading'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,7 +13,7 @@ import { parseSheet, type SaleRow } from '@/lib/sales/parse'
 import { SALES_GROUPS, ALL_ASSIGNED, groupOf, machinesOf, UNASSIGNED } from '@/lib/sales/groups'
 import { buildWorkbook, downloadWorkbook, byMachine, fmtTHB, isAccepted, reportFileName, selectRows, DEFAULT_EXPORT, type ExportOpts } from '@/lib/sales/report'
 import {
-  classify, commitImport, fetchDateRange, salesCache, fetchImports, fetchReviewQueue, fetchSales, patchSale, useSalesAccess,
+  classify, commitImport, deleteImport, fetchDateRange, salesCache, fetchImports, fetchReviewQueue, fetchSales, patchSale, useSalesAccess,
   type Classified, type ImportFileSummary, type SalesImport, type StoredSale,
 } from '@/lib/supabase/sales'
 
@@ -33,7 +34,7 @@ export default function SalesPage() {
   const refreshReview = useCallback(() => { void fetchReviewQueue().then((r) => setReviewCount(r.length)).catch(() => {}) }, [])
   useEffect(() => { if (access) refreshReview() }, [access, refreshReview])
 
-  if (access === null) return <div className="p-8 text-sm text-muted-foreground">Loading…</div>
+  if (access === null) return <DelayedLoading />
   if (!access) return (
     <div className="p-8 max-w-md">
       <h1 className="text-lg font-semibold">Sales reports</h1>
@@ -129,6 +130,7 @@ function Dashboard() {
 
   return (
     <div className="space-y-5">
+      {rows == null && <DelayedLoading label="Loading sales…" className="py-6" />}
       <div className="flex flex-wrap items-end gap-2">
         <div className="mr-auto">
           <p className="text-[13px] text-muted-foreground">
@@ -351,7 +353,8 @@ function ReportBuilder() {
               </tr>
             </thead>
             <tbody>
-              {visible.map((n) => {
+              {rows == null && <tr><td colSpan={11}><DelayedLoading label="Loading sales…" className="py-8" /></td></tr>}
+              {rows != null && visible.map((n) => {
                 const x = stats.get(n)!; const on = sel.has(n); const grp = groupOf(n)
                 return (
                   <tr key={n} onClick={() => toggle(n)} className={cn('cursor-pointer border-t border-border/60 hover:bg-muted/40', !x.n && 'text-muted-foreground/60')} style={on ? { background: 'rgba(200,100,59,0.05)' } : undefined}>
@@ -381,7 +384,7 @@ function ReportBuilder() {
           <Button size="sm" disabled={!list.length || rows == null} onClick={download} style={list.length ? { background: ACC } : undefined} className="text-white">⬇ {list.length ? 'Download' : 'Tick machines'}</Button>
         </div>
       </div>
-      {list.length > 0 && <p className="text-[11.5px] text-muted-foreground">File: <span className="font-mono">{fileName}</span> · Summary + Transactions · Pay Solution ID: {opts.paySolutionId === 'order' ? 'OrderNo' : 'ReferenceNo'}{list.filter((n) => !stats.get(n)!.n).length > 0 && ` · ${list.filter((n) => !stats.get(n)!.n).length} zero-sale machine(s) listed as 0`}</p>}
+      {list.length > 0 && <p className="text-[11.5px] text-muted-foreground">File: <span className="font-mono">{fileName}</span> · one Transactions sheet · Pay Solution ID: {opts.paySolutionId === 'order' ? 'OrderNo' : 'ReferenceNo'}{list.filter((n) => !stats.get(n)!.n).length > 0 && ` · ${list.filter((n) => !stats.get(n)!.n).length} zero-sale machine(s) listed as 0`}</p>}
       {waiting > 0 && <p className="rounded-md bg-amber-50 px-3 py-1.5 text-[12px] text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">⚠ {waiting} row{waiting === 1 ? '' : 's'} for the selected machines wait in Review and are not included.</p>}
       {disputed > 0 && <p className="rounded-md bg-red-50 px-3 py-1.5 text-[12px] text-red-800 dark:bg-red-500/10 dark:text-red-300">⚠ {disputed} payment{disputed === 1 ? '' : 's'} for the selected machines have a conflicting re-upload — counted at the saved amount until decided in Review.</p>}
       {unassigned.length > 0 && <p className="text-[12px] text-muted-foreground">Sales from machines outside the groups ({unassigned.map((m) => `#${m}`).join(', ')}) are in company totals but not in client reports until assigned.</p>}
@@ -433,6 +436,14 @@ function Upload({ onDone }: { onDone: () => void }) {
       }
       setPending({ files, items, excludedNotes })
     } catch (e) { toast(`Couldn't read: ${e instanceof Error ? e.message : String(e)}`) } finally { setBusy(false) }
+  }
+  async function removeImport(h: SalesImport) {
+    const gross = h.files.reduce((a, f) => a + (f.gross_satang ?? 0), 0)
+    const msg = `Delete this upload?\n\n${h.files.map((f) => `• ${f.name}`).join('\n')}\n\n${h.new_rows.toLocaleString()} payment${h.new_rows === 1 ? '' : 's'} (${fmtTHB(gross)}) it added will be removed from the dashboard and client reports. Payments that were already saved by an earlier upload stay. You can upload the corrected file again afterwards.`
+    if (!window.confirm(msg)) return
+    setBusy(true)
+    try { const r = await deleteImport(h); toast(`Deleted — ${r.rows.toLocaleString()} payments (${fmtTHB(r.satang)}) removed`); loadHistory(); onDone() }
+    catch (e) { toast(`Delete failed: ${e instanceof Error ? e.message : String(e)}`) } finally { setBusy(false) }
   }
   async function commit() {
     if (!pending) return
@@ -488,7 +499,9 @@ function Upload({ onDone }: { onDone: () => void }) {
         {history.map((h) => (
           <div key={h.import_id} className="border-t border-border/60 py-2 text-[12.5px] first:border-0">
             <div className="flex flex-wrap gap-x-3"><b>{new Date(h.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</b><span className="text-muted-foreground">{h.created_by ?? ''}</span>
-              <span className="ml-auto tabular-nums">{h.new_rows.toLocaleString()} new · {h.dup_rows.toLocaleString()} dup · {h.review_rows} review</span></div>
+              <span className="ml-auto tabular-nums">{h.new_rows.toLocaleString()} new · {h.dup_rows.toLocaleString()} dup · {h.review_rows} review</span>
+              <button type="button" disabled={busy} onClick={() => void removeImport(h)} aria-label={`Delete upload from ${h.created_at}`}
+                className="text-muted-foreground hover:text-destructive">🗑 Delete</button></div>
             <div className="text-[12px] text-muted-foreground">{h.files.map((f) => `${f.name} (${GW[f.format] ?? f.format})`).join(' · ')}</div>
           </div>
         ))}
@@ -544,7 +557,7 @@ function Review({ onChange }: { onChange: () => void }) {
         <div className="grid sm:grid-cols-3 gap-4 text-[12.5px]">
           <div><p className="font-semibold">Pay Solution · ID in client files</p>
             <p className="mt-1 text-muted-foreground"><b className="text-foreground">ReferenceNo</b> (e.g. 004179474639) — confirmed by finance. OrderNo is still stored for lookups.</p></div>
-          <div><p className="font-semibold">ChillPay · amount</p><p className="mt-1 text-muted-foreground">Both kept: gross (incl. fee) in Amount; fees and net on the Summary sheet.</p></div>
+          <div><p className="font-semibold">ChillPay · amount</p><p className="mt-1 text-muted-foreground">Client files use ยอดชำระรวม (incl. fee). Fees and net transfer are stored and shown on the dashboard.</p></div>
           <div><p className="font-semibold">Machine groups</p><p className="mt-1 text-muted-foreground">{SALES_GROUPS.map((g) => `${g.name} ${g.from}–${g.to}`).join(' · ')}</p></div>
         </div>
       </div>

@@ -99,6 +99,12 @@ describe.skipIf(!has)('sales · acceptance on supplied samples', () => {
     expect(Math.round(data.reduce((s, r) => s + Number(r[8]), 0) * 100)).toBe(7036000)
     expect(data.every((r) => typeof r[7] === 'string' && r[7] !== '')).toBe(true)
     expect(back.Sheets.Transactions[XLSX.utils.encode_cell({ r: 1, c: 7 })].t).toBe('s')
+    expect(back.SheetNames).toEqual(['Transactions'])
+    // KBank master format: every row fully filled, status PAID / SETTLED
+    expect(data.every((r) => r.every((c) => c !== null && c !== ''))).toBe(true)
+    const card = data.find((r) => r[9] === 'Credit Card')!
+    expect(card.slice(3, 7)).toEqual(['PTR0000034', 'บริษัท ซิกชีท กรุ๊ป จำกัด (SIXSHEET)', 'SIXSIT001', 'KB000001662967'])
+    expect([card[10], card[11]]).toEqual(['PAID', 'SETTLED'])
   })
   it('ChillPay alone · 1–15 Nov', () => {
     const rs = all.filter((r) => r.gateway === 'chillpay' && r.biz_date >= '2026-11-01' && r.biz_date <= '2026-11-15')

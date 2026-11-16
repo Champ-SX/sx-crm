@@ -1,4 +1,5 @@
 'use client'
+import { DelayedLoading } from '@/components/shared/delayed-loading'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { GanttChart, Images, LayoutGrid, Plus, Search, X, Archive, Settings2 } from 'lucide-react'
@@ -36,6 +37,7 @@ export default function AnfTasksPage() {
   const [tasks, setTasks] = useState<AnfTask[]>(() => anfSnapshot.tasks ?? [])
   const [types, setTypes] = useState<AnfTaskType[]>(() => anfSnapshot.types)
   const [places, setPlaces] = useState<AnfPlace[]>(() => anfSnapshot.places)
+  const [loaded, setLoaded] = useState(() => anfSnapshot.tasks != null && anfSnapshot.tasks.length > 0)
   useEffect(() => { anfSnapshot.tasks = tasks; anfSnapshot.types = types; anfSnapshot.places = places }, [tasks, types, places])
   const [assets, setAssets] = useState<AnfAsset[]>([])
   useEffect(() => { fetchAssets().then(setAssets).catch(() => setAssets([])) }, [])
@@ -61,9 +63,9 @@ export default function AnfTasksPage() {
         stale.forEach((t) => { void updateAnfTask(t.task_id, { is_archived: true }) })
         const staleIds = new Set(stale.map((t) => t.task_id))
         setTasks(r.tasks.map((t) => (staleIds.has(t.task_id) ? { ...t, is_archived: true } : t)))
-        setTypes(r.types); setPlaces(r.places); setLoadError(null)
+        setTypes(r.types); setPlaces(r.places); setLoadError(null); setLoaded(true)
       })
-      .catch((e) => { if (alive) setLoadError(e instanceof Error ? e.message : 'Could not load tasks') })
+      .catch((e) => { if (alive) { setLoadError(e instanceof Error ? e.message : 'Could not load tasks'); setLoaded(true) } })
     return () => { alive = false }
   }, [loadKey])
 
@@ -206,7 +208,7 @@ export default function AnfTasksPage() {
 
       {loadError && <div className="px-6 py-2 text-[13px] text-destructive">Couldn&apos;t load tasks: {loadError}. Has the A&amp;F migration been run?</div>}
 
-      {view === 'timeline' ? (
+      {!loaded ? <div className="flex-1"><DelayedLoading label="Loading tasks…" /></div> : view === 'timeline' ? (
         <TimelineView tasks={shown} types={types} onOpen={setOpenId} />
       ) : view === 'assets' ? (
         <AssetsView assets={assets} tasks={tasks} places={places} me={author} onSave={saveA} onDelete={deleteA} onOpenTask={setOpenId} onPlaces={setPlaces} onPatchTask={patch} />

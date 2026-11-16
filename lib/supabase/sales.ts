@@ -155,3 +155,25 @@ export async function patchSale(key: string, patch: Partial<StoredSale>): Promis
   const { error } = await supabase.from('sales_txns').update({ ...patch, updated_at: new Date().toISOString() }).eq('key', key)
   if (error) throw error
 }
+
+/** Remove an upload: every payment it added, the conflicts it raised, and its history entry.
+ *  Payments that were duplicates in that upload belong to an earlier upload and stay. */
+export async function deleteImport(imp: SalesImport): Promise<{ rows: number; satang: number }> {
+  clearSalesCache()
+  const names = imp.files.map((f) => f.name)
+  if (!isSupabaseConfigured) {
+    const gone = mockTxns.filter((r) => r.import_id === imp.import_id)
+    mockTxns = mockTxns.filter((r) => r.import_id !== imp.import_id).map((r) => (r.conflict && names.includes(r.conflict.file) ? { ...r, conflict: null } : r))
+    const i = mockImports.findIndex((x) => x.import_id === imp.import_id); if (i >= 0) mockImports.splice(i, 1)
+    return { rows: gone.length, satang: gone.reduce((s, r) => s + r.amount_satang, 0) }
+  }
+  const { data: gone, error: e0 } = await supabase.from('sales_txns').delete().eq('import_id', imp.import_id).select('amount_satang')
+  if (e0) throw e0
+  for (const n of names) {
+    const { error } = await supabase.from('sales_txns').update({ conflict: null, updated_at: new Date().toISOString() }).eq('conflict->>file', n)
+    if (error) throw error
+  }
+  const { error: e2 } = await supabase.from('sales_imports').delete().eq('import_id', imp.import_id)
+  if (e2) throw e2
+  return { rows: gone?.length ?? 0, satang: (gone ?? []).reduce((s, r) => s + Number(r.amount_satang), 0) }
+}

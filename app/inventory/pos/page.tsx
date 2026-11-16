@@ -1,4 +1,5 @@
 'use client'
+import { DelayedLoading } from '@/components/shared/delayed-loading'
 
 import { useState } from 'react'
 import { FileText, Check } from 'lucide-react'
@@ -22,7 +23,7 @@ export default function POsPage() {
   const isHydrated = useHydrated()
   const anfOrders = useCRMStore((s) => s.anfOrders)
   const activeBoardId = useCRMStore((s) => s.activeBoardId)
-  const { pos } = usePurchasing()
+  const { pos, loaded } = usePurchasing()
   const { suppliers } = useSuppliers()
   const [open, setOpen] = useState<AnfPO | null>(null)
   const [view, setView] = useState<'open' | 'received' | 'cancelled' | 'all'>('open')
@@ -57,7 +58,7 @@ export default function POsPage() {
         )}
         <div className={cn('flex flex-wrap gap-1.5', !emergencyCount && 'ml-auto')}>{viewChip('open', 'Open')}{viewChip('received', 'Received')}{viewChip('cancelled', 'Cancelled')}{viewChip('all', 'All')}</div>
       </div>
-      <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-4">
+      {!loaded ? <DelayedLoading label="Loading POs…" /> : <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-4">
         {list.length === 0 ? (
           <div className="text-center py-20">
             <FileText className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
@@ -92,7 +93,7 @@ export default function POsPage() {
             })}
           </div>
         )}
-      </div>
+      </div>}
       {open && <PODialog po={pos.find((x) => x.po_id === open.po_id) ?? open} onClose={() => setOpen(null)} />}
     </div>
   )
