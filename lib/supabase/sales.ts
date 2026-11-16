@@ -111,7 +111,8 @@ export async function commitImport(items: Classified[], files: ImportFileSummary
   }
   const now = new Date().toISOString()
   const insert = items.filter((i) => i.kind === 'new' || i.kind === 'review').map((i) => ({ ...i.row, biz_date: i.row.biz_date || null, import_id: imp.import_id, conflict: null }))
-  const conflicts = items.filter((i) => i.kind === 'conflict' && i.existing)
+  // DB conflicts and same-upload conflicts (the first copy is inserted above, then flagged)
+  const conflicts = items.filter((i) => i.kind === 'conflict')
   if (!isSupabaseConfigured) {
     mockImports.push(imp)
     mockTxns.push(...insert.map((r) => ({ ...r, biz_date: r.biz_date ?? '' }) as StoredSale))

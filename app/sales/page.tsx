@@ -261,7 +261,9 @@ function ReportBuilder() {
   const ok = useMemo(() => (rows ?? []).filter((r) => isAccepted(r) && r.biz_date >= from && r.biz_date <= to), [rows, from, to])
   const picked = useMemo(() => selectRows(rows ?? [], { from, to }, [...sel]), [rows, from, to, sel])
   const gross = picked.reduce((s, r) => s + r.amount_satang, 0)
-  const waiting = (rows ?? []).filter((r) => (r.review || r.conflict) && r.machine != null && sel.has(r.machine)).length
+  const mine = (rows ?? []).filter((r) => r.machine != null && sel.has(r.machine))
+  const waiting = mine.filter((r) => r.review).length
+  const disputed = mine.filter((r) => !r.review && r.conflict).length
   const noId = picked.filter((r) => !(r.gateway === 'paysolution' && opts.paySolutionId === 'order' ? r.alt_ref : r.txn_id)).length
   const unassigned = [...new Set(ok.filter((r) => groupOf(r.machine) === UNASSIGNED).map((r) => r.machine))]
 
@@ -379,6 +381,7 @@ function ReportBuilder() {
       </div>
       {list.length > 0 && <p className="text-[11.5px] text-muted-foreground">File: <span className="font-mono">{fileName}</span> · Summary + Transactions · Pay Solution ID: {opts.paySolutionId === 'order' ? 'OrderNo' : 'ReferenceNo'}{list.filter((n) => !stats.get(n)!.n).length > 0 && ` · ${list.filter((n) => !stats.get(n)!.n).length} zero-sale machine(s) listed as 0`}</p>}
       {waiting > 0 && <p className="rounded-md bg-amber-50 px-3 py-1.5 text-[12px] text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">⚠ {waiting} row{waiting === 1 ? '' : 's'} for the selected machines wait in Review and are not included.</p>}
+      {disputed > 0 && <p className="rounded-md bg-red-50 px-3 py-1.5 text-[12px] text-red-800 dark:bg-red-500/10 dark:text-red-300">⚠ {disputed} payment{disputed === 1 ? '' : 's'} for the selected machines have a conflicting re-upload — counted at the saved amount until decided in Review.</p>}
       {unassigned.length > 0 && <p className="text-[12px] text-muted-foreground">Sales from machines outside the groups ({unassigned.map((m) => `#${m}`).join(', ')}) are in company totals but not in client reports until assigned.</p>}
     </div>
   )
@@ -470,7 +473,7 @@ function Upload({ onDone }: { onDone: () => void }) {
             </table>
           </div>
           {pending.excludedNotes.length > 0 && <ul className="mt-2 list-disc pl-5 text-[12px] text-muted-foreground">{pending.excludedNotes.map((n) => <li key={n}>{n}</li>)}</ul>}
-          {conflicts > 0 && <p className="mt-2 text-[12px] text-red-700 dark:text-red-300">{conflicts} row{conflicts === 1 ? '' : 's'} already saved with a different amount, date or machine — they&apos;ll be flagged in Review; the saved value stays until someone decides.</p>}
+          {conflicts > 0 && <p className="mt-2 text-[12px] text-red-700 dark:text-red-300">{conflicts} row{conflicts === 1 ? '' : 's'} share a transaction ID with a different amount, date or machine (already saved, or twice in these files) — flagged in Review; the first value is counted until someone decides.</p>}
           <div className="mt-3 flex justify-end gap-2">
             <Button variant="outline" onClick={() => setPending(null)} disabled={busy}>Cancel</Button>
             <Button onClick={() => void commit()} disabled={busy || (!toSave && !conflicts)}>{busy ? 'Saving…' : toSave ? `Import ${toSave.toLocaleString()} rows` : 'Flag conflicts'}</Button>
@@ -504,7 +507,7 @@ function Review({ onChange }: { onChange: () => void }) {
     <div className="space-y-5">
       <div className={card}>
         <p className={cn(lbl, 'mb-1')}>WAITING FOR A DECISION · {rows?.length ?? '…'}</p>
-        <p className="mb-3 text-[12px] text-muted-foreground">These rows are left out of the dashboard and client reports until someone decides.</p>
+        <p className="mb-3 text-[12px] text-muted-foreground">Flagged rows (unclear date, machine, missing ID) are left out of the dashboard and client reports. Conflicts are counted at the saved amount until someone decides.</p>
         {rows?.length === 0 && <p className="text-[12.5px] text-muted-foreground">Nothing to review 🎉</p>}
         <div className="space-y-2">
           {rows?.map((r) => {
