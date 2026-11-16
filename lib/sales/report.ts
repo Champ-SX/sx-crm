@@ -40,7 +40,7 @@ export function reportFileName(p: Period, machines: number[]): string {
   return `SX_${month}_${what}.xlsx`
 }
 
-export const DETAIL_HEADERS = ['Date', 'Machine No.', 'Product Group', 'PartnerID', 'PartnerName', 'PartnerShopID', 'MerchantID', 'PartnerTransactionUniqueID', 'Amount (THB)', 'Payment Channel', 'TransactionStatus', 'SettlementStatus']
+export const DETAIL_HEADERS = ['Date', 'Machine No.', 'Product Group', 'PartnerID', 'PartnerName', 'PartnerShopID', 'MerchantID', 'PartnerTransactionUniqueID', 'Amount (THB)', 'Payment Channel', 'TransactionStatus', 'SettlementStatus', 'ref']
 
 // ── Styles (xlsx-js-style) ────────────────────────────────────────────────────
 type Style = Record<string, unknown>
@@ -71,14 +71,53 @@ export const KBANK_MASTER = {
   merchant_id: 'KB000001662967', txn_status: 'PAID', settle_status: 'SETTLED',
 }
 /** The 12 client columns for one payment (KBank values kept; others filled from the master). */
-export function clientRow(r: SaleRow, o: ExportOpts = DEFAULT_EXPORT): (string | number)[] {
+// ── KBank-format IDs for card / ChillPay rows ─────────────────────────────────
+// KBank: SX + machine + YYYYMMDD-HHMMSS in UTC (Thai time − 7 h). The machine
+// prefix is per machine and not always 3 digits (SX47 but SX041), so copy it
+// from that machine's KBank IDs; known 2-digit ones are listed as a fallback.
+const KNOWN_PREFIX: Record<number, string> = { 40: 'SX40', 44: 'SX44', 45: 'SX45', 46: 'SX46', 47: 'SX47', 50: 'SX50' }
+export function machinePrefixes(rows: SaleRow[]): Map<number, string> {
+  const m = new Map<number, string>(Object.entries(KNOWN_PREFIX).map(([k, v]) => [Number(k), v]))
+  for (const r of rows) {
+    if (r.gateway !== 'kbank' || r.machine == null) continue
+    const pre = /^(SX\d+?)\d{8}-\d{6}$/i.exec(r.txn_id)?.[1]
+    if (pre) m.set(r.machine, pre.toUpperCase())
+  }
+  return m
+}
+const prefixFor = (m: Map<number, string>, n: number) => m.get(n) ?? `SX${String(n).padStart(3, '0')}`
+/** Thai date + time → KBank's UTC stamp, plus `addSec` seconds. */
+export function utcStamp(date: string, time: string | null, addSec = 0): string {
+  const [y, mo, d] = date.split('-').map(Number)
+  const [h, mi, se] = (time ?? '00:00:00').split(':').map(Number)
+  const t = new Date(Date.UTC(y, mo - 1, d, h - 7, mi, (se || 0) + addSec))
+  const p2 = (n: number) => String(n).padStart(2, '0')
+  return `${t.getUTCFullYear()}${p2(t.getUTCMonth() + 1)}${p2(t.getUTCDate())}-${p2(t.getUTCHours())}${p2(t.getUTCMinutes())}${p2(t.getUTCSeconds())}`
+}
+/** PartnerTransactionUniqueID + ref for every row. KBank rows unchanged (ref empty); others built, unique. */
+export function clientIds(rows: SaleRow[], all: SaleRow[], o: ExportOpts = DEFAULT_EXPORT): Map<string, { id: string; ref: string }> {
+  const pre = machinePrefixes(all)
+  const used = new Set(all.filter((r) => r.gateway === 'kbank').map((r) => r.txn_id))
+  const out = new Map<string, { id: string; ref: string }>()
+  for (const r of rows) {
+    if (r.gateway === 'kbank') { out.set(r.key, { id: r.txn_id, ref: '' }); continue }
+    let k = 0, id = ''
+    do { id = `${prefixFor(pre, r.machine ?? 0)}${utcStamp(r.biz_date, r.biz_time, k++)}` } while (used.has(id))
+    used.add(id)
+    out.set(r.key, { id, ref: clientId(r, o) })
+  }
+  return out
+}
+
+/** The 13 client columns for one payment (KBank values kept; others filled from the master). */
+export function clientRow(r: SaleRow, ids: { id: string; ref: string }): (string | number)[] {
   const k = r.gateway === 'kbank'
   const pick = (own: string | null, master: string) => (k && own ? own : master)
   return [
     r.biz_date, String(r.machine), groupOf(r.machine),
     pick(r.partner_id, KBANK_MASTER.partner_id), pick(r.partner_name, KBANK_MASTER.partner_name), pick(r.partner_shop_id, KBANK_MASTER.partner_shop_id),
-    pick(r.merchant_id, KBANK_MASTER.merchant_id), clientId(r, o), thb(r.amount_satang), r.channel,
-    r.status === 'success' ? KBANK_MASTER.txn_status : (r.txn_status ?? ''), pick(r.settle_status, KBANK_MASTER.settle_status),
+    pick(r.merchant_id, KBANK_MASTER.merchant_id), ids.id, thb(r.amount_satang), r.channel,
+    r.status === 'success' ? KBANK_MASTER.txn_status : (r.txn_status ?? ''), pick(r.settle_status, KBANK_MASTER.settle_status), ids.ref,
   ]
 }
 
@@ -90,15 +129,16 @@ export function buildWorkbook(all: SaleRow[], p: Period, machines: number[], o: 
   const total = rows.reduce((s, r) => s + r.amount_satang, 0)
   const wsT: XLSX.WorkSheet = {}
   DETAIL_HEADERS.forEach((h, c) => put(wsT, 0, c, { v: h, s: c === 8 ? right(S.head) : S.head }))
+  const ids = clientIds(rows, all, o)
   rows.forEach((r, i) => {
     const st = i % 2 ? withFill(S.cell, ZEBRA) : S.cell
-    clientRow(r, o).forEach((v, c) => put(wsT, i + 1, c, c === 8 ? { v, t: 'n', z: MONEY, s: right(st, MONEY) } : { v: String(v), t: 's', z: '@', s: st }))
+    clientRow(r, ids.get(r.key)!).forEach((v, c) => put(wsT, i + 1, c, c === 8 ? { v, t: 'n', z: MONEY, s: right(st, MONEY) } : { v: String(v), t: 's', z: '@', s: st }))
   })
   const TT = rows.length + 1
-  for (let c = 0; c < 12; c++) put(wsT, TT, c, c === 0 ? { v: 'TOTAL', s: S.total } : c === 7 ? { v: `${rows.length.toLocaleString('en-US')} payments`, s: S.total } : c === 8 ? { v: thb(total), t: 'n', z: MONEY, s: right(S.total, MONEY) } : { v: '', s: S.total })
-  wsT['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: TT, c: 11 } })
-  wsT['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(1, rows.length), c: 11 } }) }
-  wsT['!cols'] = [11, 11, 13, 12, 32, 13, 16, 26, 13, 15, 16, 16].map((w) => ({ wch: w }))
+  for (let c = 0; c < 13; c++) put(wsT, TT, c, c === 0 ? { v: 'TOTAL', s: S.total } : c === 7 ? { v: `${rows.length.toLocaleString('en-US')} payments`, s: S.total } : c === 8 ? { v: thb(total), t: 'n', z: MONEY, s: right(S.total, MONEY) } : { v: '', s: S.total })
+  wsT['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: TT, c: 12 } })
+  wsT['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(1, rows.length), c: 12 } }) }
+  wsT['!cols'] = [11, 11, 13, 12, 32, 13, 16, 24, 13, 15, 16, 16, 22].map((w) => ({ wch: w }))
   ;(wsT as Record<string, unknown>)['!views'] = [{ state: 'frozen', ySplit: 1, topLeftCell: 'A2' }]
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, wsT, 'Transactions')

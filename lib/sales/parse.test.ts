@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
 import { detect, kbankDate, parseSheet, paySolutionMachine, type SaleRow } from './parse'
-import { buildWorkbook, byMachine, selectRows } from './report'
+import { buildWorkbook, byMachine, selectRows, utcStamp } from './report'
 import { machinesOf, SALES_GROUPS } from './groups'
 
 // ── small sanitized fixtures (always run) ─────────────────────────────────────
@@ -22,6 +22,11 @@ describe('sales parsers · fixtures', () => {
     const r = parseSheet(rows)
     expect(r.format).toBe('kbank'); expect(r.excluded).toHaveLength(1)
     expect(r.rows[0]).toMatchObject({ machine: 44, biz_date: '2026-11-03', amount_satang: 18000, channel: 'PromptPay', review: null })
+  })
+  it('KBank-format stamp is UTC (Thai − 7 h), previous day after midnight', () => {
+    expect(utcStamp('2026-11-01', '10:18:04')).toBe('20261101-031804')
+    expect(utcStamp('2026-11-02', '00:30:00')).toBe('20261101-173000')
+    expect(utcStamp('2026-11-15', '22:02:48', 1)).toBe('20261115-150249')
   })
   it('Pay Solution: machine from ReferenceNo prefix, leading zeros kept', () => {
     expect(paySolutionMachine('044179473823')).toBe(44)
@@ -97,14 +102,21 @@ describe.skipIf(!has)('sales · acceptance on supplied samples', () => {
     const t = XLSX.utils.sheet_to_json<unknown[]>(back.Sheets.Transactions, { header: 1, raw: true, defval: null })
     const data = t.slice(1, 1 + rs.length)
     expect(Math.round(data.reduce((s, r) => s + Number(r[8]), 0) * 100)).toBe(7036000)
-    expect(data.every((r) => typeof r[7] === 'string' && r[7] !== '')).toBe(true)
+    expect(data.every((r) => typeof r[7] === 'string' && /^SX\d+\d{8}-\d{6}$/.test(String(r[7])))).toBe(true)
+    expect(new Set(data.map((r) => r[7])).size).toBe(data.length)   // every ID unique
     expect(back.Sheets.Transactions[XLSX.utils.encode_cell({ r: 1, c: 7 })].t).toBe('s')
     expect(back.SheetNames).toEqual(['Transactions'])
     // KBank master format: every row fully filled, status PAID / SETTLED
-    expect(data.every((r) => r.every((c) => c !== null && c !== ''))).toBe(true)
+    expect(data.every((r) => r.slice(0, 12).every((c) => c !== null && c !== ''))).toBe(true)
+    expect(t[0][12]).toBe('ref')
     const card = data.find((r) => r[9] === 'Credit Card')!
     expect(card.slice(3, 7)).toEqual(['PTR0000034', 'บริษัท ซิกชีท กรุ๊ป จำกัด (SIXSHEET)', 'SIXSIT001', 'KB000001662967'])
     expect([card[10], card[11]]).toEqual(['PAID', 'SETTLED'])
+    // card: KBank-format ID (machine prefix + UTC), original ReferenceNo in ref; KBank rows: ref empty
+    const src = rs.find((r) => r.gateway === 'paysolution' && r.txn_id === card[12])!
+    expect(src).toBeTruthy()
+    expect(card[7]).toBe(`${src.machine === 44 || src.machine === 47 || src.machine === 46 || src.machine === 45 ? 'SX' + src.machine : 'SX0' + src.machine}${utcStamp(src.biz_date, src.biz_time)}`)
+    expect(data.filter((r) => r[9] !== 'Credit Card').every((r) => (r[12] ?? '') === '')).toBe(true)
   })
   it('ChillPay alone · 1–15 Nov', () => {
     const rs = all.filter((r) => r.gateway === 'chillpay' && r.biz_date >= '2026-11-01' && r.biz_date <= '2026-11-15')

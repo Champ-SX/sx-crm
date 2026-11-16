@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Client Excel v3 IDs</title>
+<style>
+body{margin:0;background:#E9E7E2;font:13px/1.4 -apple-system,Inter,sans-serif;padding:24px;color:#1C1A17}
+.xl{max-width:1280px;margin:0 auto 16px;background:#fff;border-radius:10px;box-shadow:0 8px 30px #0002;overflow:hidden}
+.bar{background:#1F6E43;color:#fff;font-size:12px;padding:6px 12px}
+.grid{overflow-x:auto;font-family:Calibri,Arial,sans-serif;font-size:11.5px}
+table{border-collapse:collapse;width:100%}
+td,th{border:1px solid #E3E1DC;padding:3px 6px;white-space:nowrap}
+.rn,.col{background:#F4F3F0;color:#999;text-align:center;font-size:10px;font-weight:400}
+.hd th{background:#1C1A17;color:#fff;font-weight:600;text-align:left}
+.hd th.new{background:#C8643B}
+.r{text-align:right}
+.z td{background:#FAF9F7}
+.gen{background:#FFF4E5!important;font-weight:700}
+.ref{background:#FBEDE6!important;color:#9A3E17;font-weight:600}
+.tot td{background:#FBEDE6;font-weight:700;border-top:2px solid #C8643B}
+.tabs{display:flex;background:#F4F3F0;border-top:1px solid #ddd;font-size:12px}.tabs span{padding:6px 14px;background:#fff;font-weight:700;color:#1F6E43;border-bottom:2px solid #1F6E43}
+.note{max-width:1280px;margin:auto;background:#fff;border-radius:12px;padding:14px 18px;color:#4A463F}
+.note b{color:#1C1A17}.note code{background:#F4F3F0;padding:1px 5px;border-radius:4px}
+.ex{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.ex div{background:#F7F6F3;border-radius:8px;padding:9px 11px;font-size:12.5px}
+</style></head><body>
+<div class="xl"><div class="bar">SX_2026-11_Custom_3machines.xlsx — Transactions (only sheet)</div>
+<div class="grid"><table>
+<tr><th class="col"></th><th class="col">A</th><th class="col">B</th><th class="col">C</th><th class="col">D</th><th class="col">E</th><th class="col">F</th><th class="col">G</th><th class="col">H</th><th class="col">I</th><th class="col">J</th><th class="col">K</th><th class="col">L</th><th class="col">M</th></tr>
+<tr class="hd"><td class="rn">1</td><th>Date</th><th>Machine No.</th><th>Product Group</th><th>PartnerID</th><th>PartnerName</th><th>PartnerShopID</th><th>MerchantID</th><th>PartnerTransactionUniqueID</th><th class="r">Amount (THB)</th><th>Payment Channel</th><th>TransactionStatus</th><th>SettlementStatus</th><th class="new">ref</th></tr>
+<tr><td class="rn">2</td><td>2026-11-01</td><td>33</td><td>Captures</td><td>PTR0000034</td><td>บริษัท ซิกชีท กรุ๊ป จำกัด (SIXSHEET)</td><td>SIXSIT001</td><td>KB000001662967</td><td>SX03320261101-031246</td><td class="r">250.00</td><td>PromptPay</td><td>PAID</td><td>SETTLED</td><td></td></tr>
+<tr class="z"><td class="rn">3</td><td>2026-11-01</td><td>9</td><td>Captures</td><td>PTR0000034</td><td>บริษัท ซิกชีท กรุ๊ป จำกัด (SIXSHEET)</td><td>SIXSIT001</td><td>KB000001662967</td><td class="gen">SX00920261101-031804</td><td class="r">250.00</td><td>Credit Card</td><td>PAID</td><td>SETTLED</td><td class="ref">009179350288</td></tr>
+<tr><td class="rn">4</td><td>2026-11-01</td><td>47</td><td>True</td><td>PTR0000034</td><td>บริษัท ซิกชีท กรุ๊ป จำกัด (SIXSHEET)</td><td>SIXSIT001</td><td>KB000001662967</td><td>SX4720261101-031549</td><td class="r">160.00</td><td>KPlus</td><td>PAID</td><td>SETTLED</td><td></td></tr>
+<tr class="z"><td class="rn">5</td><td>2026-11-01</td><td>47</td><td>True</td><td>PTR0000034</td><td>บริษัท ซิกชีท กรุ๊ป จำกัด (SIXSHEET)</td><td>SIXSIT001</td><td>KB000001662967</td><td class="gen">SX4720261101-042210</td><td class="r">160.00</td><td>Credit Card</td><td>PAID</td><td>SETTLED</td><td class="ref">047179351812</td></tr>
+<tr><td class="rn">6</td><td>2026-11-15</td><td>73</td><td>C11</td><td>PTR0000034</td><td>บริษัท ซิกชีท กรุ๊ป จำกัด (SIXSHEET)</td><td>SIXSIT001</td><td>KB000001662967</td><td class="gen">SX07320261115-150248</td><td class="r">195.00</td><td>QRCode</td><td>PAID</td><td>SETTLED</td><td class="ref">SXC07326111568836236</td></tr>
+<tr><td class="rn">7</td><td colspan="13" style="color:#999">…</td></tr>
+<tr class="tot"><td class="rn">8</td><td>TOTAL</td><td></td><td></td><td></td><td></td><td></td><td></td><td>5 payments</td><td class="r">1,015.00</td><td></td><td></td><td></td><td></td></tr>
+</table></div>
+<div class="tabs"><span>Transactions</span></div></div>
+
+<div class="note">
+<b>Changes</b> — white = KBank (unchanged) · <span style="background:#FFF4E5;padding:0 4px;font-weight:700">yellow</span> = ID built in KBank format · <span style="background:#FBEDE6;color:#9A3E17;padding:0 4px;font-weight:600">orange</span> = new <b>ref</b> column with the gateway's own number.
+<br>• <b>KBank rows</b>: exactly as KBank sends them — PartnerTransactionUniqueID untouched, <b>ref</b> empty.
+<br>• <b>Card (Pay Solution) &amp; ChillPay rows</b>: PartnerTransactionUniqueID built the KBank way = machine prefix + date-time in <b>UTC (Thai time − 7 h)</b>, same as KBank. Their original number moves to <b>ref</b>.
+<br>• <b>Machine prefix</b> copied from that machine's KBank IDs (SX009, SX033, SX47 …); machines with no KBank sales get SX + 3 digits (SX073).
+<br>• Date column stays the Thai payment date. No time column.
+<div class="ex">
+<div><b>Card · machine 9</b><br>Paid 1 Nov <b>10:18:04</b> (Thai)<br>→ <code>SX00920261101-031804</code><br>ref <code>009179350288</code></div>
+<div><b>ChillPay · machine 73</b><br>Paid 15 Nov <b>22:02:48</b> (Thai)<br>→ <code>SX07320261115-150248</code><br>ref <code>SXC07326111568836236</code></div>
+<div><b>After midnight</b><br>Paid 2 Nov <b>00:30:00</b> (Thai)<br>→ <code>SX…20261101-173000</code> (UTC = previous day, like KBank)<br>Date column still 2026-11-02</div>
+</div>
+</div>
+</body></html>
