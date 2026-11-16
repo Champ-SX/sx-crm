@@ -19,7 +19,7 @@ import { useAuth } from '@/components/auth-provider'
  * - Middleware handles route protection, so we only check session status
  */
 export function DataInitializer() {
-  const { session } = useAuth()
+  const { session, loading: authLoading } = useAuth()
   const { isInitialized, isLoading, error, initializeData } = useCRMStore()
   const refreshTeamMembers = useCRMStore((s) => s.refreshTeamMembers)
   const [loadingTimeout, setLoadingTimeout] = useState(false)
@@ -67,9 +67,16 @@ export function DataInitializer() {
   }, [isLoading, isInitialized])
 
   // Show loading overlay during initialization
-  if (isLoading && !isInitialized && !loadingTimeout) {
-    return <LoadingOverlay />
-  }
+  // One continuous loader from first paint until data is in (auth check → data load),
+  // instead of page → loader → page jumps. Fades out when done.
+  const busy = !loadingTimeout && !isInitialized && !error && (authLoading || !!session)
+  const [gone, setGone] = useState(false)
+  useEffect(() => {
+    if (busy) return
+    const t = setTimeout(() => setGone(true), 260)
+    return () => clearTimeout(t)
+  }, [busy])
+  if (!gone) return <LoadingOverlay leaving={!busy} />
 
   // If we timed out, show a warning and let app continue with mock data
   if (loadingTimeout && !isInitialized) {
@@ -117,12 +124,17 @@ export function DataInitializer() {
  * LoadingOverlay Component
  * Shows a skeleton loading screen while data is being fetched from Supabase.
  */
-function LoadingOverlay() {
+function LoadingOverlay({ leaving }: { leaving: boolean }) {
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-background" role="status" aria-busy="true">
-      <div className="rounded-2xl border border-border bg-card px-10 py-7 text-center shadow-lg">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="" width={56} height={56} className="mx-auto h-14 w-14 animate-pulse object-contain dark:invert" />
+    <div role="status" aria-busy={!leaving}
+      className={`fixed inset-0 z-50 grid place-items-center bg-background transition-opacity duration-250 ease-out ${leaving ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
+      <div className="sx-loader-card rounded-2xl border border-border bg-card px-10 py-7 text-center shadow-lg">
+        <div className="relative mx-auto h-[72px] w-[72px]">
+          {/* GPU-only spin (transform) — stays smooth while the app is busy loading data */}
+          <span className="absolute inset-0 rounded-full border-[3px] border-muted border-t-[#FF5B3F] will-change-transform animate-[spin_0.9s_linear_infinite]" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="" width={40} height={40} decoding="sync" className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 object-contain dark:invert" />
+        </div>
         <h2 className="mt-4 text-[17px] font-semibold text-foreground">Loading CRM Data</h2>
         <p className="mt-0.5 text-[12.5px] text-muted-foreground">Connecting to database…</p>
       </div>

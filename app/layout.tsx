@@ -50,6 +50,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* Start-up loader logo: fetch early so it doesn't pop in mid-animation */}
+        <link rel="preload" href="/logo.png" as="image" />
       </head>
       <body className="min-h-full flex font-sans">
         <ThemeProvider>
