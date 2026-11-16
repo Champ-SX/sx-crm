@@ -10,7 +10,7 @@ import { toast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
 import { parseSheet, type SaleRow } from '@/lib/sales/parse'
 import { SALES_GROUPS, ALL_ASSIGNED, groupOf, machinesOf, UNASSIGNED } from '@/lib/sales/groups'
-import { buildWorkbook, byMachine, fmtTHB, isAccepted, reportFileName, selectRows, DEFAULT_EXPORT, type ExportOpts } from '@/lib/sales/report'
+import { buildWorkbook, downloadWorkbook, byMachine, fmtTHB, isAccepted, reportFileName, selectRows, DEFAULT_EXPORT, type ExportOpts } from '@/lib/sales/report'
 import {
   classify, commitImport, fetchDateRange, fetchImports, fetchReviewQueue, fetchSales, patchSale, useSalesAccess,
   type Classified, type ImportFileSummary, type SalesImport, type StoredSale,
@@ -291,7 +291,7 @@ function ReportBuilder() {
   function download() {
     if (!rows || !list.length) return
     const { wb } = buildWorkbook(rows, { from, to }, list, opts)
-    XLSX.writeFile(wb, fileName)
+    downloadWorkbook(wb, fileName)
   }
   const box = 'rounded-[10px] border border-border bg-card'
   const cb = (on: boolean) => cn('inline-grid h-[15px] w-[15px] place-items-center rounded-[4px] border-[1.5px] text-[10px] font-bold leading-none text-white', on ? 'border-transparent' : 'border-muted-foreground/40 bg-background')
