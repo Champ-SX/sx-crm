@@ -246,7 +246,10 @@ export function TaskDrawer({ task, types, places, assets, onSaveAsset, onClose, 
                   <div className="grid grid-cols-[18px_1fr_auto_auto] sm:grid-cols-[18px_1fr_30px_92px_104px_64px] items-center gap-2 py-1.5 text-[13px]">
                     <input type="checkbox" checked={st === 'done'} onChange={() => setStatus(cl.id, it, st === 'done' ? 'todo' : 'done')} className="w-4 h-4 accent-emerald-600" aria-label="Done" />
                     <div className="min-w-0">
-                      <span className={cn('block truncate', st === 'done' && 'line-through text-muted-foreground')}>{it.text}</span>
+                      <input key={it.text} defaultValue={it.text} aria-label="Sub-task name" title="Click to rename"
+                        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') { (e.target as HTMLInputElement).value = it.text; (e.target as HTMLInputElement).blur() } }}
+                        onBlur={(e) => { const v = e.target.value.trim(); if (!v) { e.target.value = it.text; return } if (v !== it.text) { setItem(cl.id, it.id, { text: v }); log(`✎ Sub-task renamed “${it.text}” → “${v}”`) } }}
+                        className={cn('block w-full truncate rounded bg-transparent px-1 -mx-1 outline-none hover:bg-muted focus:bg-muted', st === 'done' && 'line-through text-muted-foreground')} />
                       {reportsOf(it).length > 0 && !isOpen && <span className="block truncate text-[11.5px] text-muted-foreground">{reportsOf(it)[0].by}: {reportsOf(it)[0].text || '📷 photo'}</span>}
                     </div>
                     {(() => { const rs = reportsOf(it); const n = rs.length; return (
