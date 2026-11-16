@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SX Sales Reports</title>
+<style>
+:root{--bg:#F6F5F2;--card:#fff;--line:#E6E3DC;--mut:#77736B;--fg:#1D1B18;--acc:#1D1B18;--pp:#2F6FDB;--kp:#1E9E62;--cc:#7A5AA5;--cp:#D9822B;--red:#C9423B;--amb:#B7791F}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 -apple-system,Inter,"Noto Sans Thai",sans-serif}
+.app{display:grid;grid-template-columns:210px 1fr;min-height:100vh}
+nav{background:#fff;border-right:1px solid var(--line);padding:16px 10px}
+nav .b{font-weight:700;padding:4px 10px 14px}nav .b small{display:block;color:var(--mut);font-weight:400;font-size:11px}
+nav a{display:block;padding:7px 10px;border-radius:8px;color:var(--mut);text-decoration:none;font-size:13px;cursor:pointer}
+nav a.on{background:var(--fg);color:#fff}nav .sec{font:11px ui-monospace;color:var(--mut);padding:14px 10px 4px}
+main{padding:22px 28px;max-width:1180px}
+h1{font-size:20px;margin:0}.sub{color:var(--mut);font-size:12.5px;margin-top:2px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.ctl{display:flex;gap:8px;flex-wrap:wrap}.sel{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;font-size:13px}
+.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer}.btn.pr{background:var(--fg);color:#fff;border-color:var(--fg)}
+.grid{display:grid;gap:12px}.g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:1.4fr 1fr}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.lbl{font:600 10.5px ui-monospace;letter-spacing:.06em;color:var(--mut)}
+.big{font-size:24px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}.small{font-size:12px;color:var(--mut)}
+h2{font:600 11px ui-monospace;letter-spacing:.08em;color:var(--mut);margin:22px 0 8px}
+table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}th{text-align:left;font-weight:600;color:var(--mut);font-size:11.5px;border-bottom:1px solid var(--line);padding:6px}td{padding:6px;border-bottom:1px solid #F0EEE9}
+.r{text-align:right}.pill{display:inline-block;border-radius:99px;padding:1px 8px;font-size:11px;font-weight:600}
+.ok{background:#E3F4EA;color:#1E7A4B}.warn{background:#FBF0DC;color:var(--amb)}.bad{background:#FBE5E3;color:var(--red)}.mute{background:#EFEDE8;color:var(--mut)}
+.bars{display:flex;align-items:flex-end;gap:3px;height:120px;padding-top:8px}.bars div{flex:1;display:flex;flex-direction:column-reverse;border-radius:3px 3px 0 0;overflow:hidden}
+.stack{height:10px;border-radius:99px;overflow:hidden;display:flex}.dot{display:inline-block;width:8px;height:8px;border-radius:99px;margin-right:5px}
+.drop{border:2px dashed #CFCBC2;border-radius:12px;padding:22px;text-align:center;color:var(--mut);background:#FBFAF8}
+.file{display:grid;grid-template-columns:1.5fr 1fr .8fr .7fr .7fr .7fr .9fr;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid #F0EEE9;font-size:12.5px}
+.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:#fff;border-radius:99px;padding:3px 10px;font-size:12.5px;cursor:pointer;user-select:none}
+.chip.on{background:var(--fg);color:#fff;border-color:var(--fg)}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px}
+.m{border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff;cursor:pointer;font-size:12px}
+.m b{font-size:13px}.m .v{color:var(--mut);font-size:11px}.m.on{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg);background:#FAFAF7}
+.m.zero .v{color:#B9B4AA}
+.sum{position:sticky;top:12px}
+.tabs{display:flex;gap:6px;margin-bottom:18px}.tabs a{padding:6px 12px;border-radius:99px;background:#fff;border:1px solid var(--line);font-size:12.5px;cursor:pointer;text-decoration:none;color:var(--fg)}.tabs a.on{background:var(--fg);color:#fff}
+section{display:none}section.on{display:block}
+.note{background:#FFF8E8;border:1px solid #F2DDB0;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#7A5410}
+.xl{font:11.5px ui-monospace;border:1px solid #CFE3D6;border-radius:8px;overflow:hidden}
+.xl .h{background:#E3F1E7;padding:5px 8px;font-weight:700;color:#1E6B3F}.xl table td,.xl table th{font-family:ui-monospace;font-size:11px;padding:3px 6px}
+@media(max-width:900px){.app{grid-template-columns:1fr}nav{display:none}.g4,.g3,.g2{grid-template-columns:1fr 1fr}main{padding:16px}}
+</style></head><body>
+<div class="app">
+<nav>
+  <div class="b">SX CRM<small>by SIXSHEET</small></div>
+  <a>Dashboard</a><a>Leads</a><a>Won &amp; Ready</a><a>Inventory</a>
+  <div class="sec">SALES · FINANCE</div>
+  <a class="on" data-go="dash">Sales dashboard</a><a data-go="report">Client reports</a><a data-go="upload">Upload</a><a data-go="review">Review · 9</a>
+</nav>
+<main>
+<div class="tabs"><a class="on" data-go="dash">① Dashboard</a><a data-go="upload">② Upload</a><a data-go="report">③ Client report (combined)</a><a data-go="review">④ Review queue</a><a data-go="excel">⑤ Excel output</a></div>
+
+<!-- ① DASHBOARD -->
+<section id="dash" class="on">
+  <div class="top"><div><h1>Sales dashboard</h1><div class="sub">Data covers <b>1 – 15 Nov 2026</b> (partial month) · last upload 16 Nov 10:51</div></div>
+  <div class="ctl"><select class="sel"><option>November 2026</option></select><select class="sel"><option>All groups</option><option>Captures 1–35</option><option>True 40–50</option><option>BACC 60–66</option><option>C11 71–74</option><option>BTT 80–86</option></select><select class="sel"><option>All machines</option></select></div></div>
+  <div class="grid g4">
+    <div class="card"><div class="lbl">GROSS SALES</div><div class="big">฿975,410</div><div class="small">successful payments only</div></div>
+    <div class="card"><div class="lbl">TRANSACTIONS</div><div class="big">4,578</div><div class="small">+ 9 in review · 3 refunds excluded</div></div>
+    <div class="card"><div class="lbl">ACTIVE MACHINES</div><div class="big">39</div><div class="small">of 49 assigned · 1 unassigned</div></div>
+    <div class="card"><div class="lbl">AVG / DAY WITH SALES</div><div class="big">฿65,027</div><div class="small">÷ 15 days with sales</div></div>
+  </div>
+  <h2>BY GATEWAY · PAYMENT METHOD</h2>
+  <div class="grid g3">
+    <div class="card"><div class="lbl">KBANK</div><div class="big" style="font-size:19px">฿791,250</div><div class="stack" style="margin:8px 0"><span style="width:57%;background:var(--pp)"></span><span style="width:43%;background:var(--kp)"></span></div><div class="small"><span class="dot" style="background:var(--pp)"></span>PromptPay ฿451,1k · <span class="dot" style="background:var(--kp)"></span>KPlus ฿340,1k</div></div>
+    <div class="card"><div class="lbl">PAY SOLUTION</div><div class="big" style="font-size:19px">฿50,245</div><div class="stack" style="margin:8px 0"><span style="width:80%;background:var(--cc)"></span><span style="width:20%;background:#B7A6D3"></span></div><div class="small"><span class="dot" style="background:var(--cc)"></span>Card (V/M) · <span class="dot" style="background:#B7A6D3"></span>AL / TM — shown as “Credit Card” in client files</div></div>
+    <div class="card"><div class="lbl">CHILLPAY · SETTLEMENT</div><div class="big" style="font-size:19px">฿133,915</div><div class="stack" style="margin:8px 0"><span style="width:96%;background:var(--cp)"></span><span style="width:4%;background:#F1C48F"></span></div><div class="small">QRCode 656 · TrueMoney 5 · net transfer ฿131,2k</div></div>
+  </div>
+  <h2>BY CLIENT GROUP</h2>
+  <div class="grid" style="grid-template-columns:repeat(6,1fr)">
+    <div class="card"><div class="lbl">CAPTURES 1–35</div><div class="big" style="font-size:17px">฿718,470</div><div class="small">incl. #32, #33</div></div>
+    <div class="card"><div class="lbl">TRUE 40–50</div><div class="big" style="font-size:17px">฿70,360</div><div class="small">423 sales</div></div>
+    <div class="card"><div class="lbl">BACC 60–66</div><div class="big" style="font-size:17px">฿177,980</div></div>
+    <div class="card"><div class="lbl">C11 71–74</div><div class="big" style="font-size:17px">฿133,4k</div></div>
+    <div class="card"><div class="lbl">BTT 80–86</div><div class="big" style="font-size:17px">฿15,640</div></div>
+    <div class="card" style="background:#FBF0DC"><div class="lbl">UNASSIGNED</div><div class="big" style="font-size:17px">฿7,180</div><div class="small">#0 ×3 · #72? → review</div></div>
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><div class="lbl">DAILY SALES · stacked by group</div>
+      <div class="bars" id="bars"></div><div class="small" style="display:flex;justify-content:space-between"><span>1 Nov</span><span>15 Nov</span><span style="color:#B9B4AA">16–30 no data yet</span></div></div>
+    <div class="card"><div class="lbl">TOP MACHINES</div>
+      <table><tr><th>#</th><th>Group</th><th class="r">Sales</th><th class="r">฿</th></tr>
+      <tr><td>32</td><td>Captures</td><td class="r">1,219</td><td class="r">304,750</td></tr>
+      <tr><td>33</td><td>Captures</td><td class="r">616</td><td class="r">154,000</td></tr>
+      <tr><td>9</td><td>Captures</td><td class="r">367</td><td class="r">91,750</td></tr>
+      <tr><td>63</td><td>BACC</td><td class="r">276</td><td class="r">49,760</td></tr>
+      <tr><td>66</td><td>BACC</td><td class="r">174</td><td class="r">31,440</td></tr>
+      <tr><td colspan="4" class="small">… full machine table below (all 49, zero-sale included)</td></tr></table></div>
+  </div>
+</section>
+
+<!-- ② UPLOAD -->
+<section id="upload">
+  <div class="top"><div><h1>Upload payment exports</h1><div class="sub">Drop any mix of KBank, Pay Solution and ChillPay files (.xlsx or .csv). File names don't matter — the format is detected from the columns.</div></div></div>
+  <div class="drop">⬆ Drop files here or <b style="color:var(--fg)">choose files</b> · several at once</div>
+  <h2>PREVIEW · NOTHING SAVED YET</h2>
+  <div class="card">
+    <div class="file" style="color:var(--mut);font-size:11.5px"><span>FILE</span><span>DETECTED</span><span>DATES</span><span class="r">NEW</span><span class="r">DUPLICATE</span><span class="r">REVIEW</span><span class="r">GROSS NEW</span></div>
+    <div class="file"><span>SX_AUTOMAT_NOV_2026y (1).xlsx</span><span><span class="pill ok">KBank</span></span><span>31 Oct – 15 Nov</span><span class="r">12,489</span><span class="r">150</span><span class="r"><span class="pill warn">6</span></span><span class="r">฿2,071,860</span></div>
+    <div class="file"><span>orderlist (10).xlsx</span><span><span class="pill ok">Pay Solution</span></span><span>1 – 15 Nov</span><span class="r">302</span><span class="r">0</span><span class="r">0</span><span class="r">฿50,245</span></div>
+    <div class="file"><span>M038447-settlement-…110.xlsx</span><span><span class="pill ok">ChillPay</span></span><span>1 – 15 Nov</span><span class="r">661</span><span class="r">0</span><span class="r"><span class="pill warn">2</span></span><span class="r">฿133,915.23</span></div>
+    <div class="file"><span>SX_November_2026_Machine12_withCC (1).xlsx</span><span><span class="pill mute">Combined report</span></span><span colspan="5" style="grid-column:span 5;color:var(--mut)">This is already an SX client report (output), not a gateway export — skipped. Use it to compare against “Client reports”.</span></div>
+    <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span class="small">Excluded: 1 KBank example row (ตัวอย่าง!!!) · ChillPay header + Total footer · 3 refunds/failed kept aside</span>
+      <span style="margin-left:auto"></span><button class="btn">Cancel</button><button class="btn pr">Import 13,452 rows</button>
+    </div>
+  </div>
+  <div class="note" style="margin-top:12px">Re-uploading the same file (any name, xlsx or csv) adds nothing — rows are matched by gateway + merchant + transaction ID. Same ID with a different amount/date/machine goes to <b>Review</b>, never overwritten silently.</div>
+  <h2>UPLOAD HISTORY</h2>
+  <div class="card"><table><tr><th>When</th><th>By</th><th>Files</th><th class="r">New</th><th class="r">Dup</th><th class="r">Review</th></tr>
+  <tr><td>16 Nov 10:58</td><td>Finance</td><td>3 files</td><td class="r">13,452</td><td class="r">150</td><td class="r">8</td></tr>
+  <tr><td>12 Nov 09:12</td><td>Finance</td><td>2 files</td><td class="r">8,904</td><td class="r">0</td><td class="r">1</td></tr></table></div>
+</section>
+
+<!-- ③ REPORT BUILDER -->
+<section id="report">
+  <div class="top"><div><h1>Client report</h1><div class="sub">Tick machines or pick a group → one Excel file with every selected machine.</div></div>
+  <div class="ctl"><span class="sel">📅 1 Nov 2026 → 15 Nov 2026</span><select class="sel"><option>This month</option><option>Last month</option><option>Custom</option></select></div></div>
+  <div class="grid" style="grid-template-columns:1fr 310px;align-items:start">
+    <div>
+      <div class="card">
+        <div class="lbl" style="margin-bottom:8px">GROUP PRESETS</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap" id="presets"></div>
+        <div class="lbl" style="margin:16px 0 8px;display:flex;justify-content:space-between"><span>MACHINES · tap to tick / untick</span><span><a style="cursor:pointer" id="clr">Clear</a></span></div>
+        <div id="mgroups"></div>
+      </div>
+    </div>
+    <div class="card sum">
+      <div class="lbl">THIS REPORT</div>
+      <div class="big" id="sGross">฿70,360.00</div>
+      <div class="small" id="sMeta">423 sales · 11 machines · 1–15 Nov 2026</div>
+      <table style="margin-top:10px"><tbody id="sGw"></tbody></table>
+      <div class="small" style="margin-top:8px" id="sList"></div>
+      <div class="note" style="margin-top:10px;padding:8px 10px" id="sWarn">✓ All rows have a PartnerTransactionUniqueID</div>
+      <div style="display:grid;gap:6px;margin-top:12px">
+        <button class="btn pr" id="dl">⬇ Download SX_2026-11_True_40-50.xlsx</button>
+        <button class="btn">✉ Email to client… <span class="small">(later)</span></button>
+      </div>
+      <div class="small" style="margin-top:8px">One file · <b>Summary</b> sheet (per machine, incl. zero-sale) + <b>Transactions</b> sheet (all rows). Single machine? Tick just one.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ④ REVIEW -->
+<section id="review">
+  <div class="top"><div><h1>Review queue</h1><div class="sub">Rows that can't go into client reports until someone decides. Totals above never include them.</div></div></div>
+  <div class="card"><table>
+    <tr><th>Reason</th><th>Gateway</th><th>Source row</th><th>Detail</th><th class="r">฿</th><th></th></tr>
+    <tr><td><span class="pill warn">Date unclear</span></td><td>KBank</td><td>Data r.4182</td><td>Cell 2026-01-11 vs REF3 20261101 → <b>1 Nov</b> or 11 Jan?</td><td class="r">180</td><td><button class="btn">Use 1 Nov</button></td></tr>
+    <tr><td><span class="pill warn">Machine 0</span></td><td>ChillPay</td><td>Settlement r.211</td><td>SXC000… · ชื่อลูกค้า SXC000</td><td class="r">100</td><td><button class="btn">Assign machine…</button></td></tr>
+    <tr><td><span class="pill bad">Amount conflict</span></td><td>KBank</td><td>Data r.88</td><td>SX04220261103-101522 · was ฿180, new file says ฿160</td><td class="r">160</td><td><button class="btn">Keep ฿180</button> <button class="btn">Use ฿160</button></td></tr>
+    <tr><td><span class="pill mute">Missing ID</span></td><td>Pay Solution</td><td>Orders r.57</td><td>No ReferenceNo · OrderNo 120561002</td><td class="r">180</td><td><button class="btn">Exclude</button></td></tr>
+  </table></div>
+  <h2>SETTINGS TO CONFIRM WITH FINANCE</h2>
+  <div class="grid g3">
+    <div class="card"><div class="lbl">PAY SOLUTION · CLIENT ID</div><div style="margin-top:6px"><label><input type="radio" checked> ReferenceNo <span class="small">004179474639</span></label><br><label><input type="radio"> OrderNo <span class="small">120567130</span></label></div></div>
+    <div class="card"><div class="lbl">CHILLPAY · AMOUNT IN CLIENT FILE</div><div style="margin-top:6px"><label><input type="radio" checked> Gross (incl. fee)</label><br><label><input type="radio"> Net transfer to shop</label></div></div>
+    <div class="card"><div class="lbl">MACHINE GROUPS</div><div class="small" style="margin-top:6px">Captures 1–35 · True 40–50 · BACC 60–66 · C11 71–74 · BTT 80–86 <a>Edit</a></div></div>
+  </div>
+</section>
+
+<!-- ⑤ EXCEL -->
+<section id="excel">
+  <div class="top"><div><h1>SX_2026-11_True_40-50.xlsx</h1><div class="sub">Same detail columns as the current Machine 12 file — PartnerTransactionUniqueID now filled for every gateway.</div></div></div>
+  <div class="xl"><div class="h">Sheet “Summary”</div><table>
+    <tr><th>Machine</th><th>Group</th><th class="r">KBank PP</th><th class="r">KBank KPlus</th><th class="r">Credit Card</th><th class="r">ChillPay</th><th class="r">Sales</th><th class="r">Amount (THB)</th></tr>
+    <tr><td>40</td><td>True</td><td class="r">3</td><td class="r">2</td><td class="r">1</td><td class="r">0</td><td class="r">6</td><td class="r">1,200.00</td></tr>
+    <tr><td>41</td><td>True</td><td class="r">…</td><td class="r">…</td><td class="r">…</td><td class="r">0</td><td class="r">13</td><td class="r">2,340.00</td></tr>
+    <tr><td>43</td><td>True</td><td class="r">0</td><td class="r">0</td><td class="r">0</td><td class="r">0</td><td class="r">0</td><td class="r">0.00</td></tr>
+    <tr><td colspan="6">…</td><td></td><td></td></tr>
+    <tr style="font-weight:700"><td>TOTAL</td><td>40–50</td><td></td><td></td><td></td><td></td><td class="r">423</td><td class="r">70,360.00</td></tr>
+  </table></div>
+  <div class="xl" style="margin-top:12px"><div class="h">Sheet “Transactions”</div><table>
+    <tr><th>Date</th><th>Machine No.</th><th>Product Group</th><th>PartnerID</th><th>PartnerName</th><th>PartnerShopID</th><th>MerchantID</th><th>PartnerTransactionUniqueID</th><th class="r">Amount (THB)</th><th>Payment Channel</th><th>TransactionStatus</th><th>SettlementStatus</th></tr>
+    <tr><td>2026-11-01</td><td>40</td><td>True</td><td>PTR0000034</td><td>บริษัท ซิกชีท กรุ๊ป…</td><td>SIXSIT001</td><td>KB000001662967</td><td>SX04020261101-101233</td><td class="r">200</td><td>PromptPay</td><td>PAID</td><td>SETTLED</td></tr>
+    <tr style="background:#F4EFFB"><td>2026-11-02</td><td>44</td><td>True</td><td></td><td></td><td></td><td>40594</td><td><b>044179473823</b></td><td class="r">180</td><td>Credit Card</td><td>Completed</td><td></td></tr>
+    <tr><td>…</td><td colspan="11"></td></tr>
+  </table><div style="padding:5px 8px;font-weight:700">Total · 423 rows · ฿70,360.00 <span style="font-weight:400;color:var(--mut)">(below the data, not inside it)</span></div></div>
+  <div class="small" style="margin-top:8px">Purple row: a card payment — before, this ID cell was blank. IDs are stored as text, so leading zeros (044…) stay.</div>
+</section>
+</main></div>
+<script>
+const go=id=>{document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===id));document.querySelectorAll('[data-go]').forEach(a=>a.classList.toggle('on',a.dataset.go===id))}
+document.querySelectorAll('[data-go]').forEach(a=>a.onclick=()=>go(a.dataset.go))
+// bars
+const b=document.getElementById('bars');for(let i=0;i<30;i++){const d=document.createElement('div');if(i<15){const h=[38,6,4,7,8].map(x=>x*(0.7+Math.random()*0.6));['#2F6FDB','#1E9E62','#D9822B','#7A5AA5','#C9423B'].forEach((c,j)=>{const s=document.createElement('span');s.style.cssText=`height:${h[j]}px;background:${c}`;d.appendChild(s)})}else{d.style.background='#EFEDE8';d.style.height='4px'}b.appendChild(d)}
+// report builder
+const G=[['Captures',1,35],['True',40,50],['BACC',60,66],['C11',71,74],['BTT',80,86]]
+const sales={};const rnd=s=>{let x=Math.sin(s)*1e4;return x-Math.floor(x)}
+G.forEach(([g,a,z])=>{for(let m=a;m<=z;m++){const n=rnd(m)<.15?0:Math.round(rnd(m*3)*60+5);sales[m]={g,n,amt:n*Math.round(150+rnd(m*7)*40)}}})
+// make True match the brief: 423 / 70,360
+const T=[];for(let m=40;m<=50;m++)T.push(m);const base=[[6,1200],[13,2340],[0,0],[0,0],[56,10080],[22,3960],[52,9360],[88,16000],[0,0],[0,0],[1,200]];
+let rest=[423-238,70360-43140];T.forEach((m,i)=>{sales[m].n=base[i][0];sales[m].amt=base[i][1]});sales[43]={g:'True',n:77,amt:13920};sales[48]={g:'True',n:108,amt:13300}
+const on=new Set(T)
+const fmt=n=>'฿'+n.toLocaleString('en-US',{minimumFractionDigits:2})
+function render(){
+  const P=document.getElementById('presets');P.innerHTML=''
+  G.forEach(([g,a,z])=>{const all=[];for(let m=a;m<=z;m++)all.push(m);const full=all.every(m=>on.has(m));const c=document.createElement('span');c.className='chip'+(full?' on':'');c.textContent=`${full?'✓ ':''}${g} · ${a}–${z}`;c.onclick=()=>{all.forEach(m=>full?on.delete(m):on.add(m));render()};P.appendChild(c)})
+  const W=document.getElementById('mgroups');W.innerHTML=''
+  G.forEach(([g,a,z])=>{const h=document.createElement('div');h.className='small';h.style.margin='10px 0 4px';h.innerHTML=`<b style="color:var(--fg)">${g}</b> ${a}–${z}`;W.appendChild(h);const grid=document.createElement('div');grid.className='mgrid'
+    for(let m=a;m<=z;m++){const s=sales[m];const d=document.createElement('div');d.className='m'+(on.has(m)?' on':'')+(s.n?'':' zero');d.innerHTML=`<b>${on.has(m)?'☑':'☐'} #${m}</b><div class="v">${s.n?s.n+' · ฿'+s.amt.toLocaleString():'no sales'}</div>`;d.onclick=()=>{on.has(m)?on.delete(m):on.add(m);render()};grid.appendChild(d)}W.appendChild(grid)})
+  const ms=[...on].sort((a,b)=>a-b);let n=0,amt=0;ms.forEach(m=>{n+=sales[m].n;amt+=sales[m].amt})
+  document.getElementById('sGross').textContent=fmt(amt)
+  document.getElementById('sMeta').textContent=`${n.toLocaleString()} sales · ${ms.length} machine${ms.length==1?'':'s'} · 1–15 Nov 2026`
+  const k=Math.round(amt*.861),p=amt-k
+  document.getElementById('sGw').innerHTML=`<tr><td>KBank PromptPay + KPlus</td><td class="r">${fmt(k)}</td></tr><tr><td>Pay Solution · Credit Card</td><td class="r">${fmt(p)}</td></tr><tr><td>ChillPay</td><td class="r">${fmt(0)}</td></tr>`
+  document.getElementById('sList').textContent='Machines: '+(ms.join(', ')||'—')
+  const grp=G.find(([g,a,z])=>ms.length===z-a+1&&ms[0]===a&&ms.at(-1)===z)
+  document.getElementById('dl').textContent=ms.length?`⬇ Download SX_2026-11_${grp?grp[0]+'_'+grp[1]+'-'+grp[2]:ms.length===1?'Machine'+ms[0]:'Custom_'+ms.length+'machines'}.xlsx`:'Tick at least one machine'
+}
+render();document.getElementById('clr').onclick=()=>{on.clear();render()}
+</script>
+</body></html>

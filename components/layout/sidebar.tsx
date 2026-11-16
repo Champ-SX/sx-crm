@@ -15,7 +15,7 @@ import { Camera, Package, ClipboardList, BookOpen,
   LogOut,
   Boxes,
   Building2,
-  UserRound,
+  UserRound, BarChart3,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCRMStore } from '@/store/crm-store'
@@ -28,6 +28,7 @@ import { PushPermissionBanner } from '@/components/shared/push-permission-banner
 import { Button } from '@/components/ui/button'
 import { OP_STAGES } from '@/types'
 import { usePurchasing, approvalOf, isApprover, isBuyer } from '@/lib/supabase/purchasing'
+import { useSalesAccess } from '@/lib/supabase/sales'
 
 // Nav is board-aware (Phase 4.0): the CAP*TURES sales pipeline vs. the ANF
 // Order board's own (different) structure.
@@ -182,6 +183,7 @@ function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?
   const openItems = anfOrders.filter((o) => o.status !== 'received' && !o.archived_at)
   const reqOf = (id?: string | null) => (id ? requests.find((r) => r.request_id === id) ?? null : null)
   const buyer = isBuyer(user?.email, role)
+  const salesAccess = useSalesAccess()
   const pendingCount = requests.filter((r) => r.status === 'pending').length
   const toOrderCount = openItems.filter((o) => o.status === 'to_order' && !o.po_id && approvalOf(reqOf(o.request_id)) === 'approved').length
   // Champ: waiting for approval · buyer: approved items to order · everyone else: no "your turn" here.
@@ -299,7 +301,7 @@ function NavContent({ onNavClick, onClose }: { onNavClick?: () => void; onClose?
 
       {/* Bottom */}
       <div className="px-3 py-2 border-t border-[var(--sidebar-border)] shrink-0">
-        {bottomItems.map((item) => (
+        {[...(salesAccess ? [{ href: '/sales', label: 'Sales · Finance', icon: BarChart3 }] : []), ...bottomItems].map((item) => (
           <NavLink key={item.href} {...item} />
         ))}
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { fetchPageAccess, setPageAccess, SALES_PAGE } from '@/lib/supabase/sales'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client'
 import { useAuth } from '@/components/auth-provider'
 import { useCRMStore } from '@/store/crm-store'
@@ -31,6 +32,15 @@ export default function AdminUsersPage() {
   const [addEmail, setAddEmail] = useState('')
   const [addRole, setAddRole] = useState('operation')
   const [adding, setAdding] = useState(false)
+  // Sales · Finance page access (admins always; others when ticked)
+  const [salesMembers, setSalesMembers] = useState<string[]>([])
+  useEffect(() => { let alive = true; void fetchPageAccess(SALES_PAGE).then((m) => { if (alive) setSalesMembers(m) }); return () => { alive = false } }, [])
+  async function toggleSales(userId: string) {
+    const on = !salesMembers.includes(userId)
+    setSalesMembers((m) => (on ? [...m, userId] : m.filter((x) => x !== userId)))
+    try { await setPageAccess(SALES_PAGE, userId, on) } catch { setSalesMembers((m) => (on ? m.filter((x) => x !== userId) : [...m, userId])) }
+  }
+
   async function handleAddMember(e: React.FormEvent) {
     e.preventDefault()
     const name = addName.trim()
@@ -216,6 +226,9 @@ export default function AdminUsersPage() {
                 <th className="px-4 py-3 text-left font-semibold text-foreground">
                   Current Role
                 </th>
+                <th className="px-4 py-3 text-left font-semibold text-foreground" title="Can open Sales · Finance (admins always can)">
+                  Sales
+                </th>
                 <th className="px-4 py-3 text-left font-semibold text-foreground">
                   Actions
                 </th>
@@ -239,6 +252,13 @@ export default function AdminUsersPage() {
                     <span className="inline-block px-3 py-1 rounded-full bg-muted text-foreground text-xs font-semibold uppercase">
                       {u.role}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <label className="inline-flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                      <input type="checkbox" className="w-4 h-4 accent-foreground" checked={u.role === 'admin' || salesMembers.includes(u.id)}
+                        disabled={u.role === 'admin' || u.id.startsWith('pending-')} onChange={() => toggleSales(u.id)} aria-label={`Sales access for ${u.name || u.email}`} />
+                      {u.role === 'admin' ? 'admin' : salesMembers.includes(u.id) ? 'Finance' : ''}
+                    </label>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2 items-center flex-wrap">
