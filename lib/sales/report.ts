@@ -29,7 +29,7 @@ export const thb = (satang: number) => satang / 100
 export const fmtTHB = (satang: number) => '฿' + (satang / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 export interface ExportOpts { paySolutionId: 'reference' | 'order' }
-export const DEFAULT_EXPORT: ExportOpts = { paySolutionId: 'reference' }
+export const DEFAULT_EXPORT: ExportOpts = { paySolutionId: 'reference' }   // confirmed by finance: client ID = ReferenceNo
 export const clientId = (r: SaleRow, o: ExportOpts) => (r.gateway === 'paysolution' && o.paySolutionId === 'order' ? (r.alt_ref ?? '') : r.txn_id)
 
 export function reportFileName(p: Period, machines: number[]): string {

@@ -25,7 +25,6 @@ const GW: Record<string, string> = { kbank: 'KBank', paysolution: 'Pay Solution'
 const GROUP_COLORS: Record<string, string> = { Captures: '#2F6FDB', True: '#C9423B', BACC: '#1E9E62', C11: '#D9822B', BTT: '#7A5AA5', [UNASSIGNED]: '#A8A39A' }
 const lbl = 'font-mono text-[10.5px] font-semibold tracking-[0.06em] text-muted-foreground'
 const card = 'rounded-xl border border-border bg-card p-4'
-const OPTS_KEY = 'sx-sales-export-opts'
 
 export default function SalesPage() {
   const access = useSalesAccess()
@@ -257,7 +256,7 @@ function ReportBuilder() {
   const [sel, setSel] = useState<Set<number>>(new Set())
   const [q, setQ] = useState('')
   const [show, setShow] = useState<'selected' | 'all'>('all')
-  const [opts] = useState<ExportOpts>(() => { try { return { ...DEFAULT_EXPORT, ...JSON.parse(localStorage.getItem(OPTS_KEY) ?? '{}') } } catch { return DEFAULT_EXPORT } })
+  const opts: ExportOpts = DEFAULT_EXPORT   // Pay Solution → ReferenceNo (confirmed by finance)
   const list = [...sel].sort((a, b) => a - b)
   const ok = useMemo(() => (rows ?? []).filter((r) => isAccepted(r) && r.biz_date >= from && r.biz_date <= to), [rows, from, to])
   const picked = useMemo(() => selectRows(rows ?? [], { from, to }, [...sel]), [rows, from, to, sel])
@@ -496,13 +495,11 @@ function Upload({ onDone }: { onDone: () => void }) {
 // ── ④ Review ──────────────────────────────────────────────────────────────────
 function Review({ onChange }: { onChange: () => void }) {
   const [rows, setRows] = useState<StoredSale[] | null>(null)
-  const [opts, setOpts] = useState<ExportOpts>(() => { try { return { ...DEFAULT_EXPORT, ...JSON.parse(localStorage.getItem(OPTS_KEY) ?? '{}') } } catch { return DEFAULT_EXPORT } })
   const load = useCallback(() => { void fetchReviewQueue().then(setRows).catch((e) => toast(String(e))) }, [])
   useEffect(load, [load])
   const act = async (key: string, patch: Partial<StoredSale>, msg: string) => {
     try { await patchSale(key, patch); toast(msg); load(); onChange() } catch (e) { toast(`Failed: ${e instanceof Error ? e.message : String(e)}`) }
   }
-  const setOpt = (o: ExportOpts) => { setOpts(o); try { localStorage.setItem(OPTS_KEY, JSON.stringify(o)) } catch {} }
   return (
     <div className="space-y-5">
       <div className={card}>
@@ -538,11 +535,10 @@ function Review({ onChange }: { onChange: () => void }) {
         </div>
       </div>
       <div className={card}>
-        <p className={cn(lbl, 'mb-2')}>REPORT SETTINGS · TO CONFIRM WITH FINANCE</p>
+        <p className={cn(lbl, 'mb-2')}>REPORT SETTINGS</p>
         <div className="grid sm:grid-cols-3 gap-4 text-[12.5px]">
           <div><p className="font-semibold">Pay Solution · ID in client files</p>
-            {(['reference', 'order'] as const).map((v) => <label key={v} className="mt-1 flex items-center gap-2"><input type="radio" checked={opts.paySolutionId === v} onChange={() => setOpt({ ...opts, paySolutionId: v })} />{v === 'reference' ? 'ReferenceNo (004179474639)' : 'OrderNo (120567130)'}</label>)}
-            <p className="mt-1 text-[11.5px] text-muted-foreground">Saved on this device for now.</p></div>
+            <p className="mt-1 text-muted-foreground"><b className="text-foreground">ReferenceNo</b> (e.g. 004179474639) — confirmed by finance. OrderNo is still stored for lookups.</p></div>
           <div><p className="font-semibold">ChillPay · amount</p><p className="mt-1 text-muted-foreground">Both kept: gross (incl. fee) in Amount; fees and net on the Summary sheet.</p></div>
           <div><p className="font-semibold">Machine groups</p><p className="mt-1 text-muted-foreground">{SALES_GROUPS.map((g) => `${g.name} ${g.from}–${g.to}`).join(' · ')}</p></div>
         </div>
