@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import * as XLSX from 'xlsx'
 import { LoadingOverlay } from '@/components/shared/delayed-loading'
+import { InsightsView } from '@/components/sales/insights-view'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,7 +18,7 @@ import {
   type Classified, type ImportFileSummary, type SalesImport, type StoredSale,
 } from '@/lib/supabase/sales'
 
-type Tab = 'dash' | 'report' | 'upload' | 'review'
+type Tab = 'dash' | 'insights' | 'report' | 'upload' | 'review'
 const pad = (n: number) => String(n).padStart(2, '0')
 const monthBounds = (ym: string) => { const [y, m] = ym.split('-').map(Number); return { from: `${ym}-01`, to: `${ym}-${pad(new Date(Date.UTC(y, m, 0)).getUTCDate())}` } }
 const thisMonth = () => new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 7)
@@ -41,7 +42,7 @@ export default function SalesPage() {
       <p className="mt-2 text-sm text-muted-foreground">You don&apos;t have access to this page. Ask an admin to tick “Sales” for you in Admin › Users.</p>
     </div>
   )
-  const tabs: [Tab, string][] = [['dash', 'Dashboard'], ['report', 'Client report'], ['upload', 'Upload'], ['review', `Review${reviewCount ? ` · ${reviewCount}` : ''}`]]
+  const tabs: [Tab, string][] = [['dash', 'Dashboard'], ['insights', 'Insights'], ['report', 'Client report'], ['upload', 'Upload'], ['review', `Review${reviewCount ? ` · ${reviewCount}` : ''}`]]
   return (
     <div className="relative flex flex-col h-[100dvh]">
       <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center gap-3 shrink-0">
@@ -60,6 +61,7 @@ export default function SalesPage() {
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5">
         <div className="max-w-[1200px]">
           {tab === 'dash' && <Dashboard />}
+          {tab === 'insights' && <InsightsTab />}
           {tab === 'report' && <ReportBuilder />}
           {tab === 'upload' && <Upload onDone={refreshReview} />}
           {tab === 'review' && <Review onChange={refreshReview} />}
@@ -94,6 +96,27 @@ function useMonths(): string[] {
     }).catch(() => {})
   }, [])
   return months
+}
+
+// ── Insights ──────────────────────────────────────────────────────────────────
+function InsightsTab() {
+  const months = useMonths()
+  const [picked, setMonth] = useState(thisMonth())
+  const month = months.includes(picked) ? picked : (months[0] ?? picked)
+  const { from, to } = monthBounds(month)
+  const { rows } = useSales(from, to)
+  const ok = useMemo(() => (rows ?? []).filter(isAccepted), [rows])
+  return (
+    <div className="space-y-2">
+      {rows == null && <LoadingOverlay label="Loading insights…" />}
+      <div className="flex justify-end">
+        <select value={month} onChange={(e) => setMonth(e.target.value)} className="h-8 rounded-md border border-border bg-card px-2 text-[13px]" aria-label="Month">
+          {months.map((m) => <option key={m} value={m}>{new Date(m + '-01T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' })}</option>)}
+        </select>
+      </div>
+      {rows != null && <InsightsView rows={ok} month={month} />}
+    </div>
+  )
 }
 
 // ── ① Dashboard ───────────────────────────────────────────────────────────────

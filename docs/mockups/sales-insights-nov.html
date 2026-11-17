@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sales Insights</title>
+<style>
+:root{--bg:#F6F5F2;--card:#fff;--line:#E7E4DD;--mut:#7A766E;--fg:#1C1A17;--acc:#C8643B;--ev:#E8A25A;--pm:#4F86D9;--good:#1E8A57;--bad:#C9423B}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.45 -apple-system,Inter,sans-serif}
+main{max-width:1240px;margin:auto;padding:22px 20px 40px}
+h1{font-size:21px;margin:0}.sub{color:var(--mut);font-size:12.5px}
+.top{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.sel{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;font-size:12.5px}
+.tabs{display:inline-flex;border:1px solid var(--line);border-radius:9px;padding:2px;background:#fff;margin-left:auto}.tabs span{padding:5px 11px;border-radius:7px;font-size:12.5px;color:var(--mut)}.tabs .on{background:var(--fg);color:#fff}
+.g{display:grid;gap:12px}.g5{grid-template-columns:repeat(5,1fr)}.g2{grid-template-columns:1.55fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g21{grid-template-columns:1fr 1fr}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0}
+.lbl{font:600 10.5px ui-monospace,monospace;letter-spacing:.06em;color:var(--mut)}
+.big{font-size:23px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums}
+.d{font-size:11.5px;color:var(--mut)}.up{color:var(--good);font-weight:600}.dn{color:var(--bad);font-weight:600}
+h2{font:600 11px ui-monospace,monospace;letter-spacing:.08em;color:var(--mut);margin:22px 0 8px}
+.insight{background:#FFF7EE;border:1px solid #F2D9BE;border-radius:12px;padding:10px 14px;font-size:12.5px;color:#7A4A12;margin-top:10px}
+.insight b{color:#5A3207}
+.legend{display:flex;gap:12px;font-size:11.5px;color:var(--mut);flex-wrap:wrap}.dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.heat{display:grid;grid-template-columns:34px repeat(14,1fr);gap:2px;font-size:10px;color:var(--mut)}
+.heat div{height:22px;border-radius:3px;display:grid;place-items:center}
+.al{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid #F1EFEB;font-size:12.5px}.al:first-of-type{border:0}
+.pill{font-size:10.5px;font-weight:700;border-radius:5px;padding:1px 6px;white-space:nowrap}
+.red{background:#FBE5E3;color:var(--bad)}.amb{background:#FBF0DC;color:#9A6A12}.grn{background:#E3F4EA;color:var(--good)}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:12.5px}th{text-align:left;font-weight:500;color:var(--mut);font-size:11px;padding:5px 6px;border-bottom:1px solid var(--line)}td{padding:5px 6px;border-bottom:1px solid #F3F1EC}.r{text-align:right}
+.bar{height:7px;border-radius:9px;background:#EFEDE8;overflow:hidden}.bar span{display:block;height:100%}
+.fc{display:flex;align-items:flex-end;gap:14px;margin-top:8px}.fc .b{flex:1;text-align:center;font-size:11px;color:var(--mut)}.fc .col{margin:0 auto 4px;width:44px;border-radius:6px 6px 0 0}
+.gap{border:1px dashed #CFCBC2;border-radius:12px;padding:12px 14px;color:var(--mut);font-size:12.5px;background:#FBFAF8}
+svg text{font-family:-apple-system,Inter,sans-serif}
+@media(max-width:900px){.g5{grid-template-columns:1fr 1fr}.g2,.g3,.g21{grid-template-columns:1fr}}
+</style></head><body><main>
+<div class="top"><div><h1>Insights · November 2026</h1><div class="sub">Data 1 – 15 Nov (partial month) · 6,130 payments · KBank + Pay Solution + ChillPay · Thai time</div></div>
+<select class="sel"><option>November 2026</option></select><select class="sel"><option>All groups</option></select>
+<div class="tabs"><span>Dashboard</span><span class="on">Insights</span><span>Client report</span><span>Upload</span></div></div>
+
+<!-- 1 · Overview -->
+<div class="g g5">
+ <div class="card"><div class="lbl">GROSS</div><div class="big">฿1,266,670</div><div class="d">15 days · <span class="dn">event weeks inflate it</span></div></div>
+ <div class="card"><div class="lbl">NET AFTER FEES</div><div class="big">฿1,260,531</div><div class="d">fees ฿6,139 · 0.48%</div></div>
+ <div class="card"><div class="lbl">PAYMENTS</div><div class="big">6,130</div><div class="d">409 / day</div></div>
+ <div class="card"><div class="lbl">AVERAGE TICKET</div><div class="big">฿206.6</div><div class="d">most common ฿250 · ฿180</div></div>
+ <div class="card" style="border-color:var(--acc)"><div class="lbl">NOVEMBER FORECAST</div><div class="big">฿1.9 – 2.0M</div><div class="d">event ฿566k (done) + permanent ฿46.7k/day × 30</div></div>
+</div>
+
+<!-- 2 · Daily: event vs permanent -->
+<h2>DAILY SALES · EVENT VS PERMANENT BOOTHS</h2>
+<div class="g g2">
+ <div class="card"><div class="legend"><span><i class="dot" style="background:var(--ev)"></i>Event booths #32 #33 #9</span><span><i class="dot" style="background:var(--pm)"></i>Permanent booths (38)</span><span>— forecast</span></div>
+  <svg id="daily" viewBox="0 0 700 220" style="width:100%;height:220px;margin-top:6px"></svg>
+  <div class="insight">💡 <b>Event booths #32, #33 and #9 sold ฿566k in 7 days (1–7 Nov) and then stopped</b> — 45% of the month so far. Without them, permanent booths run at about <b>฿46.7k a day</b>. Plan and forecast the two separately; one event week can make a normal month look like a collapse.</div>
+ </div>
+ <div class="card"><div class="lbl">BY CLIENT GROUP · SHARE OF GROSS</div><table id="grp" style="margin-top:6px"></table>
+  <div class="insight" style="margin-top:12px">💡 <b>BACC</b> is the steadiest earner: ฿252k with 7 machines selling 13 of 15 days. <b>True</b> earns ฿6.4k per machine — the lowest; 3 of 11 machines had no sales, yet it has the highest card share (13.9%).</div></div>
+</div>
+
+<!-- 3 · When -->
+<h2>WHEN PEOPLE PAY · DAY × HOUR (฿, Thai time)</h2>
+<div class="g g21">
+ <div class="card"><div class="heat" id="heat"></div>
+  <div class="insight">💡 <b>Saturday + Sunday = 47% of sales</b>, peak <b>15:00–17:00</b>. Almost nothing before 10:00 or after 21:00 → service machines in the morning; run weekday promos 12:00–14:00 to fill the lowest-earning daytime hours.</div></div>
+ <div class="card"><div class="lbl">PRICE POINTS · NUMBER OF SALES</div><svg id="price" viewBox="0 0 520 220" style="width:100%;height:220px;margin-top:6px"></svg>
+  <div class="insight">💡 <b>฿250 (39%) and ฿180 (26%)</b> drive volume. ฿140/฿150/฿160 still take 21% of sales — candidates for a +฿20 test at a few machines, tracked here afterwards.</div></div>
+</div>
+
+<!-- 4 · Where -->
+<h2>WHERE · MACHINE PERFORMANCE</h2>
+<div class="g g2">
+ <div class="card"><div class="lbl">REVENUE PER ACTIVE DAY × AVERAGE TICKET</div><svg id="quad" viewBox="0 0 700 300" style="width:100%;height:300px;margin-top:4px"></svg>
+  <div class="legend" style="margin-top:4px"><span>Top-right = stars · bottom-right = high price, low traffic (visibility?) · top-left = busy but cheap (upsell) · bottom-left = review location</span></div></div>
+ <div class="card"><div class="lbl">ALERTS · NEEDS A LOOK</div>
+  <div class="al"><span class="pill red">No sales</span><div><b>#41 · True</b> — last sale 7 Nov (8 days). Was selling 6 days before that. Machine or printer down?</div></div>
+  <div class="al"><span class="pill red">No sales</span><div><b>#17 · Captures</b> — last sale 9 Nov (6 days). Earned ฿2,062/day before that.</div></div>
+  <div class="al"><span class="pill amb">Few days</span><div><b>#14 · Captures</b> sold on only 5 of 15 days; <b>#50 · True</b> on 3.</div></div>
+  <div class="al"><span class="pill amb">Not selling</span><div><b>True #43 #48 #49</b> — no sales in November. Installed?</div></div>
+  <div class="al"><span class="pill amb">Unassigned</span><div><b>Machine #0</b> — 28 payments, ฿14,620 (incl. two ChillPay ฿7,479 + ฿641). Assign or exclude.</div></div>
+  <div class="al"><span class="pill grn">Strong</span><div><b>#71 · C11</b> sold all 15 days, ฿3,637/day — best permanent booth.</div></div>
+ </div>
+</div>
+
+<!-- 5 · Payment & cost -->
+<h2>PAYMENT CHANNELS · MIX AND COST</h2>
+<div class="g g3">
+ <div class="card"><table id="chan"></table></div>
+ <div class="card"><div class="lbl">WHAT IT TELLS US</div><p style="margin:6px 0 0;font-size:12.5px;color:#4A463F">QR (PromptPay + KPlus) = <b>85% of sales at 0% fee</b>. Card costs 2.8% and is 5% of sales — keep it for tourists, don't push it. ChillPay QR at C11 costs 3.3% — ask for KBank QR there: ~฿4.4k/month saved at today's volume.</p></div>
+ <div class="card"><div class="lbl">CARD SHARE BY GROUP (tourist / premium signal)</div><table id="cardsh" style="margin-top:6px"></table></div>
+</div>
+
+<!-- 6 · Forecast -->
+<h2>PLANNING · FORECAST</h2>
+<div class="g g21">
+ <div class="card"><div class="lbl">NOVEMBER ESTIMATE · RANGE</div>
+  <div class="fc"><div class="b"><div class="col" style="height:96px;background:#EAD9C9"></div>Low<br><b style="color:var(--fg)">฿1.84M</b></div><div class="b"><div class="col" style="height:108px;background:var(--acc)"></div>Expected<br><b style="color:var(--fg)">฿1.97M</b></div><div class="b"><div class="col" style="height:120px;background:#EAD9C9"></div>High<br><b style="color:var(--fg)">฿2.10M</b></div><div class="b" style="flex:1.6;text-align:left;font-size:12px;color:#4A463F">Event ฿566k already earned + permanent booths at this month's daily average (±10% range for weekends and holidays). Target line appears once a monthly target is set.</div></div></div>
+ <div class="card"><div class="lbl">WHAT-IF</div>
+  <table style="margin-top:6px"><tr><th>Scenario</th><th class="r">Monthly impact</th></tr>
+  <tr><td>+฿20 on ฿140–160 sales (1,288 so far; assume −5% volume)</td><td class="r up">+ ฿30k</td></tr>
+  <tr><td>Fix #17 + #41 for the rest of Nov (at their own daily average)</td><td class="r up">+ ฿37k</td></tr>
+  <tr><td>Move C11 from ChillPay to KBank QR</td><td class="r up">+ ฿4.4k</td></tr>
+  <tr><td>One more 7-day event like 1–7 Nov</td><td class="r up">+ ฿566k</td></tr></table></div>
+</div>
+
+<h2>NEEDS MORE DATA</h2>
+<div class="g g3">
+ <div class="gap"><b>Year-over-year &amp; seasonality</b><br>Only Nov 2026 is uploaded. Upload past months (ideally 12) to compare with last year and forecast Dec/new-year peaks.</div>
+ <div class="gap"><b>Targets</b><br>Add a monthly target per group to show “on pace / behind” and the gap.</div>
+ <div class="gap"><b>Campaign calendar</b><br>Name + dates + machines → automatic before/after uplift for each campaign or new frame.</div>
+</div>
+</main>
+<script>
+const D={"heat": [[0, 0, 0, 0, 0, 0, 0, 0, 0, 140, 8230, 14170, 12865, 14785, 13505, 14165, 3890, 3665, 10135, 9880, 8430, 650, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10380, 17295, 16995, 11675, 13095, 21624, 14330, 13170, 9660, 12255, 9370, 1260, 0, 195], [0, 300, 150, 0, 0, 0, 0, 0, 0, 0, 5510, 9980, 8510, 8210, 9285, 14730, 15970, 10795, 10020, 12020, 8210, 330, 510, 0], [195, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8770, 9110, 10705, 10980, 12030, 14395, 12095, 11790, 12340, 17650, 7250, 735, 885, 480], [0, 390, 0, 0, 0, 0, 0, 140, 280, 0, 7610, 8360, 13395, 17325, 19380, 20505, 13265, 15360, 15215, 14100, 15420, 2330, 1380, 750], [150, 150, 0, 0, 0, 0, 0, 0, 0, 520, 10995, 12100, 22320, 21155, 27345, 32010, 36189, 32662, 27000, 19110, 14580, 3565, 2080, 645], [1110, 450, 0, 0, 0, 0, 0, 140, 150, 1300, 16065, 21775, 29345, 38645, 39590, 38990, 44850, 34340, 19400, 19665, 15905, 5520, 995, 900]], "daily": {"2026-11-01": 181105, "2026-11-02": 88835, "2026-11-03": 124764.3, "2026-11-04": 89265, "2026-11-05": 94645, "2026-11-06": 119625, "2026-11-07": 175810.93, "2026-11-08": 72115, "2026-11-09": 25675, "2026-11-10": 26540, "2026-11-11": 25265, "2026-11-12": 34765, "2026-11-13": 45580, "2026-11-14": 86765, "2026-11-15": 75915}, "dailyN": {"2026-11-01": 859, "2026-11-02": 375, "2026-11-03": 512, "2026-11-04": 400, "2026-11-05": 416, "2026-11-06": 545, "2026-11-07": 829, "2026-11-08": 401, "2026-11-09": 148, "2026-11-10": 154, "2026-11-11": 141, "2026-11-12": 191, "2026-11-13": 257, "2026-11-14": 480, "2026-11-15": 422}, "m": [{"m": 0, "g": "Unassigned", "n": 28, "s": 14620, "d": 3, "last": "2026-11-07"}, {"m": 1, "g": "Captures", "n": 117, "s": 18550, "d": 15, "last": "2026-11-15"}, {"m": 2, "g": "Captures", "n": 10, "s": 1000, "d": 7, "last": "2026-11-14"}, {"m": 3, "g": "Captures", "n": 84, "s": 11760, "d": 12, "last": "2026-11-15"}, {"m": 4, "g": "Captures", "n": 152, "s": 24900, "d": 13, "last": "2026-11-15"}, {"m": 5, "g": "Captures", "n": 26, "s": 4390, "d": 10, "last": "2026-11-15"}, {"m": 6, "g": "Captures", "n": 41, "s": 6150, "d": 10, "last": "2026-11-15"}, {"m": 7, "g": "Captures", "n": 141, "s": 21540, "d": 13, "last": "2026-11-15"}, {"m": 8, "g": "Captures", "n": 231, "s": 34640, "d": 15, "last": "2026-11-15"}, {"m": 9, "g": "Captures", "n": 367, "s": 91750, "d": 7, "last": "2026-11-07"}, {"m": 10, "g": "Captures", "n": 80, "s": 11200, "d": 13, "last": "2026-11-15"}, {"m": 11, "g": "Captures", "n": 36, "s": 5400, "d": 11, "last": "2026-11-15"}, {"m": 12, "g": "Captures", "n": 62, "s": 10990, "d": 12, "last": "2026-11-15"}, {"m": 13, "g": "Captures", "n": 117, "s": 23960, "d": 13, "last": "2026-11-15"}, {"m": 14, "g": "Captures", "n": 7, "s": 1260, "d": 5, "last": "2026-11-15"}, {"m": 17, "g": "Captures", "n": 66, "s": 16500, "d": 8, "last": "2026-11-09"}, {"m": 32, "g": "Captures", "n": 1246, "s": 311500, "d": 7, "last": "2026-11-07"}, {"m": 33, "g": "Captures", "n": 652, "s": 163000, "d": 7, "last": "2026-11-07"}, {"m": 35, "g": "Captures", "n": 90, "s": 18510, "d": 14, "last": "2026-11-15"}, {"m": 40, "g": "True", "n": 16, "s": 1700, "d": 7, "last": "2026-11-15"}, {"m": 41, "g": "True", "n": 13, "s": 2340, "d": 6, "last": "2026-11-07"}, {"m": 42, "g": "True", "n": 115, "s": 18400, "d": 15, "last": "2026-11-15"}, {"m": 44, "g": "True", "n": 79, "s": 14220, "d": 15, "last": "2026-11-15"}, {"m": 45, "g": "True", "n": 27, "s": 4860, "d": 12, "last": "2026-11-15"}, {"m": 46, "g": "True", "n": 67, "s": 12060, "d": 15, "last": "2026-11-15"}, {"m": 47, "g": "True", "n": 103, "s": 16480, "d": 11, "last": "2026-11-14"}, {"m": 50, "g": "True", "n": 3, "s": 300, "d": 3, "last": "2026-11-13"}, {"m": 60, "g": "BACC", "n": 89, "s": 17355, "d": 11, "last": "2026-11-15"}, {"m": 61, "g": "BACC", "n": 70, "s": 14100, "d": 11, "last": "2026-11-15"}, {"m": 62, "g": "BACC", "n": 207, "s": 41530, "d": 13, "last": "2026-11-15"}, {"m": 63, "g": "BACC", "n": 377, "s": 71120, "d": 13, "last": "2026-11-15"}, {"m": 64, "g": "BACC", "n": 160, "s": 29870, "d": 13, "last": "2026-11-15"}, {"m": 65, "g": "BACC", "n": 199, "s": 33940, "d": 13, "last": "2026-11-15"}, {"m": 66, "g": "BACC", "n": 244, "s": 44040, "d": 13, "last": "2026-11-15"}, {"m": 71, "g": "C11", "n": 290, "s": 54550, "d": 15, "last": "2026-11-15"}, {"m": 72, "g": "C11", "n": 165, "s": 30730, "d": 15, "last": "2026-11-15"}, {"m": 73, "g": "C11", "n": 130, "s": 25710, "d": 15, "last": "2026-11-15"}, {"m": 74, "g": "C11", "n": 75, "s": 14985, "d": 15, "last": "2026-11-15"}, {"m": 81, "g": "BTT", "n": 48, "s": 9240, "d": 10, "last": "2026-11-15"}, {"m": 82, "g": "BTT", "n": 16, "s": 2860, "d": 5, "last": "2026-11-15"}, {"m": 84, "g": "BTT", "n": 60, "s": 10870, "d": 7, "last": "2026-11-15"}, {"m": 85, "g": "BTT", "n": 24, "s": 3790, "d": 8, "last": "2026-11-15"}], "price": {"100": 28, "110": 1, "126": 9, "130": 8, "140": 506, "150": 342, "160": 440, "165": 1, "180": 1605, "190": 193, "195": 435, "196": 1, "200": 1, "240": 26, "250": 2383, "260": 14, "280": 23, "300": 57, "310": 7, "315": 18, "340": 3, "350": 1, "360": 2, "380": 2, "420": 7, "430": 4, "440": 1, "450": 2, "460": 2, "480": 3, "540": 2, "641": 1, "670": 1, "7479": 1}, "chan": {"PromptPay": {"n": 2962, "s": 617664, "fee": 0}, "KPlus": {"n": 2205, "s": 453631, "fee": 0}, "Credit Card": {"n": 302, "s": 61460, "fee": 1735.4}, "QRCode": {"n": 656, "s": 132985.22999999998, "fee": 4372.250000000033}, "TrueMoney": {"n": 5, "s": 930, "fee": 31.84}}, "grp": {"Captures": {"n": 3525, "s": 777000}, "True": {"n": 423, "s": 70360}, "BACC": {"n": 1346, "s": 251955}, "BTT": {"n": 148, "s": 26760}, "Unassigned": {"n": 28, "s": 14620.23}, "C11": {"n": 660, "s": 125975}}, "n": 6130, "s": 1266670.23, "fee": 6139.49};
+const fmt=n=>'฿'+Math.round(n).toLocaleString('en-US');
+// daily stacked
+(()=>{const svg=document.getElementById('daily');const days=[];for(let i=1;i<=30;i++)days.push('2026-11-'+String(i).padStart(2,'0'));
+const ev={'2026-11-01':0,'2026-11-02':0};
+const evM=new Set([32,33,9]);const EV=566250;const perm={};const evd={};
+// approximate split: event booths sold evenly on their 7 days by share of daily total
+days.forEach(d=>{const t=D.daily[d]||0;const isEv=d<='2026-11-07';const e=isEv?Math.min(t*0.62,EV/7*1.3):0;evd[d]=e;perm[d]=t-e});
+const W=700,H=220,L=40,B=24,max=200000,bw=(W-L-10)/30;
+let s='';[0,50000,100000,150000,200000].forEach(v=>{const y=H-B-(v/max)*(H-B-10);s+=`<line x1="${L}" x2="${W}" y1="${y}" y2="${y}" stroke="#EFEDE8"/><text x="${L-5}" y="${y+3}" font-size="9" fill="#999" text-anchor="end">${v/1000}k</text>`});
+days.forEach((d,i)=>{const x=L+i*bw+2;const p=perm[d]||0,e=evd[d]||0;const hp=(p/max)*(H-B-10),he=(e/max)*(H-B-10);
+ if(D.daily[d]){s+=`<rect x="${x}" y="${H-B-hp}" width="${bw-4}" height="${hp}" fill="#4F86D9" rx="2"/><rect x="${x}" y="${H-B-hp-he}" width="${bw-4}" height="${he}" fill="#E8A25A" rx="2"/>`}
+ else{const hf=(46700/max)*(H-B-10);s+=`<rect x="${x}" y="${H-B-hf}" width="${bw-4}" height="${hf}" fill="none" stroke="#4F86D9" stroke-dasharray="3 2" rx="2"/>`}
+ if(i%3===0)s+=`<text x="${x+bw/2-2}" y="${H-8}" font-size="9" fill="#999" text-anchor="middle">${i+1}</text>`});
+s+=`<line x1="${L+7*bw}" x2="${L+7*bw}" y1="8" y2="${H-B}" stroke="#C8643B" stroke-dasharray="4 3"/><text x="${L+7*bw+4}" y="18" font-size="10" fill="#C8643B">event ends</text>`;
+svg.innerHTML=s})();
+// groups
+(()=>{const t=D.s;const rows=Object.entries(D.grp).sort((a,b)=>b[1].s-a[1].s);const mc={Captures:35,True:11,BACC:7,C11:4,BTT:7,Unassigned:1};
+document.getElementById('grp').innerHTML='<tr><th>Group</th><th class="r">Gross</th><th>Share</th><th class="r">฿ / machine</th></tr>'+rows.map(([g,v])=>`<tr><td>${g}</td><td class="r">${fmt(v.s)}</td><td style="width:30%"><div class="bar"><span style="width:${v.s/t*100}%;background:#C8643B"></span></div></td><td class="r">${g==='Unassigned'?'–':fmt(v.s/mc[g])}</td></tr>`).join('')})();
+// heat
+(()=>{const el=document.getElementById('heat');const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];const hrs=[];for(let h=9;h<=22;h++)hrs.push(h);
+const max=Math.max(...D.heat.flat());let s='<div></div>'+hrs.map(h=>`<div>${h}</div>`).join('');
+D.heat.forEach((row,i)=>{s+=`<div style="justify-content:start">${days[i]}</div>`+hrs.map(h=>{const v=row[h];const a=v/max;return `<div title="${days[i]} ${h}:00 · ${fmt(v)}" style="background:rgba(200,100,59,${0.06+a*0.94});color:${a>.55?'#fff':'transparent'}">${a>.55?Math.round(v/1000)+'k':''}</div>`}).join('')});el.innerHTML=s})();
+// price
+(()=>{const P=Object.entries(D.price).filter(([p,n])=>n>20).sort((a,b)=>+a[0]-+b[0]);const max=Math.max(...P.map(x=>x[1]));const W=520,H=220,B=26,bw=(W-20)/P.length;let s='';
+P.forEach(([p,n],i)=>{const h=(n/max)*(H-B-22);const x=10+i*bw;s+=`<rect x="${x+6}" y="${H-B-h}" width="${bw-12}" height="${h}" rx="3" fill="${+p>=250?'#C8643B':'#E3B79D'}"/><text x="${x+bw/2}" y="${H-B-h-4}" font-size="10" text-anchor="middle" fill="#555">${n.toLocaleString()}</text><text x="${x+bw/2}" y="${H-8}" font-size="10" text-anchor="middle" fill="#777">฿${p}</text>`});document.getElementById('price').innerHTML=s})();
+// quadrant
+(()=>{const ms=D.m.filter(x=>x.m!==0&&x.d>0).map(x=>({...x,pd:x.s/x.d,t:x.s/x.n}));const W=700,H=300,L=46,B=30;const maxPd=Math.max(...ms.map(x=>x.pd))*1.05,minT=130,maxT=270;
+const X=t=>L+((t-minT)/(maxT-minT))*(W-L-10),Y=pd=>H-B-(Math.sqrt(pd)/Math.sqrt(maxPd))*(H-B-10);
+const medPd=ms.map(x=>x.pd).sort((a,b)=>a-b)[Math.floor(ms.length/2)],medT=ms.map(x=>x.t).sort((a,b)=>a-b)[Math.floor(ms.length/2)];
+const col={Captures:'#4F86D9',True:'#C9423B',BACC:'#1E9E62',C11:'#D9822B',BTT:'#7A5AA5'};
+let s=`<line x1="${X(medT)}" x2="${X(medT)}" y1="6" y2="${H-B}" stroke="#DDD" stroke-dasharray="4 3"/><line x1="${L}" x2="${W-10}" y1="${Y(medPd)}" y2="${Y(medPd)}" stroke="#DDD" stroke-dasharray="4 3"/>`;
+[1000,5000,20000,60000].forEach(v=>{s+=`<text x="${L-6}" y="${Y(v)+3}" font-size="9" fill="#999" text-anchor="end">${v>=1000?v/1000+'k':v}</text>`});
+[150,180,210,240,270].forEach(v=>{s+=`<text x="${X(v)}" y="${H-12}" font-size="9" fill="#999" text-anchor="middle">฿${v}</text>`});
+s+=`<text x="${W-14}" y="16" font-size="10" fill="#1E8A57" text-anchor="end">★ stars</text><text x="${L+4}" y="${H-B-6}" font-size="10" fill="#C9423B">review</text>`;
+ms.forEach(x=>{const r=x.m===32||x.m===33||x.m===9?7:5;s+=`<circle cx="${X(Math.max(minT,Math.min(maxT,x.t)))}" cy="${Y(x.pd)}" r="${r}" fill="${col[x.g]||'#999'}" fill-opacity=".8"><title>#${x.m} · ${x.g} · ${fmt(x.pd)}/day · avg ฿${x.t.toFixed(0)} · ${x.d} days</title></circle>`;
+ if(x.pd>6000||x.pd<400)s+=`<text x="${X(Math.max(minT,Math.min(maxT,x.t)))+8}" y="${Y(x.pd)+3}" font-size="9.5" fill="#555">#${x.m}</text>`});
+s+=`<text x="${L}" y="12" font-size="9.5" fill="#999">฿ per active day (√ scale)</text>`;document.getElementById('quad').innerHTML=s})();
+// channels
+(()=>{const C=Object.entries(D.chan).sort((a,b)=>b[1].s-a[1].s);document.getElementById('chan').innerHTML='<tr><th>Channel</th><th class="r">Share</th><th class="r">Fee</th><th class="r">Fee %</th></tr>'+C.map(([k,v])=>`<tr><td>${k}</td><td class="r">${(v.s/D.s*100).toFixed(1)}%</td><td class="r">${fmt(v.fee)}</td><td class="r ${v.fee/v.s>0.02?'dn':''}">${(v.fee/v.s*100).toFixed(1)}%</td></tr>`).join('')})();
+(()=>{const rows=[['True','13.9%'],['Captures','6.0%'],['BACC','2.0%'],['BTT','0%'],['C11','0% (ChillPay QR only)']];document.getElementById('cardsh').innerHTML=rows.map(([g,p])=>`<tr><td>${g}</td><td class="r">${p}</td></tr>`).join('')})();
+</script></body></html>

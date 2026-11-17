@@ -134,3 +134,25 @@ describe.skipIf(!has)('sales · acceptance on supplied samples', () => {
     expect(all.filter((r) => r.review).map((r) => `${r.gateway} r${r.source_row}: ${r.review} ${r.alt_date ?? ''}`)).toEqual([])
   })
 })
+
+describe.skipIf(!has)('sales · insights on supplied samples', () => {
+  it('detects the 1–7 Nov event booths and forecasts permanent booths separately', async () => {
+    const { computeInsights } = await import('./insights')
+    const { isAccepted } = await import('./report')
+    const all = [
+      ...parseSheet(read('SX_AUTOMAT_NOV_2026y (1).xlsx')).rows,
+      ...parseSheet(read('orderlist (10).xlsx')).rows,
+      ...parseSheet(read('M038447-settlement-20261116105110.xlsx')).rows,
+    ].filter(isAccepted)
+    const i = computeInsights(all, '2026-11')
+    expect(i.eventMachines).toEqual([9, 32, 33])
+    expect(i.eventGross).toBe(56625000)
+    expect(i.gross).toBe(126667023)
+    expect(i.coveredDays).toBe(15)
+    expect(Math.round(i.weekendShare * 100)).toBe(47)
+    expect(i.peakHour).toBe(15)
+    expect(i.alerts.some((a) => a.kind === 'stopped' && a.machine === 17)).toBe(true)
+    expect(i.alerts.some((a) => a.kind === 'stopped' && a.machine === 41)).toBe(true)
+    expect(i.daily.reduce((a, d) => a + d.event + d.perm, 0)).toBe(i.gross)
+  })
+})
