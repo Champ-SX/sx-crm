@@ -688,6 +688,7 @@ function Upload({ onDone }: { onDone: () => void }) {
           </div>
         </div>
       )}
+      <SftpCard onDone={() => { loadHistory(); onDone() }} setWork={setWork} busy={busy} setBusy={setBusy} />
       <div className={card}>
         <p className={cn(lbl, 'mb-2')}>UPLOAD HISTORY</p>
         {history.length === 0 && <p className="text-[12.5px] text-muted-foreground">No uploads yet.</p>}
@@ -701,6 +702,41 @@ function Upload({ onDone }: { onDone: () => void }) {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+// KBank daily report collected from KBank's SFTP (also runs by itself every day at 05:00).
+function SftpCard({ onDone, setWork, busy, setBusy }: {
+  onDone: () => void; busy: boolean; setBusy: (b: boolean) => void
+  setWork: (w: { label: string; detail?: string; progress?: number | null } | null) => void
+}) {
+  const [to, setTo] = useState(() => new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10))
+  const [from, setFrom] = useState(() => { const d = new Date(Date.now() + 7 * 3600_000); d.setUTCDate(d.getUTCDate() - 2); return d.toISOString().slice(0, 10) })
+  const [last, setLast] = useState<string | null>(null)
+  async function run() {
+    setBusy(true); setWork({ label: 'Collecting KBank reports…', detail: `SFTP · ${fmtDay(from)} – ${fmtDay(to)}`, progress: null }); setLast(null)
+    try {
+      const res = await fetch(`/api/cron/sales-sftp?from=${from}&to=${to}`, { method: 'POST' })
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok || j.ok === false) { const m = `${j.stage === 'sftp' ? 'Could not reach KBank SFTP' : 'Import failed'}: ${j.error ?? res.status}`; setLast(m); toast(m); return }
+      const files: { name: string; new: number; dup: number }[] = j.files ?? []
+      const m = files.length ? `${files.length} file${files.length === 1 ? '' : 's'} · ${Number(j.new_rows ?? 0).toLocaleString()} new · ${Number(j.dup_rows ?? 0).toLocaleString()} already saved${j.review_rows ? ` · ${j.review_rows} to review` : ''} — ${files.map((f) => f.name).join(', ')}` : (j.message ?? 'No files for those dates yet.')
+      setLast(m); toast(files.length ? `KBank: ${Number(j.new_rows ?? 0).toLocaleString()} new payments` : m); onDone()
+    } catch (e) { const m = `Failed: ${e instanceof Error ? e.message : String(e)}`; setLast(m); toast(m) }
+    finally { setBusy(false); setWork(null) }
+  }
+  return (
+    <div className={card}>
+      <div className="flex flex-wrap items-center gap-2">
+        <p className={cn(lbl, 'mr-auto')}>KBANK AUTO-IMPORT · SFTP</p>
+        <Input type="date" value={from} onChange={(e) => e.target.value && setFrom(e.target.value)} className="h-8 w-auto text-[12.5px]" aria-label="From" />
+        <span className="text-muted-foreground">–</span>
+        <Input type="date" value={to} onChange={(e) => e.target.value && setTo(e.target.value)} className="h-8 w-auto text-[12.5px]" aria-label="To" />
+        <Button size="sm" disabled={busy || from > to} onClick={() => void run()}>Run now</Button>
+      </div>
+      <p className="mt-1.5 text-[12px] text-muted-foreground">Collects KBank&apos;s daily <span className="font-mono">YYYYMMDD_PTR…_Report.csv</span> files for the dates chosen and imports them like a normal upload (duplicates skipped). Runs by itself every day at 05:00 for the last 3 days.</p>
+      {last && <p className="mt-1.5 rounded-md bg-muted px-2.5 py-1.5 text-[12px]">{last}</p>}
     </div>
   )
 }

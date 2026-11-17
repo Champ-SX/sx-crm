@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // SFTP client (ssh2) has optional native parts — keep it out of the bundle.
+  serverExternalPackages: ['ssh2', 'ssh2-sftp-client'],
   // Order → Purchasing → Inventory. Old links (bookmarks, bell notifications,
   // push messages, shared stock/asset links) keep working.
   async redirects() {
