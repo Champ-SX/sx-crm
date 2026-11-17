@@ -140,8 +140,11 @@ function parseKbank(rows: unknown[][], h: number): ParseResult {
     const amount = toSatang(r[c('Amount')])
     if (name.includes('ตัวอย่าง')) { excluded.push({ row: i + 1, reason: 'Example row (ตัวอย่าง)' }); continue }
     const ref2 = txt(r[c('REF2')])
+    // Machine: REF2 (SX013 / SX44) when filled, else the digits between "SX" and the
+    // 14-char stamp in the ID (SX01320261116-024416 → 13, SX4420261116-034237 → 44).
+    // FTP daily files can leave REF2 empty or hold other text.
     const machineRef2 = /^SX0*(\d+)$/i.exec(ref2)
-    const machineId = /^SX(\d{3})\d{8}-\d{6}$/i.exec(id)
+    const machineId = /^SX(\d{1,4})\d{8}-\d{6}$/i.exec(id)
     const machine = machineRef2 ? Number(machineRef2[1]) : machineId ? Number(machineId[1]) : null
     const ref1 = Number(txt(r[c('REF1')]))
     const reasons: string[] = []
@@ -159,7 +162,7 @@ function parseKbank(rows: unknown[][], h: number): ParseResult {
     const merchant = txt(r[c('MerchantID')])
     out.push({
       key: `kbank|${merchant}|${id || `row${i + 1}`}`, gateway: 'kbank', merchant_id: merchant, txn_id: id,
-      alt_ref: nz(txt(r[c('RefID')])), machine, raw_machine: nz(ref2), biz_date: date ?? '', biz_time: timeOf(r[c('TransactionTime')]),
+      alt_ref: nz(txt(r[c('RefID')])), machine, raw_machine: nz(machineRef2 ? ref2 : machineId ? `SX${machineId[1]}` : ref2), biz_date: date ?? '', biz_time: timeOf(r[c('TransactionTime')]),
       amount_satang: Number.isFinite(amount) ? amount : 0, fee_satang: null, net_satang: null, method, channel: method,
       status, txn_status: nz(ts), settle_status: nz(ss), partner_id: nz(txt(r[c('PartnerID')])), partner_name: nz(name),
       partner_shop_id: nz(txt(r[c('PartnerShopID')])), source_row: i + 1, review: reasons.join(' · ') || null, alt_date: alt,

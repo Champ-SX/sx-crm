@@ -28,6 +28,12 @@ describe('sales parsers · fixtures', () => {
     expect(utcStamp('2026-11-02', '00:30:00')).toBe('20261101-173000')
     expect(utcStamp('2026-11-15', '22:02:48', 1)).toBe('20261115-150249')
   })
+  it('KBank FTP file: REF2 empty → machine from the ID (2- or 3-digit)', () => {
+    const h = ['PartnerID', 'PartnerName', 'PartnerShopID', 'MerchantID', 'MerchantName', 'TerminalID', 'PartnerTransactionUniqueID', 'Amount', 'TransactionStatus', 'SettlementStatus', 'TransactionDate', 'TransactionTime', 'REF1', 'REF2', 'REF3', 'REF4', 'PaymentType', 'RefID']
+    const row = (id: string) => ['PTR1', 'SIX', 'S1', 'KB1', 'x', '', id, '180', 'PAID', 'SETTLED', '16/11/2026', '10:42:44', '', '', '', '', 'KPLUS', '1']
+    const r = parseSheet([h, row('SX4420261116-034237'), row('SX01320261116-024416'), row('SX4020261116-052120')])
+    expect(r.rows.map((x) => [x.machine, x.raw_machine, x.review])).toEqual([[44, 'SX44', null], [13, 'SX013', null], [40, 'SX40', null]])
+  })
   it('Pay Solution: machine from ReferenceNo prefix, leading zeros kept', () => {
     expect(paySolutionMachine('044179473823')).toBe(44)
     expect(paySolutionMachine('44179473823')).toBe(44)
