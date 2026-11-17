@@ -112,7 +112,7 @@ export async function classify(rows: (SaleRow & { source_file: string })[]): Pro
 }
 
 /** Saves new + review rows and flags conflicts. Rolls back this import's rows if any batch fails. */
-export async function commitImport(items: Classified[], files: ImportFileSummary[], by: string | null): Promise<SalesImport> {
+export async function commitImport(items: Classified[], files: ImportFileSummary[], by: string | null, onProgress?: (done: number, total: number) => void): Promise<SalesImport> {
   clearSalesCache()
   const imp: SalesImport = {
     import_id: uid(), files, created_by: by, created_at: new Date().toISOString(),
@@ -133,9 +133,11 @@ export async function commitImport(items: Classified[], files: ImportFileSummary
   if (e1) throw e1
   try {
     for (let i = 0; i < insert.length; i += 500) {
+      onProgress?.(i, insert.length)
       const { error } = await supabase.from('sales_txns').upsert(insert.slice(i, i + 500), { onConflict: 'key', ignoreDuplicates: true })
       if (error) throw error
     }
+    onProgress?.(insert.length, insert.length)
     for (const c of conflicts) {
       const { error } = await supabase.from('sales_txns').update({ conflict: { amount_satang: c.row.amount_satang, biz_date: c.row.biz_date, machine: c.row.machine, file: c.row.source_file, at: now }, updated_at: now }).eq('key', c.row.key)
       if (error) throw error

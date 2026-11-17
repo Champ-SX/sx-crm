@@ -590,6 +590,9 @@ function Upload({ onDone }: { onDone: () => void }) {
   const { user } = useAuth()
   const [pending, setPending] = useState<Pending | null>(null)
   const [busy, setBusy] = useState(false)
+  // Upload progress overlay: what's happening + how far (null progress = spinner only)
+  const [work, setWork] = useState<{ label: string; detail?: string; progress?: number | null } | null>(null)
+  const tick = () => new Promise((r) => setTimeout(r, 0))   // let the animation paint between steps
   const [drag, setDrag] = useState(false)
   const [history, setHistory] = useState<SalesImport[]>([])
   const loadHistory = () => { void fetchImports().then(setHistory).catch(() => {}) }
@@ -598,9 +601,11 @@ function Upload({ onDone }: { onDone: () => void }) {
   async function pick(list: FileList | null) {
     if (!list?.length) return
     setBusy(true)
+    const list2 = Array.from(list)
     try {
       const files: Pending['files'] = []; const all: (SaleRow & { source_file: string })[] = []; const excludedNotes: string[] = []
-      for (const f of Array.from(list)) {
+      for (const [k, f] of list2.entries()) {
+        setWork({ label: `Reading ${list2.length} file${list2.length === 1 ? '' : 's'}…`, detail: `${k + 1} of ${list2.length} · ${f.name}`, progress: k / list2.length }); await tick()
         const res = parseSheet(await readRows(f))
         if (res.format === 'combined') { files.push({ name: f.name, format: 'combined', rows: 0, new: 0, dup: 0, conflict: 0, review: 0, excluded: 0, from: null, to: null, gross_satang: 0, note: 'Already an SX client report (output) — skipped.' }); continue }
         if (res.format === 'unknown') { files.push({ name: f.name, format: 'unknown', rows: 0, new: 0, dup: 0, conflict: 0, review: 0, excluded: 0, from: null, to: null, gross_satang: 0, note: 'Not a KBank, Pay Solution or ChillPay export — skipped.' }); continue }
@@ -613,6 +618,7 @@ function Upload({ onDone }: { onDone: () => void }) {
         const odd = rows.filter((r) => r.status !== 'success').length
         if (odd) excludedNotes.push(`${f.name}: ${odd} refund / failed / unknown-status rows kept aside (not in sales)`)
       }
+      setWork({ label: 'Checking for duplicates…', detail: `${all.length.toLocaleString()} payments`, progress: null }); await tick()
       const items = await classify(all)
       for (const fs of files) {
         const mine = items.filter((i) => i.row.source_file === fs.name)
@@ -621,29 +627,32 @@ function Upload({ onDone }: { onDone: () => void }) {
         fs.gross_satang = mine.filter((i) => i.kind === 'new' && i.row.status === 'success').reduce((s, i) => s + i.row.amount_satang, 0)
       }
       setPending({ files, items, excludedNotes })
-    } catch (e) { toast(`Couldn't read: ${e instanceof Error ? e.message : String(e)}`) } finally { setBusy(false) }
+    } catch (e) { toast(`Couldn't read: ${e instanceof Error ? e.message : String(e)}`) } finally { setBusy(false); setWork(null) }
   }
   async function removeImport(h: SalesImport) {
     const gross = h.files.reduce((a, f) => a + (f.gross_satang ?? 0), 0)
     const msg = `Delete this upload?\n\n${h.files.map((f) => `• ${f.name}`).join('\n')}\n\n${h.new_rows.toLocaleString()} payment${h.new_rows === 1 ? '' : 's'} (${fmtTHB(gross)}) it added will be removed from the dashboard and client reports. Payments that were already saved by an earlier upload stay. You can upload the corrected file again afterwards.`
     if (!window.confirm(msg)) return
-    setBusy(true)
+    setBusy(true); setWork({ label: 'Deleting upload…', detail: `${h.new_rows.toLocaleString()} payments`, progress: null })
     try { const r = await deleteImport(h); toast(`Deleted — ${r.rows.toLocaleString()} payments (${fmtTHB(r.satang)}) removed`); loadHistory(); onDone() }
-    catch (e) { toast(`Delete failed: ${e instanceof Error ? e.message : String(e)}`) } finally { setBusy(false) }
+    catch (e) { toast(`Delete failed: ${e instanceof Error ? e.message : String(e)}`) } finally { setBusy(false); setWork(null) }
   }
   async function commit() {
     if (!pending) return
     setBusy(true)
     try {
-      const imp = await commitImport(pending.items, pending.files.filter((f) => f.format !== 'combined' && f.format !== 'unknown'), user?.email ?? null)
+      setWork({ label: 'Importing…', detail: 'starting', progress: 0 })
+      const imp = await commitImport(pending.items, pending.files.filter((f) => f.format !== 'combined' && f.format !== 'unknown'), user?.email ?? null,
+        (done, total) => setWork({ label: 'Importing…', detail: `${done.toLocaleString()} of ${total.toLocaleString()} payments saved`, progress: total ? done / total : 1 }))
       toast(`Imported ${imp.new_rows.toLocaleString()} new rows${imp.review_rows ? ` · ${imp.review_rows} to review` : ''}`)
       setPending(null); loadHistory(); onDone()
-    } catch (e) { toast(`Import failed — nothing saved. ${e instanceof Error ? e.message : String(e)}`) } finally { setBusy(false) }
+    } catch (e) { toast(`Import failed — nothing saved. ${e instanceof Error ? e.message : String(e)}`) } finally { setBusy(false); setWork(null) }
   }
   const toSave = pending ? pending.items.filter((i) => i.kind === 'new' || i.kind === 'review').length : 0
   const conflicts = pending ? pending.items.filter((i) => i.kind === 'conflict').length : 0
   return (
     <div className="space-y-5">
+      {work && <LoadingOverlay label={work.label} detail={work.detail} progress={work.progress} delay={0} />}
       <label onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; if (!drag) setDrag(true) }} onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDrag(false) }}
         onDrop={(e) => { e.preventDefault(); setDrag(false); if (!busy) void pick(e.dataTransfer.files) }}
         className={cn('block cursor-pointer rounded-xl border-2 border-dashed bg-card p-8 text-center text-[13px] text-muted-foreground transition-colors hover:border-foreground/30',
