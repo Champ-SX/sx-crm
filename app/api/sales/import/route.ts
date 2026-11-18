@@ -39,6 +39,6 @@ export async function POST(req: NextRequest) {
       results.push({ name: b.name, status: 'error', error: e instanceof Error ? e.message : String(e) })
     }
   }
-  const failed = results.some((r) => r.status === 'error')
+  const failed = results.some((r) => r.status === 'error' || r.status === 'unrecognised')
   return NextResponse.json({ ok: !failed, results: results.map(({ name, status, error, new_rows, dup_rows, review_rows }) => ({ name, status, error, new_rows, dup_rows, review_rows })) }, { status: failed ? 207 : 200 })
 }

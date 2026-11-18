@@ -84,6 +84,7 @@ const SIGS: { format: ParseResult['format']; must: string[] }[] = [
   { format: 'kbank', must: ['PartnerID', 'PartnerTransactionUniqueID', 'Amount', 'TransactionDate', 'REF2', 'PaymentType'] },
   { format: 'paysolution', must: ['ReferenceNo', 'OrderNo', 'ProductDetail', 'totalAmount(THB)', 'paymentDate'] },
   { format: 'chillpay', must: ['เลขที่รายการ', 'วันที่ทำรายการ', 'ชื่อลูกค้า/รหัสลูกค้า'] },
+  { format: 'chillpay', must: ['transactionId', 'transactionDate', 'orderNo', 'paymentChannel', 'totalAmount', 'status'] },
 ]
 export function detect(rows: unknown[][]): { format: ParseResult['format']; header: number } {
   for (const s of SIGS) { const h = headerIndex(rows, s.must); if (h >= 0) return { format: s.format, header: h } }
@@ -94,7 +95,7 @@ export function parseSheet(rows: unknown[][]): ParseResult {
   const { format, header } = detect(rows)
   if (format === 'kbank') return parseKbank(rows, header)
   if (format === 'paysolution') return parsePaySolution(rows, header)
-  if (format === 'chillpay') return parseChillPay(rows, header)
+  if (format === 'chillpay') return rows[header].map(txt).includes('orderNo') ? parseChillPayApi(rows, header) : parseChillPay(rows, header)
   return { format, rows: [], excluded: [] }
 }
 
@@ -212,6 +213,44 @@ function parsePaySolution(rows: unknown[][], h: number): ParseResult {
     })
   }
   return { format: 'paysolution', rows: out, excluded }
+}
+
+// ── ChillPay (API transaction export, from the daily Mac script) ──────────────
+// Same key as the settlement report (merchant name from its header + เลขที่รายการ = orderNo),
+// so a later settlement upload of the same payments counts as "already saved".
+export const CHILLPAY_MERCHANT = 'SIXSHEET TECH Co., Ltd.'
+function parseChillPayApi(rows: unknown[][], h: number): ParseResult {
+  const c = colMap(rows[h])
+  const out: SaleRow[] = [], excluded: Excluded[] = []
+  for (let i = h + 1; i < rows.length; i++) {
+    const r = rows[i] ?? []
+    if (!r.some((x) => txt(x))) continue
+    const st = txt(r[c('status')])
+    if (!/^success$/i.test(st)) { excluded.push({ row: i + 1, reason: `Status ${st || 'blank'}` }); continue }
+    const id = txt(r[c('orderNo')]), cust = txt(r[c('customer')])
+    const reasons: string[] = []
+    if (!id) reasons.push('Missing ID')
+    const mId = /^SXC(\d{3})/i.exec(id), mName = /(\d{3})\s*$/.exec(cust)
+    const machine = mId ? Number(mId[1]) : null
+    if (machine == null) reasons.push('No machine')
+    else if (mName && Number(mName[1]) !== machine) reasons.push('Machine refs disagree')
+    const dm = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}:\d{2}(?::\d{2})?)/.exec(txt(r[c('transactionDate')]))
+    const okDate = !!dm && validYmd(+dm[3], +dm[2], +dm[1])
+    if (!okDate) reasons.push('Date unclear')
+    const amount = toSatang(r[c('totalAmount')])
+    if (!Number.isFinite(amount)) reasons.push('Bad amount')
+    const method = txt(r[c('paymentChannel')]) || 'Unknown'
+    out.push({
+      key: `chillpay|${CHILLPAY_MERCHANT}|${id || `row${i + 1}`}`, gateway: 'chillpay', merchant_id: CHILLPAY_MERCHANT, txn_id: id, alt_ref: nz(txt(r[c('transactionId')])),
+      machine, raw_machine: mId ? `SXC${mId[1]}` : null,
+      biz_date: okDate ? ymd(+dm![3], +dm![2], +dm![1]) : '', biz_time: dm ? timeOf(dm[4]) : null,
+      amount_satang: Number.isFinite(amount) ? amount : 0, fee_satang: null, net_satang: null, method, channel: method,
+      status: 'success', txn_status: st, settle_status: /^true$/i.test(txt(r[c('settled')])) ? 'Settled' : 'Not settled yet',
+      partner_id: null, partner_name: nz(cust), partner_shop_id: null,
+      source_row: i + 1, review: reasons.join(' · ') || null, alt_date: null,
+    })
+  }
+  return { format: 'chillpay', rows: out, excluded }
 }
 
 // ── ChillPay (settlement report) ──────────────────────────────────────────────

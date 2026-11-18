@@ -161,4 +161,15 @@ describe.skipIf(!has)('sales · insights on supplied samples', () => {
     expect(i.alerts.some((a) => a.kind === 'stopped' && a.machine === 41)).toBe(true)
     expect(i.daily.reduce((a, d) => a + d.event + d.perm, 0)).toBe(i.gross)
   })
+  it('ChillPay API export: Success only, settlement-compatible key', () => {
+    const csv = '\ufefftransactionId,transactionDate,merchant,customer,orderNo,paymentChannel,paymentDate,amount,refundAmount,fee,discount,totalAmount,currency,routeNo,status,settled,description\n' +
+      '1,17/11/2026 10:39:24,x,CAPTURES C073 ROOM 073,SXC07326111795036928,TrueMoney,17/11/2026 11:09:24,195.00,0,0,0,195.00,THB,1,Cancel,false,Photo session\n' +
+      '2,17/11/2026 10:41:00,x,CAPTURES C073 ROOM 073,SXC07326111705879007,QRCode,17/11/2026 10:41:15,195.00,0,0,0,195.00,THB,1,Success,false,Photo session\n'
+    const wb = XLSX.read(csv, { type: 'string', raw: true })
+    const r = parseSheet(XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: null }))
+    expect(r.format).toBe('chillpay')
+    expect(r.rows).toHaveLength(1)
+    expect(r.excluded).toHaveLength(1)
+    expect(r.rows[0]).toMatchObject({ key: 'chillpay|SIXSHEET TECH Co., Ltd.|SXC07326111705879007', machine: 73, biz_date: '2026-11-17', amount_satang: 19500, review: null })
+  })
 })
