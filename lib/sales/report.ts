@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx-js-style'
 import type { SaleRow } from './parse'
-import { clientGroupOf, groupOf, SALES_GROUPS } from './groups'
+import { clientGroupOf, groupOf, CLIENT_GROUPS } from './groups'
 
 // Dashboard, preview and Excel all use these on the same accepted rows.
 export const isAccepted = (r: Pick<SaleRow, 'status' | 'review' | 'biz_date'>) => r.status === 'success' && !r.review && !!r.biz_date
@@ -34,9 +34,9 @@ export const clientId = (r: SaleRow, o: ExportOpts) => (r.gateway === 'paysoluti
 
 export function reportFileName(p: Period, machines: number[]): string {
   const ms = [...machines].sort((a, b) => a - b)
-  const g = SALES_GROUPS.find((x) => x.ms.length === ms.length && x.ms.every((n, i) => n === ms[i]))
+  const g = CLIENT_GROUPS.find((x) => ms.length === x.to - x.from + 1 && ms[0] === x.from && ms[ms.length - 1] === x.to)
   const month = p.from.slice(0, 7) === p.to.slice(0, 7) ? p.from.slice(0, 7) : `${p.from}_${p.to}`
-  const what = g ? `${g.name.replace(/[^A-Za-z0-9]+/g, '')}_${g.ms[0]}-${g.ms[g.ms.length - 1]}` : ms.length === 1 ? `Machine${ms[0]}` : `Custom_${ms.length}machines`
+  const what = g ? `${g.name}_${g.from}-${g.to}` : ms.length === 1 ? `Machine${ms[0]}` : `Custom_${ms.length}machines`
   return `SX_${month}_${what}.xlsx`
 }
 

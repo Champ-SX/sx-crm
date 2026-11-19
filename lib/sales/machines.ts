@@ -9,7 +9,7 @@ export const BOOTH_TYPES: { id: BoothType | 'unassigned'; label: string; sub: st
   { id: 'space', label: 'Space activation', sub: 'K001–K015 · GP share with landlord', color: '#2F6FDB' },
   { id: 'event', label: 'Event', sub: 'K016–K037 · moves every event', color: '#C8643B' },
   { id: 'store', label: 'Store', sub: 'True · Andy & Fine · Phuket', color: '#1E9E62' },
-  { id: 'kiosk', label: 'Moshi', sub: 'M201–M208', color: '#7A5AA5' },
+  { id: 'kiosk', label: 'Moshi Moshi', sub: 'M201–M208', color: '#7A5AA5' },
   { id: 'laos', label: 'Laos', sub: 'L021–L026', color: '#D9822B' },
   { id: 'unassigned', label: 'Unassigned', sub: 'not in the machine sheet', color: '#A8A39A' },
 ]
@@ -30,11 +30,11 @@ export const MACHINES: Machine[] = [
   ...[80, 81, 82, 83, 84, 85, 86].map((no) => ({ code: `B${pad3(no)}`, no, name: 'Andy & Fine BTT', type: 'store' as const })),
   ...([[51, 'PKT POSE Office 01'], [52, 'PKT POSE Office 02'], [53, 'PKT POSE Office 03'], [54, 'PKT POSE Print Station'], [55, 'PKT POSE Portable 04'],
     [56, 'PKT POSE Office 05'], [57, 'PKT POSE Print Sticker'], [58, 'The moment Pattaya'], [59, 'Front PKT Office']] as [number, string][])
-    .map(([no, name]) => ({ code: `F${pad3(no)}`, no, name, type: 'store' as const })),
+    .map(([no, name]) => ({ code: `F${pad3(no)}`, no, name, type: (no === 58 ? 'space' : 'store') as BoothType })),   // 58 = space activation (finance)
   ...([[40, 'TRUE FL3 Print Station'], [41, 'TRUE FL3-01'], [42, 'TRUE FL3-02'], [43, 'TRUE FL3-03'], [44, 'TRUE FL3-04'], [45, 'TRUE FL3-05'],
     [46, 'TRUE FL4-01'], [47, 'TRUE FL4-02'], [48, 'TRUE FL4-03'], [50, 'TRUE FL4 Print Station']] as [number, string][])
     .map(([no, name]) => ({ code: `T${pad3(no)}`, no, name, type: 'store' as const })),
-  ...([[201, 'The Street Ratchada'], [202, 'Terminal Korat'], [203, 'Central Chiangmai'], [204, 'Union Mall']] as [number, string][])
+  ...([[201, 'The Street Ratchada'], [202, 'Terminal Korat'], [203, 'Central Chiangmai'], [204, 'Union Mall'], [205, 'Moshi Moshi'], [206, 'Moshi Moshi'], [207, 'Moshi Moshi'], [208, 'Moshi Moshi']] as [number, string][])
     .map(([no, name]) => ({ code: `M${no}`, no, name, type: 'kiosk' as const })),
   ...([[21, 'LAOs Status Bar'], [22, 'LAOs Rest84'], [23, 'LAOs Baron Bar'], [24, 'LAOs Event Portable'], [25, 'LAOs Beyond cafe'], [26, 'LAOs Event Topview']] as [number, string][])
     .map(([no, name]) => ({ code: `L${pad3(no)}`, no, name, type: 'laos' as const })),
