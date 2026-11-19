@@ -233,6 +233,7 @@ function parseChillPayApi(rows: unknown[][], h: number): ParseResult {
     const mId = /^SXC(\d{3})/i.exec(id), mName = /(\d{3})\s*$/.exec(cust)
     const machine = mId ? Number(mId[1]) : null
     if (machine == null) reasons.push('No machine')
+    else if (machine === 0) reasons.push('No booth: machine 000')   // payments outside the booths (invoice / online / test)
     else if (mName && Number(mName[1]) !== machine) reasons.push('Machine refs disagree')
     const dm = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}:\d{2}(?::\d{2})?)/.exec(txt(r[c('transactionDate')]))
     const okDate = !!dm && validYmd(+dm[3], +dm[2], +dm[1])
@@ -271,6 +272,7 @@ function parseChillPay(rows: unknown[][], h: number): ParseResult {
     const mId = /^SXC(\d{3})/i.exec(id), mName = /(\d{3})\s*$/.exec(cust)
     const machine = mId ? Number(mId[1]) : null
     if (machine == null) reasons.push('No machine')
+    else if (machine === 0) reasons.push('No booth: machine 000')   // payments outside the booths (invoice / online / test)
     else if (mName && Number(mName[1]) !== machine) reasons.push('Machine refs disagree')
     const dm = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}:\d{2}(?::\d{2})?)/.exec(txt(r[c('วันที่ทำรายการ')]))
     if (!dm || !validYmd(+dm[3], +dm[2], +dm[1])) reasons.push('Date unclear')

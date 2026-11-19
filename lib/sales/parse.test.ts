@@ -137,7 +137,9 @@ describe.skipIf(!has)('sales · acceptance on supplied samples', () => {
     expect(rs.filter((r) => r.machine === 0).length).toBe(2)
   })
   it('no KBank row is left with an unresolved date', () => {
-    expect(all.filter((r) => r.review).map((r) => `${r.gateway} r${r.source_row}: ${r.review} ${r.alt_date ?? ''}`)).toEqual([])
+    expect(all.filter((r) => r.review && r.gateway === 'kbank').map((r) => `${r.gateway} r${r.source_row}: ${r.review} ${r.alt_date ?? ''}`)).toEqual([])
+    // the two ChillPay machine-000 payments (not booth sales) wait for a person
+    expect(all.filter((r) => r.review).map((r) => `${r.gateway} r${r.source_row}: ${r.review}`)).toEqual(['chillpay r504: No booth: machine 000', 'chillpay r622: No booth: machine 000'])
   })
 })
 
@@ -153,7 +155,7 @@ describe.skipIf(!has)('sales · insights on supplied samples', () => {
     const i = computeInsights(all, '2026-11')
     expect(i.eventMachines).toEqual([9, 32, 33])
     expect(i.eventGross).toBe(56625000)
-    expect(i.gross).toBe(126667023)
+    expect(i.gross).toBe(125855000)   // excludes the 2 machine-000 ChillPay payments (฿8,120.23) now in Review
     expect(i.coveredDays).toBe(15)
     expect(Math.round(i.weekendShare * 100)).toBe(47)
     expect(i.peakHour).toBe(15)
@@ -171,5 +173,12 @@ describe.skipIf(!has)('sales · insights on supplied samples', () => {
     expect(r.rows).toHaveLength(1)
     expect(r.excluded).toHaveLength(1)
     expect(r.rows[0]).toMatchObject({ key: 'chillpay|SIXSHEET TECH Co., Ltd.|SXC07326111705879007', machine: 73, biz_date: '2026-11-17', amount_satang: 19500, review: null })
+  })
+  it('ChillPay machine 000 goes to Review', () => {
+    const csv = '\ufefftransactionId,transactionDate,merchant,customer,orderNo,paymentChannel,paymentDate,amount,refundAmount,fee,discount,totalAmount,currency,routeNo,status,settled,description\n' +
+      '1,03/11/2026 15:54:23,x,a89cbbd184304a70919acd404bbf8bea,SXC00026110385800893,QRCode,03/11/2026 15:54:30,7479.30,0,0,0,7479.30,THB,1,Success,false,x\n'
+    const wb = XLSX.read(csv, { type: 'string', raw: true })
+    const r = parseSheet(XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: null }))
+    expect(r.rows[0]).toMatchObject({ machine: 0, review: 'No booth: machine 000' })
   })
 })
