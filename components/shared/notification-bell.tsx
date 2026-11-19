@@ -44,10 +44,14 @@ export function NotificationBell() {
   function handleClick(n: (typeof mine)[number]) {
     markNotificationRead(n.id)
     setOpen(false)
-    // Ops jobs have no lead: their activity (and mentions) is keyed by job_id
-    // under 'lead_opportunity', so send those to the Won board's drawer.
-    const entityType = n.entity_type === 'lead_opportunity' && n.entity_id && wonJobs.some((j) => j.job_id === n.entity_id)
-      ? 'won_job' : n.entity_type
+    // A mention saved on a lead that has since been won belongs to its Won job now
+    // (won leads aren't listed on Leads & Opps). Ops jobs have no lead: their mentions
+    // are keyed by job_id under 'lead_opportunity'. Both open the Won board's drawer.
+    const job = n.entity_type === 'lead_opportunity' && n.entity_id
+      ? wonJobs.find((j) => j.job_id === n.entity_id) ?? wonJobs.find((j) => j.lead_op_id === n.entity_id)
+      : undefined
+    const entityType = job ? 'won_job' : n.entity_type
+    const entityId = job ? job.job_id : n.entity_id
     const route = ENTITY_ROUTE[entityType]
     if (!route) {
       router.push('/dashboard')
@@ -56,7 +60,7 @@ export function NotificationBell() {
     // Signal the target page to open this exact record. A reactive store value
     // (not a one-shot URL param) fires every click, even when already on the
     // page. Navigate to the page too — the page's watcher opens the drawer.
-    if (n.entity_id) requestOpenEntity(entityType as 'customer' | 'lead_opportunity' | 'won_job' | 'anf_request', n.entity_id)
+    if (entityId) requestOpenEntity(entityType as 'customer' | 'lead_opportunity' | 'won_job' | 'anf_request', entityId)
     router.push(route)
   }
 
