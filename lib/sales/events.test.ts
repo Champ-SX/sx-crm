@@ -38,6 +38,15 @@ describe('machine registry + Won titles', () => {
     ])
     expect(checks.some((c) => /booked on both/.test(c.what))).toBe(true)
   })
+  it('event name wins over a stale title (job 101)', () => {
+    const { events, checks } = eventsFromJobs([
+      job({ job_number: '101', event_date: '2026-10-28', event_end_date: '2026-11-07', product_name: '2026.10.28 - 11.07 - 101 - ตู้ Tally K032, K033 - Event - NCT127 @-', event_display_name: '2026.10.28 - 11.07 - 101 - ตู้ Tally K032 - Event - NCT127 @Siam Paragon' }),
+      job({ job_number: '141', event_date: '2026-10-28', event_end_date: '2026-11-07', product_name: 'x - 141 - ตู้ถอดประกอบ K033 - Event - NCT127', event_display_name: 'x - 141 - ตู้ถอดประกอบ K033 - Event - NCT127 @Siam Paragon' }),
+    ])
+    expect(events.map((e) => [e.job, e.booths])).toEqual([['101', [32]], ['141', [33]]])
+    expect(checks.some((c) => /booked on both/.test(c.what))).toBe(false)
+    expect(checks.map((c) => c.job)).toEqual(['101'])   // the stale title is still flagged
+  })
   it('forecast range needs 5 days', () => {
     expect(dayRange([1, 2, 3, 4])).toBeNull()
     expect(dayRange([10, 20, 30, 40, 50])).toEqual({ lo: 20, mid: 30, hi: 40, n: 5 })

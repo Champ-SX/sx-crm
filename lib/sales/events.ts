@@ -29,7 +29,10 @@ export function eventsFromJobs(jobs: WonJobLite[]): { events: BoothEvent[]; chec
     if (!a.length && !b.length) continue                       // LCA / services: not a sales booth
     const job = j.job_number ?? '—'
     const title = j.event_display_name || j.product_name || ''
-    const known = [...new Set([...a, ...b].filter((c) => c.known).map((c) => c.no))].sort((x, y) => x - y)
+    // The event name is the field people keep up to date; the title keeps old codes. Use the event name's
+    // booths when it has any, else the title's. Disagreements still go to the check list.
+    const pick = b.some((c) => c.known) ? b : a
+    const known = [...new Set(pick.filter((c) => c.known).map((c) => c.no))].sort((x, y) => x - y)
     const unknown = [...a, ...b].filter((c) => !c.known).map((c) => c.code)
     const sa = a.filter((c) => c.known).map((c) => c.no).sort().join(','), sb = b.filter((c) => c.known).map((c) => c.no).sort().join(',')
     if (unknown.length) checks.push({ id: j.job_id, job, title, what: `Booth code ${[...new Set(unknown)].join(', ')} isn't in the machine sheet` })
