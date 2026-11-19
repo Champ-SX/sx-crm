@@ -813,6 +813,10 @@ function Reconcile() {
   const [drill, setDrill] = useState<{ title: string; sub: string; rows: StoredSale[] } | null>(null)
   const [today] = useState(() => new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10))
   const ok = useMemo(() => (rows ?? []).filter(isAccepted), [rows])
+  const prevM = (() => { const [y, m] = month.split('-').map(Number); return m === 1 ? `${y - 1}-12` : `${y}-${pad(m - 1)}` })()
+  const pb = monthBounds(prevM)
+  const prev = useSales(pb.from, pb.to, bump).rows
+  const prevRows = useMemo(() => (prev ?? []).filter(isAccepted), [prev])
   // Gateways expected this month = any that has data this month
   const gws = ['kbank', 'chillpay', 'paysolution'].filter((g) => ok.some((r) => r.gateway === g))
   const days: string[] = []
@@ -825,13 +829,18 @@ function Reconcile() {
     if (r.source_file && !c.files.includes(r.source_file)) c.files.push(r.source_file)
     grid.set(k, c)
   }
-  const med = Object.fromEntries(gws.map((g) => [g, median(days.map((d) => grid.get(`${d}|${g}`)?.n ?? 0).filter((n) => n > 0))]))
+  // "Normal" = median of the same weekday (this month + last month), so quiet weekdays aren't compared with busy weekends
+  const dow = (d: string) => new Date(d + 'T00:00:00Z').getUTCDay()
+  const hist = new Map<string, number>()   // `${date}|${gw}` → count, this + previous month
+  for (const r of [...(prevRows ?? []), ...ok]) if (r.biz_date) hist.set(`${r.biz_date}|${r.gateway}`, (hist.get(`${r.biz_date}|${r.gateway}`) ?? 0) + 1)
+  const normal = (g: string, d: string) => median([...hist.entries()].filter(([k]) => k.endsWith(`|${g}`) && k.slice(0, 10) !== d && dow(k.slice(0, 10)) === dow(d)).map(([, n]) => n))
   // KBank's file for a day arrives the next morning: yesterday/today aren't "missing" yet
   const yday = new Date(Date.parse(today + 'T00:00:00Z') - 864e5).toISOString().slice(0, 10)
   const state = (d: string, g: string): 'ok' | 'low' | 'missing' | 'waiting' => {
     const c = grid.get(`${d}|${g}`)
     if (!c) return d >= yday ? 'waiting' : 'missing'
-    return med[g] && c.n < med[g] * 0.5 ? 'low' : 'ok'
+    const m = normal(g, d)
+    return m >= 4 && c.n < m * 0.5 ? 'low' : 'ok'
   }
   const counts = { ok: 0, low: 0, missing: 0 }
   for (const d of days) for (const g of gws) { const s = state(d, g); if (s !== 'waiting') counts[s]++ }
@@ -850,7 +859,7 @@ function Reconcile() {
       {err && <p className="text-[12.5px] text-red-600">{err}</p>}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <div className={card}><b className="block text-[20px] text-emerald-700 dark:text-emerald-300">{counts.ok}</b><span className="text-[12px] text-muted-foreground">day × gateway complete</span></div>
-        <div className={card}><b className="block text-[20px] text-amber-700 dark:text-amber-300">{counts.low}</b><span className="text-[12px] text-muted-foreground">unusually low (&lt;50% of a normal day)</span></div>
+        <div className={card}><b className="block text-[20px] text-amber-700 dark:text-amber-300">{counts.low}</b><span className="text-[12px] text-muted-foreground">unusually low (&lt;50% of a normal same weekday)</span></div>
         <div className={card}><b className="block text-[20px] text-red-700 dark:text-red-300">{counts.missing}</b><span className="text-[12px] text-muted-foreground">no payments — file missing?</span></div>
         <div className={card}><b className="block text-[20px] tabular-nums">{fmtTHB(total)}</b><span className="text-[12px] text-muted-foreground">{ok.length.toLocaleString()} payments this month</span></div>
       </div>
@@ -881,7 +890,7 @@ function Reconcile() {
             })}</tbody>
           </table>
         )}
-        <p className="mt-2 text-[11.5px] text-muted-foreground">✓ data arrived · ⚠ under half of a normal day for that gateway · ✕ no payments (missing file, or the booths were really closed) · … the file for this day hasn&apos;t arrived yet. Payment dates are Thai time; KBank late-evening sales arrive in the next day&apos;s file.</p>
+        <p className="mt-2 text-[11.5px] text-muted-foreground">✓ data arrived · ⚠ under half of that gateway&apos;s usual for the same weekday (this + last month) · ✕ no payments (missing file, or the booths were really closed) · … the file for this day hasn&apos;t arrived yet. Payment dates are Thai time; KBank late-evening sales arrive in the next day&apos;s file.</p>
       </div>
       <AuditLog month={month} bump={bump} />
       {drill && <DrillDialog title={drill.title} sub={drill.sub} rows={drill.rows} onClose={() => setDrill(null)} onChanged={() => { salesCache.clear(); setBump((b) => b + 1); setDrill(null) }} />}
