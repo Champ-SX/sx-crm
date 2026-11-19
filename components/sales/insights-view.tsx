@@ -1,4 +1,5 @@
 'use client'
+import { GROUP_COLORS } from '@/lib/sales/groups'
 
 import { useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -13,7 +14,7 @@ const card = 'rounded-xl border border-border bg-card p-4 min-w-0'
 const lbl = 'font-mono text-[10.5px] font-semibold tracking-[0.06em] text-muted-foreground'
 const h2 = 'font-mono text-[11px] font-semibold tracking-[0.08em] text-muted-foreground mt-6 mb-2'
 const EV = '#E8A25A', PM = '#4F86D9', ACC = '#C8643B'
-const GCOL: Record<string, string> = { Captures: '#4F86D9', True: '#C9423B', BACC: '#1E9E62', C11: '#D9822B', BTT: '#7A5AA5', Unassigned: '#A8A39A' }
+const GCOL = GROUP_COLORS
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 function Tip({ children }: { children: React.ReactNode }) {

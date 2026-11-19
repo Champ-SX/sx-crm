@@ -9,7 +9,7 @@ export const BOOTH_TYPES: { id: BoothType | 'unassigned'; label: string; sub: st
   { id: 'space', label: 'Space activation', sub: 'K001–K015 · GP share with landlord', color: '#2F6FDB' },
   { id: 'event', label: 'Event', sub: 'K016–K037 · moves every event', color: '#C8643B' },
   { id: 'store', label: 'Store', sub: 'True · Andy & Fine · Phuket', color: '#1E9E62' },
-  { id: 'kiosk', label: 'Kiosk', sub: 'M201–M204', color: '#7A5AA5' },
+  { id: 'kiosk', label: 'Moshi', sub: 'M201–M208', color: '#7A5AA5' },
   { id: 'laos', label: 'Laos', sub: 'L021–L026', color: '#D9822B' },
   { id: 'unassigned', label: 'Unassigned', sub: 'not in the machine sheet', color: '#A8A39A' },
 ]

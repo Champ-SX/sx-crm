@@ -12,7 +12,8 @@ import { useAuth } from '@/components/auth-provider'
 import { toast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
 import { parseSheet, type SaleRow } from '@/lib/sales/parse'
-import { SALES_GROUPS, ALL_ASSIGNED, groupOf, machinesOf, UNASSIGNED } from '@/lib/sales/groups'
+import { SALES_GROUPS, ALL_ASSIGNED, groupOf, machinesOf, UNASSIGNED, GROUP_COLORS } from '@/lib/sales/groups'
+import { machineOf } from '@/lib/sales/machines'
 import { buildWorkbook, downloadWorkbook, byMachine, fmtTHB, isAccepted, reportFileName, selectRows, DEFAULT_EXPORT, type ExportOpts } from '@/lib/sales/report'
 import {
   classify, commitImport, deleteImport, importsWithFile, restoreImport, sha256Hex, voidImport, fetchDateRange, salesCache, fetchImports, fetchReviewQueue, fetchSales, patchSale, useSalesAccess, fetchAudit, type AuditEntry,
@@ -25,7 +26,8 @@ const monthBounds = (ym: string) => { const [y, m] = ym.split('-').map(Number); 
 const thisMonth = () => new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 7)
 const fmtDay = (iso: string) => new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
 const GW: Record<string, string> = { kbank: 'KBank', paysolution: 'Pay Solution', chillpay: 'ChillPay' }
-const GROUP_COLORS: Record<string, string> = { Captures: '#2F6FDB', True: '#C9423B', BACC: '#1E9E62', C11: '#D9822B', BTT: '#7A5AA5', [UNASSIGNED]: '#A8A39A' }
+/** "#44 TRUE FL3-04" — number plus the name from the MACHINE NO. sheet. */
+const mLabel = (n: number | null | undefined) => `#${n ?? '?'}${machineOf(n)?.name ? ` ${machineOf(n)!.name}` : ''}`
 const lbl = 'font-mono text-[10.5px] font-semibold tracking-[0.06em] text-muted-foreground'
 const card = 'rounded-xl border border-border bg-card p-4'
 
@@ -174,10 +176,10 @@ function Dashboard() {
           {months.map((m) => <option key={m} value={m}>{new Date(m + '-01T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' })}</option>)}
         </select>
         <select value={group} onChange={(e) => { setGroup(e.target.value); setMachine('all') }} className="h-8 rounded-md border border-border bg-card px-2 text-[13px]" aria-label="Group">
-          <option value="all">All groups</option>{SALES_GROUPS.map((g) => <option key={g.id} value={g.name}>{g.name} · {g.from}–{g.to}</option>)}<option value={UNASSIGNED}>{UNASSIGNED}</option>
+          <option value="all">All groups</option>{SALES_GROUPS.map((g) => <option key={g.id} value={g.name}>{g.name} · {g.range}</option>)}<option value={UNASSIGNED}>{UNASSIGNED}</option>
         </select>
         <select value={machine} onChange={(e) => setMachine(e.target.value)} className="h-8 rounded-md border border-border bg-card px-2 text-[13px]" aria-label="Machine">
-          <option value="all">All machines</option>{machineOpts.filter((m) => group === 'all' || groupOf(m) === group).map((m) => <option key={m} value={String(m)}>#{m}</option>)}
+          <option value="all">All machines</option>{machineOpts.filter((m) => group === 'all' || groupOf(m) === group).map((m) => <option key={m} value={String(m)}>{mLabel(m)}</option>)}
         </select>
       </div>
 
@@ -211,7 +213,7 @@ function Dashboard() {
       <div>
         <p className={cn(lbl, 'mb-2')}>BY CLIENT GROUP</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {[...SALES_GROUPS.map((g) => [g.name, `${g.from}–${g.to}`]), [UNASSIGNED, 'not in a range']].map(([name, range]) => {
+          {[...SALES_GROUPS.map((g) => [g.name, g.range]), [UNASSIGNED, 'not in a range']].map(([name, range]) => {
             const v = groups.find(([k]) => k === name)?.[1]
             return (
               <div key={name} role="button" tabIndex={0} onClick={() => open(`${name} · ${range}`, monthName + (name === UNASSIGNED ? ' · machines outside every group — counted in company totals, never in client reports' : ''), (r) => groupOf(r.machine) === name)}
@@ -253,8 +255,8 @@ function Dashboard() {
         <div className={card}>
           <p className={cn(lbl, 'mb-2')}>TOP 20 MACHINES</p>
           {mlines.slice(0, 20).map((l) => (
-            <div key={l.machine} onClick={() => open(`Machine #${l.machine}`, `${l.group} · ${monthName}`, (r) => r.machine === l.machine)} className="-mx-1 flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-[12.5px] hover:bg-muted">
-              <span className="w-10 font-mono">#{l.machine}</span>
+            <div key={l.machine} onClick={() => open(`Machine ${mLabel(l.machine)}`, `${l.group} · ${monthName}`, (r) => r.machine === l.machine)} className="-mx-1 flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-[12.5px] hover:bg-muted">
+              <span className="w-44 truncate font-mono" title={mLabel(l.machine)}>#{l.machine}{machineOf(l.machine)?.name && <span className="ml-1 font-sans font-normal text-muted-foreground">{machineOf(l.machine)!.name}</span>}</span>
               <div className="h-2 flex-1 rounded-full bg-muted"><div className="h-2 rounded-full" style={{ width: `${(l.satang / (mlines[0]?.satang || 1)) * 100}%`, background: GROUP_COLORS[l.group] }} /></div>
               <span className="w-28 text-right tabular-nums">{fmtTHB(l.satang)}</span>
             </div>
@@ -267,7 +269,7 @@ function Dashboard() {
             <table className="w-full text-[12.5px] tabular-nums">
               <thead className="sticky top-0 bg-card text-[11px] text-muted-foreground"><tr><th className="py-1 text-left">Machine</th><th className="text-left">Group</th><th className="text-right">Sales</th><th className="text-right">Revenue</th><th className="text-right">%</th></tr></thead>
               <tbody>{mlines.map((l) => (
-                <tr key={l.machine} onClick={() => open(`Machine #${l.machine}`, `${l.group} · ${monthName}`, (r) => r.machine === l.machine)} className="cursor-pointer border-t border-border/60 hover:bg-muted/50"><td className="py-1 font-mono">#{l.machine}</td><td>{l.group}</td><td className="text-right">{l.count}</td><td className="text-right">{fmtTHB(l.satang)}</td><td className="text-right text-muted-foreground">{gross ? ((l.satang / gross) * 100).toFixed(2) : '0.00'}%</td></tr>
+                <tr key={l.machine} onClick={() => open(`Machine ${mLabel(l.machine)}`, `${l.group} · ${monthName}`, (r) => r.machine === l.machine)} className="cursor-pointer border-t border-border/60 hover:bg-muted/50"><td className="py-1 font-mono">#{l.machine}{machineOf(l.machine)?.name && <span className="ml-1 font-sans font-normal text-muted-foreground">{machineOf(l.machine)!.name}</span>}</td><td>{l.group}</td><td className="text-right">{l.count}</td><td className="text-right">{fmtTHB(l.satang)}</td><td className="text-right text-muted-foreground">{gross ? ((l.satang / gross) * 100).toFixed(2) : '0.00'}%</td></tr>
               ))}</tbody>
             </table>
           </div>
@@ -471,7 +473,7 @@ function ReportBuilder() {
   }, [ok])
   const groupTotal = (ms: number[]) => ms.reduce((a, n) => { const x = stats.get(n)!; return { n: a.n + x.n, s: a.s + x.s } }, { n: 0, s: 0 })
   const activeGroups = SALES_GROUPS.filter((g) => machinesOf(g).some((n) => sel.has(n)))
-  const visible = ALL_ASSIGNED.filter((n) => (show === 'all' || !activeGroups.length || activeGroups.some((g) => n >= g.from && n <= g.to)) && (!q.trim() || String(n).includes(q.trim().replace('#', ''))))
+  const visible = ALL_ASSIGNED.filter((n) => (show === 'all' || !activeGroups.length || activeGroups.some((g) => g.ms.includes(n))) && (!q.trim() || String(n).includes(q.trim().replace('#', ''))))
   const toggle = (n: number) => setSel((s) => { const x = new Set(s); if (x.has(n)) x.delete(n); else x.add(n); return x })
   const setMany = (ms: number[], on: boolean) => setSel((s) => { const x = new Set(s); ms.forEach((n) => (on ? x.add(n) : x.delete(n))); return x })
   const allVisibleOn = visible.length > 0 && visible.every((n) => sel.has(n))
@@ -491,7 +493,7 @@ function ReportBuilder() {
     <div className="space-y-3">
       {/* Group cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-        {[{ id: 'all', name: 'All machines', range: `(${ALL_ASSIGNED.length})`, ms: ALL_ASSIGNED }, ...SALES_GROUPS.map((g) => ({ id: g.id, name: g.name, range: `${g.from}–${g.to}`, ms: machinesOf(g) }))].map((g) => {
+        {[{ id: 'all', name: 'All machines', range: `(${ALL_ASSIGNED.length})`, ms: ALL_ASSIGNED }, ...SALES_GROUPS.map((g) => ({ id: g.id, name: g.name, range: g.range, ms: machinesOf(g) }))].map((g) => {
           const full = g.ms.every((n) => sel.has(n)); const t = groupTotal(g.ms)
           return (
             <button key={g.id} type="button" aria-pressed={full} onClick={() => { setMany(g.ms, !full); if (!full) setShow('selected') }}
@@ -544,8 +546,8 @@ function ReportBuilder() {
                 return (
                   <tr key={n} onClick={() => toggle(n)} className={cn('cursor-pointer border-t border-border/60 hover:bg-muted/40', !x.n && 'text-muted-foreground/60')} style={on ? { background: 'rgba(200,100,59,0.05)' } : undefined}>
                     <td className="px-3 py-1.5"><span className={cb(on)} style={on ? { background: ACC } : undefined}>{on && '✓'}</span></td>
-                    <td className="px-2 font-mono font-semibold">#{n}</td>
-                    <td className="px-2"><span className="rounded-[5px] px-1.5 py-px text-[10.5px] font-semibold" style={{ background: `${GROUP_COLORS[grp]}1A`, color: GROUP_COLORS[grp] }}>{grp}</span></td>
+                    <td className="px-2 whitespace-nowrap font-mono font-semibold">#{n}{machineOf(n)?.name && <span className="ml-1 font-sans font-normal text-muted-foreground">{machineOf(n)!.name}</span>}</td>
+                    <td className="px-2"><span className="whitespace-nowrap rounded-[5px] px-1.5 py-px text-[10.5px] font-semibold" style={{ background: `${GROUP_COLORS[grp]}1A`, color: GROUP_COLORS[grp] }}>{grp}</span></td>
                     {x.mix.map((c, i) => <td key={i} className="px-2 text-right">{c || '–'}</td>)}
                     <td className="px-2 text-right">{x.n}</td>
                     <td className={cn('px-2 text-right', on && x.n && 'font-semibold')}>{fmtTHB(x.s)}</td>
@@ -1010,7 +1012,7 @@ function Review({ onChange }: { onChange: () => void }) {
           <div><p className="font-semibold">Pay Solution · ID in client files</p>
             <p className="mt-1 text-muted-foreground"><b className="text-foreground">ReferenceNo</b> (e.g. 004179474639) — confirmed by finance. OrderNo is still stored for lookups.</p></div>
           <div><p className="font-semibold">ChillPay · amount</p><p className="mt-1 text-muted-foreground">Client files use ยอดชำระรวม (incl. fee). Fees and net transfer are stored and shown on the dashboard.</p></div>
-          <div><p className="font-semibold">Machine groups</p><p className="mt-1 text-muted-foreground">{SALES_GROUPS.map((g) => `${g.name} ${g.from}–${g.to}`).join(' · ')}</p></div>
+          <div><p className="font-semibold">Machine groups</p><p className="mt-1 text-muted-foreground">{SALES_GROUPS.map((g) => `${g.name} ${g.range}`).join(' · ')}</p></div>
         </div>
       </div>
     </div>
