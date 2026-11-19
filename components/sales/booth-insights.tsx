@@ -67,14 +67,20 @@ export function BoothInsights({ rows, month, today }: { rows: StoredSale[]; mont
   const monthEvents = events.filter((e) => e.from <= mTo && e.to >= mFrom)
 
   // Event-day samples (past events only) for forecasts, by deal type
+  // Past events only. Free-play events (no payments at all) are counted separately, not as ฿0 days,
+  // so a forecast says "usually free play" instead of a ฿0–฿0 range.
   const samples = useMemo(() => {
     const s: Record<string, number[]> = { gp_share: [], fixed: [], other: [] }
+    const ev: Record<string, { paid: number; free: number }> = { gp_share: { paid: 0, free: 0 }, fixed: { paid: 0, free: 0 }, other: { paid: 0, free: 0 } }
     const byBooth = new Map<number, number[]>()
-    for (const e of events) if (e.to < today) for (const b of e.booths) for (let d = e.from; d <= e.to; d = addDays(d, 1)) {
-      const g = evDay.get(`${b}|${d}`)?.g ?? 0
-      s[e.deal].push(g); if (e.deal !== 'fixed') byBooth.set(b, [...(byBooth.get(b) ?? []), g])
+    for (const e of events) if (e.to < today) {
+      const days: [number, number][] = []
+      for (const b of e.booths) for (let d = e.from; d <= e.to; d = addDays(d, 1)) days.push([b, evDay.get(`${b}|${d}`)?.g ?? 0])
+      if (!days.some(([, g]) => g > 0)) { ev[e.deal].free++; continue }
+      ev[e.deal].paid++
+      for (const [b, g] of days) { s[e.deal].push(g); byBooth.set(b, [...(byBooth.get(b) ?? []), g]) }
     }
-    return { s, byBooth }
+    return { s, byBooth, ev }
   }, [events, evDay, today])
   const forecasts = leads
     .filter((l) => l.event_date && l.event_date >= today && !/^(won|lost)$/i.test(l.status ?? ''))
@@ -83,7 +89,10 @@ export function BoothInsights({ rows, month, today }: { rows: StoredSale[]; mont
       const deal = l.value_type === 'gp_share' ? 'gp_share' : l.value_type === 'fixed' ? 'fixed' : 'other'
       const own = booths.length === 1 ? samples.byBooth.get(booths[0].no) ?? [] : []
       const r = dayRange(own.length >= 5 ? own : samples.s[deal])
-      return { l, booths, deal, r, basis: own.length >= 5 ? `${own.length} past ${booths[0].code} event-days` : `${samples.s[deal].length} past ${deal === 'gp_share' ? 'GP-share' : deal === 'fixed' ? 'fixed-fee' : ''} event-days` }
+      const c = samples.ev[deal], freeShare = c.paid + c.free ? c.free / (c.paid + c.free) : 0
+      const kind = deal === 'gp_share' ? 'GP-share' : deal === 'fixed' ? 'fixed-fee' : ''
+      return { l, booths, deal, r, freeShare, basis: own.length >= 5 ? `${own.length} past ${booths[0].code} event-days with sales` : `${samples.s[deal].length} past ${kind} event-days with sales`,
+        freeNote: c.free ? `${c.free} of ${c.paid + c.free} past ${kind} events were free play` : '' }
     })
     .filter((f) => f.booths.length)
     .sort((a, b) => a.l.event_date!.localeCompare(b.l.event_date!))
@@ -133,12 +142,13 @@ export function BoothInsights({ rows, month, today }: { rows: StoredSale[]; mont
             <thead className="text-[11px] text-muted-foreground"><tr><th className="py-1 text-left">Dates</th><th className="text-left">Job</th><th className="text-left">Booth</th><th className="text-left">Event @ venue</th><th className="text-left">Deal</th><th className="text-right">Payments</th><th className="text-right">Gross</th><th className="text-right">Per booth-day</th></tr></thead>
             <tbody>{monthEvents.map((e) => {
               const s = statOf(e), future = e.from > today
+              const clash = events.filter((o) => o.id !== e.id && o.booths.some((b) => e.booths.includes(b)) && o.from <= e.to && e.from <= o.to)
               return (
                 <tr key={e.id} className="border-t border-border/60 align-top">
                   <td className="py-1.5 pr-2 whitespace-nowrap">{span(e.from, e.to)}</td>
                   <td className="pr-2">{e.job}</td>
                   <td className="pr-2">{e.booths.map((b) => <Code key={b}>{machineOf(b)?.code}</Code>)}</td>
-                  <td className="pr-2 max-w-[320px]">{e.label}</td>
+                  <td className="pr-2 max-w-[320px]">{e.label}{clash.length > 0 && <span className="block text-[11px] text-amber-700 dark:text-amber-300">⚠ same booth &amp; dates as job {clash.map((o) => o.job).join(', ')} — payments counted in both</span>}</td>
                   <td className="pr-2"><Deal e={e} /></td>
                   <td className="text-right">{future ? '—' : s.n.toLocaleString()}</td>
                   <td className="text-right">{future ? <span className="text-muted-foreground">upcoming</span> : fmtTHB(s.g)}</td>
@@ -186,7 +196,8 @@ export function BoothInsights({ rows, month, today }: { rows: StoredSale[]; mont
                 <tr key={f.l.lead_op_id} className="border-t border-border/60 align-top first:border-0">
                   <td className="py-1.5 pr-2">{eventLabel(f.l.name ?? '')}<span className="block text-[11px] text-muted-foreground">{fmtD(f.l.event_date!)} · {f.l.status}</span></td>
                   <td className="pr-2">{f.booths.map((b) => <Code key={b.code}>{b.code}</Code>)}<Deal e={{ deal: f.deal, gp: f.l.gp_share_pct }} /></td>
-                  <td className="text-right tabular-nums">{f.r ? <><b>{k(f.r.lo * f.booths.length)}–{k(f.r.hi * f.booths.length)}</b><span className="block text-[11px] text-muted-foreground">per day · {f.basis}</span></> : <span className="text-[11.5px] text-muted-foreground">not enough history ({f.basis})</span>}</td>
+                  <td className="text-right tabular-nums">{f.r ? <><b>{k(f.r.lo * f.booths.length)}–{k(f.r.hi * f.booths.length)}</b><span className="block text-[11px] text-muted-foreground">per day if paid · {f.basis}</span></> : <span className="text-[11.5px] text-muted-foreground">not enough history ({f.basis})</span>}
+                    {f.freeNote && <span className={cn('block text-[11px]', f.freeShare >= 0.5 ? 'font-medium text-amber-700 dark:text-amber-300' : 'text-muted-foreground')}>{f.freeShare >= 0.5 ? 'usually free play — ' : ''}{f.freeNote}</span>}</td>
                 </tr>
               ))}</tbody>
             </table>
