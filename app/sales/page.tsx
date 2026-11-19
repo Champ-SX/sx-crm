@@ -14,7 +14,7 @@ import { parseSheet, type SaleRow } from '@/lib/sales/parse'
 import { SALES_GROUPS, ALL_ASSIGNED, groupOf, machinesOf, UNASSIGNED } from '@/lib/sales/groups'
 import { buildWorkbook, downloadWorkbook, byMachine, fmtTHB, isAccepted, reportFileName, selectRows, DEFAULT_EXPORT, type ExportOpts } from '@/lib/sales/report'
 import {
-  classify, commitImport, deleteImport, importsWithFile, restoreImport, sha256Hex, voidImport, fetchDateRange, salesCache, fetchImports, fetchReviewQueue, fetchSales, patchSale, useSalesAccess,
+  classify, commitImport, deleteImport, importsWithFile, restoreImport, sha256Hex, voidImport, fetchDateRange, salesCache, fetchImports, fetchReviewQueue, fetchSales, patchSale, useSalesAccess, fetchAudit, type AuditEntry,
   type Classified, type ImportFileSummary, type SalesImport, type StoredSale,
 } from '@/lib/supabase/sales'
 
@@ -301,8 +301,8 @@ function DrillDialog({ title, sub, rows, onClose, onChanged }: { title: string; 
   const shown = rows.filter((r) => (gw === 'all' || r.gateway === gw) && (!qq || [r.txn_id, r.alt_ref, r.source_file, r.raw_machine, String(r.machine), (r.amount_satang / 100).toFixed(2), r.channel].filter(Boolean).join(' ').toLowerCase().includes(qq)))
     .sort((a, b) => a.biz_date.localeCompare(b.biz_date) || (a.biz_time ?? '').localeCompare(b.biz_time ?? '') || a.txn_id.localeCompare(b.txn_id))
   const LIMIT = 500
-  async function act(r: StoredSale, patch: Partial<StoredSale>, msg: string) {
-    try { await patchSale(r.key, patch); toast(msg); onChanged() } catch (e) { toast(`Failed: ${e instanceof Error ? e.message : String(e)}`) }
+  async function act(r: StoredSale, patch: Partial<StoredSale>, msg: string, reason: string | null = null) {
+    try { await patchSale(r.key, patch, reason); toast(msg); onChanged() } catch (e) { toast(`Failed: ${e instanceof Error ? e.message : String(e)}`) }
   }
   function exportRows() {
     const aoa = [['Date', 'Time', 'Machine', 'Raw machine', 'Gateway', 'Transaction ID', 'Other ref', 'Channel', 'Amount (THB)', 'Source file', 'Source row'],
@@ -354,9 +354,9 @@ function DrillDialog({ title, sub, rows, onClose, onChanged }: { title: string; 
                   <td className={cn('px-2 text-right', odd(r) && 'font-bold')} title={odd(r) ? 'Much higher than this machine’s usual price' : undefined}>{(r.amount_satang / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                   <td className="max-w-[240px] truncate px-2 text-[11.5px] text-muted-foreground" title={`${r.source_file ?? ''} · row ${r.source_row}`}><b className="font-medium text-foreground">{r.source_file ?? '—'}</b> · row {r.source_row}</td>
                   <td className="whitespace-nowrap px-3 text-right text-[11.5px]">
-                    <button type="button" className="text-muted-foreground hover:text-foreground" onClick={() => { const v = window.prompt(`Machine number for ${r.txn_id}:`, String(r.machine ?? '')); if (v && /^\d+$/.test(v.trim()) && Number(v) !== r.machine) void act(r, { machine: Number(v) }, `Moved to machine #${v}`) }}>Set machine</button>
+                    <button type="button" className="text-muted-foreground hover:text-foreground" onClick={() => { const v = window.prompt(`Machine number for ${r.txn_id}:`, String(r.machine ?? '')); if (!v || !/^\d+$/.test(v.trim()) || Number(v) === r.machine) return; const why = askReason(`Move ${r.txn_id} from machine #${r.machine ?? '—'} to #${v.trim()}`); if (why) void act(r, { machine: Number(v) }, `Moved to machine #${v}`, why) }}>Set machine</button>
                     <span className="mx-1 text-muted-foreground/40">·</span>
-                    <button type="button" className="text-muted-foreground hover:text-destructive" onClick={() => window.confirm(`Exclude ${r.txn_id} (${fmtTHB(r.amount_satang)}) from all sales and reports?`) && void act(r, { status: 'excluded' }, 'Excluded')}>Exclude</button>
+                    <button type="button" className="text-muted-foreground hover:text-destructive" onClick={() => { const why = askReason(`Exclude ${r.txn_id} (${fmtTHB(r.amount_satang)}) from all sales and reports?`); if (why) void act(r, { status: 'excluded' }, 'Excluded', why) }}>Exclude</button>
                   </td>
                 </tr>
               ))}
@@ -712,6 +712,13 @@ function Upload({ onDone }: { onDone: () => void }) {
   )
 }
 
+/** Ask why (kept in the audit log). null = cancelled. */
+function askReason(what: string): string | null {
+  const r = window.prompt(`${what}\n\nReason (required, kept in the audit log):`)
+  if (r == null) return null
+  if (!r.trim()) { toast('A reason is needed — nothing changed'); return null }
+  return r.trim()
+}
 const fmtWhen = (iso: string) => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 // Source tag colours: KBank green · ChillPay light blue · Pay Solution dark blue
 const SRC_TAG: Record<string, string> = {
@@ -876,7 +883,69 @@ function Reconcile() {
         )}
         <p className="mt-2 text-[11.5px] text-muted-foreground">✓ data arrived · ⚠ under half of a normal day for that gateway · ✕ no payments (missing file, or the booths were really closed) · … the file for this day hasn&apos;t arrived yet. Payment dates are Thai time; KBank late-evening sales arrive in the next day&apos;s file.</p>
       </div>
+      <AuditLog month={month} bump={bump} />
       {drill && <DrillDialog title={drill.title} sub={drill.sub} rows={drill.rows} onClose={() => setDrill(null)} onChanged={() => { salesCache.clear(); setBump((b) => b + 1); setDrill(null) }} />}
+    </div>
+  )
+}
+
+const ACTION_LABEL: Record<string, [string, string]> = {
+  imported: ['Imported', 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'],
+  voided: ['Voided upload', 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200'],
+  restored: ['Restored upload', 'bg-sky-50 text-sky-800 dark:bg-sky-400/10 dark:text-sky-200'],
+  deleted_upload: ['Deleted permanently', 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300'],
+  edited_payment: ['Edited payment', 'bg-muted text-foreground'],
+  excluded_payment: ['Excluded payment', 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300'],
+}
+function AuditLog({ month, bump }: { month: string; bump: number }) {
+  const { from, to } = monthBounds(month)
+  const [rows, setRows] = useState<AuditEntry[] | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+  const [who, setWho] = useState('all')
+  const [kind, setKind] = useState('all')
+  const [q, setQ] = useState('')
+  useEffect(() => {
+    let on = true
+    fetchAudit(from, to).then((r) => { if (on) { setRows(r); setErr(null) } }).catch((e) => on && setErr(e instanceof Error ? e.message : String(e)))
+    return () => { on = false }
+  }, [from, to, bump])
+  const people = [...new Set((rows ?? []).map((r) => r.actor ?? '—'))].sort()
+  const qq = q.trim().toLowerCase()
+  const list = (rows ?? []).filter((r) => (who === 'all' || (r.actor ?? '—') === who) && (kind === 'all' || r.action === kind)
+    && (!qq || [r.summary, r.reason, r.txn_key, r.import_id].some((x) => x?.toLowerCase().includes(qq))))
+  const sel = 'h-8 rounded-md border border-border bg-card px-2 text-[12px]'
+  return (
+    <div className={card}>
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <p className={cn(lbl, 'mr-auto')}>AUDIT LOG · {new Date(month + '-01T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }).toUpperCase()}</p>
+        <select aria-label="Person" value={who} onChange={(e) => setWho(e.target.value)} className={sel}><option value="all">Everyone</option>{people.map((p) => <option key={p} value={p}>{p}</option>)}</select>
+        <select aria-label="Action" value={kind} onChange={(e) => setKind(e.target.value)} className={sel}><option value="all">All actions</option>{Object.entries(ACTION_LABEL).map(([k, [l]]) => <option key={k} value={k}>{l}</option>)}</select>
+        <input aria-label="Search payment ID, file or reason" placeholder="Payment ID, file, reason…" value={q} onChange={(e) => setQ(e.target.value)} className={cn(sel, 'w-[200px]')} />
+      </div>
+      <p className="mb-1 text-[11.5px] text-muted-foreground">Written automatically by the database for every import, void, restore, delete and payment edit. Entries can&apos;t be edited or removed by anyone.</p>
+      {err && <p className="text-[12.5px] text-red-600">{/sales_audit/.test(err) ? 'Audit log table not set up yet (run the SQL).' : err}</p>}
+      {!rows && !err && <p className="text-[12.5px] text-muted-foreground">Loading…</p>}
+      {rows && list.length === 0 && <p className="text-[12.5px] text-muted-foreground">{rows.length ? 'Nothing matches these filters.' : 'No changes this month.'}</p>}
+      {list.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-[12.5px]">
+            <thead className="text-[11px] text-muted-foreground"><tr><th className="py-1 text-left">When</th><th className="text-left">Who</th><th className="text-left">What</th><th className="text-left">Detail</th><th className="text-left">Reason</th></tr></thead>
+            <tbody>{list.slice(0, 500).map((r) => {
+              const [l, c] = ACTION_LABEL[r.action] ?? [r.action, 'bg-muted']
+              return (
+                <tr key={r.id} className="border-t border-border/60 align-top">
+                  <td className="py-1.5 pr-2 whitespace-nowrap tabular-nums">{fmtWhen(r.at)}</td>
+                  <td className="pr-2 max-w-[160px] truncate" title={r.actor ?? ''}>{r.actor ?? '—'}</td>
+                  <td className="pr-2"><span className={cn('whitespace-nowrap rounded-full px-2 py-px text-[11px] font-semibold', c)}>{l}</span></td>
+                  <td className="pr-2 break-words">{r.summary}</td>
+                  <td className="text-muted-foreground">{r.reason ? `“${r.reason}”` : ''}</td>
+                </tr>
+              )
+            })}</tbody>
+          </table>
+          {list.length > 500 && <p className="mt-1 text-[11.5px] text-muted-foreground">Showing the latest 500 of {list.length.toLocaleString()} — narrow the filters to see older ones.</p>}
+        </div>
+      )}
     </div>
   )
 }
@@ -886,8 +955,8 @@ function Review({ onChange }: { onChange: () => void }) {
   const [rows, setRows] = useState<StoredSale[] | null>(null)
   const load = useCallback(() => { void fetchReviewQueue().then(setRows).catch((e) => toast(String(e))) }, [])
   useEffect(load, [load])
-  const act = async (key: string, patch: Partial<StoredSale>, msg: string) => {
-    try { await patchSale(key, patch); toast(msg); load(); onChange() } catch (e) { toast(`Failed: ${e instanceof Error ? e.message : String(e)}`) }
+  const act = async (key: string, patch: Partial<StoredSale>, msg: string, reason: string | null = null) => {
+    try { await patchSale(key, patch, reason); toast(msg); load(); onChange() } catch (e) { toast(`Failed: ${e instanceof Error ? e.message : String(e)}`) }
   }
   return (
     <div className="space-y-5">
@@ -910,13 +979,13 @@ function Review({ onChange }: { onChange: () => void }) {
                 {r.conflict && <div className="mt-1 text-red-700 dark:text-red-300">Later file “{r.conflict.file}” says: machine {r.conflict.machine ?? '?'} · {r.conflict.biz_date} · {fmtTHB(r.conflict.amount_satang)}</div>}
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {r.conflict && <>
-                    <Button size="sm" variant="outline" className="h-7" onClick={() => act(r.key, { conflict: null }, 'Kept the saved values')}>Keep saved</Button>
-                    <Button size="sm" variant="outline" className="h-7" onClick={() => act(r.key, { amount_satang: r.conflict!.amount_satang, biz_date: r.conflict!.biz_date, machine: r.conflict!.machine, conflict: null }, 'Updated from the newer file')}>Use newer file</Button>
+                    <Button size="sm" variant="outline" className="h-7" onClick={() => { const why = askReason(`Keep the saved values for ${r.txn_id} and ignore the newer file?`); if (why) void act(r.key, { conflict: null }, 'Kept the saved values', why) }}>Keep saved</Button>
+                    <Button size="sm" variant="outline" className="h-7" onClick={() => { const why = askReason(`Replace ${r.txn_id} with the newer file's amount / date / machine?`); if (why) void act(r.key, { amount_satang: r.conflict!.amount_satang, biz_date: r.conflict!.biz_date, machine: r.conflict!.machine, conflict: null }, 'Updated from the newer file', why) }}>Use newer file</Button>
                   </>}
-                  {r.review && cands.map((d) => <Button key={d} size="sm" variant="outline" className="h-7" onClick={() => act(r.key, { biz_date: d, review: null, alt_date: null }, `Date set to ${d}`)}>Date = {d}</Button>)}
-                  {r.review && /machine/i.test(r.review) && <Button size="sm" variant="outline" className="h-7" onClick={() => { const v = window.prompt('Machine number for this payment:', r.machine != null ? String(r.machine) : ''); if (v && /^\d+$/.test(v.trim())) void act(r.key, { machine: Number(v), review: null }, `Machine set to #${v}`) }}>Set machine…</Button>}
-                  {r.review && r.biz_date && r.machine != null && r.txn_id && !cands.length && <Button size="sm" variant="outline" className="h-7" onClick={() => act(r.key, { review: null }, 'Accepted')}>Accept as is</Button>}
-                  {r.review && <Button size="sm" variant="outline" className="h-7 text-muted-foreground" onClick={() => window.confirm('Leave this payment out of all sales and reports?') && act(r.key, { review: null, status: 'excluded' }, 'Excluded')}>Exclude</Button>}
+                  {r.review && cands.map((d) => <Button key={d} size="sm" variant="outline" className="h-7" onClick={() => act(r.key, { biz_date: d, review: null, alt_date: null }, `Date set to ${d}`, `Review: ${r.review}`)}>Date = {d}</Button>)}
+                  {r.review && /machine/i.test(r.review) && <Button size="sm" variant="outline" className="h-7" onClick={() => { const v = window.prompt('Machine number for this payment:', r.machine != null ? String(r.machine) : ''); if (v && /^\d+$/.test(v.trim())) void act(r.key, { machine: Number(v), review: null }, `Machine set to #${v}`, `Review: ${r.review}`) }}>Set machine…</Button>}
+                  {r.review && r.biz_date && r.machine != null && r.txn_id && !cands.length && <Button size="sm" variant="outline" className="h-7" onClick={() => act(r.key, { review: null }, 'Accepted', `Accepted as is (${r.review})`)}>Accept as is</Button>}
+                  {r.review && <Button size="sm" variant="outline" className="h-7 text-muted-foreground" onClick={() => { const why = askReason(`Leave ${r.txn_id} out of all sales and reports?`); if (why) void act(r.key, { review: null, status: 'excluded' }, 'Excluded', why) }}>Exclude</Button>}
                 </div>
               </div>
             )

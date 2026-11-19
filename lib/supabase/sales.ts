@@ -130,6 +130,7 @@ export async function commitImport(items: Classified[], files: ImportFileSummary
   const conflicts = items.filter((i) => i.kind === 'conflict')
   if (!isSupabaseConfigured) {
     mockImports.push(imp)
+    mockAudit.unshift({ id: mockAudit.length + 1, at: imp.created_at, actor: by, action: 'imported', import_id: imp.import_id, txn_key: null, summary: `Imported ${files.map((f) => f.name).join(', ')} · ${imp.new_rows} new · ${imp.dup_rows} dup`, reason: null, detail: null })
     const keys = new Set(revived.map((i) => i.row.key)); mockTxns = mockTxns.filter((r) => !keys.has(r.key))
     mockTxns.push(...insert.map((r) => ({ ...r, biz_date: r.biz_date ?? '' }) as StoredSale))
     for (const c of conflicts) mockTxns = mockTxns.map((r) => (r.key === c.row.key ? { ...r, conflict: { amount_satang: c.row.amount_satang, biz_date: c.row.biz_date, machine: c.row.machine, file: c.row.source_file, at: now } } : r))
@@ -147,7 +148,7 @@ export async function commitImport(items: Classified[], files: ImportFileSummary
     }
     onProgress?.(insert.length, insert.length)
     for (const c of conflicts) {
-      const { error } = await supabase.from('sales_txns').update({ conflict: { amount_satang: c.row.amount_satang, biz_date: c.row.biz_date, machine: c.row.machine, file: c.row.source_file, at: now }, updated_at: now }).eq('key', c.row.key)
+      const { error } = await supabase.from('sales_txns').update({ conflict: { amount_satang: c.row.amount_satang, biz_date: c.row.biz_date, machine: c.row.machine, file: c.row.source_file, at: now }, edit_reason: null, updated_at: now }).eq('key', c.row.key)
       if (error) throw error
     }
   } catch (err) {
@@ -180,6 +181,7 @@ export async function voidImport(imp: SalesImport, by: string, reason: string): 
     const gone = mockTxns.filter((r) => r.import_id === imp.import_id && !r.voided)
     mockTxns = mockTxns.map((r) => (r.import_id === imp.import_id ? { ...r, voided: true } : r.conflict && names.includes(r.conflict.file) ? { ...r, conflict: null } : r))
     Object.assign(imp, { voided_at: now, voided_by: by, void_reason: reason })
+    mockAudit.unshift({ id: mockAudit.length + 1, at: now, actor: by, action: 'voided', import_id: imp.import_id, txn_key: null, summary: `Voided upload ${names.join(', ')} · ${imp.new_rows} payments`, reason, detail: null })
     return { rows: gone.length, satang: gone.reduce((s, r) => s + r.amount_satang, 0) }
   }
   const { data: gone, error: e0 } = await supabase.from('sales_txns').update({ voided: true, updated_at: now }).eq('import_id', imp.import_id).eq('voided', false).select('amount_satang')
@@ -205,11 +207,32 @@ export async function restoreImport(imp: SalesImport): Promise<number> {
   return data?.length ?? 0
 }
 
+// ── Audit log (written by database triggers; read-only) ───────────────────────
+export interface AuditEntry { id: number; at: string; actor: string | null; action: string; import_id: string | null; txn_key: string | null; summary: string | null; reason: string | null; detail: Record<string, unknown> | null }
+const mockAudit: AuditEntry[] = []
+export async function fetchAudit(from: string, to: string): Promise<AuditEntry[]> {
+  if (!isSupabaseConfigured) return mockAudit.filter((a) => a.at.slice(0, 10) >= from && a.at.slice(0, 10) <= to)
+  const out: AuditEntry[] = []
+  for (let page = 0; page < 20; page++) {
+    const { data, error } = await supabase.from('sales_audit').select('*').gte('at', `${from}T00:00:00+07:00`).lte('at', `${to}T23:59:59.999+07:00`)
+      .order('at', { ascending: false }).range(page * 1000, page * 1000 + 999)
+    if (error) throw error
+    out.push(...((data ?? []) as AuditEntry[]))
+    if (!data || data.length < 1000) break
+  }
+  return out
+}
+
 // ── Review decisions ──────────────────────────────────────────────────────────
-export async function patchSale(key: string, patch: Partial<StoredSale>): Promise<void> {
+/** reason is written to the audit log with the change (the database logs every edit). */
+export async function patchSale(key: string, patch: Partial<StoredSale>, reason: string | null = null): Promise<void> {
   clearSalesCache()
-  if (!isSupabaseConfigured) { mockTxns = mockTxns.map((r) => (r.key === key ? { ...r, ...patch } : r)); return }
-  const { error } = await supabase.from('sales_txns').update({ ...patch, updated_at: new Date().toISOString() }).eq('key', key)
+  if (!isSupabaseConfigured) {
+    const old = mockTxns.find((r) => r.key === key)
+    if (old) mockAudit.unshift({ id: mockAudit.length + 1, at: new Date().toISOString(), actor: 'you (mock)', action: patch.status === 'excluded' ? 'excluded_payment' : 'edited_payment', import_id: old.import_id, txn_key: key, summary: `${old.txn_id} · ${Object.keys(patch).join(', ')}`, reason, detail: patch as Record<string, unknown> })
+    mockTxns = mockTxns.map((r) => (r.key === key ? { ...r, ...patch } : r)); return
+  }
+  const { error } = await supabase.from('sales_txns').update({ ...patch, edit_reason: reason, updated_at: new Date().toISOString() }).eq('key', key)
   if (error) throw error
 }
 

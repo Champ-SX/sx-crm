@@ -88,7 +88,7 @@ export async function importFilesServer(sb: SupabaseClient, files: ServerFile[],
       if (error) throw error
     }
     for (const c of conflicts) {
-      const { error } = await sb.from('sales_txns').update({ conflict: { amount_satang: c.row.amount_satang, biz_date: c.row.biz_date, machine: c.row.machine, file: c.row.source_file, at: now }, updated_at: now }).eq('key', c.row.key)
+      const { error } = await sb.from('sales_txns').update({ conflict: { amount_satang: c.row.amount_satang, biz_date: c.row.biz_date, machine: c.row.machine, file: c.row.source_file, at: now }, edit_reason: null, updated_at: now }).eq('key', c.row.key)
       if (error) throw error
     }
   } catch (err) {
