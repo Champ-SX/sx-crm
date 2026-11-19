@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import * as XLSX from 'xlsx'
 import { LoadingOverlay } from '@/components/shared/delayed-loading'
+import { BoothInsights } from '@/components/sales/booth-insights'
 import { InsightsView } from '@/components/sales/insights-view'
 import { MobileMenuButton } from '@/components/layout/mobile-menu-button'
 import { Button } from '@/components/ui/button'
@@ -107,6 +108,7 @@ function InsightsTab() {
   const { from, to } = monthBounds(month)
   const { rows } = useSales(from, to)
   const ok = useMemo(() => (rows ?? []).filter(isAccepted), [rows])
+  const [today] = useState(() => new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10))
   return (
     <div className="space-y-2">
       {rows == null && <LoadingOverlay label="Loading insights…" />}
@@ -116,6 +118,7 @@ function InsightsTab() {
         </select>
       </div>
       {rows != null && <InsightsView rows={ok} month={month} />}
+      {rows != null && <BoothInsights rows={ok} month={month} today={today} />}
     </div>
   )
 }

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Booth Insights Mockup</title>
+<style>
+:root{--bg:#f6f6f4;--card:#fff;--ink:#1b1b1b;--mut:#737373;--line:#e6e6e2;--acc:#C8643B;--sa:#2F6FDB;--ev:#C8643B;--st:#1E9E62;--ki:#7A5AA5;--un:#A8A39A;--warn:#b26b00;--warnb:#fff3dc}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 -apple-system,Inter,Segoe UI,sans-serif;padding:24px 16px}
+.wrap{max-width:1100px;margin:0 auto;display:grid;gap:16px}
+h1{font-size:18px;margin:0}h2{font-size:11px;letter-spacing:.08em;color:var(--mut);margin:0 0 10px;font-weight:600}
+.tag{display:inline-block;background:#1b1b1b;color:#fff;border-radius:4px;padding:1px 7px;font-size:11px;margin-right:6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.tabs{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}.tabs span{padding:5px 12px;border-radius:7px;color:var(--mut)}.tabs .on{background:#1b1b1b;color:#fff}
+.tiles{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.tile{border:1px solid var(--line);border-radius:10px;padding:10px 12px;border-top:4px solid}
+.tile b{display:block;font-size:19px;font-variant-numeric:tabular-nums}.tile small{color:var(--mut);display:block}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}th,td{padding:7px 8px;text-align:left;border-top:1px solid var(--line);vertical-align:top}th{font-size:11px;color:var(--mut);font-weight:600;border:0}
+td.n,th.n{text-align:right}
+.code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:#f1efe9;border-radius:4px;padding:1px 5px;margin-right:3px;white-space:nowrap}
+.pill{font-size:11px;border-radius:99px;padding:1px 8px;white-space:nowrap}
+.fixed{background:#eef0f3;color:#4a5568}.gp{background:#fde9df;color:#9a4422}
+.note{color:var(--mut);font-size:12px;margin-top:8px}
+.bar{height:8px;border-radius:4px;background:var(--acc)}
+.gantt{display:grid;grid-template-columns:150px 1fr;gap:4px 10px;align-items:center}
+.lane{position:relative;height:26px;background:repeating-linear-gradient(90deg,#f4f3ef 0 1px,transparent 1px calc(100%/30));border-radius:6px}
+.ev{position:absolute;top:3px;height:20px;border-radius:5px;background:var(--ev);color:#fff;font-size:10.5px;padding:2px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev.f{background:#9aa3ae}
+.axis{display:flex;justify-content:space-between;color:var(--mut);font-size:10.5px;padding-left:160px}
+.warn{background:var(--warnb);border-radius:8px;padding:8px 10px;margin-top:6px;font-size:12.5px}
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:3px 9px;font-size:12px}
+.range{display:flex;align-items:center;gap:6px}.range i{display:block;height:8px;background:linear-gradient(90deg,#f3d3c2,var(--acc),#f3d3c2);border-radius:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:820px){.tiles{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.scroll{overflow-x:auto}.gantt{grid-template-columns:90px 1fr}.axis{padding-left:100px}}
+</style></head><body><div class="wrap">
+
+<div><span class="tag">MOCKUP</span><h1 style="display:inline">Sales · Insights → booths, events &amp; forecast</h1>
+<div class="tabs"><span>Dashboard</span><span class="on">Insights</span><span>Client report</span><span>Upload</span><span>Review</span><span>Reconcile</span></div>
+<p class="note">Booth codes, dates, venue and Fixed / GP-share come from the real Won board (job titles shown are real). <b>Sales numbers are illustrative.</b> Client reports are unchanged.</p></div>
+
+<!-- ① by type -->
+<div class="card">
+<h2>① NOVEMBER 2026 BY BOOTH TYPE — from the MACHINE NO. sheet</h2>
+<div class="tiles">
+ <div class="tile" style="border-top-color:var(--sa)"><b>฿412k</b><small>Space activation · K001–K015</small><small>9 booths · ฿1,530 / booth / day</small></div>
+ <div class="tile" style="border-top-color:var(--ev)"><b>฿186k</b><small>Event · K016–K037</small><small>14 events · ฿4,210 / booth / event-day</small></div>
+ <div class="tile" style="border-top-color:var(--st)"><b>฿598k</b><small>Store · True, A&amp;F BACC/BTT/Cloud11</small><small>27 booths · ฿740 / booth / day</small></div>
+ <div class="tile" style="border-top-color:var(--ki)"><b>฿0</b><small>Kiosk · M201–M204</small><small>Ksher — not imported</small></div>
+ <div class="tile" style="border-top-color:var(--un)"><b>฿110k</b><small>Unassigned · #101, #0</small><small>not in the sheet</small></div>
+</div>
+<p class="note">Per-day figures only count days a booth was open (stores: every day · events: the event dates on the Won job).</p>
+</div>
+
+<!-- ② events -->
+<div class="card">
+<h2>② EVENTS — each Won job matched to its booth's payments during the event dates</h2>
+<div class="scroll"><table>
+<tr><th>Event dates</th><th>Job</th><th>Booth</th><th>Event @ venue</th><th>Deal</th><th class="n">Payments</th><th class="n">Gross</th><th class="n">Per booth-day</th></tr>
+<tr><td>4 Dec – 3 Jan</td><td>151</td><td><span class="code">K033</span></td><td>คุณเก๋ @Paragon Department Store</td><td><span class="pill fixed">Fixed</span></td><td class="n">—</td><td class="n mono">upcoming</td><td class="n">—</td></tr>
+<tr><td>29 Nov</td><td>160</td><td><span class="code">K020</span></td><td>Jimbeam tribe presents Welcome to Sauce club @เซ็นทรัลเวิล</td><td><span class="pill gp">GP 20%</span></td><td class="n">212</td><td class="n">฿38,160</td><td class="n">฿38,160</td></tr>
+<tr><td>28 Nov</td><td>140</td><td><span class="code">K018</span></td><td>งาน Event Meet&amp;Greet @โรงแรม the standard</td><td><span class="pill fixed">Fixed</span></td><td class="n">0</td><td class="n">฿0</td><td class="n" style="color:var(--mut)">free play</td></tr>
+<tr><td>27 Nov – 3 Dec</td><td>108</td><td><span class="code">K035</span></td><td>Campaign Central @CENTRAL PARK</td><td><span class="pill fixed">Fixed</span></td><td class="n">318</td><td class="n">฿57,240</td><td class="n">฿8,177</td></tr>
+<tr><td>27 Nov</td><td>102</td><td><span class="code">K017</span></td><td>Ascott Star Rewards: Thank You Party @QSNCC</td><td><span class="pill fixed">Fixed</span></td><td class="n">0</td><td class="n">฿0</td><td class="n" style="color:var(--mut)">free play</td></tr>
+<tr><td>20 – 21 Nov</td><td>137</td><td><span class="code">K032</span><span class="code" style="background:var(--warnb)">T036?</span></td><td>Onitsuka @Central Pattaya</td><td><span class="pill fixed">Fixed</span></td><td class="n">144</td><td class="n">฿25,920</td><td class="n">฿12,960</td></tr>
+</table></div>
+<p class="note">Fixed-fee events usually run as free play (customer already paid the fee) → ฿0 booth sales is expected, not a missing file. GP-share events are where booth sales matter.</p>
+</div>
+
+<div class="grid2">
+<!-- ③ timeline -->
+<div class="card">
+<h2>③ EVENT BOOTH CALENDAR · NOV–DEC — what each booth was called on each day</h2>
+<div class="gantt">
+ <span class="code">K017 Topview</span><div class="lane"><span class="ev f" style="left:86%;width:4%">QSNCC</span></div>
+ <span class="code">K018 Topview</span><div class="lane"><span class="ev f" style="left:90%;width:4%">Standard</span></div>
+ <span class="code">K020 portable</span><div class="lane"><span class="ev" style="left:93%;width:4%">Sauce</span></div>
+ <span class="code">K032 portable</span><div class="lane"><span class="ev f" style="left:63%;width:7%">Onitsuka</span></div>
+ <span class="code">K033 portable</span><div class="lane"><span class="ev f" style="left:70%;width:7%">Onitsuka</span></div>
+ <span class="code">K035 bag</span><div class="lane"><span class="ev f" style="left:86%;width:14%">Central Park → Central World</span></div>
+</div>
+<div class="axis"><span>1 Nov</span><span>15 Nov</span><span>30 Nov</span></div>
+<p class="note">Orange = GP-share · grey = fixed fee. Outside an event a booth shows its sheet name (e.g. “Event (portable)”); any sales then are flagged.</p>
+</div>
+
+<!-- ④ forecast -->
+<div class="card">
+<h2>④ FORECAST FOR LEADS ON HOLD / OPEN</h2>
+<table>
+<tr><th>Lead</th><th>Booth · days</th><th>Expected gross</th></tr>
+<tr><td>Phuket @Splash Beach Resort<br><small style="color:var(--mut)">2027.03.26 · #Hold</small></td><td><span class="code">K035</span>1 day</td><td><div class="range"><i style="width:90px"></i>฿6k–14k</div><small style="color:var(--mut)">based on 7 past K035 event-days</small></td></tr>
+<tr><td>Olivia rodrigo @ตึกสีลมเอจ<br><small style="color:var(--mut)">2026.06.26 · LCA DSLR</small></td><td><span class="code">—</span></td><td style="color:var(--mut)">no booth code → no forecast</td></tr>
+</table>
+<p class="note">Forecast = middle 50% of past event-days with the same booth type, deal type and day count. Shown only when there are at least 5 comparable days.</p>
+</div>
+</div>
+
+<!-- ⑤ check list -->
+<div class="card">
+<h2>⑤ PLEASE CHECK — Won jobs the CRM couldn't match cleanly (from today's data)</h2>
+<div class="warn"><b>Job 137</b> · title says <span class="code">K032</span>, event name says <span class="code">T036</span> (no T036 in the sheet — K036 Tally?) · Onitsuka @Central Pattaya 20–21 Nov <button class="btn">Pick booth</button></div>
+<div class="warn"><b>Job 138</b> · <span class="code">K033</span> vs <span class="code">T036</span> · Onitsuka @Terminal Pattaya 22–23 Nov <button class="btn">Pick booth</button></div>
+<div class="warn"><b>Job 156</b> · title dated 23 Dec, event date 24 Nov · Zense New Year Party <button class="btn">Open job</button></div>
+<div class="warn"><b>Booth double-booked</b> (example of the check) · the same booth code on two Won jobs whose dates overlap <button class="btn">Open jobs</button></div>
+<p class="note">49 Won jobs have no booth code (LCA iPad / DSLR services, ops tasks) — they're not sales booths and are ignored.</p>
+</div>
+
+</div></body></html>

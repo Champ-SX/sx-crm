@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, isSupabaseConfigured } from './client'
 import type { SaleRow } from '@/lib/sales/parse'
+import type { LeadLite, WonJobLite } from '@/lib/sales/events'
 import { useAuth } from '@/components/auth-provider'
 import { useMyIds } from '@/components/shared/assignee-picker'
 
@@ -222,6 +223,44 @@ export async function fetchAudit(from: string, to: string): Promise<AuditEntry[]
   }
   return out
 }
+
+// ── Booth / event insights ────────────────────────────────────────────────────
+export async function fetchWonJobsLite(): Promise<WonJobLite[]> {
+  if (!isSupabaseConfigured) return MOCK_JOBS
+  const { data, error } = await supabase.from('won_jobs')
+    .select('job_id, job_number, event_date, event_end_date, product_name, event_display_name, venue, value_type, gp_share_pct, is_ops, is_archived')
+    .not('event_date', 'is', null).order('event_date', { ascending: false }).limit(2000)
+  if (error) throw error
+  return (data ?? []) as WonJobLite[]
+}
+export async function fetchLeadsLite(): Promise<LeadLite[]> {
+  if (!isSupabaseConfigured) return []
+  const { data, error } = await supabase.from('lead_opportunities')
+    .select('lead_op_id, name, event_date, venue, status, value_type, gp_share_pct').eq('is_archived', false).limit(2000)
+  if (error) throw error
+  return (data ?? []) as LeadLite[]
+}
+/** Accepted sales of some machines in a date range (light columns) — for event history. */
+export async function fetchMachineSales(machines: number[], from: string, to: string): Promise<{ machine: number; biz_date: string; amount_satang: number }[]> {
+  if (!machines.length) return []
+  if (!isSupabaseConfigured) return mockTxns.filter((r) => !r.voided && r.status === 'success' && !r.review && r.machine != null && machines.includes(r.machine) && r.biz_date >= from && r.biz_date <= to)
+    .map((r) => ({ machine: r.machine!, biz_date: r.biz_date, amount_satang: r.amount_satang }))
+  const out: { machine: number; biz_date: string; amount_satang: number }[] = []
+  for (let page = 0; page < 50; page++) {
+    const { data, error } = await supabase.from('sales_txns').select('machine, biz_date, amount_satang')
+      .eq('voided', false).eq('status', 'success').is('review', null).in('machine', machines).gte('biz_date', from).lte('biz_date', to)
+      .order('key').range(page * 1000, page * 1000 + 999)
+    if (error) throw error
+    out.push(...(data ?? []).map((r) => ({ machine: Number(r.machine), biz_date: String(r.biz_date), amount_satang: Number(r.amount_satang) })))
+    if (!data || data.length < 1000) break
+  }
+  return out
+}
+const MOCK_JOBS: WonJobLite[] = [
+  { job_id: 'm1', job_number: '137', event_date: '2026-11-20', event_end_date: '2026-11-21', product_name: '2026.11.20-21 - 137 - Tally K032 A3 - Event - คุณมุก @Central Pattaya', event_display_name: '2026.11.20-21 - 137 - Tally T036 A3 - Event - Onitsuka @Central Pattaya', venue: 'Central Pattaya', value_type: 'fixed', gp_share_pct: null },
+  { job_id: 'm2', job_number: '160', event_date: '2026-11-17', event_end_date: null, product_name: '2026.11.17 - 160 - ตู้ถอดประกอบ K073 - Event - Mock GP event @Cloud11', event_display_name: '2026.11.17 - 160 - ตู้ถอดประกอบ K020 - Event - Jimbeam Sauce club @เซ็นทรัลเวิล', venue: 'เซ็นทรัลเวิล', value_type: 'gp_share', gp_share_pct: 20 },
+  { job_id: 'm3', job_number: '126', event_date: '2026-12-24', event_end_date: '2026-12-25', product_name: '2026.12.24-25 - 126 - ตู้ถอดประกอบ K032 - Event - THE NUTCRACKER @SiamPIC Hall', event_display_name: '2026.12.24-25 - 126 - ตู้ถอดประกอบ K032 - Event - THE NUTCRACKER @SiamPIC Hall', venue: 'SiamPIC Hall', value_type: 'gp_share', gp_share_pct: 100 },
+]
 
 // ── Review decisions ──────────────────────────────────────────────────────────
 /** reason is written to the audit log with the change (the database logs every edit). */
