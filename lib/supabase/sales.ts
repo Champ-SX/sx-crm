@@ -6,9 +6,9 @@ import { useMyIds } from '@/components/shared/assignee-picker'
 
 // ── Stored row = parsed row + bookkeeping ─────────────────────────────────────
 export interface SaleConflict { amount_satang: number; biz_date: string; machine: number | null; file: string; at: string }
-export interface StoredSale extends SaleRow { source_file: string | null; import_id: string | null; conflict: SaleConflict | null }
-export interface ImportFileSummary { name: string; format: string; rows: number; new: number; dup: number; conflict: number; review: number; excluded: number; from: string | null; to: string | null; gross_satang: number }
-export interface SalesImport { import_id: string; files: ImportFileSummary[]; new_rows: number; dup_rows: number; review_rows: number; created_by: string | null; created_at: string }
+export interface StoredSale extends SaleRow { source_file: string | null; import_id: string | null; conflict: SaleConflict | null; voided?: boolean }
+export interface ImportFileSummary { name: string; format: string; rows: number; new: number; dup: number; conflict: number; review: number; excluded: number; from: string | null; to: string | null; gross_satang: number; sha256?: string }
+export interface SalesImport { import_id: string; files: ImportFileSummary[]; new_rows: number; dup_rows: number; review_rows: number; created_by: string | null; created_at: string; voided_at?: string | null; voided_by?: string | null; void_reason?: string | null }
 
 let mockTxns: StoredSale[] = []
 const mockImports: SalesImport[] = []
@@ -54,10 +54,10 @@ const clearSalesCache = () => salesCache.clear()
 
 /** Every row with a business date in [from, to] (inclusive), plus undated review rows. */
 export async function fetchSales(from: string, to: string): Promise<StoredSale[]> {
-  if (!isSupabaseConfigured) return mockTxns.filter((r) => !r.biz_date || (r.biz_date >= from && r.biz_date <= to))
+  if (!isSupabaseConfigured) return mockTxns.filter((r) => !r.voided).filter((r) => !r.biz_date || (r.biz_date >= from && r.biz_date <= to))
   const out: StoredSale[] = []
   for (let page = 0; ; page++) {
-    const { data, error } = await supabase.from('sales_txns').select('*').gte('biz_date', from).lte('biz_date', to)
+    const { data, error } = await supabase.from('sales_txns').select('*').eq('voided', false).gte('biz_date', from).lte('biz_date', to)
       .order('key').range(page * 1000, page * 1000 + 999)
     if (error) throw error
     out.push(...(data ?? []).map(toStored))
@@ -66,27 +66,27 @@ export async function fetchSales(from: string, to: string): Promise<StoredSale[]
   return out
 }
 export async function fetchReviewQueue(): Promise<StoredSale[]> {
-  if (!isSupabaseConfigured) return mockTxns.filter((r) => r.review || r.conflict)
-  const { data, error } = await supabase.from('sales_txns').select('*').or('review.not.is.null,conflict.not.is.null').order('biz_date').limit(1000)
+  if (!isSupabaseConfigured) return mockTxns.filter((r) => !r.voided && (r.review || r.conflict))
+  const { data, error } = await supabase.from('sales_txns').select('*').eq('voided', false).or('review.not.is.null,conflict.not.is.null').order('biz_date').limit(1000)
   if (error) throw error
   return (data ?? []).map(toStored)
 }
 export async function fetchImports(): Promise<SalesImport[]> {
   if (!isSupabaseConfigured) return [...mockImports].reverse()
-  const { data, error } = await supabase.from('sales_imports').select('*').order('created_at', { ascending: false }).limit(50)
+  const { data, error } = await supabase.from('sales_imports').select('*').order('created_at', { ascending: false }).limit(1000)
   if (error) throw error
   return (data ?? []) as SalesImport[]
 }
 /** Months that have data (for the month picker). */
 export async function fetchDateRange(): Promise<{ min: string | null; max: string | null }> {
   if (!isSupabaseConfigured) { const d = mockTxns.map((r) => r.biz_date).filter(Boolean).sort(); return { min: d[0] ?? null, max: d[d.length - 1] ?? null } }
-  const a = await supabase.from('sales_txns').select('biz_date').not('biz_date', 'is', null).order('biz_date', { ascending: true }).limit(1)
-  const b = await supabase.from('sales_txns').select('biz_date').not('biz_date', 'is', null).order('biz_date', { ascending: false }).limit(1)
+  const a = await supabase.from('sales_txns').select('biz_date').eq('voided', false).not('biz_date', 'is', null).order('biz_date', { ascending: true }).limit(1)
+  const b = await supabase.from('sales_txns').select('biz_date').eq('voided', false).not('biz_date', 'is', null).order('biz_date', { ascending: false }).limit(1)
   return { min: (a.data?.[0]?.biz_date as string) ?? null, max: (b.data?.[0]?.biz_date as string) ?? null }
 }
 
 // ── Import: classify against what's stored, then commit ──────────────────────
-export type Classified = { row: SaleRow & { source_file: string }; kind: 'new' | 'dup' | 'conflict' | 'review'; existing?: StoredSale }
+export type Classified = { row: SaleRow & { source_file: string }; kind: 'new' | 'dup' | 'conflict' | 'review'; existing?: StoredSale; revive?: boolean }
 
 async function existingByKey(keys: string[]): Promise<Map<string, StoredSale>> {
   const m = new Map<string, StoredSale>()
@@ -104,10 +104,12 @@ export async function classify(rows: (SaleRow & { source_file: string })[]): Pro
   const ex = await existingByKey([...new Set(rows.map((r) => r.key))])
   const seen = new Map<string, SaleRow>()
   return rows.map((row) => {
-    const prev = ex.get(row.key) ?? seen.get(row.key)
-    if (prev) return { row, kind: same(prev, row) ? 'dup' : 'conflict', existing: ex.get(row.key) }
+    const old = ex.get(row.key)
+    const revive = !!old?.voided && !seen.has(row.key)   // only a voided upload had it: this file brings it back
+    const prev = revive ? seen.get(row.key) : old ?? seen.get(row.key)
+    if (prev) return { row, kind: same(prev, row) ? 'dup' : 'conflict', existing: old }
     seen.set(row.key, row)
-    return { row, kind: row.review ? 'review' : 'new' }
+    return { row, kind: row.review ? 'review' : 'new', revive }
   })
 }
 
@@ -120,11 +122,15 @@ export async function commitImport(items: Classified[], files: ImportFileSummary
     review_rows: items.filter((i) => i.kind === 'review' || i.kind === 'conflict').length,
   }
   const now = new Date().toISOString()
-  const insert = items.filter((i) => i.kind === 'new' || i.kind === 'review').map((i) => ({ ...i.row, biz_date: i.row.biz_date || null, import_id: imp.import_id, conflict: null }))
+  const toRow = (i: Classified) => ({ ...i.row, biz_date: i.row.biz_date || null, import_id: imp.import_id, conflict: null, voided: false })
+  const fresh = items.filter((i) => (i.kind === 'new' || i.kind === 'review') && !i.revive)
+  const revived = items.filter((i) => (i.kind === 'new' || i.kind === 'review') && i.revive)
+  const insert = [...fresh, ...revived].map(toRow)
   // DB conflicts and same-upload conflicts (the first copy is inserted above, then flagged)
   const conflicts = items.filter((i) => i.kind === 'conflict')
   if (!isSupabaseConfigured) {
     mockImports.push(imp)
+    const keys = new Set(revived.map((i) => i.row.key)); mockTxns = mockTxns.filter((r) => !keys.has(r.key))
     mockTxns.push(...insert.map((r) => ({ ...r, biz_date: r.biz_date ?? '' }) as StoredSale))
     for (const c of conflicts) mockTxns = mockTxns.map((r) => (r.key === c.row.key ? { ...r, conflict: { amount_satang: c.row.amount_satang, biz_date: c.row.biz_date, machine: c.row.machine, file: c.row.source_file, at: now } } : r))
     return imp
@@ -134,8 +140,10 @@ export async function commitImport(items: Classified[], files: ImportFileSummary
   try {
     for (let i = 0; i < insert.length; i += 500) {
       onProgress?.(i, insert.length)
-      const { error } = await supabase.from('sales_txns').upsert(insert.slice(i, i + 500), { onConflict: 'key', ignoreDuplicates: true })
-      if (error) throw error
+      const batch = insert.slice(i, i + 500)
+      const nNew = Math.max(0, Math.min(batch.length, fresh.length - i))   // fresh rows come first
+      if (nNew) { const { error } = await supabase.from('sales_txns').upsert(batch.slice(0, nNew), { onConflict: 'key', ignoreDuplicates: true }); if (error) throw error }
+      if (nNew < batch.length) { const { error } = await supabase.from('sales_txns').upsert(batch.slice(nNew), { onConflict: 'key' }); if (error) throw error }
     }
     onProgress?.(insert.length, insert.length)
     for (const c of conflicts) {
@@ -148,6 +156,53 @@ export async function commitImport(items: Classified[], files: ImportFileSummary
     throw err
   }
   return imp
+}
+
+// ── File fingerprints ─────────────────────────────────────────────────────────
+export async function sha256Hex(buf: ArrayBuffer): Promise<string> {
+  const d = await crypto.subtle.digest('SHA-256', buf)
+  return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+/** Earlier uploads that contained exactly this file (same bytes). */
+export async function importsWithFile(sha: string): Promise<SalesImport[]> {
+  if (!isSupabaseConfigured) return mockImports.filter((m) => m.files.some((f) => f.sha256 === sha))
+  const { data, error } = await supabase.from('sales_imports').select('*').contains('files', [{ sha256: sha }]).order('created_at', { ascending: false }).limit(5)
+  if (error) return []
+  return (data ?? []) as SalesImport[]
+}
+
+// ── Void / restore (kept, with who / when / why) ──────────────────────────────
+export async function voidImport(imp: SalesImport, by: string, reason: string): Promise<{ rows: number; satang: number }> {
+  clearSalesCache()
+  const now = new Date().toISOString()
+  const names = imp.files.map((f) => f.name)
+  if (!isSupabaseConfigured) {
+    const gone = mockTxns.filter((r) => r.import_id === imp.import_id && !r.voided)
+    mockTxns = mockTxns.map((r) => (r.import_id === imp.import_id ? { ...r, voided: true } : r.conflict && names.includes(r.conflict.file) ? { ...r, conflict: null } : r))
+    Object.assign(imp, { voided_at: now, voided_by: by, void_reason: reason })
+    return { rows: gone.length, satang: gone.reduce((s, r) => s + r.amount_satang, 0) }
+  }
+  const { data: gone, error: e0 } = await supabase.from('sales_txns').update({ voided: true, updated_at: now }).eq('import_id', imp.import_id).eq('voided', false).select('amount_satang')
+  if (e0) throw e0
+  for (const n of names) {
+    const { error } = await supabase.from('sales_txns').update({ conflict: null, updated_at: now }).eq('conflict->>file', n)
+    if (error) throw error
+  }
+  const { error: e2 } = await supabase.from('sales_imports').update({ voided_at: now, voided_by: by, void_reason: reason }).eq('import_id', imp.import_id)
+  if (e2) throw e2
+  return { rows: gone?.length ?? 0, satang: (gone ?? []).reduce((s, r) => s + Number(r.amount_satang), 0) }
+}
+export async function restoreImport(imp: SalesImport): Promise<number> {
+  clearSalesCache()
+  if (!isSupabaseConfigured) {
+    let n = 0; mockTxns = mockTxns.map((r) => (r.import_id === imp.import_id && r.voided ? (n++, { ...r, voided: false }) : r))
+    Object.assign(imp, { voided_at: null, voided_by: null, void_reason: null }); return n
+  }
+  const { data, error } = await supabase.from('sales_txns').update({ voided: false, updated_at: new Date().toISOString() }).eq('import_id', imp.import_id).eq('voided', true).select('key')
+  if (error) throw error
+  const { error: e2 } = await supabase.from('sales_imports').update({ voided_at: null, voided_by: null, void_reason: null }).eq('import_id', imp.import_id)
+  if (e2) throw e2
+  return data?.length ?? 0
 }
 
 // ── Review decisions ──────────────────────────────────────────────────────────

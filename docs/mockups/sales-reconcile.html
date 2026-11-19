@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sales Reconcile Mockup</title>
+<style>
+:root{--bg:#f6f6f4;--card:#fff;--ink:#1b1b1b;--mut:#737373;--line:#e6e6e2;--ok:#1f8a4c;--okb:#e5f4ea;--warn:#b26b00;--warnb:#fff3dc;--bad:#c0362c;--badb:#fde8e6;--void:#8a8a8a;--acc:#3b5bdb}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 -apple-system,Inter,Segoe UI,sans-serif;padding:24px 16px}
+.wrap{max-width:1080px;margin:0 auto;display:grid;gap:18px}
+h1{font-size:18px;margin:0}h2{font-size:11px;letter-spacing:.08em;color:var(--mut);margin:0 0 10px;font-weight:600}
+.tag{display:inline-block;background:#1b1b1b;color:#fff;border-radius:4px;padding:1px 7px;font-size:11px;margin-right:6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.tabs{display:flex;gap:4px;margin-top:8px}.tabs span{padding:5px 12px;border-radius:7px;color:var(--mut)}.tabs .on{background:#1b1b1b;color:#fff}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}th,td{padding:6px 8px;text-align:left;border-top:1px solid var(--line)}th{font-size:11px;color:var(--mut);font-weight:600;border:0}
+td.n{text-align:right}
+.c{border-radius:6px;padding:4px 6px;font-size:12px;display:block;line-height:1.25}
+.c b{display:block;font-size:12px}.c small{color:var(--mut);font-size:11px}
+.ok{background:var(--okb)}.ok b{color:var(--ok)}.warn{background:var(--warnb)}.warn b{color:var(--warn)}.bad{background:var(--badb)}.bad b{color:var(--bad)}.na{color:#bbb;text-align:center}
+.sum{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}.sum div{border:1px solid var(--line);border-radius:9px;padding:9px 11px}.sum b{font-size:18px;display:block}.sum small{color:var(--mut)}
+.note{color:var(--mut);font-size:12px;margin-top:8px}
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:5px 11px;font-size:12px}.btn.pri{background:#1b1b1b;color:#fff;border-color:#1b1b1b}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.hist{border-top:1px solid var(--line);padding:9px 0}.hist:first-of-type{border:0}
+.voided{opacity:.55}.voided .t{text-decoration:line-through}
+.pill{font-size:11px;border-radius:99px;padding:1px 8px;background:#eee}.pill.v{background:#eee;color:var(--void)}.pill.r{background:var(--warnb);color:var(--warn)}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--mut)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.modal{border:2px solid var(--acc)}
+.legend{display:flex;gap:12px;font-size:11.5px;color:var(--mut);margin-top:8px;flex-wrap:wrap}.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+@media(max-width:760px){.grid2,.sum{grid-template-columns:1fr}table{font-size:11.5px}.scroll{overflow-x:auto}}
+</style></head><body><div class="wrap">
+
+<div><span class="tag">MOCKUP</span><h1 style="display:inline">Sales · Finance → new <u>Reconcile</u> tab + safer Upload history</h1>
+<div class="tabs"><span>Dashboard</span><span>Insights</span><span>Client report</span><span>Upload</span><span>Review</span><span class="on">Reconcile</span></div></div>
+
+<!-- ① Daily matrix -->
+<div class="card">
+<div class="row" style="justify-content:space-between"><h2>① DAILY CHECK · NOVEMBER 2026 — did every gateway's file arrive, and do the numbers add up?</h2><span><button class="btn">‹ Oct</button> <button class="btn">Dec ›</button></span></div>
+<div class="sum">
+ <div><b style="color:var(--ok)">14</b><small>days complete</small></div>
+ <div><b style="color:var(--warn)">2</b><small>need a look (0 payments / big drop)</small></div>
+ <div><b style="color:var(--bad)">1</b><small>file missing</small></div>
+ <div><b>฿ 412,580</b><small>month so far · 6,136 payments</small></div>
+</div>
+<div class="scroll"><table>
+<tr><th>Day</th><th>KBank</th><th>ChillPay</th><th>Pay Solution</th><th class="n">Day total</th><th></th></tr>
+<tr><td>Sun 15</td><td><span class="c ok"><b>✓ 342 · ฿23,940</b><small>file 16 Nov · Auto</small></span></td><td><span class="c ok"><b>✓ 41 · ฿7,995</b><small>settlement · four@</small></span></td><td><span class="c ok"><b>✓ 22 · ฿4,290</b><small>orderlist · four@</small></span></td><td class="n">฿36,225</td><td></td></tr>
+<tr><td>Mon 16</td><td><span class="c ok"><b>✓ 298 · ฿20,860</b><small>file 17 Nov · Auto</small></span></td><td><span class="c warn"><b>⚠ 0 payments</b><small>file arrived but empty</small></span></td><td><span class="c bad"><b>✕ no file</b><small>upload manually</small></span></td><td class="n">฿20,860</td><td><button class="btn">Open</button></td></tr>
+<tr><td>Tue 17</td><td><span class="c ok"><b>✓ 68 · ฿4,760</b><small>file 17 Nov · Auto</small></span></td><td><span class="c ok"><b>✓ 32 · ฿6,015</b><small>API · Auto</small></span></td><td><span class="c bad"><b>✕ no file</b><small>upload manually</small></span></td><td class="n">฿10,775</td><td><button class="btn">Open</button></td></tr>
+<tr><td>Wed 18</td><td><span class="c warn"><b>… waiting</b><small>arrives tomorrow 07:30</small></span></td><td class="na">—</td><td class="na">—</td><td class="n mono">pending</td><td></td></tr>
+</table></div>
+<div class="legend"><span><i style="background:var(--okb)"></i>file received, totals checked</span><span><i style="background:var(--warnb)"></i>arrived but unusual (0 payments, &lt;50% of normal day)</span><span><i style="background:var(--badb)"></i>no file for this day</span></div>
+<p class="note">“Totals checked” = the number of payments and baht the CRM saved equals what the file itself contains. A mismatch blocks the import instead of saving part of it.</p>
+</div>
+
+<div class="grid2">
+<!-- ② Upload history w/ void -->
+<div class="card">
+<h2>② UPLOAD HISTORY — delete becomes “void”, with who / when / why</h2>
+<div class="hist"><div class="row"><b>18 Nov 16:42</b><span class="mono">Auto-import (Mac daily script)</span><span style="margin-left:auto">32 new</span></div>
+<div class="mono">CHILLPAY_20261117_Transactions.csv · fingerprint 9f3a…c21 · Drive ✓</div>
+<div class="row" style="margin-top:4px"><button class="btn">View payments</button><button class="btn">Void…</button></div></div>
+<div class="hist voided"><div class="row"><b class="t">18 Nov 16:54</b><span class="pill v">VOIDED</span><span style="margin-left:auto" class="t">121 new</span></div>
+<div class="mono">KBANK_20261001_PTR0000034_Report.csv</div>
+<div style="font-size:12px;margin-top:3px">Voided by <b>champ@</b> · 18 Nov 17:03 · “loop test, not real upload”</div>
+<div class="row" style="margin-top:4px"><button class="btn">Restore</button><button class="btn" style="color:var(--bad)">Delete permanently (admin)</button></div></div>
+<div class="hist"><div class="row"><b>16 Nov 13:58</b><span class="mono">four@sixsheet.me</span><span class="pill r">replaced by newer file</span><span style="margin-left:auto">5,173 new</span></div>
+<div class="mono">SX_AUTOMAT_NOV_2026y (1).xlsx · fingerprint 41be…07d</div></div>
+<p class="note">Voided payments drop out of every report at once but stay restorable. Staff can void; only admins delete permanently. Every void / restore / edit is written to the audit log below.</p>
+</div>
+
+<!-- ③ Dry run / preview -->
+<div class="card modal">
+<h2>③ CHECK BEFORE SAVING — same file sent twice, or a corrected file</h2>
+<p style="margin:0 0 8px"><b>KBANK_20261117_PTR0000034_Report.csv</b> <span class="mono">· 68 rows read · ฿4,760 · matches file total ✓</span></p>
+<table>
+<tr><td>Already saved (identical)</td><td class="n">60</td><td class="mono">skipped</td></tr>
+<tr><td>New payments</td><td class="n">5</td><td class="mono">will be added</td></tr>
+<tr><td>Changed vs saved <b style="color:var(--warn)">(amount / date / machine)</b></td><td class="n">3</td><td class="mono">sent to Review, not overwritten</td></tr>
+</table>
+<p class="note" style="margin:8px 0">⚠ This exact file (same fingerprint) was imported on 17 Nov 16:29 by Auto-import.</p>
+<div class="row"><button class="btn">Cancel</button><button class="btn pri">Import 5 new + flag 3</button></div>
+</div>
+</div>
+
+<!-- ④ Audit log -->
+<div class="card">
+<h2>④ AUDIT LOG — every change to sales money, kept forever (filter by month / person / payment ID)</h2>
+<table>
+<tr><th>When</th><th>Who</th><th>What</th><th>Detail</th></tr>
+<tr><td>18 Nov 17:03</td><td>champ@</td><td>Voided upload</td><td>KBANK_20261001… · 121 payments · ฿8,470 · “loop test”</td></tr>
+<tr><td>18 Nov 15:20</td><td>four@</td><td>Edited payment</td><td>SX0442026111… machine <s>101</s> → 44 · “REF2 typo, checked with ops”</td></tr>
+<tr><td>18 Nov 15:18</td><td>four@</td><td>Excluded payment</td><td>SXC07326111… ฿195 · “test payment by technician”</td></tr>
+<tr><td>18 Nov 07:31</td><td>Auto-import</td><td>Imported</td><td>KBANK_20261117… · 68 new · fingerprint 7c0e…a14</td></tr>
+</table>
+<p class="note">Edits and excludes ask for a short reason. Months marked <b>Closed</b> by an admin can’t be changed without reopening (also logged).</p>
+</div>
+
+<!-- ⑤ Mac script -->
+<div class="card">
+<h2>⑤ MAC DAILY SCRIPT — notification examples after the safety checks</h2>
+<div class="grid2">
+<div class="c ok" style="padding:10px"><b>✓ Transaction Reports</b>Caught up 17 Nov + 18 Nov (Mac was off). KBank 366 · ChillPay 73 · sent to CRM, totals checked.</div>
+<div class="c bad" style="padding:10px"><b>✕ Transaction Reports</b>ChillPay 18 Nov: download failed 3× — nothing sent. Will retry at next login / tomorrow.</div>
+</div>
+<p class="note">Checks the last 7 days every run, retries 3×, refuses to send header-only or cut-off files, and warns on 0-payment days.</p>
+</div>
+
+</div></body></html>

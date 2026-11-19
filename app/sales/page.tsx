@@ -14,11 +14,11 @@ import { parseSheet, type SaleRow } from '@/lib/sales/parse'
 import { SALES_GROUPS, ALL_ASSIGNED, groupOf, machinesOf, UNASSIGNED } from '@/lib/sales/groups'
 import { buildWorkbook, downloadWorkbook, byMachine, fmtTHB, isAccepted, reportFileName, selectRows, DEFAULT_EXPORT, type ExportOpts } from '@/lib/sales/report'
 import {
-  classify, commitImport, deleteImport, fetchDateRange, salesCache, fetchImports, fetchReviewQueue, fetchSales, patchSale, useSalesAccess,
+  classify, commitImport, deleteImport, importsWithFile, restoreImport, sha256Hex, voidImport, fetchDateRange, salesCache, fetchImports, fetchReviewQueue, fetchSales, patchSale, useSalesAccess,
   type Classified, type ImportFileSummary, type SalesImport, type StoredSale,
 } from '@/lib/supabase/sales'
 
-type Tab = 'dash' | 'insights' | 'report' | 'upload' | 'review'
+type Tab = 'reconcile' | 'dash' | 'insights' | 'report' | 'upload' | 'review'
 const pad = (n: number) => String(n).padStart(2, '0')
 const monthBounds = (ym: string) => { const [y, m] = ym.split('-').map(Number); return { from: `${ym}-01`, to: `${ym}-${pad(new Date(Date.UTC(y, m, 0)).getUTCDate())}` } }
 const thisMonth = () => new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 7)
@@ -42,7 +42,7 @@ export default function SalesPage() {
       <p className="mt-2 text-sm text-muted-foreground">You don&apos;t have access to this page. Ask an admin to tick “Sales” for you in Admin › Users.</p>
     </div>
   )
-  const tabs: [Tab, string][] = [['dash', 'Dashboard'], ['insights', 'Insights'], ['report', 'Client report'], ['upload', 'Upload'], ['review', `Review${reviewCount ? ` · ${reviewCount}` : ''}`]]
+  const tabs: [Tab, string][] = [['dash', 'Dashboard'], ['insights', 'Insights'], ['report', 'Client report'], ['upload', 'Upload'], ['review', `Review${reviewCount ? ` · ${reviewCount}` : ''}`], ['reconcile', 'Reconcile']]
   return (
     <div className="relative flex flex-col h-[100dvh]">
       <div className="bg-card border-b border-border px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center gap-3 shrink-0">
@@ -65,6 +65,7 @@ export default function SalesPage() {
           {tab === 'report' && <ReportBuilder />}
           {tab === 'upload' && <Upload onDone={refreshReview} />}
           {tab === 'review' && <Review onChange={refreshReview} />}
+          {tab === 'reconcile' && <Reconcile />}
         </div>
       </div>
     </div>
@@ -579,7 +580,7 @@ function ReportBuilder() {
 }
 
 // ── ③ Upload ──────────────────────────────────────────────────────────────────
-interface Pending { files: (ImportFileSummary & { note?: string })[]; items: Classified[]; excludedNotes: string[] }
+interface Pending { files: (ImportFileSummary & { note?: string; seen?: SalesImport[] })[]; items: Classified[]; excludedNotes: string[] }
 async function readRows(f: File): Promise<unknown[][]> {
   const isCsv = /\.csv$/i.test(f.name)
   const wb = isCsv ? XLSX.read(await f.text(), { type: 'string', raw: true }) : XLSX.read(await f.arrayBuffer())
@@ -587,7 +588,7 @@ async function readRows(f: File): Promise<unknown[][]> {
   return XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: true, defval: null })
 }
 function Upload({ onDone }: { onDone: () => void }) {
-  const { user } = useAuth()
+  const { user, role } = useAuth()
   const [pending, setPending] = useState<Pending | null>(null)
   const [busy, setBusy] = useState(false)
   // Upload progress overlay: what's happening + how far (null progress = spinner only)
@@ -606,13 +607,13 @@ function Upload({ onDone }: { onDone: () => void }) {
       const files: Pending['files'] = []; const all: (SaleRow & { source_file: string })[] = []; const excludedNotes: string[] = []
       for (const [k, f] of list2.entries()) {
         setWork({ label: `Reading ${list2.length} file${list2.length === 1 ? '' : 's'}…`, detail: `${k + 1} of ${list2.length} · ${f.name}`, progress: k / list2.length }); await tick()
-        const res = parseSheet(await readRows(f))
+        const [res, sha] = await Promise.all([readRows(f).then(parseSheet), f.arrayBuffer().then(sha256Hex)])
         if (res.format === 'combined') { files.push({ name: f.name, format: 'combined', rows: 0, new: 0, dup: 0, conflict: 0, review: 0, excluded: 0, from: null, to: null, gross_satang: 0, note: 'Already an SX client report (output) — skipped.' }); continue }
         if (res.format === 'unknown') { files.push({ name: f.name, format: 'unknown', rows: 0, new: 0, dup: 0, conflict: 0, review: 0, excluded: 0, from: null, to: null, gross_satang: 0, note: 'Not a KBank, Pay Solution or ChillPay export — skipped.' }); continue }
         const rows = res.rows.map((r) => ({ ...r, source_file: f.name }))
         all.push(...rows)
         const ds = rows.map((r) => r.biz_date).filter(Boolean).sort()
-        files.push({ name: f.name, format: res.format, rows: rows.length, new: 0, dup: 0, conflict: 0, review: 0, excluded: res.excluded.length, from: ds[0] ?? null, to: ds[ds.length - 1] ?? null, gross_satang: 0 })
+        files.push({ name: f.name, format: res.format, rows: rows.length, new: 0, dup: 0, conflict: 0, review: 0, excluded: res.excluded.length, from: ds[0] ?? null, to: ds[ds.length - 1] ?? null, gross_satang: 0, sha256: sha, seen: await importsWithFile(sha) })
         const reasons = [...new Set(res.excluded.map((e) => e.reason))]
         if (reasons.length) excludedNotes.push(`${f.name}: ${reasons.map((r) => `${res.excluded.filter((e) => e.reason === r).length}× ${r}`).join(', ')}`)
         const odd = rows.filter((r) => r.status !== 'success').length
@@ -629,12 +630,25 @@ function Upload({ onDone }: { onDone: () => void }) {
       setPending({ files, items, excludedNotes })
     } catch (e) { toast(`Couldn't read: ${e instanceof Error ? e.message : String(e)}`) } finally { setBusy(false); setWork(null) }
   }
-  async function removeImport(h: SalesImport) {
+  async function voidUpload(h: SalesImport) {
     const gross = h.files.reduce((a, f) => a + (f.gross_satang ?? 0), 0)
-    const msg = `Delete this upload?\n\n${h.files.map((f) => `• ${f.name}`).join('\n')}\n\n${h.new_rows.toLocaleString()} payment${h.new_rows === 1 ? '' : 's'} (${fmtTHB(gross)}) it added will be removed from the dashboard and client reports. Payments that were already saved by an earlier upload stay. You can upload the corrected file again afterwards.`
-    if (!window.confirm(msg)) return
-    setBusy(true); setWork({ label: 'Deleting upload…', detail: `${h.new_rows.toLocaleString()} payments`, progress: null })
-    try { const r = await deleteImport(h); toast(`Deleted — ${r.rows.toLocaleString()} payments (${fmtTHB(r.satang)}) removed`); loadHistory(); onDone() }
+    const reason = window.prompt(`Void this upload?\n\n${h.files.map((f) => `• ${f.name}`).join('\n')}\n\n${h.new_rows.toLocaleString()} payment${h.new_rows === 1 ? '' : 's'} (${fmtTHB(gross)}) it added leave the dashboard and client reports. It stays in history and can be restored. You can upload a corrected file afterwards.\n\nWhy? (required, kept in history)`)
+    if (reason == null) return
+    if (!reason.trim()) { toast('A reason is needed to void an upload'); return }
+    setBusy(true); setWork({ label: 'Voiding upload…', detail: `${h.new_rows.toLocaleString()} payments`, progress: null })
+    try { const r = await voidImport(h, user?.email ?? 'unknown', reason.trim()); toast(`Voided — ${r.rows.toLocaleString()} payments (${fmtTHB(r.satang)}) out of reports`); loadHistory(); onDone() }
+    catch (e) { toast(`Void failed: ${e instanceof Error ? e.message : String(e)}`) } finally { setBusy(false); setWork(null) }
+  }
+  async function restoreUpload(h: SalesImport) {
+    if (!window.confirm(`Restore this upload?\n\n${h.files.map((f) => `• ${f.name}`).join('\n')}\n\nIts payments come back into reports (any re-uploaded since stay with their newer upload).`)) return
+    setBusy(true); setWork({ label: 'Restoring upload…', progress: null })
+    try { const n = await restoreImport(h); toast(`Restored — ${n.toLocaleString()} payments back in reports`); loadHistory(); onDone() }
+    catch (e) { toast(`Restore failed: ${e instanceof Error ? e.message : String(e)}`) } finally { setBusy(false); setWork(null) }
+  }
+  async function purgeUpload(h: SalesImport) {
+    if (!window.confirm(`Delete permanently?\n\n${h.files.map((f) => `• ${f.name}`).join('\n')}\n\nThis removes the upload and its voided payments for good. It cannot be undone.`)) return
+    setBusy(true); setWork({ label: 'Deleting permanently…', progress: null })
+    try { const r = await deleteImport(h); toast(`Deleted — ${r.rows.toLocaleString()} payments removed for good`); loadHistory(); onDone() }
     catch (e) { toast(`Delete failed: ${e instanceof Error ? e.message : String(e)}`) } finally { setBusy(false); setWork(null) }
   }
   async function commit() {
@@ -642,7 +656,7 @@ function Upload({ onDone }: { onDone: () => void }) {
     setBusy(true)
     try {
       setWork({ label: 'Importing…', detail: 'starting', progress: 0 })
-      const imp = await commitImport(pending.items, pending.files.filter((f) => f.format !== 'combined' && f.format !== 'unknown'), user?.email ?? null,
+      const imp = await commitImport(pending.items, pending.files.filter((f) => f.format !== 'combined' && f.format !== 'unknown').map((f) => ({ name: f.name, format: f.format, rows: f.rows, new: f.new, dup: f.dup, conflict: f.conflict, review: f.review, excluded: f.excluded, from: f.from, to: f.to, gross_satang: f.gross_satang, sha256: f.sha256 })), user?.email ?? null,
         (done, total) => setWork({ label: 'Importing…', detail: `${done.toLocaleString()} of ${total.toLocaleString()} payments saved`, progress: total ? done / total : 1 }))
       toast(`Imported ${imp.new_rows.toLocaleString()} new rows${imp.review_rows ? ` · ${imp.review_rows} to review` : ''}`)
       setPending(null); loadHistory(); onDone()
@@ -680,6 +694,11 @@ function Upload({ onDone }: { onDone: () => void }) {
               ))}</tbody>
             </table>
           </div>
+          {pending.files.filter((f) => f.seen?.length).map((f) => (
+            <p key={`seen-${f.name}`} className="mt-2 rounded-md bg-amber-50 px-2.5 py-1.5 text-[12px] text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
+              ⚠ <b>{f.name}</b> — this exact file was imported before: {f.seen!.map((h) => `${fmtWhen(h.created_at)} by ${h.created_by ?? '—'}${h.voided_at ? ' (voided)' : ''}`).join(' · ')}. Payments already saved are skipped either way.
+            </p>
+          ))}
           {pending.excludedNotes.length > 0 && <ul className="mt-2 list-disc pl-5 text-[12px] text-muted-foreground">{pending.excludedNotes.map((n) => <li key={n}>{n}</li>)}</ul>}
           {conflicts > 0 && <p className="mt-2 text-[12px] text-red-700 dark:text-red-300">{conflicts} row{conflicts === 1 ? '' : 's'} share a transaction ID with a different amount, date or machine (already saved, or twice in these files) — flagged in Review; the first value is counted until someone decides.</p>}
           <div className="mt-3 flex justify-end gap-2">
@@ -688,19 +707,176 @@ function Upload({ onDone }: { onDone: () => void }) {
           </div>
         </div>
       )}
-      <div className={card}>
-        <p className={cn(lbl, 'mb-2')}>UPLOAD HISTORY</p>
-        {history.length === 0 && <p className="text-[12.5px] text-muted-foreground">No uploads yet.</p>}
-        {history.map((h) => (
-          <div key={h.import_id} className="border-t border-border/60 py-2 text-[12.5px] first:border-0">
-            <div className="flex flex-wrap gap-x-3"><b>{new Date(h.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</b><span className="text-muted-foreground">{h.created_by ?? ''}</span>
-              <span className="ml-auto tabular-nums">{h.new_rows.toLocaleString()} new · {h.dup_rows.toLocaleString()} dup · {h.review_rows} review</span>
-              <button type="button" disabled={busy} onClick={() => void removeImport(h)} aria-label={`Delete upload from ${h.created_at}`}
-                className="text-muted-foreground hover:text-destructive">🗑 Delete</button></div>
-            <div className="text-[12px] text-muted-foreground">{h.files.map((f) => `${f.name} (${GW[f.format] ?? f.format})`).join(' · ')}</div>
-          </div>
-        ))}
+      <UploadHistory history={history} busy={busy} isAdmin={role === 'admin'} onVoid={(h) => void voidUpload(h)} onRestore={(h) => void restoreUpload(h)} onPurge={(h) => void purgeUpload(h)} />
+    </div>
+  )
+}
+
+const fmtWhen = (iso: string) => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+// Source tag colours: KBank green · ChillPay light blue · Pay Solution dark blue
+const SRC_TAG: Record<string, string> = {
+  kbank: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300',
+  chillpay: 'bg-sky-100 text-sky-800 dark:bg-sky-400/15 dark:text-sky-300',
+  paysolution: 'bg-blue-900 text-white dark:bg-blue-500/30 dark:text-blue-100',
+}
+const SRC_LABEL: Record<string, string> = { kbank: 'KBANK', chillpay: 'CHILLPAY', paysolution: 'PAYSO' }
+function SrcTag({ f }: { f: string }) {
+  return <span className={cn('rounded px-1.5 py-px font-mono text-[10.5px] font-semibold', SRC_TAG[f] ?? 'bg-muted text-muted-foreground')}>{SRC_LABEL[f] ?? f.toUpperCase()}</span>
+}
+
+function UploadHistory({ history, busy, isAdmin, onVoid, onRestore, onPurge }: {
+  history: SalesImport[]; busy: boolean; isAdmin: boolean
+  onVoid: (h: SalesImport) => void; onRestore: (h: SalesImport) => void; onPurge: (h: SalesImport) => void
+}) {
+  const [src, setSrc] = useState('all')
+  const [period, setPeriod] = useState('all')          // all | YYYY | YYYY-MM | YYYY-MM-DD (payment dates in the file)
+  const [day, setDay] = useState('')
+  const [showVoid, setShowVoid] = useState(true)
+  const sources = ['kbank', 'chillpay', 'paysolution'].filter((g) => history.some((h) => h.files.some((f) => f.format === g)))
+  const months = [...new Set(history.flatMap((h) => h.files.flatMap((f) => (f.from && f.to ? monthsBetween(f.from, f.to) : []))))].sort().reverse()
+  const years = [...new Set(months.map((m) => m.slice(0, 4)))]
+  const p = day || period
+  const hits = (f: ImportFileSummary) => {
+    if (src !== 'all' && f.format !== src) return false
+    if (p === 'all') return true
+    if (!f.from || !f.to) return false
+    const lo = p.length === 4 ? `${p}-01-01` : p.length === 7 ? monthBounds(p).from : p
+    const hi = p.length === 4 ? `${p}-12-31` : p.length === 7 ? monthBounds(p).to : p
+    return f.from <= hi && f.to >= lo
+  }
+  const list = history.filter((h) => (showVoid || !h.voided_at) && h.files.some(hits))
+  const chip = (on: boolean) => cn('h-7 px-2.5 rounded-md text-[12px] font-medium', on ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')
+  return (
+    <div className={card}>
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <p className={cn(lbl, 'mr-auto')}>UPLOAD HISTORY</p>
+        <div className="inline-flex rounded-lg border border-border p-0.5" role="tablist" aria-label="Source">
+          {['all', ...sources].map((g) => <button key={g} type="button" role="tab" aria-selected={src === g} className={chip(src === g)} onClick={() => setSrc(g)}>{g === 'all' ? 'All' : SRC_LABEL[g]}</button>)}
+        </div>
+        <select aria-label="Payment period" value={period} onChange={(e) => { setPeriod(e.target.value); setDay('') }} className="h-8 rounded-md border border-border bg-card px-2 text-[12px]">
+          <option value="all">All dates</option>
+          {years.map((y) => <optgroup key={y} label={y}><option value={y}>All {y}</option>{months.filter((m) => m.startsWith(y)).map((m) => <option key={m} value={m}>{new Date(m + '-01T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' })}</option>)}</optgroup>)}
+        </select>
+        <input type="date" aria-label="Payment date" value={day} onChange={(e) => setDay(e.target.value)} className="h-8 rounded-md border border-border bg-card px-2 text-[12px]" />
+        <label className="flex items-center gap-1 text-[12px] text-muted-foreground"><input type="checkbox" checked={showVoid} onChange={(e) => setShowVoid(e.target.checked)} /> Show voided</label>
       </div>
+      <p className="mb-1 text-[11.5px] text-muted-foreground">Dates filter by the payment dates inside each file. {list.length} of {history.length} uploads.</p>
+      {list.length === 0 && <p className="text-[12.5px] text-muted-foreground">{history.length ? 'No uploads match these filters.' : 'No uploads yet.'}</p>}
+      {list.map((h) => {
+        const v = !!h.voided_at
+        return (
+          <div key={h.import_id} className={cn('border-t border-border/60 py-2 text-[12.5px] first:border-0', v && 'opacity-60')}>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <b className={cn(v && 'line-through')}>{fmtWhen(h.created_at)}</b><span className="text-muted-foreground">{h.created_by ?? ''}</span>
+              {v && <span className="rounded-full bg-muted px-2 py-px text-[10.5px] font-semibold text-muted-foreground">VOIDED</span>}
+              <span className={cn('ml-auto tabular-nums', v && 'line-through')}>{h.new_rows.toLocaleString()} new · {h.dup_rows.toLocaleString()} dup · {h.review_rows} review</span>
+              {!v && <button type="button" disabled={busy} onClick={() => onVoid(h)} className="text-muted-foreground hover:text-destructive">Void…</button>}
+              {v && <button type="button" disabled={busy} onClick={() => onRestore(h)} className="text-muted-foreground hover:text-foreground">↺ Restore</button>}
+              {v && isAdmin && <button type="button" disabled={busy} onClick={() => onPurge(h)} className="text-muted-foreground hover:text-destructive">🗑 Delete permanently</button>}
+            </div>
+            {h.files.map((f) => (
+              <div key={f.name} className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[12px] text-muted-foreground">
+                <span className="text-foreground/80">{f.name}</span><SrcTag f={f.format} />
+                {f.from && <span>{f.from === f.to ? fmtDay(f.from) : `${fmtDay(f.from)} – ${fmtDay(f.to!)}`}</span>}
+                {f.sha256 && <span className="font-mono text-[10.5px]" title={`File fingerprint (sha256): ${f.sha256}`}>#{f.sha256.slice(0, 8)}</span>}
+              </div>
+            ))}
+            {v && <p className="mt-0.5 text-[12px]">Voided by <b>{h.voided_by}</b> · {fmtWhen(h.voided_at!)} · “{h.void_reason}”</p>}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+function monthsBetween(a: string, b: string): string[] {
+  const out: string[] = []; let [y, m] = a.slice(0, 7).split('-').map(Number); const [y2, m2] = b.slice(0, 7).split('-').map(Number)
+  while ((y < y2 || (y === y2 && m <= m2)) && out.length < 120) { out.push(`${y}-${pad(m)}`); m++; if (m > 12) { m = 1; y++ } }
+  return out
+}
+
+// ── Reconcile: did every gateway's data arrive for every day? ─────────────────
+type Cell = { n: number; satang: number; files: string[] }
+function Reconcile() {
+  const months = useMonths()
+  const [picked, setMonth] = useState(thisMonth())
+  const month = months.includes(picked) ? picked : (months[0] ?? picked)
+  const { from, to } = monthBounds(month)
+  const [bump, setBump] = useState(0)
+  const { rows, err } = useSales(from, to, bump)
+  const [drill, setDrill] = useState<{ title: string; sub: string; rows: StoredSale[] } | null>(null)
+  const [today] = useState(() => new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10))
+  const ok = useMemo(() => (rows ?? []).filter(isAccepted), [rows])
+  // Gateways expected this month = any that has data this month
+  const gws = ['kbank', 'chillpay', 'paysolution'].filter((g) => ok.some((r) => r.gateway === g))
+  const days: string[] = []
+  for (let d = from; d <= to && d <= today; d = new Date(Date.parse(d + 'T00:00:00Z') + 864e5).toISOString().slice(0, 10)) days.push(d)
+  const grid = new Map<string, Cell>()
+  for (const r of ok) {
+    const k = `${r.biz_date}|${r.gateway}`
+    const c = grid.get(k) ?? { n: 0, satang: 0, files: [] }
+    c.n++; c.satang += r.amount_satang
+    if (r.source_file && !c.files.includes(r.source_file)) c.files.push(r.source_file)
+    grid.set(k, c)
+  }
+  const med = Object.fromEntries(gws.map((g) => [g, median(days.map((d) => grid.get(`${d}|${g}`)?.n ?? 0).filter((n) => n > 0))]))
+  // KBank's file for a day arrives the next morning: yesterday/today aren't "missing" yet
+  const yday = new Date(Date.parse(today + 'T00:00:00Z') - 864e5).toISOString().slice(0, 10)
+  const state = (d: string, g: string): 'ok' | 'low' | 'missing' | 'waiting' => {
+    const c = grid.get(`${d}|${g}`)
+    if (!c) return d >= yday ? 'waiting' : 'missing'
+    return med[g] && c.n < med[g] * 0.5 ? 'low' : 'ok'
+  }
+  const counts = { ok: 0, low: 0, missing: 0 }
+  for (const d of days) for (const g of gws) { const s = state(d, g); if (s !== 'waiting') counts[s]++ }
+  const total = ok.reduce((s, r) => s + r.amount_satang, 0)
+  const CLS = { ok: 'bg-emerald-50 dark:bg-emerald-500/10', low: 'bg-amber-50 dark:bg-amber-500/10', missing: 'bg-red-50 dark:bg-red-500/10', waiting: '' }
+  const TXT = { ok: 'text-emerald-700 dark:text-emerald-300', low: 'text-amber-700 dark:text-amber-300', missing: 'text-red-700 dark:text-red-300', waiting: 'text-muted-foreground' }
+  return (
+    <div className="space-y-4">
+      {!rows && <LoadingOverlay label="Loading payments…" />}
+      <div className="flex flex-wrap items-center gap-2">
+        <select value={month} onChange={(e) => setMonth(e.target.value)} className="h-8 rounded-md border border-border bg-card px-2 text-[13px]" aria-label="Month">
+          {months.map((m) => <option key={m} value={m}>{new Date(m + '-01T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' })}</option>)}
+        </select>
+        <p className="text-[12px] text-muted-foreground">Each day × gateway: did its data arrive, and is the day unusually low? Click a cell to see its payments.</p>
+      </div>
+      {err && <p className="text-[12.5px] text-red-600">{err}</p>}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className={card}><b className="block text-[20px] text-emerald-700 dark:text-emerald-300">{counts.ok}</b><span className="text-[12px] text-muted-foreground">day × gateway complete</span></div>
+        <div className={card}><b className="block text-[20px] text-amber-700 dark:text-amber-300">{counts.low}</b><span className="text-[12px] text-muted-foreground">unusually low (&lt;50% of a normal day)</span></div>
+        <div className={card}><b className="block text-[20px] text-red-700 dark:text-red-300">{counts.missing}</b><span className="text-[12px] text-muted-foreground">no payments — file missing?</span></div>
+        <div className={card}><b className="block text-[20px] tabular-nums">{fmtTHB(total)}</b><span className="text-[12px] text-muted-foreground">{ok.length.toLocaleString()} payments this month</span></div>
+      </div>
+      <div className={cn(card, 'overflow-x-auto')}>
+        {gws.length === 0 ? <p className="text-[12.5px] text-muted-foreground">No payments this month yet.</p> : (
+          <table className="w-full min-w-[560px] text-[12.5px] tabular-nums">
+            <thead className="text-[11px] text-muted-foreground"><tr><th className="py-1 text-left">Day</th>{gws.map((g) => <th key={g} className="text-left"><SrcTag f={g} /></th>)}<th className="text-right">Day total</th></tr></thead>
+            <tbody>{[...days].reverse().map((d) => {
+              const dayTotal = gws.reduce((s, g) => s + (grid.get(`${d}|${g}`)?.satang ?? 0), 0)
+              return (
+                <tr key={d} className="border-t border-border/60">
+                  <td className="py-1 pr-2 whitespace-nowrap">{new Date(d + 'T00:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', timeZone: 'UTC' })}</td>
+                  {gws.map((g) => {
+                    const c = grid.get(`${d}|${g}`), st = state(d, g)
+                    return (
+                      <td key={g} className="py-1 pr-1.5">
+                        <button type="button" disabled={!c} onClick={() => c && setDrill({ title: `${GW[g]} · ${fmtDay(d)}`, sub: c.files.join(' · '), rows: ok.filter((r) => r.biz_date === d && r.gateway === g) })}
+                          className={cn('w-full rounded-md px-2 py-1 text-left', CLS[st], c && 'hover:ring-1 hover:ring-foreground/20')}>
+                          <b className={cn('block text-[12px]', TXT[st])}>{st === 'ok' ? '✓' : st === 'low' ? '⚠' : st === 'missing' ? '✕' : '…'} {c ? `${c.n} · ${fmtTHB(c.satang)}` : st === 'waiting' ? 'waiting for file' : 'no payments'}</b>
+                          {c && <span className="block truncate text-[10.5px] text-muted-foreground" title={c.files.join('\n')}>{c.files.length === 1 ? c.files[0] : `${c.files.length} files`}</span>}
+                        </button>
+                      </td>
+                    )
+                  })}
+                  <td className="text-right font-medium">{dayTotal ? fmtTHB(dayTotal) : '—'}</td>
+                </tr>
+              )
+            })}</tbody>
+          </table>
+        )}
+        <p className="mt-2 text-[11.5px] text-muted-foreground">✓ data arrived · ⚠ under half of a normal day for that gateway · ✕ no payments (missing file, or the booths were really closed) · … the file for this day hasn&apos;t arrived yet. Payment dates are Thai time; KBank late-evening sales arrive in the next day&apos;s file.</p>
+      </div>
+      {drill && <DrillDialog title={drill.title} sub={drill.sub} rows={drill.rows} onClose={() => setDrill(null)} onChanged={() => { salesCache.clear(); setBump((b) => b + 1); setDrill(null) }} />}
     </div>
   )
 }
