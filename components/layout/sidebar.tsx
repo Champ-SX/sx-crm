@@ -66,6 +66,7 @@ function navForBoard(boardId: string | null) {
 
 const bottomItems = [
   { href: '/portal', label: 'Company Portal', icon: Building2 },
+  { href: '/guides/booth-install', label: 'Booth install guide', icon: BookOpen },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 

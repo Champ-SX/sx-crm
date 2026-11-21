@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CAPTURES — คู่มือติดตั้งตู้</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,400..700&family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Outfit:wght@800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#231F20; --lime:#DEFF4C; --white:#FFFFFF; --teal:#193133;
+  --lime-bright:#E8FF7A; --text-accent:#A9C921;
+  --n-50:#F7F6F4; --n-100:#EFEDEA; --n-200:#E2DFDB; --n-300:#CFCBC6; --n-500:#8A8580; --n-700:#57524F;
+  --font-display:"Neulis Alt","Outfit","Google Sans Flex","Noto Sans Thai",system-ui,sans-serif;
+  --font-ui:"Google Sans","Google Sans Flex","Noto Sans Thai",system-ui,sans-serif;
+  --radius:4px; --ease:cubic-bezier(0,0,.2,1);
+  --max:1180px; --gutter:clamp(20px,4vw,40px); --section:clamp(48px,7vw,96px);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+body{margin:0;background:#fff;color:var(--black);font-family:var(--font-ui);font-size:16px;line-height:1.75;-webkit-font-smoothing:antialiased}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--gutter)}
+.tag{font-size:13px;font-weight:600;color:var(--n-700)}
+h1,h2,h3{font-family:var(--font-display);font-weight:800;margin:0;line-height:1.3}
+h1{font-size:clamp(36px,6vw,72px)}
+h2{font-size:clamp(26px,3.4vw,40px)}
+h3{font-size:20px}
+.latin{font-family:var(--font-display);font-weight:900;text-transform:uppercase;letter-spacing:-.02em}
+p{margin:0}
+svg.i{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+:focus-visible{outline:2px solid var(--black);outline-offset:2px}
+.inverse :focus-visible{outline-color:var(--lime)}
+
+.topbar{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--n-200)}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;height:52px;gap:12px}
+.brandline{font-weight:700;letter-spacing:.14em;font-size:13px}
+.topnav{display:flex;gap:2px}
+.topnav a{font-size:14px;font-weight:500;color:var(--n-700);text-decoration:none;padding:4px 10px;border-radius:var(--radius)}
+.topnav a:hover{background:var(--n-100);color:var(--black)}
+@media (max-width:700px){.topnav{display:none}}
+
+.band{padding:var(--section) 0}
+.inverse{background:var(--black);color:#fff}
+.inverse .tag{color:var(--lime)}
+.accent{background:var(--lime)}
+.sunken{background:var(--n-50)}
+
+/* hero */
+.hero{padding:clamp(48px,8vw,104px) 0 clamp(40px,6vw,72px)}
+.hero h1 .l{color:var(--lime)}
+.hero p.sub{font-size:18px;color:#CFCBC6;margin-top:14px;max-width:40ch}
+.how{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:36px}
+.how div{display:flex;gap:12px;align-items:center;border:1px solid #3A3536;border-radius:var(--radius);padding:14px 16px;font-weight:600}
+.how b{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--lime);color:var(--black);font-weight:800;flex:none}
+@media (max-width:700px){.how{grid-template-columns:1fr}}
+
+/* 5 steps */
+.steps5{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-top:28px;border-top:2px solid var(--black)}
+.steps5 > div{padding:18px 16px 4px 0}
+.steps5 .n{display:flex;align-items:center;gap:10px}
+.steps5 .n b{font-family:var(--font-display);font-weight:900;font-size:36px;line-height:1}
+.steps5 .n svg{width:28px;height:28px}
+.steps5 h4{margin:10px 0 2px;font-size:17px;font-weight:700}
+.steps5 p{font-size:14px;line-height:1.6}
+@media (max-width:900px){.steps5{grid-template-columns:1fr 1fr}}
+
+/* cables */
+.cables{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-top:24px}
+.cable{border:1px solid var(--n-200);border-radius:var(--radius);padding:14px 16px;display:flex;flex-direction:column;gap:8px;background:#fff}
+.cable b{font-size:16px}
+.cable small{font-size:14px;color:var(--n-700);line-height:1.5}
+
+/* picker */
+.picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-top:24px}
+.pick{appearance:none;text-align:left;font:inherit;cursor:pointer;background:#fff;border:1px solid var(--n-200);border-radius:var(--radius);padding:12px 14px;color:var(--black);transition:background 140ms var(--ease)}
+.pick:hover{background:var(--n-100)}
+.pick[aria-selected="true"]{background:var(--lime);border-color:var(--black)}
+.pick .pn{font-family:var(--font-display);font-weight:900;text-transform:uppercase;font-size:16px;line-height:1.15;display:block;letter-spacing:-.01em}
+.pick .pf{font-size:13px;color:var(--n-700);display:block;margin-top:4px;line-height:1.4}
+.pick[aria-selected="true"] .pf{color:var(--black)}
+
+/* system */
+.sys-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin:44px 0 18px}
+.sys-head .meta{display:flex;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;border:1px solid var(--black);border-radius:999px;padding:4px 12px;background:#fff}
+.pill svg{width:18px;height:18px}
+.diagram{border:1px solid var(--n-200);border-radius:var(--radius);background:#fff;padding:10px;overflow-x:auto}
+.diagram svg.d{display:block;width:100%;min-width:740px;height:auto}
+.hint{font-size:13px;color:var(--n-700);padding:8px 4px 0}
+
+.sec-t{display:flex;align-items:center;gap:10px;margin:40px 0 14px}
+.sec-t .k{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--black);color:var(--lime);font-weight:800;font-size:14px}
+
+/* zones list */
+.zones{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.zcard{border:1px solid var(--n-200);border-radius:var(--radius);background:#fff;padding:14px 16px}
+.zcard h4{margin:0 0 10px;font-size:15px}
+.zitems{display:flex;flex-wrap:wrap;gap:6px}
+.zitems span{display:inline-flex;align-items:center;gap:6px;font-size:14px;background:var(--n-50);border:1px solid var(--n-200);border-radius:var(--radius);padding:4px 10px}
+.zitems svg{width:18px;height:18px}
+
+/* checklist */
+.check{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.ck{position:relative;cursor:pointer;border:1px solid var(--n-200);border-radius:var(--radius);background:#fff;padding:12px 12px 38px;display:flex;flex-direction:column;gap:6px;min-height:104px;transition:background 140ms var(--ease)}
+.ck input{position:absolute;opacity:0;pointer-events:none}
+.ck .top{display:flex;justify-content:space-between;align-items:flex-start}
+.ck .top svg.i{width:30px;height:30px}
+.ck .q{font-weight:800;font-size:15px}
+.ck .nm{font-size:14px;font-weight:600;line-height:1.4}
+.ck .nt{font-size:12px;color:var(--n-700);line-height:1.3}
+.ck .box{position:absolute;right:10px;bottom:10px;width:20px;height:20px;border:1.5px solid var(--black);border-radius:2px;display:grid;place-items:center;background:#fff}
+.ck:hover{background:var(--n-50)}
+.ck:has(input:checked){background:var(--lime);border-color:var(--black)}
+.ck:has(input:checked) .box{background:var(--black)}
+.ck:has(input:checked) .box::after{content:"";width:9px;height:5px;border:2px solid var(--lime);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.ck:has(input:focus-visible){outline:2px solid var(--black);outline-offset:2px}
+.prog{font-size:14px;font-weight:600;margin-top:8px}
+.prog.done{color:var(--black);background:var(--lime);display:inline-block;padding:2px 10px;border-radius:var(--radius)}
+
+/* connect cards */
+.conn{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px}
+.cc{border:1px solid var(--n-200);border-radius:var(--radius);background:#fff;padding:14px 16px;display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start;transition:background 140ms var(--ease),border-color 140ms var(--ease);cursor:default}
+.cc:hover,.cc.on{border-color:var(--black);background:var(--n-50)}
+.cc .num{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--black);color:var(--lime);font-weight:800}
+.cc .num.inf{background:#fff;color:var(--black);border:1.5px dashed var(--black)}
+.cc .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cc .dev{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:15px}
+.cc .dev svg{width:22px;height:22px}
+.cc .wire{flex:1;min-width:30px;height:14px}
+.cc .cab{font-size:14px;color:var(--n-700);margin-top:4px;display:flex;align-items:center;gap:8px}
+.cc .tip{font-size:13px;margin-top:6px;display:flex;gap:6px;align-items:flex-start;color:var(--black)}
+.cc .tip svg{width:16px;height:16px;margin-top:3px}
+.cc .ask{font-size:12px;font-weight:700;border:1px dashed var(--black);padding:0 6px;border-radius:2px;margin-left:4px}
+
+/* power order chain */
+.chain{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin-top:24px}
+.chain .c{flex:1 1 120px;border:1px solid #3A3536;border-radius:var(--radius);padding:14px 12px;display:flex;flex-direction:column;gap:6px}
+.chain .c b{color:var(--lime);font-family:var(--font-display);font-weight:900;font-size:22px;line-height:1}
+.chain .c svg{width:28px;height:28px}
+.chain .c span{font-weight:600;font-size:15px;line-height:1.4}
+.chain .c small{color:#CFCBC6;font-size:13px;line-height:1.4}
+.chain .c.last{background:var(--lime);color:var(--black);border-color:var(--lime)}
+.chain .c.last b{color:var(--black)} .chain .c.last small{color:var(--black)}
+
+/* test */
+.tests{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:24px}
+.t{border:1px solid var(--n-200);border-radius:var(--radius);padding:16px;background:#fff}
+.t .h{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px}
+.t .h svg{width:28px;height:28px}
+.t p{font-size:14px;color:var(--n-700);margin-top:8px;line-height:1.55}
+.t p b{color:var(--black)}
+
+.pack-away{display:flex;gap:14px;align-items:center;margin-top:28px;padding:16px 18px;border-left:3px solid var(--black);background:#fff}
+.pack-away svg{width:28px;height:28px}
+
+
+/* tidy section */
+.ba{border:1px solid var(--n-200);border-radius:var(--radius);background:var(--black);margin-top:28px;overflow:hidden}
+.ba svg{display:block;width:100%;height:auto}
+.rules{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:28px}
+@media (max-width:980px){.rules{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.rules{grid-template-columns:1fr}}
+.rule{border:1px solid var(--n-200);border-radius:var(--radius);background:#fff;padding:16px;display:flex;flex-direction:column;gap:8px}
+.rule .h{display:flex;align-items:center;gap:10px}
+.rule .h b{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--black);color:var(--lime);font-weight:800;font-size:14px;flex:none}
+.rule .h svg{width:28px;height:28px;margin-left:auto}
+.rule h4{margin:0;font-size:16px;line-height:1.45}
+.rule p{font-size:14px;color:var(--n-700);line-height:1.55}
+.rule.no{border-color:var(--black)}
+.rule.no .h b{background:#B23A26;color:#fff}
+.tools{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:16px}
+@media (max-width:980px){.tools{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:560px){.tools{grid-template-columns:1fr 1fr}}
+.tool{border:1px solid var(--n-200);border-radius:var(--radius);background:var(--n-50);padding:14px;text-align:left}
+.tool svg{width:34px;height:34px}
+.tool b{display:block;font-size:15px;margin-top:8px}
+.tool span{display:block;font-size:13px;color:var(--n-700);line-height:1.45}
+.final{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center;margin-top:28px;background:var(--lime);border-radius:var(--radius);padding:22px 24px}
+@media (max-width:760px){.final{grid-template-columns:1fr}}
+.final h3{font-size:22px}
+.final ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px 20px}
+.final li{display:flex;gap:8px;align-items:center;font-weight:600;font-size:15px}
+.final li svg{width:20px;height:20px}
+footer{padding:32px 0;border-top:1px solid var(--n-200);font-size:13px;color:var(--n-700)}
+footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+/* svg diagram */
+.zone rect{fill:var(--n-50);stroke:var(--n-300);stroke-width:1;stroke-dasharray:6 5}
+.zone text{font:600 14px var(--font-ui);fill:var(--n-700)}
+.node rect{fill:#fff;stroke:var(--black);stroke-width:1.5}
+.node .t{font:700 14px var(--font-ui);fill:var(--black)}
+.node use{color:var(--black)}
+.node.hub rect{fill:var(--black)} .node.hub .t{fill:var(--lime)} .node.hub use{color:var(--lime)}
+.node.pwr rect{fill:var(--n-100);stroke:var(--n-500);stroke-dasharray:3 3}
+.node.pwr .t{fill:var(--n-700)} .node.pwr use{color:var(--n-700)}
+.node.solo rect{stroke:var(--n-500);stroke-dasharray:3 3}
+.edge,.node{transition:opacity 220ms var(--ease)}
+svg.focus .edge{opacity:.1} svg.focus .edge.on{opacity:1}
+svg.focus .node{opacity:.4} svg.focus .node.on{opacity:1}
+.eb circle{fill:var(--black)} .eb text{font:800 13px var(--font-ui);fill:var(--lime)}
+.eb.inf circle{fill:#fff;stroke:var(--black);stroke-width:1.5;stroke-dasharray:3 2} .eb.inf text{fill:var(--black)}
+</style>
+</head>
+<body>
+
+<!-- icon sprite (line icons, 24 grid, 2px stroke) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <defs>
+  <symbol id="i-laptop" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="11" rx="1"/><path d="M2 19h20"/><path d="M4 15l-2 4"/><path d="M20 15l2 4"/></symbol>
+  <symbol id="i-pc" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="13" rx="1"/><path d="M12 16v4M8 20h8"/><path d="M10 11l2-3 2 3"/><circle cx="12" cy="10.5" r="0.5"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M12 16v4M8 20h8"/></symbol>
+  <symbol id="i-touch" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="12" rx="1"/><path d="M12 15v2"/><path d="M11 21v-6.5a1.5 1.5 0 0 1 3 0V17l2.5.6a1.5 1.5 0 0 1 1.1 1.7L17.2 21"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 8.5A1.5 1.5 0 0 1 4.5 7H7l2-3h6l2 3h2.5A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-webcam" viewBox="0 0 24 24"><circle cx="12" cy="10" r="6"/><circle cx="12" cy="10" r="2"/><path d="M12 16v3M7 21h10"/></symbol>
+  <symbol id="i-flash" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></symbol>
+  <symbol id="i-printer" viewBox="0 0 24 24"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="1"/><rect x="6" y="14" width="12" height="7"/></symbol>
+  <symbol id="i-router" viewBox="0 0 24 24"><rect x="3" y="14" width="18" height="6" rx="1"/><path d="M7 17h.01M11 17h.01"/><path d="M8.5 10.5a5 5 0 0 1 7 0"/><path d="M5.5 7.5a9 9 0 0 1 13 0"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><rect x="2" y="8" width="20" height="8" rx="1"/><path d="M6 11v2M10 11v2M14 11v2M18 11v2"/></symbol>
+  <symbol id="i-hub" viewBox="0 0 24 24"><rect x="6" y="8" width="16" height="8" rx="1"/><path d="M2 12h4"/><path d="M10 11v2M14 11v2M18 11v2"/></symbol>
+  <symbol id="i-ring" viewBox="0 0 24 24"><circle cx="12" cy="10" r="7"/><circle cx="12" cy="10" r="4"/><path d="M12 17v4M8 21h8"/></symbol>
+  <symbol id="i-panel" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="11" rx="1"/><path d="M8 7h.01M12 7h.01M16 7h.01M8 10.5h.01M12 10.5h.01M16 10.5h.01"/><path d="M12 14v4M8 21h8M12 18v3"/></symbol>
+  <symbol id="i-buttons" viewBox="0 0 24 24"><circle cx="7.5" cy="12" r="4"/><circle cx="16.5" cy="12" r="4"/></symbol>
+  <symbol id="i-led" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="1"/><path d="M6 10h.01M9 10h.01M12 10h.01M15 10h.01M18 10h.01M6 14h.01M9 14h.01M12 14h.01M15 14h.01M18 14h.01"/></symbol>
+  <symbol id="i-ipad" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M11 18h2"/></symbol>
+  <symbol id="i-switch" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M2 12h5M17 9h5M17 15h5"/></symbol>
+  <symbol id="i-backdrop" viewBox="0 0 24 24"><path d="M3 3h18M5 3v18M19 3v18"/><path d="M8 3v11c0 3 8 3 8 0V3"/></symbol>
+  <symbol id="i-softbox" viewBox="0 0 24 24"><path d="M5 3h14l-3 8H8z"/><path d="M12 11v10M8 21h8"/></symbol>
+  <symbol id="i-cable" viewBox="0 0 24 24"><path d="M4 9V5h3v4"/><path d="M5.5 9v3a4 4 0 0 0 4 4h5a4 4 0 0 1 4 4v1"/><path d="M17 3v4"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="1"/><path d="M5 12h14"/><circle cx="12" cy="7" r="2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17.5h.01"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5L5 20"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M4 8h16l-1 13H5z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M9 11V5a1.5 1.5 0 0 1 3 0v6"/><path d="M12 10V4a1.5 1.5 0 0 1 3 0v7"/><path d="M15 10.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-2.7L3.5 14a1.5 1.5 0 0 1 2.5-1.7L9 15"/></symbol>
+
+  <symbol id="i-velcro" viewBox="0 0 24 24"><path d="M2 9h20M2 12h20M2 15h20"/><rect x="9" y="6" width="6" height="12" rx="1"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24"><path d="M4 21V3"/><path d="M4 8h6a3 3 0 0 1 0 6H4"/><circle cx="9" cy="11" r="1"/></symbol>
+  <symbol id="i-tray" viewBox="0 0 24 24"><path d="M2 4h20"/><path d="M5 4v4M19 4v4"/><path d="M4 9h16l-1 6H5z"/><path d="M8 9v6M12 9v6M16 9v6"/></symbol>
+  <symbol id="i-sleeve" viewBox="0 0 24 24"><path d="M3 9h18v6H3z"/><path d="M6 9l3 6M10 9l3 6M14 9l3 6M18 9l3 6"/></symbol>
+  <symbol id="i-label" viewBox="0 0 24 24"><path d="M2 12h8"/><path d="M10 8h9l3 4-3 4h-9z"/><path d="M14 12h3"/></symbol>
+  <symbol id="i-tape" viewBox="0 0 24 24"><circle cx="10" cy="12" r="7"/><circle cx="10" cy="12" r="2.5"/><path d="M10 19h11"/></symbol>
+  <symbol id="i-split" viewBox="0 0 24 24"><path d="M6 3v18"/><path d="M18 3v18"/><path d="M3 7l3-3 3 3"/><path d="M15 17l3 3 3-3"/><path d="M12 3v18" stroke-dasharray="2 3"/></symbol>
+  <symbol id="i-route" viewBox="0 0 24 24"><path d="M4 3v12a3 3 0 0 0 3 3h13"/><path d="M17 15l3 3-3 3"/></symbol>
+  <symbol id="i-group" viewBox="0 0 24 24"><path d="M3 8h18M3 12h18M3 16h18"/><path d="M8 6v12M16 6v12"/></symbol>
+  <symbol id="i-loop" viewBox="0 0 24 24"><path d="M3 18h6"/><path d="M9 18a4 4 0 1 1 4-4v-4"/><rect x="10" y="3" width="6" height="7" rx="1"/></symbol>
+  <symbol id="i-fan" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 12c0-4 1-6 3-6s1 4-3 6zM12 12c4 0 6 1 6 3s-4 1-6-3zM12 12c0 4-1 6-3 6s-1-4 3-6zM12 12c-4 0-6-1-6-3s4-1 6 3z"/></symbol>
+  <symbol id="i-wall" viewBox="0 0 24 24"><path d="M4 3v18"/><rect x="7" y="9" width="14" height="6" rx="1"/><path d="M4 12h3"/><path d="M11 12h.01M14 12h.01M17 12h.01"/></symbol>
+  <symbol id="i-door" viewBox="0 0 24 24"><path d="M5 21V3h11v18"/><path d="M16 5l3 1v15h-3"/><path d="M13 12h.01"/></symbol>
+  <symbol id="i-tug" viewBox="0 0 24 24"><rect x="3" y="9" width="6" height="6" rx="1"/><path d="M9 12h8"/><path d="M14 9l3 3-3 3"/><path d="M20 8v8"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 16a5 5 0 0 1 7 0"/><path d="M12 19.5h.01"/><path d="M1.5 9a15 15 0 0 1 21 0"/></symbol>
+ </defs>
+</svg>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="brandline">CAPTURES</div>
+    <nav class="topnav" aria-label="เมนู">
+      <a href="#steps">ขั้นตอน</a><a href="#cables">รู้จักสาย</a><a href="#systems">เลือกตู้</a><a href="#tidy">เก็บสาย</a><a href="#power-on">เปิดเครื่อง</a><a href="#test">เช็คก่อนเปิดงาน</a>
+    </nav>
+  </div>
+</header>
+
+<section class="inverse hero">
+  <div class="wrap">
+    <p class="tag">คู่มือติดตั้ง · สำหรับทีมติดตั้งหน้างาน</p>
+    <h1 style="margin-top:14px">ติดตั้งตู้<br><span class="l">ต่อสายตามเลข</span></h1>
+    <p class="sub">เลือกตู้ ดูรูป ต่อสายตามเลข 1, 2, 3… เปิดเครื่องตามลำดับ แล้วเช็คก่อนเปิดงาน</p>
+    <div class="how">
+      <div><b>1</b>เลือกตู้ที่ติดตั้ง</div>
+      <div><b>2</b>ต่อสายตามเลขในรูป</div>
+      <div><b>3</b>เปิดเครื่อง + เช็ค</div>
+    </div>
+  </div>
+</section>
+
+<section class="accent band" id="steps">
+  <div class="wrap">
+    <p class="tag" style="color:var(--black)">ใช้กับทุกตู้</p>
+    <h2 style="margin-top:6px">5 ขั้นตอน ทุกครั้ง</h2>
+    <div class="steps5">
+      <div><div class="n"><b>1</b><svg class="i"><use href="#i-box"/></svg></div><h4>วางของให้ถูกชั้น</h4><p>ของแต่ละชิ้นอยู่ชั้นไหน ดูในหน้าตู้</p></div>
+      <div><div class="n"><b>2</b><svg class="i"><use href="#i-cable"/></svg></div><h4>ต่อสายตามเลข</h4><p>เริ่มเลข 1 ไปจนครบ แล้ว<a href="#tidy" style="color:inherit">เก็บสาย</a></p></div>
+      <div><div class="n"><b>3</b><svg class="i"><use href="#i-plug"/></svg></div><h4>เสียบปลั๊ก</h4><p>เสียบเข้าปลั๊กพ่วงชั้นเดียวกัน ยังไม่เปิด</p></div>
+      <div><div class="n"><b>4</b><svg class="i"><use href="#i-power"/></svg></div><h4>เปิดเครื่องตามลำดับ</h4><p>เปิดคอมเป็นอย่างสุดท้าย</p></div>
+      <div><div class="n"><b>5</b><svg class="i"><use href="#i-check"/></svg></div><h4>เช็คก่อนเปิดงาน</h4><p>ถ่าย 1 รูป ปริ้น 1 ใบ</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="cables">
+  <div class="wrap">
+    <p class="tag">รู้จักสาย</p>
+    <h2 style="margin-top:6px">เส้นในรูป = สายเส้นไหน</h2>
+    <div class="cables" id="legend"></div>
+  </div>
+</section>
+
+<section class="band sunken" id="systems">
+  <div class="wrap">
+    <p class="tag">เลือกตู้</p>
+    <h2 style="margin-top:6px">วันนี้ติดตั้งตู้ไหน</h2>
+    <div class="picker" role="tablist" id="picker"></div>
+    <div id="sys"></div>
+  </div>
+</section>
+
+
+<section class="band" id="tidy">
+  <div class="wrap">
+    <p class="tag">หลักการจัดเก็บสายภายในตู้</p>
+    <h2 style="margin-top:6px">ต่อเสร็จ แล้วเก็บสายให้เรียบ</h2>
+    <p style="margin-top:8px;color:var(--n-700);max-width:52ch">ตู้เดียวกัน แต่หาสายง่าย ถอดเก็บเร็ว และไม่หลุดกลางงาน</p>
+    <div class="ba"><svg viewBox="0 0 1000 425" role="img" aria-label="ภาพเปรียบเทียบ ก่อนและหลังเก็บสายในตู้">
+ <defs><g id="dv"><rect width="110" height="44" rx="4" fill="#fff"/></g></defs>
+ <!-- BEFORE -->
+ <rect x="30" y="56" width="420" height="330" rx="4" fill="#2E2A2B" stroke="#57524F"/>
+ <line x1="30" y1="250" x2="450" y2="250" stroke="#57524F" stroke-width="3"/>
+ <rect x="30" y="16" width="120" height="30" rx="2" fill="#57524F"/><text x="90" y="37" text-anchor="middle" font-size="16" font-weight="700" fill="#fff" font-family="Noto Sans Thai,sans-serif">ก่อน</text>
+ <g fill="none" stroke-width="3" stroke-linecap="round">
+  <path d="M110 110 C 250 300, 60 330, 330 140" stroke="#8A8580"/>
+  <path d="M170 110 C 120 260, 400 200, 240 330" stroke="#CFCBC6"/>
+  <path d="M360 110 C 300 360, 90 220, 150 350" stroke="#8A8580"/>
+  <path d="M120 120 C 420 160, 390 360, 330 300" stroke="#DEFF4C" stroke-width="4"/>
+  <path d="M380 130 C 200 120, 260 380, 100 300" stroke="#CFCBC6"/>
+  <path d="M90 360 C 180 280, 280 400, 420 330" stroke="#8A8580"/>
+  <path d="M200 120 C 190 210, 330 260, 200 340 S 330 350, 400 340" stroke="#fff" stroke-width="2"/>
+ </g>
+ <g transform="translate(60,80)"><rect width="110" height="44" rx="4" fill="#fff"/><text x="55" y="28" text-anchor="middle" font-size="14" font-weight="700" fill="#231F20" font-family="Noto Sans Thai,sans-serif">คอม</text></g>
+ <g transform="translate(310,80)"><rect width="110" height="44" rx="4" fill="#fff"/><text x="55" y="28" text-anchor="middle" font-size="14" font-weight="700" fill="#231F20" font-family="Noto Sans Thai,sans-serif">กล้อง</text></g>
+ <g transform="translate(260,300) rotate(-14)"><rect width="120" height="26" rx="3" fill="#8A8580"/><circle cx="25" cy="13" r="4" fill="#2E2A2B"/><circle cx="50" cy="13" r="4" fill="#2E2A2B"/><circle cx="75" cy="13" r="4" fill="#2E2A2B"/><circle cx="100" cy="13" r="4" fill="#2E2A2B"/></g>
+ <g transform="translate(70,300)"><rect width="110" height="44" rx="4" fill="#fff"/><text x="55" y="28" text-anchor="middle" font-size="14" font-weight="700" fill="#231F20" font-family="Noto Sans Thai,sans-serif">ปริ้นเตอร์</text></g>
+ <!-- arrow -->
+ <circle cx="500" cy="221" r="28" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M488 221h24M502 211l10 10-10 10" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+ <!-- AFTER -->
+ <rect x="550" y="56" width="420" height="330" rx="4" fill="#2E2A2B" stroke="#57524F"/>
+ <line x1="550" y1="250" x2="970" y2="250" stroke="#57524F" stroke-width="3"/>
+ <rect x="850" y="16" width="120" height="30" rx="2" fill="#DEFF4C"/><text x="910" y="37" text-anchor="middle" font-size="16" font-weight="700" fill="#231F20" font-family="Noto Sans Thai,sans-serif">หลัง</text>
+ <!-- power side left -->
+ <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M572 100 V 356" stroke="#8A8580" stroke-width="6" stroke-dasharray="14 6"/>
+  <path d="M572 102 H 610" stroke="#8A8580" stroke-width="4"/>
+  <!-- data bundle right -->
+  <path d="M948 100 V 330 H 790" stroke="#DEFF4C" stroke-width="8"/>
+  <path d="M948 102 H 920" stroke="#DEFF4C" stroke-width="5"/>
+  <path d="M948 190 H 700 V 150 a12 12 0 0 1 -12 -12 V 124" stroke="#DEFF4C" stroke-width="5"/>
+ </g>
+ <!-- velcro marks -->
+ <g fill="#fff"><rect x="940" y="140" width="16" height="7" rx="1"/><rect x="940" y="210" width="16" height="7" rx="1"/><rect x="940" y="280" width="16" height="7" rx="1"/><rect x="866" y="326" width="7" height="16" rx="1" transform="translate(0,-4)"/></g>
+ <!-- mounted strip -->
+ <g transform="translate(584,262)"><rect width="26" height="110" rx="3" fill="#8A8580"/><circle cx="13" cy="22" r="4" fill="#2E2A2B"/><circle cx="13" cy="44" r="4" fill="#2E2A2B"/><circle cx="13" cy="66" r="4" fill="#2E2A2B"/><circle cx="13" cy="88" r="4" fill="#2E2A2B"/></g>
+ <g transform="translate(610,80)"><rect width="110" height="44" rx="4" fill="#fff"/><text x="55" y="28" text-anchor="middle" font-size="14" font-weight="700" fill="#231F20" font-family="Noto Sans Thai,sans-serif">คอม</text></g>
+ <g transform="translate(810,80)"><rect width="110" height="44" rx="4" fill="#fff"/><text x="55" y="28" text-anchor="middle" font-size="14" font-weight="700" fill="#231F20" font-family="Noto Sans Thai,sans-serif">กล้อง</text></g>
+ <g transform="translate(680,300)"><rect width="110" height="44" rx="4" fill="#fff"/><text x="55" y="28" text-anchor="middle" font-size="14" font-weight="700" fill="#231F20" font-family="Noto Sans Thai,sans-serif">ปริ้นเตอร์</text></g>
+ <!-- labels on after -->
+ <g font-family="Noto Sans Thai,sans-serif" font-size="13" fill="#CFCBC6">
+  <text x="600" y="210">สายไฟ ชิดซ้าย</text>
+  <text x="840" y="235" text-anchor="end">สายสัญญาณ ชิดขวา</text>
+  <text x="712" y="150" fill="#DEFF4C">หย่อนไว้ 10–15 ซม.</text>
+ </g>
+ <!-- labels on before -->
+ <g font-family="Noto Sans Thai,sans-serif" font-size="13" fill="#CFCBC6"><text x="240" y="410" text-anchor="middle">สายพันกัน · ปลั๊กกองพื้น · หาสายไม่เจอ</text></g>
+</svg></div>
+    <div class="rules"><div class="rule"><div class="h"><b>1</b><svg class="i"><use href="#i-split"/></svg></div><h4>แยกสายไฟ กับ สายสัญญาณ</h4><p>สายไฟเดินชิดผนังซ้าย สายกล้อง / จอ / ปริ้นเตอร์ ชิดผนังขวา</p></div><div class="rule"><div class="h"><b>2</b><svg class="i"><use href="#i-route"/></svg></div><h4>เดินตามขอบตู้</h4><p>เดินเป็นเส้นตรง เลี้ยวเป็นมุม ไม่ตัดกลางช่อง</p></div><div class="rule"><div class="h"><b>3</b><svg class="i"><use href="#i-group"/></svg></div><h4>มัดรวมตามปลายทาง</h4><p>สายที่ไปที่เดียวกัน มัดเป็นกลุ่มเดียว มัดทุก 20–30 ซม.</p></div><div class="rule"><div class="h"><b>4</b><svg class="i"><use href="#i-loop"/></svg></div><h4>เหลือสายหย่อนที่หัว</h4><p>เผื่อ 10–15 ซม. ก่อนถึงหัวเสียบ ห้ามดึงตึง</p></div><div class="rule"><div class="h"><b>5</b><svg class="i"><use href="#i-label"/></svg></div><h4>ติดป้ายเลขทั้ง 2 หัว</h4><p>ใช้เลขเดียวกับในรูป ถอด–ประกอบครั้งหน้าไม่ต้องเดา</p></div><div class="rule"><div class="h"><b>6</b><svg class="i"><use href="#i-wall"/></svg></div><h4>ยึดปลั๊กพ่วงกับผนังตู้</h4><p>ติดผนังหรือวางในถาด ห้ามกองบนพื้นตู้</p></div><div class="rule no"><div class="h"><b>✕</b><svg class="i"><use href="#i-fan"/></svg></div><h4>ห้ามบังพัดลม / ช่องระบายอากาศ</h4><p>สายพาดช่องลม เครื่องร้อนแล้วดับกลางงาน</p></div><div class="rule no"><div class="h"><b>✕</b><svg class="i"><use href="#i-door"/></svg></div><h4>ห้ามสายโดนประตู / ฝั่งแขก</h4><p>ประตูปิดแล้วต้องไม่หนีบสาย แขกต้องไม่เห็น ไม่เอื้อมถึง</p></div></div>
+    <div class="sec-t" style="margin-top:44px"><span class="k"><svg class="i" style="width:16px;height:16px"><use href="#i-bag"/></svg></span><h3>ของในกล่องเก็บสาย</h3></div>
+    <div class="tools"><div class="tool"><svg class="i"><use href="#i-velcro"/></svg><b>เวลโคร</b><span>มัดสาย แกะใช้ซ้ำได้</span></div><div class="tool"><svg class="i"><use href="#i-clip"/></svg><b>คลิปกาว</b><span>ยึดสายกับผนังตู้</span></div><div class="tool"><svg class="i"><use href="#i-tray"/></svg><b>ถาดรางสาย</b><span>รับปลั๊กพ่วง + สายส่วนเกิน</span></div><div class="tool"><svg class="i"><use href="#i-sleeve"/></svg><b>ปลอกถักหุ้มสาย</b><span>รวบสายที่วิ่งยาว</span></div><div class="tool"><svg class="i"><use href="#i-label"/></svg><b>ป้ายเลขสาย</b><span>ติดหัวสายตามเลข</span></div><div class="tool"><svg class="i"><use href="#i-tape"/></svg><b>เทปผ้า</b><span>แปะสายบนพื้นนอกตู้</span></div></div>
+    <div class="final"><h3>เช็คก่อนปิดประตูตู้</h3><ul><li><svg class="i"><use href="#i-tug"/></svg>ดึงเบาๆ ทุกหัว ไม่หลุด</li><li><svg class="i"><use href="#i-loop"/></svg>ไม่มีสายตึง</li><li><svg class="i"><use href="#i-door"/></svg>ปิดประตูแล้วไม่หนีบสาย</li><li><svg class="i"><use href="#i-fan"/></svg>ช่องลมโล่ง</li><li><svg class="i"><use href="#i-label"/></svg>ทุกสายมีป้ายเลข</li><li><svg class="i"><use href="#i-tape"/></svg>สายบนพื้นแปะเทปแล้ว</li></ul></div>
+  </div>
+</section>
+
+<section class="inverse band" id="power-on">
+  <div class="wrap">
+    <p class="tag">เปิดเครื่อง</p>
+    <h2 style="margin-top:6px">เปิดตามลำดับ · คอมเปิดสุดท้าย</h2>
+    <div class="chain">
+      <div class="c"><b>1</b><svg class="i"><use href="#i-plug"/></svg><span>ปลั๊กพ่วง</span><small>เปิดสวิตช์ทุกตัว</small></div>
+      <div class="c"><b>2</b><svg class="i"><use href="#i-router"/></svg><span>เราเตอร์</span><small>รอ 1–2 นาที</small></div>
+      <div class="c"><b>3</b><svg class="i"><use href="#i-printer"/></svg><span>ปริ้นเตอร์</span><small>เช็คกระดาษ</small></div>
+      <div class="c"><b>4</b><svg class="i"><use href="#i-flash"/></svg><span>ไฟ + แฟลช</span><small>เปิดทุกดวง</small></div>
+      <div class="c"><b>5</b><svg class="i"><use href="#i-touch"/></svg><span>จอ</span><small>เลือกช่อง HDMI ให้ถูก</small></div>
+      <div class="c"><b>6</b><svg class="i"><use href="#i-camera"/></svg><span>กล้อง</span><small>ปิดโหมดดับเอง</small></div>
+      <div class="c last"><b>7</b><svg class="i"><use href="#i-laptop"/></svg><span>คอม → แอป CAPTURES</span><small>ต่อ Wi-Fi ตู้ แล้วเปิดแอป</small></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="test">
+  <div class="wrap">
+    <p class="tag">เช็คก่อนเปิดงาน</p>
+    <h2 style="margin-top:6px">ผ่านครบ ค่อยเปิดให้แขกเล่น</h2>
+    <div class="tests">
+      <div class="t"><div class="h"><svg class="i"><use href="#i-image"/></svg>ภาพกล้องขึ้นจอ</div><p>ไม่ขึ้น → เช็ค<b>สาย USB-C กล้อง</b> เสียบตรงเข้าคอม และกล้องเปิดอยู่</p></div>
+      <div class="t"><div class="h"><svg class="i"><use href="#i-flash"/></svg>แฟลชยิง</div><p>ไม่ยิง → ดัน<b>หัวแฟลช</b>ให้สุดและล็อก แฟลชเปิดอยู่</p></div>
+      <div class="t"><div class="h"><svg class="i"><use href="#i-hand"/></svg>จอกดได้ตรงจุด</div><p>ภาพขึ้นแต่กดไม่ได้ → เช็ค<b>สายทัช</b> (เส้นแยกจาก HDMI)</p></div>
+      <div class="t"><div class="h"><svg class="i"><use href="#i-printer"/></svg>ปริ้นได้ 1 ใบ</div><p>ไม่ออก → เช็ค<b>สายปริ้นเตอร์</b> กระดาษ และไฟเครื่อง</p></div>
+      <div class="t"><div class="h"><svg class="i"><use href="#i-qr"/></svg>สแกน QR ได้</div><p>ไม่ได้ → คอมต้องต่อ <b>Wi-Fi ของตู้</b> ไม่ใช่ Wi-Fi งาน</p></div>
+    </div>
+    <div class="pack-away"><svg class="i"><use href="#i-bag"/></svg><div><b>เก็บของ</b> — ปิดแอป → ปิดคอม → ปิดอุปกรณ์ → ปิดปลั๊ก ม้วนสายแยกใส่ถุงตามเลข</div></div>
+  </div>
+</section>
+
+<footer><div class="wrap"><span>CAPTURES · Sixsheet Group</span><span>ติดปัญหา โทรหาหัวหน้างานก่อนแก้เอง</span></div></footer>
+
+<script>
+const NS="http://www.w3.org/2000/svg";
+function el(tag,a,p){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
+const ic=k=>`<svg class="i" aria-hidden="true"><use href="#i-${k}"/></svg>`;
+
+/* cables: simple names */
+const CABLES={
+  usbc:{name:"สาย USB-C",use:"หัว C ทั้งสองข้าง · ต่อกล้อง / ไฟเลี้ยงจอ"},
+  usbca:{name:"สาย USB-C ↔ USB-A",use:"หัว C ข้างหนึ่ง หัว A อีกข้าง · ต่อสายทัช / ฮับ"},
+  hdmi:{name:"สาย HDMI",use:"ส่งภาพขึ้นจอ · บางตู้หัวเล็ก (Mini HDMI)"},
+  printer:{name:"สายปริ้นเตอร์",use:"หัวเหลี่ยม · ต่อปริ้นเตอร์ / สายทัช / ปุ่มกด"},
+  hotshoe:{name:"สายแฟลช (Hot shoe)",use:"เสียบบนหัวกล้อง → แฟลช"},
+  usbam:{name:"สาย Micro-USB",use:"ต่อป้าย LED"},
+  mains:{name:"สายไฟต่อระหว่างกล่อง",use:"ปลั๊กพ่วง → ปลั๊กพ่วง"},
+  wifi:{name:"Wi-Fi (ไม่มีสาย)",use:"เชื่อมผ่านเราเตอร์ของตู้"}
+};
+function strokes(t){return({
+  usbc:[["#231F20",3,""]], usbca:[["#231F20",3,"10 5"]], usbam:[["#231F20",3,"2 6"]],
+  hdmi:[["#193133",8,""],["#fff",2.5,""]], printer:[["#231F20",8,""],["#DEFF4C",4,""]],
+  hotshoe:[["#231F20",3,"0.1 7"]], mains:[["#8A8580",4,"14 6"]], wifi:[["#8A8580",2.5,"3 6"]]})[t];}
+function line(g,pts,t){const d="M"+pts.map(p=>p.join(",")).join(" L");
+  strokes(t).forEach(([s,w,da])=>el("path",{d,fill:"none",stroke:s,"stroke-width":w,"stroke-dasharray":da,"stroke-linecap":(t==="hotshoe"||t==="usbam")?"round":"butt","stroke-linejoin":"round"},g));}
+function swatch(t,w=56){const s=el("svg",{viewBox:`0 0 ${w} 14`,width:w,height:14,"aria-hidden":"true"});line(s,[[2,7],[w-2,7]],t);return s;}
+
+(function(){const L=document.getElementById("legend");
+  Object.entries(CABLES).forEach(([k,c])=>{const d=document.createElement("div");d.className="cable";
+    d.appendChild(swatch(k,96));const t=document.createElement("div");t.innerHTML=`<b>${c.name}</b><br><small>${c.use}</small>`;d.appendChild(t);L.appendChild(d);});})();
+
+/* systems */
+const N=(id,x,y,t,i,k)=>({id,x,y,t,i,k:k||""});
+const SYS=[
+ {id:"master-rig",name:"MASTER RIG",sub:"ตู้กล้อง 2 ตัว · ชุดเต็ม",
+  vb:[1000,510],zones:[["ชั้นบน (หัวตู้)",10,20,980,330],["ชั้นล่าง (ฐานตู้)",10,370,980,130]],
+  nodes:[N("pc",500,190,"คอม","laptop","hub"),N("camA",300,80,"กล้อง A","camera"),N("mon",100,80,"จอ","monitor"),
+    N("camB",300,190,"กล้อง B","camera"),N("flash",100,190,"แฟลช","flash"),N("touch",700,190,"จอทัช","touch"),
+    N("hub",500,300,"ฮับ USB","hub"),N("btn",900,190,"ปุ่มกด","buttons"),N("led",300,300,"ป้าย LED","led"),
+    N("ring",700,80,"ไฟวงแหวน","ring","solo"),N("sA",900,80,"ปลั๊กพ่วง A","plug","pwr"),N("sC",100,300,"ปลั๊กพ่วง C","plug","pwr"),
+    N("printer",500,435,"ปริ้นเตอร์","printer"),N("router",700,435,"เราเตอร์","router"),N("sB",900,435,"ปลั๊กพ่วง B","plug","pwr")],
+  edges:[
+    {f:"pc",t:"camB",c:"usbc",p:[[420,190],[380,190]],tip:"เสียบตรงเข้าคอม ไม่ผ่านฮับ"},
+    {f:"pc",t:"camA",c:"usbc",p:[[500,162],[500,80],[380,80]]},
+    {f:"camA",t:"mon",c:"hdmi",lbl:"สาย Mini HDMI → HDMI",p:[[220,80],[180,80]]},
+    {f:"camB",t:"flash",c:"hotshoe",p:[[220,190],[180,190]]},
+    {f:"pc",t:"touch",c:"hdmi",p:[[580,190],[620,190]]},
+    {f:"pc",t:"hub",c:"usbca",p:[[500,218],[500,272]]},
+    {f:"hub",t:"touch",c:"printer",p:[[580,290],[690,290],[690,218]],tip:"สายนี้ทำให้จอกดได้"},
+    {f:"hub",t:"btn",c:"printer",p:[[580,310],[900,310],[900,218]]},
+    {f:"hub",t:"printer",c:"printer",p:[[500,328],[500,407]]},
+    {f:"hub",t:"led",c:"usbam",p:[[420,300],[380,300]],inf:true}],
+  equip:[["คอม","laptop",1],["กล้อง DSLR","camera",2],["จอ","monitor",1],["จอทัช","touch",1],["ปริ้นเตอร์","printer",1],["แฟลช","flash",1],["เราเตอร์","router",1],["ปลั๊กพ่วง","plug",3],["ไฟวงแหวน","ring",1],["ฮับ USB","hub",1]],
+  kit:[["usbc",2],["usbca",2,"สำรอง 1"],["hdmi",1,"HDMI ธรรมดา"],["hdmi",1,"Mini HDMI → HDMI"],["printer",3],["usbam",1],["hotshoe",1]]},
+
+ {id:"sx-config-1",name:"SX TALLY · STANDARD · PORTABLE",sub:"แบบ 1 · คอม + จอทัชแยก",
+  vb:[1000,470],zones:[["ชั้นบน (หัวตู้)",10,20,980,280],["ชั้นล่าง (ฐานตู้)",10,320,980,140]],
+  nodes:[N("pc",510,110,"คอม","laptop","hub"),N("cam",300,110,"กล้อง","camera"),N("flash",100,110,"แฟลช","flash"),
+    N("touch",800,110,"จอทัช","touch"),N("sA",800,245,"ปลั๊กพ่วง A","plug","pwr"),
+    N("printer",510,390,"ปริ้นเตอร์","printer"),N("router",720,390,"เราเตอร์","router"),N("sB",900,390,"ปลั๊กพ่วง B","plug","pwr")],
+  edges:[
+    {f:"pc",t:"cam",c:"usbc",p:[[430,110],[380,110]]},
+    {f:"cam",t:"flash",c:"hotshoe",p:[[220,110],[180,110]]},
+    {f:"pc",t:"touch",c:"hdmi",lbl:"สาย Mini HDMI → HDMI",p:[[590,97],[720,97]],at:.35,tip:"สายภาพ"},
+    {f:"pc",t:"touch",c:"usbca",p:[[590,123],[720,123]],at:.65,tip:"สายทัช — ไม่มีเส้นนี้ จอจะกดไม่ได้"},
+    {f:"sA",t:"touch",c:"usbc",p:[[800,217],[800,138]],tip:"ไฟเลี้ยงจอ ผ่านหัวชาร์จ USB-C"},
+    {f:"pc",t:"printer",c:"printer",p:[[510,138],[510,362]]}],
+  equip:[["คอม","laptop",1],["กล้อง DSLR","camera",1],["จอทัช","touch",1],["ปริ้นเตอร์","printer",1],["แฟลช","flash",1],["เราเตอร์","router",1],["ปลั๊กพ่วง","plug",2]],
+  kit:[["usbc",3,"สำรอง 1"],["hdmi",1,"Mini HDMI → HDMI"],["usbca",1],["printer",1],["hotshoe",1]]},
+
+ {id:"sx-config-2",name:"SX TALLY · STANDARD · PORTABLE",sub:"แบบ 2 · คอมจอทัชในตัว",
+  vb:[1000,420],zones:[["ชั้นบน (หัวตู้)",10,20,980,220],["ชั้นล่าง (ฐานตู้)",10,260,980,150]],
+  nodes:[N("pc",520,110,"คอมจอทัช","pc","hub"),N("cam",300,110,"กล้อง","camera"),N("flash",100,110,"แฟลช","flash"),
+    N("sA",800,110,"ปลั๊กพ่วง A","plug","pwr"),N("printer",520,335,"ปริ้นเตอร์","printer"),N("router",720,335,"เราเตอร์","router"),N("sB",900,335,"ปลั๊กพ่วง B","plug","pwr")],
+  edges:[
+    {f:"pc",t:"cam",c:"usbc",p:[[440,110],[380,110]]},
+    {f:"cam",t:"flash",c:"hotshoe",p:[[220,110],[180,110]]},
+    {f:"pc",t:"printer",c:"printer",p:[[520,138],[520,307]]}],
+  equip:[["คอมจอทัช","pc",1],["กล้อง DSLR","camera",1],["ปริ้นเตอร์","printer",1],["แฟลช","flash",1],["เราเตอร์","router",1],["ปลั๊กพ่วง","plug",2]],
+  kit:[["usbc",1],["printer",1],["hotshoe",1]]},
+
+ {id:"sx-tally-a3",name:"SX TALLY A3",sub:"2 กล่อง · ปริ้นเตอร์ A3 ผ่าน Wi-Fi",
+  vb:[1100,500],zones:[["กล่องสูง · ชั้นบน",10,20,680,330],["กล่องสูง · ฐาน",10,370,680,110],["กล่องต่ำ · ชั้นบน",710,20,380,330],["กล่องต่ำ · ฐาน",710,370,380,110]],
+  nodes:[N("pc",530,120,"คอม","laptop","hub"),N("cam",310,120,"กล้อง","camera"),N("flash",110,120,"แฟลช","flash"),
+    N("touch",530,270,"จอทัช","touch"),N("sA",310,425,"ปลั๊กพ่วง A","plug","pwr"),
+    N("printer",890,120,"ปริ้นเตอร์ A3","printer"),N("sB",800,425,"ปลั๊กพ่วง B","plug","pwr"),N("router",1000,425,"เราเตอร์","router")],
+  edges:[
+    {f:"pc",t:"cam",c:"usbc",p:[[450,120],[390,120]]},
+    {f:"cam",t:"flash",c:"hotshoe",p:[[230,120],[190,120]]},
+    {f:"pc",t:"touch",c:"hdmi",lbl:"สาย Mini HDMI → HDMI",p:[[510,148],[510,242]],at:.4,tip:"สายภาพ"},
+    {f:"pc",t:"touch",c:"usbca",p:[[550,148],[550,242]],at:.6,tip:"สายทัช — ไม่มีเส้นนี้ จอจะกดไม่ได้"},
+    {f:"sA",t:"touch",c:"usbc",p:[[310,397],[310,270],[450,270]],tip:"ไฟเลี้ยงจอ ผ่านหัวชาร์จ USB-C"},
+    {f:"pc",t:"printer",c:"wifi",p:[[610,120],[810,120]],tip:"คอมกับปริ้นเตอร์ต้องอยู่ Wi-Fi ตู้เดียวกัน"},
+    {f:"sA",t:"sB",c:"mains",p:[[390,425],[720,425]]}],
+  equip:[["คอม","laptop",1],["กล้อง DSLR","camera",1],["จอทัช","touch",1],["ปริ้นเตอร์ A3","printer",1],["แฟลช","flash",1],["เราเตอร์","router",1],["ปลั๊กพ่วง","plug",2]],
+  kit:[["usbc",3,"สำรอง 1"],["hdmi",1,"Mini HDMI → HDMI"],["usbca",1],["hotshoe",1],["mains",1]]},
+
+ {id:"box-shot",name:"BOX SHOT",sub:"ตู้เล็ก · เว็บแคม",
+  vb:[1000,420],zones:[["ชั้นบน (หัวตู้)",10,20,980,220],["ชั้นล่าง (ฐานตู้)",10,260,980,150]],
+  nodes:[N("pc",520,110,"คอมจอทัช","pc","hub"),N("cam",300,110,"เว็บแคม","webcam"),N("light",100,110,"ไฟแผง","panel","solo"),
+    N("sA",800,110,"ปลั๊กพ่วง A","plug","pwr"),N("printer",520,335,"ปริ้นเตอร์","printer"),N("router",720,335,"เราเตอร์","router"),N("sB",900,335,"ปลั๊กพ่วง B","plug","pwr")],
+  edges:[
+    {f:"pc",t:"cam",c:"usbc",p:[[440,110],[380,110]]},
+    {f:"pc",t:"printer",c:"printer",p:[[520,138],[520,307]]}],
+  equip:[["คอมจอทัช","pc",1],["เว็บแคม","webcam",1],["ปริ้นเตอร์","printer",1],["ไฟแผง","panel",1],["เราเตอร์","router",1],["ปลั๊กพ่วง","plug",2]],
+  kit:[["usbc",1],["printer",1]]},
+
+ {id:"popup-top-view",name:"POPUP TOP VIEW",sub:"กล้องมุมบน · 2 กล่อง",
+  vb:[1000,560],zones:[["กล่องสูง (ขาตั้งบน)",10,20,390,530],["กล่องต่ำ · ชั้นบน",420,20,570,370],["กล่องต่ำ · ฐาน",420,410,570,140]],
+  nodes:[N("cam",210,80,"กล้อง","camera"),N("mini",210,200,"จอเล็ก","monitor"),N("sA",210,330,"ปลั๊กพ่วง A","plug","pwr"),
+    N("sw",540,200,"ตัวแยก HDMI","switch"),N("pc",760,200,"คอม","laptop","hub"),N("touch",760,330,"จอทัช","touch"),
+    N("sB",520,480,"ปลั๊กพ่วง B","plug","pwr"),N("router",700,480,"เราเตอร์","router"),N("printer",900,480,"ปริ้นเตอร์","printer")],
+  edges:[
+    {f:"pc",t:"cam",c:"usbc",lbl:"สาย USB-C (เส้นยาว)",p:[[760,172],[760,80],[290,80]],tip:"กล้องหันเลนส์ลงพื้น"},
+    {f:"pc",t:"sw",c:"hdmi",p:[[680,200],[620,200]]},
+    {f:"sw",t:"mini",c:"hdmi",lbl:"สาย HDMI (เส้นยาว)",p:[[460,200],[290,200]]},
+    {f:"sw",t:"touch",c:"hdmi",p:[[540,228],[540,330],[680,330]]},
+    {f:"pc",t:"touch",c:"printer",p:[[760,228],[760,302]],tip:"สายทัช — ไม่มีเส้นนี้ จอจะกดไม่ได้"},
+    {f:"pc",t:"printer",c:"printer",p:[[840,200],[900,200],[900,452]]},
+    {f:"sB",t:"sA",c:"mains",p:[[440,480],[210,480],[210,358]]}],
+  equip:[["คอม","laptop",1],["กล้อง DSLR","camera",1],["จอเล็ก","monitor",1],["จอทัช","touch",1],["ตัวแยก HDMI","switch",1],["ปริ้นเตอร์","printer",1],["เราเตอร์","router",1],["ปลั๊กพ่วง","plug",2],["ฮับ USB","hub",1,"ใช้เมื่อช่องไม่พอ"]],
+  kit:[["usbc",1,"เส้นยาว"],["hdmi",1,"เส้นยาว"],["hdmi",2],["printer",2],["mains",1]]},
+
+ {id:"lca",name:"LCA",sub:"ตู้ iPad · ฉาก + ไฟสตูดิโอ",
+  vb:[1000,300],zones:[["ฉาก (ฝั่งแขก)",10,20,470,260],["โต๊ะทำงาน",500,20,490,260]],
+  nodes:[N("ipad",150,90,"iPad","ipad"),N("limbo",150,210,"ฉากหลัง","backdrop","solo"),N("lights",360,210,"ไฟสตูดิโอ ×2","softbox","solo"),
+    N("router",620,90,"เราเตอร์","router"),N("pc",840,90,"คอม","laptop","hub"),N("printer",840,210,"ปริ้นเตอร์","printer"),N("s",620,210,"ปลั๊กพ่วง ×2","plug","pwr")],
+  edges:[
+    {f:"pc",t:"printer",c:"printer",p:[[840,118],[840,182]]},
+    {f:"ipad",t:"router",c:"wifi",p:[[230,90],[540,90]],inf:true,tip:"ต่อ Wi-Fi ของตู้"},
+    {f:"pc",t:"router",c:"wifi",p:[[760,90],[700,90]],inf:true,tip:"ต่อ Wi-Fi ของตู้"}],
+  equip:[["คอม","laptop",1],["iPad","ipad",1],["ฉากหลัง","backdrop",1],["ปริ้นเตอร์","printer",1],["ไฟสตูดิโอ","softbox",2],["เราเตอร์","router",1],["ปลั๊กพ่วง","plug",2]],
+  kit:[["printer",1]]},
+
+ {id:"photomoov",name:"PHOTOMOOV",sub:"iPad เดินถ่าย",
+  vb:[1000,300],zones:[["ฉาก (เดินถ่าย)",10,20,470,260],["โต๊ะทำงาน",500,20,490,260]],
+  nodes:[N("ipad",150,90,"iPad","ipad"),N("limbo",150,210,"ฉากหลัง","backdrop","solo"),
+    N("router",620,90,"เราเตอร์","router"),N("pc",840,90,"คอม","laptop","hub"),N("printer",840,210,"ปริ้นเตอร์","printer"),N("s",620,210,"ปลั๊กพ่วง ×2","plug","pwr")],
+  edges:[
+    {f:"pc",t:"printer",c:"printer",p:[[840,118],[840,182]]},
+    {f:"ipad",t:"router",c:"wifi",p:[[230,90],[540,90]],inf:true,tip:"ต่อ Wi-Fi ของตู้"},
+    {f:"pc",t:"router",c:"wifi",p:[[760,90],[700,90]],inf:true,tip:"ต่อ Wi-Fi ของตู้"}],
+  equip:[["คอม","laptop",1],["iPad","ipad",1],["ฉากหลัง","backdrop",1],["ปริ้นเตอร์","printer",1],["เราเตอร์","router",1],["ปลั๊กพ่วง","plug",2]],
+  kit:[["printer",1]]},
+
+ {id:"popup-studio",name:"POPUP STUDIO",sub:"สตูดิโอ · มีช่างภาพ",
+  vb:[1000,300],zones:[["ฉาก",10,20,470,260],["โต๊ะทำงาน",500,20,490,260]],
+  nodes:[N("limbo",245,150,"ฉากหลัง","backdrop","solo"),
+    N("router",620,90,"เราเตอร์","router"),N("pc",840,90,"คอม","laptop","hub"),N("printer",840,210,"ปริ้นเตอร์","printer"),N("s",620,210,"ปลั๊กพ่วง ×2","plug","pwr")],
+  edges:[
+    {f:"pc",t:"printer",c:"printer",p:[[840,118],[840,182]]},
+    {f:"pc",t:"router",c:"wifi",p:[[760,90],[700,90]],inf:true,tip:"ต่อ Wi-Fi ของตู้"}],
+  equip:[["คอม","laptop",1],["ฉากหลัง","backdrop",1],["ปริ้นเตอร์","printer",1],["เราเตอร์","router",1],["ปลั๊กพ่วง","plug",2]],
+  kit:[["printer",1]]}
+];
+
+const picker=document.getElementById("picker"),host=document.getElementById("sys");
+SYS.forEach(s=>{const b=document.createElement("button");b.className="pick";b.setAttribute("role","tab");b.dataset.id=s.id;
+  b.innerHTML=`<span class="pn">${s.name}</span><span class="pf">${s.sub}</span>`;
+  b.addEventListener("click",()=>{if(location.hash!=="#"+s.id)location.hash=s.id;else render(s.id);});picker.appendChild(b);});
+
+function render(id){
+  const s=SYS.find(x=>x.id===id)||SYS[0];
+  picker.querySelectorAll(".pick").forEach(b=>b.setAttribute("aria-selected",b.dataset.id===s.id));
+  const nodes=Object.fromEntries(s.nodes.map(n=>[n.id,n]));
+  const runs=s.edges.length;
+  host.innerHTML=`
+   <div class="sys-head"><div><p class="tag">${s.sub}</p><h2 class="latin" style="margin-top:4px;line-height:1.05">${s.name}</h2></div>
+    <div class="meta"><span class="pill">${ic("cable")}ต่อ ${runs} จุด</span><span class="pill">${ic("box")}${s.zones.length} ส่วน</span></div></div>
+   <div class="diagram"><div id="svgHost"></div><p class="hint">แตะ / ชี้ที่การ์ดด้านล่าง เพื่อดูว่าสายเส้นนั้นอยู่ตรงไหน</p></div>
+   <div class="sec-t"><span class="k">1</span><h3>เตรียมของ</h3></div>
+   <div class="check" id="eq"></div><p class="prog" id="eqp"></p>
+   <div class="check" id="kt" style="margin-top:12px"></div><p class="prog" id="ktp"></p>
+   <div class="sec-t"><span class="k">2</span><h3>วางของให้ถูกส่วน</h3></div>
+   <div class="zones" id="zl"></div>
+   <div class="sec-t"><span class="k">3</span><h3>ต่อสายตามเลข</h3></div>
+   <div class="conn" id="cl"></div>
+   <p class="hint" style="margin-top:14px">ต่อครบแล้ว → เสียบปลั๊กเข้าปลั๊กพ่วงส่วนเดียวกัน → <a href="#power-on">เปิดเครื่องตามลำดับ</a></p>`;
+
+  /* diagram */
+  const [W,H]=s.vb;const svg=el("svg",{class:"d",viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"ผังการต่อสาย "+s.name});
+  const gz=el("g",{},svg);
+  s.zones.forEach(([l,x,y,w,h])=>{const g=el("g",{class:"zone"},gz);el("rect",{x,y,width:w,height:h,rx:4},g);el("text",{x:x+12,y:y+22},g).textContent=l;});
+  const ge=el("g",{},svg),gn=el("g",{},svg),gb=el("g",{},svg);
+  s.edges.forEach((e,i)=>{const g=el("g",{class:"edge","data-i":i},ge);line(g,e.p,e.c);
+    let best=0,bi=0;for(let k=0;k<e.p.length-1;k++){const L=Math.hypot(e.p[k+1][0]-e.p[k][0],e.p[k+1][1]-e.p[k][1]);if(L>best){best=L;bi=k;}}
+    const a=e.p[bi],b=e.p[bi+1],f=e.at||.5,bx=a[0]+(b[0]-a[0])*f,by=a[1]+(b[1]-a[1])*f;
+    const bg=el("g",{class:"eb edge"+(e.inf?" inf":""),"data-i":i},gb);el("circle",{cx:bx,cy:by,r:13},bg);
+    el("text",{x:bx,y:by+4.5,"text-anchor":"middle"},bg).textContent=i+1;});
+  s.nodes.forEach(n=>{const g=el("g",{class:"node "+n.k,"data-id":n.id},gn);
+    el("rect",{x:n.x-80,y:n.y-28,width:160,height:56,rx:4},g);
+    const u=el("svg",{x:n.x-68,y:n.y-13,width:26,height:26,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":2,"stroke-linecap":"round","stroke-linejoin":"round"},g);
+    el("use",{href:"#i-"+n.i},u);
+    el("text",{class:"t",x:n.x-32,y:n.y+5},g).textContent=n.t;});
+  document.getElementById("svgHost").appendChild(svg);
+
+  /* checklists */
+  const mk=(hostId,progId,items,isKit)=>{const h=document.getElementById(hostId);
+    items.forEach(it=>{const lab=document.createElement("label");lab.className="ck";
+      let iconHtml,name,note,q;
+      if(isKit){const[k,qq,nt]=it;const sw=swatch(k,40);iconHtml=sw.outerHTML;name=CABLES[k].name;note=nt||"";q=qq;}
+      else{const[nm,i,qq,nt]=it;iconHtml=ic(i);name=nm;note=nt||"";q=qq;}
+      lab.innerHTML=`<input type="checkbox"><div class="top">${iconHtml}<span class="q">×${q}</span></div><span class="nm">${name}</span>${note?`<span class="nt">${note}</span>`:""}<span class="box"></span>`;
+      h.appendChild(lab);});
+    const p=document.getElementById(progId);
+    const upd=()=>{const all=h.querySelectorAll("input"),c=[...all].filter(x=>x.checked).length;
+      p.textContent=c===all.length?(isKit?"สายครบแล้ว":"อุปกรณ์ครบแล้ว"):`${isKit?"สาย":"อุปกรณ์"} ${c}/${all.length}`;p.classList.toggle("done",c===all.length);};
+    h.addEventListener("change",upd);upd();};
+  mk("eq","eqp",s.equip,false);mk("kt","ktp",s.kit,true);
+
+  /* zones from geometry */
+  const zl=document.getElementById("zl");
+  s.zones.forEach(([l,x,y,w,h])=>{const inside=s.nodes.filter(n=>n.x>=x&&n.x<=x+w&&n.y>=y&&n.y<=y+h);
+    const d=document.createElement("div");d.className="zcard";
+    d.innerHTML=`<h4>${l}</h4><div class="zitems">${inside.map(n=>`<span>${ic(n.i)}${n.t}</span>`).join("")}</div>`;zl.appendChild(d);});
+
+  /* connection cards */
+  const cl=document.getElementById("cl");
+  s.edges.forEach((e,i)=>{const a=nodes[e.f],b=nodes[e.t];const d=document.createElement("div");d.className="cc";d.tabIndex=0;
+    d.innerHTML=`<span class="num${e.inf?" inf":""}">${i+1}</span>
+     <div><div class="row"><span class="dev">${ic(a.i)}${a.t}</span><span class="wire"></span><span class="dev">${ic(b.i)}${b.t}</span></div>
+     <div class="cab"><span class="sw"></span>${e.lbl||CABLES[e.c].name}${e.inf?'<span class="ask">ถามหัวหน้า</span>':""}</div>
+     ${e.tip?`<div class="tip">${ic("alert")}<span>${e.tip}</span></div>`:""}</div>`;
+    const wire=d.querySelector(".wire");const ws=el("svg",{viewBox:"0 0 100 14",preserveAspectRatio:"none",width:"100%",height:14,"aria-hidden":"true"});line(ws,[[0,7],[100,7]],e.c);wire.appendChild(ws);
+    d.querySelector(".sw").replaceWith(swatch(e.c,32));
+    const on=()=>{svg.classList.add("focus");svg.querySelectorAll(`.edge[data-i="${i}"]`).forEach(x=>x.classList.add("on"));[e.f,e.t].forEach(id=>svg.querySelector(`.node[data-id="${id}"]`).classList.add("on"));d.classList.add("on");};
+    const off=()=>{svg.classList.remove("focus");svg.querySelectorAll(".on").forEach(x=>x.classList.remove("on"));d.classList.remove("on");};
+    d.addEventListener("mouseenter",on);d.addEventListener("mouseleave",off);d.addEventListener("focus",on);d.addEventListener("blur",off);
+    d.addEventListener("click",()=>{on();const dg=document.querySelector(".diagram").getBoundingClientRect();if(dg.bottom<60||dg.top>innerHeight-60)document.querySelector(".diagram").scrollIntoView({block:"center"});setTimeout(off,1800);});
+    cl.appendChild(d);});
+}
+window.addEventListener("hashchange",()=>{const s=SYS.find(x=>x.id===location.hash.slice(1));if(s){render(s.id);document.getElementById("systems").scrollIntoView();}});
+render((SYS.find(x=>x.id===location.hash.slice(1))||SYS[1]).id);
+</script>
+</body>
+</html>
