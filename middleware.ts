@@ -63,6 +63,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - login, auth, and portal (public) routes
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|login|auth|portal).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|login|auth|portal|guides).*)',
   ],
 }
