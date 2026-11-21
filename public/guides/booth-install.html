@@ -252,6 +252,14 @@ svg.focus .node{opacity:.4} svg.focus .node.on{opacity:1}
   <symbol id="i-door" viewBox="0 0 24 24"><path d="M5 21V3h11v18"/><path d="M16 5l3 1v15h-3"/><path d="M13 12h.01"/></symbol>
   <symbol id="i-tug" viewBox="0 0 24 24"><rect x="3" y="9" width="6" height="6" rx="1"/><path d="M9 12h8"/><path d="M14 9l3 3-3 3"/><path d="M20 8v8"/></symbol>
   <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 16a5 5 0 0 1 7 0"/><path d="M12 19.5h.01"/><path d="M1.5 9a15 15 0 0 1 21 0"/></symbol>
+  <g id="p-c"><rect x="-16" y="-5" width="16" height="10" rx="5"/></g>
+  <g id="p-a"><rect x="-18" y="-6" width="18" height="12" rx="1"/><rect x="-14" y="-3" width="10" height="3" fill="#fff"/></g>
+  <g id="p-micro"><path d="M-12 -4h12l-2 8h-8z"/></g>
+  <g id="p-hdmi"><path d="M-18 -7h18v9l-3 4h-12l-3-4z"/></g>
+  <g id="p-mini"><path d="M-12 -5h12v6l-2 3h-8l-2-3z"/></g>
+  <g id="p-b"><path d="M-16 -8h12l4 4v8l-4 4h-12z"/></g>
+  <g id="p-shoe"><path d="M-16 -3h16v6h-16z"/><path d="M-12 -8h8v5h-8z"/></g>
+  <g id="p-mains"><rect x="-18" y="-7" width="18" height="14" rx="3"/></g>
  </defs>
 </svg>
 
@@ -420,13 +428,15 @@ const CABLES={
   mains:{name:"สายไฟต่อระหว่างกล่อง",use:"ปลั๊กพ่วง → ปลั๊กพ่วง"},
   wifi:{name:"Wi-Fi (ไม่มีสาย)",use:"เชื่อมผ่านเราเตอร์ของตู้"}
 };
-function strokes(t){return({
-  usbc:[["#231F20",3,""]], usbca:[["#231F20",3,"10 5"]], usbam:[["#231F20",3,"2 6"]],
-  hdmi:[["#193133",8,""],["#fff",2.5,""]], printer:[["#231F20",8,""],["#DEFF4C",4,""]],
-  hotshoe:[["#231F20",3,"0.1 7"]], mains:[["#8A8580",4,"14 6"]], wifi:[["#8A8580",2.5,"3 6"]]})[t];}
-function line(g,pts,t){const d="M"+pts.map(p=>p.join(",")).join(" L");
-  strokes(t).forEach(([s,w,da])=>el("path",{d,fill:"none",stroke:s,"stroke-width":w,"stroke-dasharray":da,"stroke-linecap":(t==="hotshoe"||t==="usbam")?"round":"butt","stroke-linejoin":"round"},g));}
-function swatch(t,w=56){const s=el("svg",{viewBox:`0 0 ${w} 14`,width:w,height:14,"aria-hidden":"true"});line(s,[[2,7],[w-2,7]],t);return s;}
+const CSTY={usbc:{c:"#2F6FDB",a:"p-c",b:"p-c"},usbca:{c:"#7A5AA5",a:"p-c",b:"p-a"},hdmi:{c:"#0F8B8D",a:"p-hdmi",b:"p-hdmi"},
+  printer:{c:"#D9A400",a:"p-a",b:"p-b"},hotshoe:{c:"#C9423B",a:"p-shoe",b:"p-shoe"},usbam:{c:"#E07B2B",a:"p-a",b:"p-micro"},
+  mains:{c:"#6E6A64",a:"p-mains",b:"p-mains",d:"10 5"},wifi:{c:"#9A968F",d:"2 6"}};
+function plug(g,id,p,q,col,sc){const ang=Math.atan2(p[1]-q[1],p[0]-q[0])*180/Math.PI;el("use",{href:"#"+id,transform:`translate(${p[0]},${p[1]}) rotate(${ang}) scale(${sc})`,fill:col},g);}
+function line(g,pts,t,o={}){const c=CSTY[t],d="M"+pts.map(p=>p.join(",")).join(" L"),sc=o.sc||1;
+  el("path",{d,fill:"none",stroke:"#fff","stroke-width":8*sc,"stroke-linejoin":"round"},g);
+  el("path",{d,fill:"none",stroke:c.c,"stroke-width":4*sc,"stroke-dasharray":c.d||"","stroke-linejoin":"round"},g);
+  if(c.a&&!o.noplug){const n=pts.length;const pg=o.pg||g;plug(pg,o.mini?"p-mini":c.a,pts[0],pts[1],c.c,sc);plug(pg,c.b,pts[n-1],pts[n-2],c.c,sc);}}
+function swatch(t,w=56){const h=18,s=el("svg",{viewBox:`0 0 ${w} ${h}`,width:w,height:h,"aria-hidden":"true"});const sc=w<60?.6:1;line(s,[[2+18*sc,h/2],[w-2-2*sc,h/2]],t,{sc,noplug:false});return s;}
 
 (function(){const L=document.getElementById("legend");
   Object.entries(CABLES).forEach(([k,c])=>{const d=document.createElement("div");d.className="cable";
@@ -435,7 +445,7 @@ function swatch(t,w=56){const s=el("svg",{viewBox:`0 0 ${w} 14`,width:w,height:1
 /* systems */
 const N=(id,x,y,t,i,k)=>({id,x,y,t,i,k:k||""});
 const SYS=[
- {id:"master-rig",name:"MASTER RIG",sub:"ตู้กล้อง 2 ตัว · ชุดเต็ม",
+ {id:"master-rig",name:"WHAT’S IN MY BAG",sub:"ตู้กล้อง 2 ตัว · ชุดเต็ม",
   vb:[1000,510],zones:[["ชั้นบน (หัวตู้)",10,20,980,330],["ชั้นล่าง (ฐานตู้)",10,370,980,130]],
   nodes:[N("pc",500,190,"คอม","laptop","hub"),N("camA",300,80,"กล้อง A","camera"),N("mon",100,80,"จอ","monitor"),
     N("camB",300,190,"กล้อง B","camera"),N("flash",100,190,"แฟลช","flash"),N("touch",700,190,"จอทัช","touch"),
@@ -584,8 +594,8 @@ function render(id){
   const [W,H]=s.vb;const svg=el("svg",{class:"d",viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"ผังการต่อสาย "+s.name});
   const gz=el("g",{},svg);
   s.zones.forEach(([l,x,y,w,h])=>{const g=el("g",{class:"zone"},gz);el("rect",{x,y,width:w,height:h,rx:4},g);el("text",{x:x+12,y:y+22},g).textContent=l;});
-  const ge=el("g",{},svg),gn=el("g",{},svg),gb=el("g",{},svg);
-  s.edges.forEach((e,i)=>{const g=el("g",{class:"edge","data-i":i},ge);line(g,e.p,e.c);
+  const ge=el("g",{},svg),gn=el("g",{},svg),gp=el("g",{},svg),gb=el("g",{},svg);
+  s.edges.forEach((e,i)=>{const g=el("g",{class:"edge","data-i":i},ge);line(g,e.p,e.c,{pg:gp,mini:/Mini HDMI/.test(e.lbl||"")});
     let best=0,bi=0;for(let k=0;k<e.p.length-1;k++){const L=Math.hypot(e.p[k+1][0]-e.p[k][0],e.p[k+1][1]-e.p[k][1]);if(L>best){best=L;bi=k;}}
     const a=e.p[bi],b=e.p[bi+1],f=e.at||.5,bx=a[0]+(b[0]-a[0])*f,by=a[1]+(b[1]-a[1])*f;
     const bg=el("g",{class:"eb edge"+(e.inf?" inf":""),"data-i":i},gb);el("circle",{cx:bx,cy:by,r:13},bg);
@@ -624,7 +634,7 @@ function render(id){
      <div><div class="row"><span class="dev">${ic(a.i)}${a.t}</span><span class="wire"></span><span class="dev">${ic(b.i)}${b.t}</span></div>
      <div class="cab"><span class="sw"></span>${e.lbl||CABLES[e.c].name}${e.inf?'<span class="ask">ถามหัวหน้า</span>':""}</div>
      ${e.tip?`<div class="tip">${ic("alert")}<span>${e.tip}</span></div>`:""}</div>`;
-    const wire=d.querySelector(".wire");const ws=el("svg",{viewBox:"0 0 100 14",preserveAspectRatio:"none",width:"100%",height:14,"aria-hidden":"true"});line(ws,[[0,7],[100,7]],e.c);wire.appendChild(ws);
+    const wire=d.querySelector(".wire");const ws=el("svg",{viewBox:"0 0 100 14",preserveAspectRatio:"none",width:"100%",height:14,"aria-hidden":"true"});line(ws,[[0,7],[100,7]],e.c,{noplug:true});wire.appendChild(ws);
     d.querySelector(".sw").replaceWith(swatch(e.c,32));
     const on=()=>{svg.classList.add("focus");svg.querySelectorAll(`.edge[data-i="${i}"]`).forEach(x=>x.classList.add("on"));[e.f,e.t].forEach(id=>svg.querySelector(`.node[data-id="${id}"]`).classList.add("on"));d.classList.add("on");};
     const off=()=>{svg.classList.remove("focus");svg.querySelectorAll(".on").forEach(x=>x.classList.remove("on"));d.classList.remove("on");};

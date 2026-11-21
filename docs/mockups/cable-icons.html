@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cable Icons</title>
+<style>
+:root{--bg:#f4f2ec;--card:#fff;--ink:#1b1b1b;--mut:#77756f;--line:#e2dfd7}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,Inter,"Noto Sans Thai",sans-serif;padding:24px 16px}
+.wrap{max-width:1000px;margin:0 auto}
+h1{font-size:19px;margin:0 0 4px}.tag{background:#1b1b1b;color:#fff;border-radius:4px;padding:1px 7px;font-size:11px;margin-right:6px}
+.note{color:var(--mut);font-size:13px;margin:0 0 18px}
+h2{font-size:12px;letter-spacing:.07em;color:var(--mut);margin:22px 0 8px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.row{display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)}.row:last-child{border:0}
+.row b{display:block;font-size:13.5px}.row small{color:var(--mut);font-size:12px}
+.row svg{flex:none}
+.dia{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px}
+.dia svg{width:100%;height:auto;display:block}
+ul{font-size:13px;color:#444;padding-left:18px}
+@media(max-width:760px){.cols{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<h1><span class="tag">MOCKUP</span>Cable icons: plug shape + colour</h1>
+<p class="note">Each cable gets its own colour, and both ends show the real plug shape. Install staff can match the drawing to the cable in their hand.</p>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+ <!-- plug ends, drawn pointing right, origin at tip -->
+ <g id="p-c"><rect x="-16" y="-5" width="16" height="10" rx="5"/></g>
+ <g id="p-a"><rect x="-18" y="-6" width="18" height="12" rx="1"/><rect x="-14" y="-3" width="10" height="3" fill="#fff"/></g>
+ <g id="p-micro"><path d="M-12 -4h12l-2 8h-8z"/></g>
+ <g id="p-hdmi"><path d="M-18 -7h18v9l-3 4h-12l-3-4z"/></g>
+ <g id="p-mini"><path d="M-12 -5h12v6l-2 3h-8l-2-3z"/></g>
+ <g id="p-b"><path d="M-16 -8h12l4 4v8l-4 4h-12z"/></g>
+ <g id="p-shoe"><path d="M-16 -3h16v6h-16z"/><path d="M-12 -8h8v5h-8z"/></g>
+ <g id="p-mains"><rect x="-18" y="-7" width="18" height="14" rx="3"/><path d="M-2 -3h5M-2 3h5" stroke-width="2"/></g>
+</defs></svg>
+
+<div class="cols">
+ <div><h2>NOW</h2><div class="card" id="now"></div></div>
+ <div><h2>NEW</h2><div class="card" id="new"></div></div>
+</div>
+
+<h2>IN A DIAGRAM (MASTER RIG, top half)</h2>
+<div class="cols">
+ <div class="dia"><svg id="dNow" viewBox="0 0 520 260"></svg></div>
+ <div class="dia"><svg id="dNew" viewBox="0 0 520 260"></svg></div>
+</div>
+<ul>
+ <li>Colour picks the cable at a glance. The plug shape confirms it up close and still works for colour-blind staff and black-and-white prints.</li>
+ <li>The legend at the top of the guide uses the same row (plug, line, plug), so it doubles as a cable checklist.</li>
+ <li>Mini HDMI → HDMI has a different plug at each end, so each end shows its own shape.</li>
+</ul>
+</div>
+<script>
+const NS="http://www.w3.org/2000/svg";
+const el=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);p&&p.appendChild(e);return e};
+const OLD={usbc:[["#231F20",3,""]],usbca:[["#231F20",3,"10 5"]],usbam:[["#231F20",3,"2 6"]],hdmi:[["#193133",8,""],["#fff",2.5,""]],printer:[["#231F20",8,""],["#DEFF4C",4,""]],hotshoe:[["#231F20",3,"0.1 7"]],mains:[["#8A8580",4,"14 6"]],wifi:[["#8A8580",2.5,"3 6"]]};
+const NEW={
+ usbc:{c:"#2F6FDB",a:"p-c",b:"p-c",n:"สาย USB-C",u:"หัวรีเล็กทั้งสองข้าง"},
+ usbca:{c:"#7A5AA5",a:"p-c",b:"p-a",n:"สาย USB-C ↔ USB-A",u:"หัวรีเล็ก + หัวเหลี่ยมแบน"},
+ hdmi:{c:"#0F8B8D",a:"p-hdmi",b:"p-hdmi",n:"สาย HDMI",u:"หัวคางหมู"},
+ minihdmi:{c:"#0F8B8D",a:"p-mini",b:"p-hdmi",n:"สาย Mini HDMI → HDMI",u:"หัวเล็กเข้ากล้อง"},
+ printer:{c:"#D9A400",a:"p-a",b:"p-b",n:"สายปริ้นเตอร์",u:"หัวเหลี่ยมใหญ่ (USB-B)"},
+ hotshoe:{c:"#C9423B",a:"p-shoe",b:"p-shoe",n:"สายแฟลช (Hot shoe)",u:"เสียบบนหัวกล้อง"},
+ usbam:{c:"#E07B2B",a:"p-a",b:"p-micro",n:"สาย Micro-USB",u:"หัวคางหมูเล็ก · ป้าย LED"},
+ mains:{c:"#6E6A64",a:"p-mains",b:"p-mains",n:"สายไฟต่อระหว่างกล่อง",u:"ปลั๊กพ่วง → ปลั๊กพ่วง",d:"10 5"},
+ wifi:{c:"#9A968F",n:"Wi-Fi (ไม่มีสาย)",u:"ผ่านเราเตอร์",d:"2 6"}};
+const NAMES={usbc:"สาย USB-C",usbca:"สาย USB-C ↔ USB-A",hdmi:"สาย HDMI",printer:"สายปริ้นเตอร์",hotshoe:"สายแฟลช (Hot shoe)",usbam:"สาย Micro-USB",mains:"สายไฟต่อระหว่างกล่อง",wifi:"Wi-Fi (ไม่มีสาย)"};
+function oldLine(g,pts,t){const d="M"+pts.map(p=>p.join(",")).join(" L");OLD[t==="minihdmi"?"hdmi":t].forEach(([s,w,da])=>el("path",{d,fill:"none",stroke:s,"stroke-width":w,"stroke-dasharray":da,"stroke-linejoin":"round"},g))}
+function plug(g,id,p,q,col){const ang=Math.atan2(p[1]-q[1],p[0]-q[0])*180/Math.PI;el("use",{href:"#"+id,transform:`translate(${p[0]},${p[1]}) rotate(${ang})`,fill:col,stroke:col,"stroke-width":0},g)}
+function newLine(g,pts,t){const c=NEW[t],d="M"+pts.map(p=>p.join(",")).join(" L");
+ el("path",{d,fill:"none",stroke:"#fff","stroke-width":8,"stroke-linejoin":"round"},g);
+ el("path",{d,fill:"none",stroke:c.c,"stroke-width":4,"stroke-dasharray":c.d||"","stroke-linejoin":"round"},g);
+ if(c.a){const n=pts.length;plug(g,c.a,pts[0],pts[1],c.c);plug(g,c.b,pts[n-1],pts[n-2],c.c)}}
+function row(box,sw,b,s){const r=document.createElement("div");r.className="row";r.appendChild(sw);r.insertAdjacentHTML("beforeend",`<div><b>${b}</b><small>${s}</small></div>`);box.appendChild(r)}
+Object.keys(OLD).forEach(k=>{const s=el("svg",{viewBox:"0 0 110 22",width:110,height:22});oldLine(s,[[4,11],[106,11]],k);row(document.getElementById("now"),s,NAMES[k],"")});
+Object.keys(NEW).forEach(k=>{const s=el("svg",{viewBox:"0 0 130 26",width:130,height:26});newLine(s,[[22,13],[108,13]],k);row(document.getElementById("new"),s,NEW[k].n,NEW[k].u)});
+function dia(id,f){const s=document.getElementById(id);
+ const box=(x,y,t)=>{el("rect",{x:x-46,y:y-18,width:92,height:36,rx:8,fill:"#f4f2ec",stroke:"#cfcbc1"},s);const tx=el("text",{x,y:y+5,"text-anchor":"middle","font-size":13},s);tx.textContent=t};
+ const L=[[[150,60],[214,60]],"minihdmi"],L2=[[[306,60],[370,60]],"usbc"],L3=[[[260,78],[260,190]],"printer"],L4=[[[306,72],[370,120]],"usbca"],L5=[[[214,72],[150,170]],"hotshoe"],L6=[[[306,200],[370,200]],"mains"];
+ [L,L2,L3,L4,L5,L6].forEach(([p,t])=>f(s,p,t));
+ box(104,60,"จอ");box(260,60,"กล้อง A");box(416,60,"คอม");box(416,130,"จอทัช");box(104,180,"แฟลช");box(260,208,"ปริ้นเตอร์");box(416,200,"ปลั๊กพ่วง")}
+dia("dNow",oldLine);dia("dNew",newLine);
+</script>
+</body></html>
