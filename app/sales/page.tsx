@@ -183,6 +183,28 @@ function Dashboard() {
         </select>
       </div>
 
+      <div className="grid lg:grid-cols-[1fr_320px] gap-3">
+      <div className={cn(card, 'min-w-0')}>
+        <div className="flex flex-wrap items-center justify-between gap-2"><p className={lbl}>DAILY SALES · BY GROUP</p>
+          <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">{Object.entries(GROUP_COLORS).map(([g, c]) => <span key={g} className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: c }} />{g}</span>)}</div></div>
+        <div className="mt-3 flex h-40 items-end gap-[3px]">
+          {daily.map(({ d, by }) => {
+            const tot = by.reduce((a, b) => a + b.s, 0)
+            return (
+              <div key={d} className={cn('flex h-full flex-1 flex-col justify-end', tot && 'cursor-pointer hover:opacity-80')} title={`${fmtDay(d)} · ${fmtTHB(tot)}`} onClick={() => tot && open(fmtDay(d), monthName, (r) => r.biz_date === d)}>
+                <div className="flex flex-col-reverse overflow-hidden rounded-t-[3px]" style={{ height: `${(tot / maxDay) * 100}%` }}>
+                  {by.filter((b) => b.s).map((b) => <span key={b.g} style={{ height: `${(b.s / tot) * 100}%`, background: GROUP_COLORS[b.g] }} />)}
+                </div>
+                {!tot && <span className="h-[3px] rounded bg-muted" />}
+              </div>
+            )
+          })}
+        </div>
+        <div className="mt-1 flex justify-between text-[11px] text-muted-foreground"><span>{fmtDay(from)}</span><span>{fmtDay(to)}</span></div>
+      </div>
+        <ChannelDonut data={channels.map(([k, v]) => ({ name: k, satang: v.s, n: v.n }))} onPick={(c) => open(c, monthName, (r) => r.channel === c)} />
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Kpi label="GROSS SALES" value={fmtTHB(gross)} note="successful payments only" onOpen={() => open('All payments', monthName, () => true)} />
         <Kpi onOpen={() => open('All payments', monthName, () => true)} label="TRANSACTIONS" value={ok.length.toLocaleString()} note={[pending && `${pending} in review`, notSale && `${notSale} refunds/failed excluded`].filter(Boolean).join(' · ') || 'all accepted'} />
@@ -227,28 +249,6 @@ function Dashboard() {
             )
           })}
         </div>
-      </div>
-
-      <div className="grid lg:grid-cols-[1fr_320px] gap-3">
-      <div className={cn(card, 'min-w-0')}>
-        <div className="flex flex-wrap items-center justify-between gap-2"><p className={lbl}>DAILY SALES · BY GROUP</p>
-          <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">{Object.entries(GROUP_COLORS).map(([g, c]) => <span key={g} className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: c }} />{g}</span>)}</div></div>
-        <div className="mt-3 flex h-40 items-end gap-[3px]">
-          {daily.map(({ d, by }) => {
-            const tot = by.reduce((a, b) => a + b.s, 0)
-            return (
-              <div key={d} className={cn('flex h-full flex-1 flex-col justify-end', tot && 'cursor-pointer hover:opacity-80')} title={`${fmtDay(d)} · ${fmtTHB(tot)}`} onClick={() => tot && open(fmtDay(d), monthName, (r) => r.biz_date === d)}>
-                <div className="flex flex-col-reverse overflow-hidden rounded-t-[3px]" style={{ height: `${(tot / maxDay) * 100}%` }}>
-                  {by.filter((b) => b.s).map((b) => <span key={b.g} style={{ height: `${(b.s / tot) * 100}%`, background: GROUP_COLORS[b.g] }} />)}
-                </div>
-                {!tot && <span className="h-[3px] rounded bg-muted" />}
-              </div>
-            )
-          })}
-        </div>
-        <div className="mt-1 flex justify-between text-[11px] text-muted-foreground"><span>{fmtDay(from)}</span><span>{fmtDay(to)}</span></div>
-      </div>
-        <ChannelDonut data={channels.map(([k, v]) => ({ name: k, satang: v.s, n: v.n }))} onPick={(c) => open(c, monthName, (r) => r.channel === c)} />
       </div>
 
       <div className="grid lg:grid-cols-[1fr_1.4fr] gap-3">

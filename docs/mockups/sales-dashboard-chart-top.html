@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sales Chart Top</title>
+<style>
+:root{--bg:#e9e7e2;--card:#f6f5f1;--ink:#1b1b1b;--mut:#7a7a76;--line:#dcdad3;--hl:#C8643B}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 -apple-system,Inter,Segoe UI,sans-serif;padding:24px 16px}
+.wrap{max-width:1100px;margin:0 auto}
+h1{font-size:18px;margin:0 0 4px}.tag{display:inline-block;background:#1b1b1b;color:#fff;border-radius:4px;padding:1px 7px;font-size:11px;margin-right:6px}
+.note{color:var(--mut);font-size:12.5px;margin:0 0 16px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.cols h2{font-size:12px;letter-spacing:.06em;color:var(--mut);margin:0 0 8px}
+.pg{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;gap:8px}
+.b{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:11.5px;color:#444}
+.b small{color:var(--mut);display:block;font-size:10.5px}
+.mv{outline:2px solid var(--hl);background:#fdf1ea}
+.r2{display:grid;grid-template-columns:1.6fr 1fr;gap:8px}.r4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.bars{display:flex;align-items:flex-end;gap:2px;height:46px;margin-top:4px}.bars i{flex:1;background:linear-gradient(#7a8a2b 0 25%,#1E9E62 25% 45%,#C8643B 45% 80%,#2F6FDB 80%);border-radius:1px}
+.donut{width:46px;height:46px;border-radius:50%;margin:4px auto 0;background:conic-gradient(#2F6FDB 0 48%,#6dc08f 48% 83%,#e09a45 83% 95%,#7a5aa5 95%);-webkit-mask:radial-gradient(circle 14px,#0000 98%,#000)}
+.ar{color:var(--hl);font-weight:700}
+ul{margin:14px 0 0;padding-left:18px;font-size:12.5px;color:#444}
+@media(max-width:820px){.cols{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<h1><span class="tag">MOCKUP</span>Sales · Finance › Dashboard — daily chart moves to the top</h1>
+<p class="note">Highlighted = the row that moves (Daily sales by group + Payment channel distribution). Nothing else changes.</p>
+<div class="cols">
+ <div><h2>NOW</h2><div class="pg">
+  <div class="b">Month ▾ · Group ▾ · Machine ▾</div>
+  <div class="r4"><div class="b">GROSS SALES<small>฿1,393,965</small></div><div class="b">TRANSACTIONS<small>6,835</small></div><div class="b">ACTIVE MACHINES<small>43</small></div><div class="b">AVG / DAY<small>฿69,698</small></div></div>
+  <div class="b">BY GATEWAY · PAYMENT METHOD<small>KBank · Pay Solution · ChillPay</small></div>
+  <div class="b">BY CLIENT GROUP<small>10 group tiles</small></div>
+  <div class="r2 mv" style="border-radius:9px"><div class="b">DAILY SALES · BY GROUP<div class="bars"><i style="height:90%"></i><i style="height:50%"></i><i style="height:70%"></i><i style="height:40%"></i><i style="height:80%"></i><i style="height:30%"></i><i style="height:20%"></i><i style="height:45%"></i><i style="height:15%"></i></div></div><div class="b">PAYMENT CHANNEL<div class="donut"></div></div></div>
+  <div class="r2"><div class="b">TOP 20 MACHINES</div><div class="b">ALL MACHINES · 43</div></div>
+ </div></div>
+ <div><h2>NEW</h2><div class="pg">
+  <div class="b">Month ▾ · Group ▾ · Machine ▾</div>
+  <div class="r2 mv" style="border-radius:9px"><div class="b">DAILY SALES · BY GROUP<div class="bars"><i style="height:90%"></i><i style="height:50%"></i><i style="height:70%"></i><i style="height:40%"></i><i style="height:80%"></i><i style="height:30%"></i><i style="height:20%"></i><i style="height:45%"></i><i style="height:15%"></i></div></div><div class="b">PAYMENT CHANNEL<div class="donut"></div></div></div>
+  <div class="r4"><div class="b">GROSS SALES<small>฿1,393,965</small></div><div class="b">TRANSACTIONS<small>6,835</small></div><div class="b">ACTIVE MACHINES<small>43</small></div><div class="b">AVG / DAY<small>฿69,698</small></div></div>
+  <div class="b">BY GATEWAY · PAYMENT METHOD</div>
+  <div class="b">BY CLIENT GROUP</div>
+  <div class="r2"><div class="b">TOP 20 MACHINES</div><div class="b">ALL MACHINES · 43</div></div>
+ </div></div>
+</div>
+<ul>
+ <li>Chart sits right under the filters, so the month's shape is the first thing you see; the totals follow.</li>
+ <li>Filters still drive the chart (pick a group → bars show only that group).</li>
+ <li>Phone: chart first, donut under it, then the totals.</li>
+</ul>
+</div></body></html>
